@@ -5,7 +5,7 @@ on:
       - master
 env:
   # リポジトリのルートディレクトを基点としたソリューションファイルのパス
-  SOLUTION_FILE_PATH: project/GE3_DirectX.sln
+  SOLUTION_FILE_PATH: project/JuegoEngine.sln
   # Visual Studio の構成( Debug / Release )
   CONFIGURATION: Release
 jobs:
