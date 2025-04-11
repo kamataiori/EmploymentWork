@@ -69,5 +69,9 @@ private:
 	// 透過度（0.0f = 完全透明, 1.0f = 不透明）
 	float triangleAlpha = 0.3f;
 
+
+	// 最後の private: 内などに追加
+	bool changeSpeed_ = false;
+
 };
 

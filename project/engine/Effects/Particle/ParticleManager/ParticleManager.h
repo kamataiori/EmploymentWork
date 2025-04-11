@@ -189,6 +189,22 @@ public:
 	/// <param name="count"></param>
 	void Emit(const std::string name, const Vector3& position, uint32_t count);
 
+	// スケール
+	void SetScaleToGroup(const std::string& groupName, const Vector3& scale);
+
+	// 回転
+	void SetRotationToGroup(const std::string& groupName, const Vector3& rotation);
+
+	// 位置
+	void SetTranslationToGroup(const std::string& groupName, const Vector3& translation);
+
+	// 速度
+	void SetVelocityToGroup(const std::string& groupName, const Vector3& velocity);
+
+	// 色
+	void SetColorToGroup(const std::string& groupName, const Vector4& color);
+
+
 private:
 
 	// 複数のパーティクルグループを保持

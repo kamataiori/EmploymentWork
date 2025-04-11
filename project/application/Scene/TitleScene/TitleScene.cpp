@@ -137,6 +137,19 @@ void TitleScene::Update()
 	{
 		emitter->Update();
 	}
+	ImGui::Begin("Particle Control");
+	ImGui::Checkbox("Change Speed", &changeSpeed_);
+
+	if (changeSpeed_) {
+		particle->SetVelocityToGroup("particle", { 0.0f, 1.5f, 0.0f }); // 速い速度
+	}
+	else {
+		particle->SetVelocityToGroup("particle", { 0.0f, 0.1f, 0.0f }); // 遅い速度
+	}
+
+	ImGui::End();
+
+
 	particle->Update();
 
 	ImGui::Begin("Debug Information"); // デバッグ情報用ウィンドウ

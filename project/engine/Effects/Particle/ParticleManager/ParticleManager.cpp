@@ -344,6 +344,52 @@ void ParticleManager::Emit(const std::string name, const Vector3& position, uint
 	}
 }
 
+void ParticleManager::SetScaleToGroup(const std::string& groupName, const Vector3& scale) {
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+
+	for (auto& particle : it->second.particleList) {
+		particle.transform.scale = scale;
+	}
+}
+
+void ParticleManager::SetRotationToGroup(const std::string& groupName, const Vector3& rotation) {
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+
+	for (auto& particle : it->second.particleList) {
+		particle.transform.rotate = rotation;
+	}
+}
+
+void ParticleManager::SetTranslationToGroup(const std::string& groupName, const Vector3& translation) {
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+
+	for (auto& particle : it->second.particleList) {
+		particle.transform.translate = translation;
+	}
+}
+
+void ParticleManager::SetVelocityToGroup(const std::string& groupName, const Vector3& velocity) {
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+
+	for (auto& particle : it->second.particleList) {
+		particle.velocity = velocity;
+	}
+}
+
+void ParticleManager::SetColorToGroup(const std::string& groupName, const Vector4& color) {
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+
+	for (auto& particle : it->second.particleList) {
+		particle.color = color;
+	}
+}
+
+
 
 void ParticleManager::AdjustTextureSize(ParticleGroup& group, const std::string& textureFilePath)
 {
