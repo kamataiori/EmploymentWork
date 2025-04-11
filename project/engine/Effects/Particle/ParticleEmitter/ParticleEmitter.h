@@ -8,11 +8,16 @@ public:
     // コンストラクタ
     ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform, uint32_t count, float frequency, bool repeat = false);
 
+    // コンストラクタ（Primitive用）
+    ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform, uint32_t count, float frequency, bool repeat, bool usePrimitive);
+
     // 更新
     void Update();
 
     // Emit処理
     void Emit();
+
+    void PrimitiveEmit();  // PrimitiveEmit専用Emit
 
     // 繰り返し設定
     void SetRepeat(bool repeat);
@@ -25,4 +30,6 @@ private:
     float frequency_;                  // 発生頻度
     float elapsedTime_;                // 経過時間
     bool repeat_;                      // 繰り返し発生させるかどうかのフラグ
+
+    bool usePrimitive_ = false; // プリミティブ使用フラグ
 };

@@ -1,11 +1,18 @@
 #include "ParticleEmitter.h"
 
-// コンストラクタ
 ParticleEmitter::ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform, uint32_t count, float frequency, bool repeat)
     : particleManager_(particleManager), name_(name), transform_(transform), count_(count), frequency_(frequency), elapsedTime_(frequency), repeat_(repeat)
 {
     Emit(); // 初期化時に即時発生
 }
+
+// コンストラクタ
+ParticleEmitter::ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform, uint32_t count, float frequency, bool repeat, bool usePrimitive)
+    : particleManager_(particleManager), name_(name), transform_(transform), count_(count), frequency_(frequency), elapsedTime_(frequency), repeat_(repeat), usePrimitive_(usePrimitive)
+{
+    PrimitiveEmit();
+}
+
 
 // 更新処理
 void ParticleEmitter::Update()
@@ -16,7 +23,12 @@ void ParticleEmitter::Update()
 
     if (elapsedTime_ >= frequency_)
     {
-        Emit();
+        if (usePrimitive_) {
+            PrimitiveEmit();
+        }
+        else {
+            Emit();
+        }
         elapsedTime_ -= frequency_; // 周期的に実行するためリセット
     }
 }
@@ -25,6 +37,11 @@ void ParticleEmitter::Update()
 void ParticleEmitter::Emit()
 {
     particleManager_->Emit(name_, transform_.translate, count_);
+}
+
+void ParticleEmitter::PrimitiveEmit()
+{
+    particleManager_->PrimitiveEmit(name_, transform_.translate, count_);
 }
 
 // 繰り返し設定
