@@ -59,7 +59,7 @@ public:
 	/// <summary>
 	/// パーティクルグループの生成
 	/// </summary>
-	void CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode = kBlendModeNormal, const Vector2& customSize = { 0.0f, 0.0f });
+	void CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode = kBlendModeNormal);
 
 	// カメラの設定
 	void SetCamera(Camera* camera) { this->camera_ = camera; }
@@ -179,6 +179,14 @@ private:
 	/// <returns></returns>
 	Particle MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate);
 
+	/// <summary>
+	/// Primitiveパーティクル生成器
+	/// </summary>
+	/// <param name="randomEngine"></param>
+	/// <param name="translate"></param>
+	/// <returns></returns>
+	Particle PrimitiveMakeNewParticle(std::mt19937& randomEngine, const Vector3& translate);
+
 public:
 
 	/// <summary>
@@ -188,6 +196,8 @@ public:
 	/// <param name="position"></param>
 	/// <param name="count"></param>
 	void Emit(const std::string name, const Vector3& position, uint32_t count);
+
+	void PrimitiveEmit(const std::string name, const Vector3& position, uint32_t count);
 
 	// スケール
 	void SetScaleToGroup(const std::string& groupName, const Vector3& scale);

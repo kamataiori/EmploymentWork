@@ -72,8 +72,8 @@ void ParticleManager::Update()
 			}
 
 			// スケールをテクスチャサイズに基づいて調整
-			particle.transform.scale.x = textureSize.x * scaleMultiplier;
-			particle.transform.scale.y = textureSize.y * scaleMultiplier;
+			/*particle.transform.scale.x = textureSize.x * scaleMultiplier;
+			particle.transform.scale.y = textureSize.y * scaleMultiplier;*/
 
 			// 位置の更新
 			particle.transform.translate = Add(particle.transform.translate, Multiply(kDeltaTime, particle.velocity));
@@ -204,7 +204,7 @@ void ParticleManager::CreateVertexData()
 	modelData.vertices.push_back({ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texcoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
 }
 
-void ParticleManager::CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode, const Vector2& customSize)
+void ParticleManager::CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode)
 {
 	// 登録済みの名前かチェックして assert
 	bool nameExists = false;
@@ -231,13 +231,13 @@ void ParticleManager::CreateParticleGroup(const std::string name, const std::str
 	const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureFilePath);
 	Vector2 textureSize = { static_cast<float>(metadata.width), static_cast<float>(metadata.height) };
 
-	// サイズを設定（指定があればそれを使用、なければテクスチャサイズを使用）
-	if (customSize.x > 0.0f && customSize.y > 0.0f) {
-		newGroup.textureSize = customSize;
-	}
-	else {
-		newGroup.textureSize = textureSize;
-	}
+	//// サイズを設定（指定があればそれを使用、なければテクスチャサイズを使用）
+	//if (customSize.x > 0.0f && customSize.y > 0.0f) {
+	//	newGroup.textureSize = customSize;
+	//}
+	//else {
+	//	newGroup.textureSize = textureSize;
+	//}
 
 	//// テクスチャサイズを設定
 	//AdjustTextureSize(newGroup, textureFilePath);
@@ -320,6 +320,32 @@ ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomE
 	return particle;
 }
 
+ParticleManager::Particle ParticleManager::PrimitiveMakeNewParticle(std::mt19937& randomEngine, const Vector3& translate)
+{
+	// ランダム生成器
+	std::uniform_real_distribution<float> distRotate(0.0f, std::numbers::pi_v<float>);
+	std::uniform_real_distribution<float> distScale(0.4f, 1.5f);
+
+	Particle particle;
+
+	// 横は固定、縦をランダム
+	particle.transform.scale = { 0.05f, distScale(randomEngine), 1.0f };
+
+	// Z軸方向にランダムに回転させる
+	particle.transform.rotate = { 0.0f, 0.0f, distRotate(randomEngine) };
+
+	// 位置や速度は固定（必要に応じて変更可）
+	particle.transform.translate = translate;
+	particle.velocity = { 0.0f, 0.0f, 0.0f };
+
+	// 色や寿命も固定
+	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	particle.lifeTime = 1.0f;
+	particle.currentTime = 0;
+
+	return particle;
+}
+
 void ParticleManager::Emit(const std::string name, const Vector3& position, uint32_t count)
 {
 	if (particleGroups.find(name) == particleGroups.end()) {
@@ -341,6 +367,30 @@ void ParticleManager::Emit(const std::string name, const Vector3& position, uint
 		/*Particle newParticle = MakeNewParticle(randomEngine, position);
 		group.particleList.push_back(newParticle);*/
 		group.particleList.push_back(MakeNewParticle(randomEngine, position));
+	}
+}
+
+void ParticleManager::PrimitiveEmit(const std::string name, const Vector3& position, uint32_t count)
+{
+	if (particleGroups.find(name) == particleGroups.end()) {
+		// パーティクルグループが存在しない場合はエラーを出力して終了
+		assert("Specified particle group does not exist!");
+
+	}
+
+	// 指定されたパーティクルグループが存在する場合、そのグループにパーティクルを追加
+	ParticleGroup& group = particleGroups[name];
+
+	// すでにkNumMaxInstanceに達している場合、新しいパーティクルの追加をスキップする
+	if (group.particleList.size() >= count) {
+		return;
+	}
+
+	// 指定された数のパーティクルを生成して追加
+	for (uint32_t i = 0; i < count; ++i) {
+		/*Particle newParticle = MakeNewParticle(randomEngine, position);
+		group.particleList.push_back(newParticle);*/
+		group.particleList.push_back(PrimitiveMakeNewParticle(randomEngine, position));
 	}
 }
 
