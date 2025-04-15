@@ -57,6 +57,9 @@ private:
 	std::unique_ptr<ParticleManager> primitiveParticle = std::make_unique<ParticleManager>();
 	std::vector<std::unique_ptr<ParticleEmitter>> primitiveEmitters;
 
+	std::unique_ptr<ParticleManager> ringParticle = std::make_unique<ParticleManager>();
+	std::vector<std::unique_ptr<ParticleEmitter>> ringEmitters;
+
 	AABB aabb;
 	Sphere sphere;
 	Plane ground;
