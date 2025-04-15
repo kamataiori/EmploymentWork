@@ -2,7 +2,7 @@
 #include <Logger.h>
 #include <numbers>
 
-void ParticleManager::Initialize()
+void ParticleManager::Initialize(VertexDataType type)
 {
 	dxCommon_ = DirectXCommon::GetInstance();
 	srvManager_ = SrvManager::GetInstance();
@@ -14,8 +14,17 @@ void ParticleManager::Initialize()
 		GraphicsPipelineState(static_cast<BlendMode>(mode));
 	}
 
-	// 頂点リソースに頂点データを書き込む
-	CreateVertexData();
+	switch (type) {
+	case VertexDataType::Plane:
+		// 頂点リソースに頂点データを書き込む
+		CreateVertexData();
+		ringSamplerAdd = false;
+		break;
+	case VertexDataType::Ring:
+		CreateRingVertexData();
+		ringSamplerAdd = true;
+		break;
+	}
 
 	// 頂点リソース、バッファービュー
 	VertexBufferView();
@@ -171,7 +180,7 @@ void ParticleManager::Draw()
 		commandList->SetGraphicsRootDescriptorTable(1, srvManager->GetGPUDescriptorHandle(group.second.instancingSrvIndex));
 
 		// Draw Call (インスタンシング描画)
-		commandList->DrawInstanced(6, group.second.instanceCount, 0, 0);
+		commandList->DrawInstanced(group.second.vertexCount, group.second.instanceCount, 0, 0);
 
 		// インスタンスカウントをリセット
 		group.second.instanceCount = 0;
@@ -203,6 +212,36 @@ void ParticleManager::CreateVertexData()
 	modelData.vertices.push_back({ .position = {-1.0f, 1.0f, 0.0f, 1.0f}, .texcoord = {1.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
 	modelData.vertices.push_back({ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texcoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
 }
+
+void ParticleManager::CreateRingVertexData() {
+	const uint32_t kRingDivide = 32;
+	const float kOuterRadius = 1.0f;
+	const float kInnerRadius = 0.2f;
+	const float radianPerDivide = 2.0f * std::numbers::pi_v<float> / float(kRingDivide);
+
+	modelData.vertices.clear();
+
+	for (uint32_t index = 0; index < kRingDivide; ++index) {
+		float sin = std::sin(index * radianPerDivide);
+		float cos = std::cos(index * radianPerDivide);
+		float sinNext = std::sin((index + 1) * radianPerDivide);
+		float cosNext = std::cos((index + 1) * radianPerDivide);
+
+		float u = float(index) / float(kRingDivide);
+		float uNext = float(index + 1) / float(kRingDivide);
+
+		// 外→内の三角形1
+		modelData.vertices.push_back({ { -sin * kOuterRadius, cos * kOuterRadius, 0.0f, 1.0f }, { u, 0.0f }, { 0.0f, 0.0f, 1.0f } });
+		modelData.vertices.push_back({ { -sinNext * kOuterRadius, cosNext * kOuterRadius, 0.0f, 1.0f }, { uNext, 0.0f }, { 0.0f, 0.0f, 1.0f } });
+		modelData.vertices.push_back({ { -sin * kInnerRadius, cos * kInnerRadius, 0.0f, 1.0f }, { u, 1.0f }, { 0.0f, 0.0f, 1.0f } });
+
+		// 三角形2（内→外）
+		modelData.vertices.push_back({ { -sin * kInnerRadius, cos * kInnerRadius, 0.0f, 1.0f }, { u, 1.0f }, { 0.0f, 0.0f, 1.0f } });
+		modelData.vertices.push_back({ { -sinNext * kOuterRadius, cosNext * kOuterRadius, 0.0f, 1.0f }, { uNext, 0.0f }, { 0.0f, 0.0f, 1.0f } });
+		modelData.vertices.push_back({ { -sinNext * kInnerRadius, cosNext * kInnerRadius, 0.0f, 1.0f }, { uNext, 1.0f }, { 0.0f, 0.0f, 1.0f } });
+	}
+}
+
 
 void ParticleManager::CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode)
 {
@@ -242,6 +281,9 @@ void ParticleManager::CreateParticleGroup(const std::string name, const std::str
 	//// テクスチャサイズを設定
 	//AdjustTextureSize(newGroup, textureFilePath);
 
+	// 頂点数を取得
+	newGroup.vertexCount = static_cast<UINT>(modelData.vertices.size());
+
 	// インスタンシング用リソースの生成
 	//InstancingResource();
 	newGroup.instancingResource =
@@ -270,6 +312,7 @@ void ParticleManager::CreateParticleGroup(const std::string name, const std::str
 	// 新しいブレンドモードを設定
 	blendMode_ = blendMode;
 	//GraphicsPipelineState(blendMode);  // 再生成
+
 }
 
 void ParticleManager::CreateMaterialData()
@@ -346,6 +389,19 @@ ParticleManager::Particle ParticleManager::PrimitiveMakeNewParticle(std::mt19937
 	return particle;
 }
 
+ParticleManager::Particle ParticleManager::RingMakeNewParticle(const Vector3& translate)
+{
+	Particle particle;
+	particle.transform.scale = { 1.0f, 1.0f, 1.0f };
+	particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
+	particle.transform.translate = translate;
+	particle.velocity = { 0.0f, 0.0f, 0.0f };
+	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	particle.lifeTime = 999999.0f; // 永続表示
+	particle.currentTime = 0.0f;
+	return particle;
+}
+
 void ParticleManager::Emit(const std::string name, const Vector3& position, uint32_t count)
 {
 	if (particleGroups.find(name) == particleGroups.end()) {
@@ -392,6 +448,22 @@ void ParticleManager::PrimitiveEmit(const std::string name, const Vector3& posit
 		group.particleList.push_back(newParticle);*/
 		group.particleList.push_back(PrimitiveMakeNewParticle(randomEngine, position));
 	}
+}
+
+void ParticleManager::RingEmit(const std::string name, const Vector3& position)
+{
+	if (particleGroups.find(name) == particleGroups.end()) {
+		assert("Specified particle group does not exist!");
+	}
+
+	ParticleGroup& group = particleGroups[name];
+
+	// すでにリングが存在するなら追加しない（常に1つだけとする）
+	if (!group.particleList.empty()) {
+		return;
+	}
+
+	group.particleList.push_back(RingMakeNewParticle(position));
 }
 
 void ParticleManager::SetScaleToGroup(const std::string& groupName, const Vector3& scale) {
@@ -511,7 +583,13 @@ void ParticleManager::RootSignature()
 	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
 	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;  //バイリニアフィルタ
 	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;  //0～1の範囲外をリピート
-	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	if (ringSamplerAdd = true) {
+		staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+	}
+	else {
+
+		staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	}
 	staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 	staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;  //比較しない
 	staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX;  //ありったけのMipmapを使う

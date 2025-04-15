@@ -61,19 +61,26 @@ void TitleScene::Initialize()
 	animationCube->SetCamera(camera1.get());
 	sneak->SetCamera(camera1.get());
 	primitiveParticle->SetCamera(camera1.get());
+	ringParticle->SetCamera(camera1.get());
 
-	particle->Initialize();
+	particle->Initialize(ParticleManager::VertexDataType::Plane);
 	particle->CreateParticleGroup("particle", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd);
 	//particle->CreateParticleGroup("particle2", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd,{32.0f,32.0f});
 	// ParticleEmitterの初期化
 	auto emitter = std::make_unique<ParticleEmitter>(particle.get(), "particle", Transform{ {0.0f, 0.0f, -4.0f} }, 10, 0.5f, true);
 	emitters.push_back(std::move(emitter));
 
-	primitiveParticle->Initialize();
+	primitiveParticle->Initialize(ParticleManager::VertexDataType::Plane);
 	primitiveParticle->CreateParticleGroup("primitive", "Resources/circle2.png", ParticleManager::BlendMode::kBlendModeAdd);
 	// ParticleEmitterの初期化
 	auto primitiveEmitter = std::make_unique<ParticleEmitter>(primitiveParticle.get(), "primitive", Transform{ {0.0f, 0.0f, -4.0f} }, 8, 0.5f, true,true);
 	primitiveEmitters.push_back(std::move(primitiveEmitter));
+
+	ringParticle->Initialize(ParticleManager::VertexDataType::Ring);
+	ringParticle->CreateParticleGroup("ring", "Resources/gradationLine.png", ParticleManager::BlendMode::kBlendModeAdd);
+	// ParticleEmitterの初期化
+	auto ringEmitter = std::make_unique<ParticleEmitter>(ringParticle.get(), "ring", Transform{ {0.0f, 0.0f, 0.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} });
+	ringEmitters.push_back(std::move(ringEmitter));
 
 	DrawLine::GetInstance()->SetCamera(camera1.get());
 	aabb.min = { -1.8f, 2.2f, 3.0f }; // AABB の最小点を少し下げる
@@ -161,8 +168,14 @@ void TitleScene::Update()
 		PrimitiveEmitter->Update();
 	}
 
+	for (auto& ringEmitter : ringEmitters)
+	{
+		ringEmitter->Update();
+	}
+
 	particle->Update();
 	primitiveParticle->Update();
+	ringParticle->Update();
 
 	ImGui::Begin("Debug Information"); // デバッグ情報用ウィンドウ
 	ImGui::Text("Number of Lines: %zu", DrawLine::GetInstance()->GetLineCount());
@@ -329,6 +342,7 @@ void TitleScene::ForeGroundDraw()
 
 	particle->Draw();
 	primitiveParticle->Draw();
+	ringParticle->Draw();
 
 	// ================================================
 	// ここまでparticle個々の描画

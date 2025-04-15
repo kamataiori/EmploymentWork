@@ -101,7 +101,7 @@ void GamePlayScene::Initialize()
 	BaseScene::GetLight()->SetSpotLightIntensity({ 4.0f });
 
 
-	particle->Initialize();
+	particle->Initialize(ParticleManager::VertexDataType::Plane);
 	particle->CreateParticleGroup("particle", "Resources/particleTest.png",ParticleManager::BlendMode::kBlendModeAdd);
 	//particle->CreateParticleGroup("particle2", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd,{32.0f,32.0f});
 	// ParticleEmitterの初期化

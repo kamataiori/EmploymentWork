@@ -15,6 +15,14 @@
 class ParticleManager
 {
 public:
+
+	// メッシュの選択
+	enum class VertexDataType {
+		Plane,
+		Ring,
+		// 今後追加予定の形状もここに列挙
+	};
+
 	//BlendMode
 	enum BlendMode {
 		//!< ブレンドなし
@@ -44,7 +52,7 @@ public:
     /// <summary>
     /// 初期化
     /// </summary>
-    void Initialize();
+    void Initialize(VertexDataType type);
 
 	/// <summary>
 	/// 更新
@@ -75,6 +83,11 @@ private:
 	/// 頂点データに書き込む
 	/// </summary>
 	void CreateVertexData();
+
+	/// <summary>
+	/// 頂点データに書き込む
+	/// </summary>
+	void CreateRingVertexData();
 
 	/// <summary>
 	/// マテリアルデータの初期化
@@ -164,6 +177,8 @@ private:
 		// インスタンス数
 		UINT instanceCount = 0;
 
+		UINT vertexCount = 32; // ← 追加（描画に使うインスタンスあたりの頂点数）
+
 		// インスタンシングデータを書き込むためのポインタ
 		ParticleForGPU* instancingDataPtr = nullptr;
 
@@ -187,6 +202,13 @@ private:
 	/// <returns></returns>
 	Particle PrimitiveMakeNewParticle(std::mt19937& randomEngine, const Vector3& translate);
 
+	/// <summary>
+	/// ringパーティクル生成器
+	/// </summary>
+	/// <param name="translate"></param>
+	/// <returns></returns>
+	Particle RingMakeNewParticle(const Vector3& translate);
+
 public:
 
 	/// <summary>
@@ -198,6 +220,8 @@ public:
 	void Emit(const std::string name, const Vector3& position, uint32_t count);
 
 	void PrimitiveEmit(const std::string name, const Vector3& position, uint32_t count);
+
+	void RingEmit(const std::string name, const Vector3& position);
 
 	// スケール
 	void SetScaleToGroup(const std::string& groupName, const Vector3& scale);
@@ -261,6 +285,8 @@ private:
 	std::string FilePath = {};
 	//サイズ
 	Vector2 size = { 640.0f,360.0f };
+
+	bool ringSamplerAdd = false;
 
 private:
 

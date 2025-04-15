@@ -11,6 +11,9 @@ public:
     // コンストラクタ（Primitive用）
     ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform, uint32_t count, float frequency, bool repeat, bool usePrimitive);
 
+    // コンストラクタ（Ring用）
+    ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform);
+
     // 更新
     void Update();
 
@@ -18,6 +21,9 @@ public:
     void Emit();
 
     void PrimitiveEmit();  // PrimitiveEmit専用Emit
+
+    // Emit処理（リング）
+    void RingEmit();
 
     // 繰り返し設定
     void SetRepeat(bool repeat);
@@ -32,4 +38,5 @@ private:
     bool repeat_;                      // 繰り返し発生させるかどうかのフラグ
 
     bool usePrimitive_ = false; // プリミティブ使用フラグ
+    bool useRing_ = false;             // リング使用フラグ
 };
