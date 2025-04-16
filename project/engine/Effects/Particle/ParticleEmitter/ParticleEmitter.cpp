@@ -19,6 +19,11 @@ ParticleEmitter::ParticleEmitter(ParticleManager* particleManager, const std::st
     RingEmit();
 }
 
+ParticleEmitter::ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform, bool useCylinder)
+    : particleManager_(particleManager), name_(name), transform_(transform), useCylinder_(useCylinder)
+{
+    CylinderEmit();
+}
 
 // 更新処理
 void ParticleEmitter::Update()
@@ -53,6 +58,11 @@ void ParticleEmitter::PrimitiveEmit()
 void ParticleEmitter::RingEmit()
 {
     particleManager_->RingEmit(name_, transform_.translate);
+}
+
+void ParticleEmitter::CylinderEmit()
+{
+    particleManager_->CylinderEmit(name_, transform_.translate);
 }
 
 // 繰り返し設定

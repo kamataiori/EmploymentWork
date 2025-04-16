@@ -14,6 +14,9 @@ public:
     // コンストラクタ（Ring用）
     ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform);
 
+    // コンストラクタ（Cylinder用）
+    ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform, bool useCylinder);
+
     // 更新
     void Update();
 
@@ -24,6 +27,9 @@ public:
 
     // Emit処理（リング）
     void RingEmit();
+
+    // Emit(シリンダー)
+    void CylinderEmit();
 
     // 繰り返し設定
     void SetRepeat(bool repeat);
@@ -39,4 +45,5 @@ private:
 
     bool usePrimitive_ = false; // プリミティブ使用フラグ
     bool useRing_ = false;             // リング使用フラグ
+    bool useCylinder_ = false;   // シリンダー使用フラグ
 };

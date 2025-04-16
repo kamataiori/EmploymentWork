@@ -29,6 +29,8 @@ struct ParticleForGPU
     float4x4 WVP;
     float4x4 World;
     float4 color;
+    float flipY;
+    float padding[3];
 };
 
 StructuredBuffer<ParticleForGPU> gParticle : register(t0);
@@ -47,6 +49,12 @@ VertexShaderOutput main(VertexShaderInput input, uint instanceId : SV_InstanceID
     //output.position = input.position;
     output.position = mul(input.position, gParticle[instanceId].WVP);
     output.texcoord = input.texcoord;
+    
+    // flipY に応じて上下反転
+    if (gParticle[instanceId].flipY > 0.5f)
+    {
+        output.texcoord.y = 1.0f - output.texcoord.y;
+    }
     
     //////=========法線の座標系を変換してPixelShaderに送る=========////
 
