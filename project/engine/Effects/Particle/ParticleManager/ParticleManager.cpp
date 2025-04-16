@@ -53,9 +53,21 @@ void ParticleManager::Update()
 	// カメラ目線の設定
 	Matrix4x4 backToFrontMatrix = MakeRotateYMatrix(std::numbers::pi_v<float>);
 	Matrix4x4 billboardMatrix{};
+	//if (usebillboardMatrix)
+	//{
+	//	billboardMatrix = Multiply(backToFrontMatrix, cameraMatrix);
+	//	billboardMatrix.m[3][0] = 0.0f; // 平行移動成分は無視
+	//	billboardMatrix.m[3][1] = 0.0f;
+	//	billboardMatrix.m[3][2] = 0.0f;
+	//}
+	//else
+	//{
+	//	billboardMatrix = MakeIdentity4x4();
+	//}
 	if (usebillboardMatrix)
 	{
-		billboardMatrix = Multiply(backToFrontMatrix, cameraMatrix);
+		// カメラの Y 回転だけをビルボードに適用（Z軸回転は除外）
+		billboardMatrix = MakeRotateYMatrix(camera_->GetRotate().y);
 		billboardMatrix.m[3][0] = 0.0f; // 平行移動成分は無視
 		billboardMatrix.m[3][1] = 0.0f;
 		billboardMatrix.m[3][2] = 0.0f;
