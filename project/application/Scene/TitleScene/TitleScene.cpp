@@ -62,6 +62,7 @@ void TitleScene::Initialize()
 	sneak->SetCamera(camera1.get());
 	primitiveParticle->SetCamera(camera1.get());
 	ringParticle->SetCamera(camera1.get());
+	cyrinderParticle->SetCamera(camera1.get());
 
 	particle->Initialize(ParticleManager::VertexDataType::Plane);
 	particle->CreateParticleGroup("particle", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd);
@@ -81,6 +82,14 @@ void TitleScene::Initialize()
 	// ParticleEmitterの初期化
 	auto ringEmitter = std::make_unique<ParticleEmitter>(ringParticle.get(), "ring", Transform{ {0.0f, 0.0f, 0.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} });
 	ringEmitters.push_back(std::move(ringEmitter));
+
+	cyrinderParticle->Initialize(ParticleManager::VertexDataType::Cylinder);
+	cyrinderParticle->CreateParticleGroup("cyrinder", "Resources/gradationLine.png", ParticleManager::BlendMode::kBlendModeAdd);
+	// ParticleEmitterの初期化
+	auto cyrinderEmitter = std::make_unique<ParticleEmitter>(cyrinderParticle.get(), "cyrinder", Transform{ {0.0f, 0.0f, 0.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} },true);
+	cyrinderEmitters.push_back(std::move(cyrinderEmitter));
+
+	cyrinderParticle->SetFlipYToGroup("cyrinder", true);
 
 	DrawLine::GetInstance()->SetCamera(camera1.get());
 	aabb.min = { -1.8f, 2.2f, 3.0f }; // AABB の最小点を少し下げる
@@ -173,9 +182,15 @@ void TitleScene::Update()
 		ringEmitter->Update();
 	}
 
+	for (auto& cyrinderEmitter : cyrinderEmitters)
+	{
+		cyrinderEmitter->Update();
+	}
+
 	particle->Update();
 	primitiveParticle->Update();
 	ringParticle->Update();
+	cyrinderParticle->Update();
 
 	ImGui::Begin("Debug Information"); // デバッグ情報用ウィンドウ
 	ImGui::Text("Number of Lines: %zu", DrawLine::GetInstance()->GetLineCount());
@@ -343,6 +358,7 @@ void TitleScene::ForeGroundDraw()
 	particle->Draw();
 	primitiveParticle->Draw();
 	ringParticle->Draw();
+	cyrinderParticle->Draw();
 
 	// ================================================
 	// ここまでparticle個々の描画

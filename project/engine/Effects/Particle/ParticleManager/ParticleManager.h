@@ -20,6 +20,7 @@ public:
 	enum class VertexDataType {
 		Plane,
 		Ring,
+		Cylinder,
 		// 今後追加予定の形状もここに列挙
 	};
 
@@ -72,6 +73,9 @@ public:
 	// カメラの設定
 	void SetCamera(Camera* camera) { this->camera_ = camera; }
 
+	// cylinderの反転
+	void SetFlipYToGroup(const std::string& groupName, bool flip);
+
 private:
 
 	/// <summary>
@@ -88,6 +92,11 @@ private:
 	/// 頂点データに書き込む
 	/// </summary>
 	void CreateRingVertexData();
+
+	/// <summary>
+	/// 頂点データに書き込む
+	/// </summary>
+	void CreateCylinderVertexData();
 
 	/// <summary>
 	/// マテリアルデータの初期化
@@ -157,6 +166,8 @@ private:
 		Matrix4x4 WVP;
 		Matrix4x4 World;
 		Vector4 color;
+		float flipY; // ← 追加（0.0f or 1.0f）
+		float padding[3]; // アラインメントのため
 	};
 
 	// パーティクルグループ構造体の定義
@@ -184,6 +195,8 @@ private:
 
 		Vector2 textureLeftTop = { 0.0f, 0.0f }; // テクスチャ左上座標
 		Vector2 textureSize = { 0.0f, 0.0f }; // テクスチャサイズを追加
+
+		bool flipY = false; // デフォルトは反転しない
 	};
 
 	/// <summary>
@@ -209,6 +222,13 @@ private:
 	/// <returns></returns>
 	Particle RingMakeNewParticle(const Vector3& translate);
 
+	/// <summary>
+	/// cylinderパーティクル生成器
+	/// </summary>
+	/// <param name="translate"></param>
+	/// <returns></returns>
+	Particle CylinderMakeNewParticle(const Vector3& translate);
+
 public:
 
 	/// <summary>
@@ -222,6 +242,8 @@ public:
 	void PrimitiveEmit(const std::string name, const Vector3& position, uint32_t count);
 
 	void RingEmit(const std::string name, const Vector3& position);
+
+	void CylinderEmit(const std::string& name, const Vector3& position);
 
 	// スケール
 	void SetScaleToGroup(const std::string& groupName, const Vector3& scale);

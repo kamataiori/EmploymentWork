@@ -24,6 +24,9 @@ void ParticleManager::Initialize(VertexDataType type)
 		CreateRingVertexData();
 		ringSamplerAdd = true;
 		break;
+	case VertexDataType::Cylinder:
+		CreateCylinderVertexData();
+		ringSamplerAdd = false;
 	}
 
 	// 頂点リソース、バッファービュー
@@ -107,6 +110,7 @@ void ParticleManager::Update()
 				// カラーを設定し、アルファ値を減衰
 				group.second.instancingDataPtr[group.second.instanceCount].color = particle.color;
 				group.second.instancingDataPtr[group.second.instanceCount].color.w = 1.0f - (particle.currentTime / particle.lifeTime);
+				group.second.instancingDataPtr[group.second.instanceCount].flipY = group.second.flipY ? 1.0f : 0.0f;
 				if (group.second.instancingDataPtr[group.second.instanceCount].color.w < 0.0f)
 				{
 					group.second.instancingDataPtr[group.second.instanceCount].color.w = 0.0f;
@@ -242,6 +246,47 @@ void ParticleManager::CreateRingVertexData() {
 	}
 }
 
+void ParticleManager::CreateCylinderVertexData() {
+	const uint32_t kCylinderDivide = 32;
+	const float kHeight = 1.0f;
+	const float kRadius = 0.5f;
+	const float radianPerDivide = 2.0f * std::numbers::pi_v<float> / float(kCylinderDivide);
+
+	modelData.vertices.clear();
+
+	for (uint32_t i = 0; i < kCylinderDivide; ++i) {
+		float theta = i * radianPerDivide;
+		float nextTheta = (i + 1) * radianPerDivide;
+
+		float sinTheta = std::sin(theta), cosTheta = std::cos(theta);
+		float sinNext = std::sin(nextTheta), cosNext = std::cos(nextTheta);
+
+		Vector3 bottom1 = { kRadius * cosTheta, -kHeight / 2, kRadius * sinTheta };
+		Vector3 bottom2 = { kRadius * cosNext, -kHeight / 2, kRadius * sinNext };
+		Vector3 top1 = { kRadius * cosTheta, kHeight / 2, kRadius * sinTheta };
+		Vector3 top2 = { kRadius * cosNext, kHeight / 2, kRadius * sinNext };
+
+		// 側面（2三角形）
+		modelData.vertices.push_back({ { bottom1.x, bottom1.y, bottom1.z, 1.0f }, { 0.0f, 1.0f }, { cosTheta, 0.0f, sinTheta } });
+		modelData.vertices.push_back({ { bottom2.x, bottom2.y, bottom2.z, 1.0f }, { 1.0f, 1.0f }, { cosNext, 0.0f, sinNext } });
+		modelData.vertices.push_back({ { top1.x, top1.y, top1.z, 1.0f }, { 0.0f, 0.0f }, { cosTheta, 0.0f, sinTheta } });
+
+		modelData.vertices.push_back({ { top1.x, top1.y, top1.z, 1.0f }, { 0.0f, 0.0f }, { cosTheta, 0.0f, sinTheta } });
+		modelData.vertices.push_back({ { bottom2.x, bottom2.y, bottom2.z, 1.0f }, { 1.0f, 1.0f }, { cosNext, 0.0f, sinNext } });
+		modelData.vertices.push_back({ { top2.x, top2.y, top2.z, 1.0f }, { 1.0f, 0.0f }, { cosNext, 0.0f, sinNext } });
+
+		// 上面
+		modelData.vertices.push_back({ { 0.0f, kHeight / 2, 0.0f, 1.0f }, { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f } });
+		modelData.vertices.push_back({ { top1.x, top1.y, top1.z, 1.0f }, { 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } });
+		modelData.vertices.push_back({ { top2.x, top2.y, top2.z, 1.0f }, { 1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } });
+
+		// 下面
+		modelData.vertices.push_back({ { 0.0f, -kHeight / 2, 0.0f, 1.0f }, { 0.5f, 0.5f }, { 0.0f, -1.0f, 0.0f } });
+		modelData.vertices.push_back({ { bottom2.x, bottom2.y, bottom2.z, 1.0f }, { 0.0f, 0.0f }, { 0.0f, -1.0f, 0.0f } });
+		modelData.vertices.push_back({ { bottom1.x, bottom1.y, bottom1.z, 1.0f }, { 1.0f, 0.0f }, { 0.0f, -1.0f, 0.0f } });
+	}
+}
+
 
 void ParticleManager::CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode)
 {
@@ -315,6 +360,13 @@ void ParticleManager::CreateParticleGroup(const std::string name, const std::str
 
 }
 
+void ParticleManager::SetFlipYToGroup(const std::string& groupName, bool flip)
+{
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+	it->second.flipY = flip;
+}
+
 void ParticleManager::CreateMaterialData()
 {
 	// マテリアル用のリソースを作成
@@ -327,7 +379,6 @@ void ParticleManager::CreateMaterialData()
 	materialData->enableLighting = false;
 	materialData->uvTransform = MakeIdentity4x4();
 }
-
 
 void ParticleManager::InstancingMaxResource()
 {
@@ -402,6 +453,19 @@ ParticleManager::Particle ParticleManager::RingMakeNewParticle(const Vector3& tr
 	return particle;
 }
 
+ParticleManager::Particle ParticleManager::CylinderMakeNewParticle(const Vector3& translate)
+{
+	Particle particle;
+	particle.transform.scale = { 1.0f, 1.0f, 1.0f };
+	particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
+	particle.transform.translate = translate;
+	particle.velocity = { 0.0f, 0.0f, 0.0f };
+	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	particle.lifeTime = 999999.0f;
+	particle.currentTime = 0.0f;
+	return particle;
+}
+
 void ParticleManager::Emit(const std::string name, const Vector3& position, uint32_t count)
 {
 	if (particleGroups.find(name) == particleGroups.end()) {
@@ -464,6 +528,21 @@ void ParticleManager::RingEmit(const std::string name, const Vector3& position)
 	}
 
 	group.particleList.push_back(RingMakeNewParticle(position));
+}
+
+void ParticleManager::CylinderEmit(const std::string& name, const Vector3& position)
+{
+	if (particleGroups.find(name) == particleGroups.end()) {
+		assert("Specified particle group does not exist!");
+	}
+
+	ParticleGroup& group = particleGroups[name];
+
+	if (!group.particleList.empty()) {
+		return;
+	}
+
+	group.particleList.push_back(CylinderMakeNewParticle(position));
 }
 
 void ParticleManager::SetScaleToGroup(const std::string& groupName, const Vector3& scale) {
