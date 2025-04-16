@@ -218,7 +218,7 @@ void OffscreenRendering::GraphicsPipelineState()
 		exit(1);
 	}
 	assert(vertexShaderBlob_ != nullptr);
-	pixelShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/VignetteRed.PS.hlsl",
+	pixelShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/VignetteYellow.PS.hlsl",
 		L"ps_6_0"/*, dxCommon->GetDxcUtils(), dxCommon->GetDxcCompiler(), dxCommon->GetIncludeHandler()*/);
 	if (pixelShaderBlob_ == nullptr) {
 		Logger::Log("pixelShaderBlob_\n");
