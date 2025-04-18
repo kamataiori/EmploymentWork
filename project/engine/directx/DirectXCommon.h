@@ -148,6 +148,14 @@ public:
 	/// </summary>
 	Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
 
+	/// <summary>
+	/// UAVのバッファリソースの生成関数
+	/// </summary>
+	/// <param name="sizeInBytes"></param>
+	/// <param name="commandlist"></param>
+	/// <returns></returns>
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResourceUAV(size_t sizeInBytes, ID3D12GraphicsCommandList* commandlist);
+
 
 	//====テクスチャを読む====//
 

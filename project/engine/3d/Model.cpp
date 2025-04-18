@@ -19,7 +19,15 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypat
 	}
 
 	// 頂点データを作成
-	CreateVertexData();
+	CreateInputVertexData();
+
+	inputIndex = SrvManager::GetInstance()->Allocate();
+	SrvManager::GetInstance()->CreateSRVforStructuredBuffer(inputIndex, vertexResource.Get(),modelData.vertices.size(), sizeof(VertexData));
+
+	CreateOutputVertexData();
+
+	outPutIndex = SrvManager::GetInstance()->Allocate();
+	SrvManager::GetInstance()->CreateUAVForStructuredBuffer(outPutIndex, outputVertexResource.Get(), modelData.vertices.size(), sizeof(VertexData));
 
 	// マテリアルデータの初期化
 	CreateMaterialData();
@@ -81,6 +89,9 @@ void Model::Update(SkinCluster& skinCluster, const Skeleton& skeleton)
 		skinCluster.mappedPalette[jointIndex].skeletonSpaceMatrix = skinCluster.inverseBindPoseMatrices[jointIndex] * skeleton.joints[jointIndex].skeletonSpaceMatrix;
 		skinCluster.mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = transpose(Inverse(skinCluster.mappedPalette[jointIndex].skeletonSpaceMatrix));
 	}
+
+	// ここでComputeShaderの設定だけをする
+	PrepareSkinningComputeShader();
 }
 
 void Model::Draw()
@@ -131,7 +142,36 @@ void Model::DrawSkeleton(const Matrix4x4& worldMatrix)
 	DrawLine::GetInstance()->DrawBone(jointPositions, parentIndices);
 }
 
-void Model::CreateVertexData()
+void Model::PrepareSkinningComputeShader()
+{
+	using Microsoft::WRL::ComPtr;
+
+	ComPtr<ID3D12GraphicsCommandList> commandList = modelCommon_->GetDxCommon()->GetCommandList();
+	commandList = modelCommon_->GetDxCommon()->GetCommandList();
+	Skinning* skinning = Skinning::GetInstance();
+
+	// Compute ShaderのルートシグネチャとPSOをセット
+	commandList->SetComputeRootSignature(skinning->GetComputeRootSignature());
+	commandList->SetPipelineState(skinning->GetComputePipelineState());
+
+	// RootParameter[0] : ConstantBuffer（SkinningInformation）
+	commandList->SetComputeRootConstantBufferView(0, /* SkinningInformationのGPUアドレス */);
+
+	// RootParameter[1] : MatrixPalette（t0）
+	commandList->SetComputeRootDescriptorTable(1, skinCluster.paletteSrvHandle.second);
+
+	// RootParameter[2] : InputVertices（t1）
+	commandList->SetComputeRootDescriptorTable(2, SrvManager::GetInstance()->GetGPUDescriptorHandle(inputIndex));
+
+	// RootParameter[3] : Influences（t2）
+	// influence用のSRVが必要なら index を SkinCluster に保持しておくと良い
+	commandList->SetComputeRootDescriptorTable(3, SrvManager::GetInstance()->GetGPUDescriptorHandle(/*influenceIndex*/));
+
+	// RootParameter[4] : OutputVertices（u0）
+	commandList->SetComputeRootDescriptorTable(4, SrvManager::GetInstance()->GetGPUDescriptorHandle(outPutIndex));
+}
+
+void Model::CreateInputVertexData()
 {
 	// 頂点リソースを作成
 	vertexResource = modelCommon_->GetDxCommon()->CreateBufferResource(sizeof(VertexData) * modelData.vertices.size());
@@ -149,6 +189,18 @@ void Model::CreateVertexData()
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 	//頂点データをリソースにコピー
 	std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());
+}
+
+void Model::CreateOutputVertexData()
+{
+	outputVertexResource = modelCommon_->GetDxCommon()->CreateBufferResourceUAV(sizeof(VertexData) * modelData.vertices.size(), modelCommon_->GetDxCommon()->GetCommandList().Get());
+
+	//リソースの先頭のアドレスから使う
+	vertexBufferView.BufferLocation = outputVertexResource->GetGPUVirtualAddress();
+	//使用するリソースのサイズは頂点6つ分のサイズ
+	vertexBufferView.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * modelData.vertices.size());
+	//頂点あたりのサイズ
+	vertexBufferView.StrideInBytes = sizeof(VertexData);
 }
 
 void Model::CreateIndexResource()

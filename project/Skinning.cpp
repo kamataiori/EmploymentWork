@@ -1,5 +1,6 @@
 #include "Skinning.h"
 #include <Logger.h>
+#include <externals/DirectXTex/d3dx12.h>
 
 Skinning* Skinning::instance = nullptr;
 
@@ -16,8 +17,12 @@ void Skinning::Initialize()
 	// 引数で受け取ってメンバ変数に記録する
 	dxCommon_ = DirectXCommon::GetInstance();
 
+	// Compute用のPSO
+	ComputePipelineState();
+
 	// グラフィックスパイプラインの生成
 	GraphicsPipelineState();
+
 }
 
 void Skinning::Finalize()
@@ -34,6 +39,7 @@ void Skinning::RootSignature()
 	DescriptorRange_[0].NumDescriptors = 1;  //数は1
 	DescriptorRange_[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;  //SRVを使う
 	DescriptorRange_[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;  //Offsetを自動計算
+
 
 	////=========RootSignatureを生成する=========////
 
@@ -116,6 +122,65 @@ void Skinning::RootSignature()
 	hr = dxCommon_->GetDevice().Get()->CreateRootSignature(0, SignatureBlob->GetBufferPointer(),
 		SignatureBlob->GetBufferSize(), IID_PPV_ARGS(&RootSignature_));
 	assert(SUCCEEDED(hr));
+}
+
+void Skinning::RootSignatureCS()
+{
+	D3D12_DESCRIPTOR_RANGE DescriptorRangeUAV[4] = {};
+	DescriptorRangeUAV[0].BaseShaderRegister = 0;  // register(t0)
+	DescriptorRangeUAV[0].NumDescriptors = 1;
+	DescriptorRangeUAV[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // ←重要！
+	DescriptorRangeUAV[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	DescriptorRangeUAV[1].BaseShaderRegister = 1;  // register(t1)
+	DescriptorRangeUAV[1].NumDescriptors = 1;
+	DescriptorRangeUAV[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // ←重要！
+	DescriptorRangeUAV[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	DescriptorRangeUAV[2].BaseShaderRegister = 2;  // register(t2)
+	DescriptorRangeUAV[2].NumDescriptors = 1;
+	DescriptorRangeUAV[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // ←重要！
+	DescriptorRangeUAV[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	DescriptorRangeUAV[3].BaseShaderRegister = 0;  // register(u0)
+	DescriptorRangeUAV[3].NumDescriptors = 1;
+	DescriptorRangeUAV[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // ←重要！
+	DescriptorRangeUAV[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	////=========RootSignatureを生成する=========////
+
+	//RootSignature作成
+	ComputeDescriptionRootSignature_.Flags =
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	//RootSignature作成
+	// 0.SkinningInfomation
+	ComputeRootParameters_[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;    //CBVを使う
+	ComputeRootParameters_[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;    //ComputeShaderで使う
+	ComputeRootParameters_[0].Descriptor.ShaderRegister = 0;    //レジスタ番号0とバインド
+	// 1.Palette
+	ComputeRootParameters_[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	ComputeRootParameters_[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;    //ComputeShaderで使う
+	ComputeRootParameters_[1].DescriptorTable.pDescriptorRanges = &DescriptorRangeUAV[0];
+	ComputeRootParameters_[1].DescriptorTable.NumDescriptorRanges = 1;
+	// 2.InputVertices
+	ComputeRootParameters_[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	ComputeRootParameters_[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;    //ComputeShaderで使う
+	ComputeRootParameters_[2].DescriptorTable.pDescriptorRanges = &DescriptorRangeUAV[1];
+	ComputeRootParameters_[2].DescriptorTable.NumDescriptorRanges = 1;
+	// 3.Influences
+	ComputeRootParameters_[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	ComputeRootParameters_[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;    //ComputeShaderで使う
+	ComputeRootParameters_[3].DescriptorTable.pDescriptorRanges = &DescriptorRangeUAV[2];
+	ComputeRootParameters_[3].DescriptorTable.NumDescriptorRanges = 1;
+	// 4.OutputVertices
+	ComputeRootParameters_[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	ComputeRootParameters_[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;    //ComputeShaderで使う
+	ComputeRootParameters_[4].DescriptorTable.pDescriptorRanges = &DescriptorRangeUAV[3];
+	ComputeRootParameters_[4].DescriptorTable.NumDescriptorRanges = 1;
+
+	ComputeDescriptionRootSignature_.pParameters = ComputeRootParameters_;    //ルートパラメータ配列へのポインタ
+	ComputeDescriptionRootSignature_.NumParameters = _countof(ComputeRootParameters_);    //配列の長さ
 }
 
 void Skinning::GraphicsPipelineState()
@@ -281,6 +346,27 @@ void Skinning::PSO()
 	//実際に生成
 	HRESULT hr = dxCommon_->GetDevice().Get()->CreateGraphicsPipelineState(&GraphicsPipelineStateDesc_,
 		IID_PPV_ARGS(&GraphicsPipelineState_));
+	assert(SUCCEEDED(hr));
+}
+
+void Skinning::ComputePipelineState()
+{
+	//ルートシグネチャの生成
+	RootSignatureCS();
+
+	// ComputeShader をコンパイル
+	ComputeShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/SkinningCompute.CS.hlsl", L"cs_6_0");
+	assert(ComputeShaderBlob_ != nullptr);
+
+	// RootSignature を作っておく（すでに RootSignature_ にあるなら流用OK）
+
+	// ComputePipeline の作成
+	D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc{};
+	computePipelineStateDesc.CS.pShaderBytecode = ComputeShaderBlob_->GetBufferPointer();
+	computePipelineStateDesc.CS.BytecodeLength = ComputeShaderBlob_->GetBufferSize();
+	computePipelineStateDesc.pRootSignature = ComputeRootSignature_.Get();
+
+	HRESULT hr = dxCommon_->GetDevice()->CreateComputePipelineState(&computePipelineStateDesc, IID_PPV_ARGS(&ComputePipelineState_));
 	assert(SUCCEEDED(hr));
 }
 

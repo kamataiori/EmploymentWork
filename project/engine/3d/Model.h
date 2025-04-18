@@ -94,9 +94,19 @@ public:
 	void DrawSkeleton(const Matrix4x4& worldMatrix);
 
 	/// <summary>
-	/// 頂点データを作成
+	/// ComputeShaderのSkinningPipelineセット
 	/// </summary>
-	void CreateVertexData();
+	void PrepareSkinningComputeShader();
+
+	/// <summary>
+	/// 入力頂点データを作成
+	/// </summary>
+	void CreateInputVertexData();
+
+	/// <summary>
+	/// 出力(Skinning計算後)頂点データ
+	/// </summary>
+	void CreateOutputVertexData();
 
 	/// <summary>
 	/// 解析したデータを使って作成
@@ -216,6 +226,7 @@ private:
 
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;  // 頂点バッファ
+	Microsoft::WRL::ComPtr<ID3D12Resource> outputVertexResource;  // 頂点バッファ
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;  // マテリアル用の定数バッファ
 	// バッファリソース内のデータを指すポインタ
 	VertexData* vertexData = nullptr;
@@ -236,6 +247,9 @@ private:
 	uint32_t* mappedIndex = nullptr;
 
 	uint32_t paletteIndex;
+
+	uint32_t inputIndex = {};
+	uint32_t outPutIndex = {};
 
 };
 

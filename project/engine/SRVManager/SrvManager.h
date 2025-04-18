@@ -44,6 +44,11 @@ public:
     void CreateSRVforStructuredBuffer(uint32_t srvIndex, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride);
 
     /// <summary>
+    /// UAV生成
+    /// </summary>
+    void CreateUAVForStructuredBuffer(uint32_t srvIndex, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride);
+
+    /// <summary>
     /// 描画前処理
     /// </summary>
     void PreDraw();
