@@ -36,6 +36,11 @@ public:
 	void ApplyImGuiStyle();
 
 	void DrawUnityLayout();
+	void DrawCenterPanel();
+	void DrawLeftPanels();
+	void DrawRightPanels();
+	void DrawBottomPanel();
+
 private:
 
 	std::unique_ptr<ImGuiManager> imGuiManager_ = nullptr;
@@ -44,5 +49,6 @@ private:
 
 	bool useUnityLayout_ = true;
 	bool unityDockInitialized_ = false;
+	int dockLayoutDelay_ = 0;
 
 };

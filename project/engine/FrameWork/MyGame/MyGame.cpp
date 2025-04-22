@@ -38,12 +38,13 @@ void MyGame::Update()
 	imGuiManager_->Update();
 
 	ApplyImGuiStyle();
-
-	// レイアウト切り替え対応！
+#ifdef _DEBUG
+	// Unity風レイアウトの表示
 	if (useUnityLayout_) {
 		DrawUnityLayout();
 	}
 
+	// レイアウト切り替えUI
 	if (!useUnityLayout_) {
 		ImGui::Begin("レイアウト切替");
 		if (ImGui::Button("Unity風レイアウトに戻す")) {
@@ -53,6 +54,12 @@ void MyGame::Update()
 		ImGui::End();
 	}
 
+	// Unityレイアウトの有効状態をSceneに通知
+	auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+	if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
+		base->SetEnableDockedImGui(useUnityLayout_);
+	}
+#endif
 
 
 	// 基底クラスの更新処理
@@ -148,11 +155,11 @@ void MyGame::DrawUnityLayout()
 	ImGui::Begin("DockSpaceUnity", nullptr, windowFlags);
 	ImGui::PopStyleVar(3);
 
-	// ==== メニューバー ====
 	if (ImGui::BeginMenuBar()) {
 		if (ImGui::BeginMenu("menu")) {
 			if (ImGui::MenuItem("Unity風レイアウトを無効にする")) {
 				useUnityLayout_ = false;
+				unityDockInitialized_ = false;
 			}
 			ImGui::EndMenu();
 		}
@@ -161,56 +168,111 @@ void MyGame::DrawUnityLayout()
 
 	ImGuiID dockspaceID = ImGui::GetID("MyDockSpace");
 
-	// ✅ 初回のみDockレイアウト構築
-	if (!unityDockInitialized_ && ImGui::DockBuilderGetNode(dockspaceID) == nullptr) {
-		unityDockInitialized_ = true;
+	if (!unityDockInitialized_) {
+		if (dockLayoutDelay_ < 1) {
+			dockLayoutDelay_++;  // 1フレーム遅延させる
+		}
+		else {
+			unityDockInitialized_ = true;
+			dockLayoutDelay_ = 0;
 
-		ImGui::DockBuilderRemoveNode(dockspaceID);
-		ImGui::DockBuilderAddNode(dockspaceID, ImGuiDockNodeFlags_DockSpace);
-		ImGui::DockBuilderSetNodeSize(dockspaceID, viewport->Size);
+			ImGui::DockBuilderRemoveNode(dockspaceID);
+			ImGui::DockBuilderAddNode(dockspaceID, ImGuiDockNodeFlags_DockSpace);
+			ImGui::DockBuilderSetNodeSize(dockspaceID, viewport->Size);
 
-		ImGuiID dock_main_id = dockspaceID;
-		ImGuiID dock_left, dock_right, dock_bottom, dock_center;
-		ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, &dock_left, &dock_main_id);
-		ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, &dock_right, &dock_center);
-		ImGui::DockBuilderSplitNode(dock_center, ImGuiDir_Down, 0.25f, &dock_bottom, &dock_center);
+			ImGuiID dock_main_id = dockspaceID;
+			ImGuiID dock_left, dock_right, dock_bottom, dock_center;
+			ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, &dock_left, &dock_main_id);
+			ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, &dock_right, &dock_center);
+			ImGui::DockBuilderSplitNode(dock_center, ImGuiDir_Down, 0.25f, &dock_bottom, &dock_center);
 
-		ImGuiID dock_left_top, dock_left_bottom;
-		ImGui::DockBuilderSplitNode(dock_left, ImGuiDir_Up, 0.6f, &dock_left_top, &dock_left_bottom);
+			ImGuiID dock_left_top, dock_left_bottom;
+			ImGui::DockBuilderSplitNode(dock_left, ImGuiDir_Up, 0.6f, &dock_left_top, &dock_left_bottom);
 
-		ImGuiID dock_right_top, dock_right_bottom;
-		ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Up, 0.6f, &dock_right_top, &dock_right_bottom);
+			ImGuiID dock_right_top, dock_right_bottom;
+			ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Up, 0.6f, &dock_right_top, &dock_right_bottom);
 
-		ImGui::DockBuilderDockWindow("SceneView", dock_center);
-		ImGui::DockBuilderDockWindow("Hierarchy", dock_left_top);
-		ImGui::DockBuilderDockWindow("Particle Control", dock_left_bottom);
-		ImGui::DockBuilderDockWindow("Inspector", dock_right_top);
-		ImGui::DockBuilderDockWindow("Debug Info", dock_right_bottom);
-		ImGui::DockBuilderDockWindow("Project / Console", dock_bottom);
+			ImGui::DockBuilderDockWindow("SceneView", dock_center);
+			ImGui::DockBuilderDockWindow("Hierarchy", dock_left_top);
+			ImGui::DockBuilderDockWindow("Particle Control", dock_left_bottom);
+			ImGui::DockBuilderDockWindow("Inspector", dock_right_top);
+			ImGui::DockBuilderDockWindow("Debug Info", dock_right_bottom);
+			ImGui::DockBuilderDockWindow("Project / Console", dock_bottom);
 
-		ImGui::DockBuilderFinish(dockspaceID);
+			// 🔻 TitleScene の登録ウィンドウもここでDock
+			auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+			if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
+				for (const auto& name : base->GetLeftDockWindows()) {
+					ImGui::DockBuilderDockWindow(name.c_str(), dock_left_bottom);
+				}
+				for (const auto& name : base->GetRightDockWindows()) {
+					ImGui::DockBuilderDockWindow(name.c_str(), dock_right_bottom);
+				}
+				for (const auto& name : base->GetBottomDockWindows()) {
+					ImGui::DockBuilderDockWindow(name.c_str(), dock_bottom);
+				}
+			}
 
+			ImGui::DockBuilderFinish(dockspaceID);
+		}
 	}
 
-	// DockSpace本体表示（毎フレーム必要）
+
 	ImGui::DockSpace(dockspaceID, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 	ImGui::End();
 
-	// ウィンドウ群は表示し続ける（Dock構造維持のため）
+	// 分割した描画関数を呼び出す
+	DrawCenterPanel();
+	DrawLeftPanels();
+	DrawRightPanels();
+	DrawBottomPanel();
+}
+
+void MyGame::DrawCenterPanel()
+{
 	ImGui::Begin("SceneView");
 	ImTextureID textureID = (ImTextureID)SrvManager::GetInstance()
 		->GetGPUDescriptorHandle(offscreenRendering->GetSrvIndex()).ptr;
 	ImGui::Image(textureID, ImGui::GetContentRegionAvail());
 	ImGui::End();
-
-	ImGui::Begin("Hierarchy"); ImGui::Text("Hierarchy内容"); ImGui::End();
-	ImGui::Begin("Particle Control"); ImGui::Text("パーティクル制御"); ImGui::End();
-	ImGui::Begin("Inspector"); ImGui::Text("インスペクター表示"); ImGui::End();
-	ImGui::Begin("Debug Info"); ImGui::Text("デバッグ情報やFPS"); ImGui::End();
-	ImGui::Begin("Project / Console"); ImGui::Text("プロジェクト・コンソール表示"); ImGui::End();
-
-
 }
+
+void MyGame::DrawLeftPanels()
+{
+
+	if (!useUnityLayout_) return;
+
+	/*ImGui::Begin("Hierarchy");
+	ImGui::Text("Hierarchy内容");
+	ImGui::End();
+
+	ImGui::Begin("Particle Control");
+	ImGui::Text("パーティクル制御");
+	ImGui::End();*/
+}
+
+void MyGame::DrawRightPanels()
+{
+	if (!useUnityLayout_) return;
+
+	/*ImGui::Begin("Inspector");
+	ImGui::Text("インスペクター表示");
+	ImGui::End();
+
+	ImGui::Begin("Debug Info");
+	ImGui::Text("デバッグ情報やFPS");
+	ImGui::End();*/
+}
+
+void MyGame::DrawBottomPanel()
+{
+	if (!useUnityLayout_) return;
+
+	/*ImGui::Begin("Project / Console");
+	ImGui::Text("プロジェクト・コンソール表示");
+	ImGui::End();*/
+}
+
 
 
 

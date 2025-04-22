@@ -49,6 +49,8 @@ public:
 	/// </summary>
 	void ForeGroundDraw() override;
 
+	void Debug() override;
+
 	/// <summary>
 	/// camera1のセッター
 	/// </summary>

@@ -99,7 +99,7 @@ void UnityScene::Update()
 	ringParticle->Update();
 	cyrinderParticle->Update();
 
-	DrawImGui();
+	
 
 	if (Input::GetInstance()->TriggerKey(DIK_T)) {
 		// シーン切り替え
@@ -195,52 +195,7 @@ void UnityScene::ForeGroundDraw()
 	// ================================================
 }
 
-void UnityScene::DrawImGui()
+void UnityScene::Debug()
 {
-	// 画面サイズを取得
-	ImVec2 windowSize = ImGui::GetMainViewport()->Size;
-
-	// メインのDockSpace付きウィンドウ（Unityの大枠）
-	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImGui::SetNextWindowSize(windowSize);
-	ImGui::Begin("Unity風UI", nullptr,
-		ImGuiWindowFlags_NoTitleBar |
-		ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoCollapse |
-		ImGuiWindowFlags_NoBringToFrontOnFocus |
-		ImGuiWindowFlags_NoScrollbar
-	);
-
-	ImVec2 full = ImGui::GetContentRegionAvail();
-
-	// 左パネル
-	ImGui::BeginChild("LeftPanel", ImVec2(full.x * 0.2f, full.y));
-	ImGui::Text("Hierarchy");
-	ImGui::EndChild();
-
-	ImGui::SameLine();
-
-	// 中央（Sceneビュー）
-	ImGui::BeginChild("SceneView", ImVec2(full.x * 0.6f, full.y * 0.75f));
-	ImTextureID textureID = (ImTextureID)SrvManager::GetInstance()
-		->GetGPUDescriptorHandle(offscreenRendering_->GetSrvIndex()).ptr;
-	ImGui::Image(textureID, ImGui::GetContentRegionAvail());
-	ImGui::EndChild();
-
-	ImGui::SameLine();
-
-	// 右パネル
-	ImGui::BeginChild("RightPanel", ImVec2(full.x * 0.2f, full.y));
-	ImGui::Text("Inspector");
-	ImGui::EndChild();
-
-	// 下パネル
-	ImGui::SetCursorPosY(full.y * 0.75f); // 下に移動
-	ImGui::BeginChild("BottomPanel", ImVec2(full.x, full.y * 0.25f));
-	ImGui::Text("Console / Project");
-	ImGui::EndChild();
-
-	ImGui::End();
 }
 

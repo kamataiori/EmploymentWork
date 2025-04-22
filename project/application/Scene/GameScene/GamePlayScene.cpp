@@ -320,6 +320,10 @@ void GamePlayScene::ForeGroundDraw()
 	// ================================================
 }
 
+void GamePlayScene::Debug()
+{
+}
+
 void GamePlayScene::CheckAllColisions()
 {
 	collisionMAnager_->CheckAllCollisions();

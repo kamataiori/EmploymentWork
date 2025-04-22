@@ -41,7 +41,7 @@ public:
 	/// </summary>
 	void ForeGroundDraw() override;
 
-	void DrawImGui();
+	void Debug() override;
 
 private:
 
