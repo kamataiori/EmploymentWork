@@ -22,6 +22,9 @@ public:  // publicメンバ関数
 	/// </summary>
 	void Draw();
 
+	// 
+	uint32_t GetSrvIndex() const { return srvIndex_; }
+
 private:  // privateメンバ関数
 
 	/// <summary>

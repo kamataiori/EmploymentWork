@@ -29,10 +29,20 @@ public:
 	/// </summary>
 	void Draw() override;
 
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void ApplyImGuiStyle();
+
+	void DrawUnityLayout();
 private:
 
 	std::unique_ptr<ImGuiManager> imGuiManager_ = nullptr;
 
 	std::unique_ptr<OffscreenRendering> offscreenRendering = std::make_unique<OffscreenRendering>();
+
+	bool useUnityLayout_ = true;
+	bool unityDockInitialized_ = false;
 
 };

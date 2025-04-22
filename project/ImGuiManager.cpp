@@ -38,6 +38,31 @@ void ImGuiManager::Initialize(WinApp* winApp, DirectXCommon* dxCommon)
 	// エディター同士をドッキング
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+	// フォント追加（日本語対応）
+	// --- ✅ 可変フォント(NotoSansJP VariableFont) 読み込み ---
+	ImFontConfig fontConfig;
+	fontConfig.OversampleH = 3;
+	fontConfig.OversampleV = 3;
+	fontConfig.PixelSnapH = true;
+
+	// 可変ウェイトの範囲は 100〜900（400が通常）
+	float fontSize = 18.0f;
+	float fontWeight = 100.0f;  // 通常：Regular
+
+	ImVector<ImWchar> glyphRanges;
+	io.Fonts->GetGlyphRangesJapanese(); // 日本語対応
+
+	io.Fonts->AddFontFromFileTTF(
+		"Resources/fonts/NotoSansJP-VariableFont_wght.ttf",
+		fontSize, &fontConfig,
+		io.Fonts->GetGlyphRangesJapanese()
+	);
+
+	// デフォルトフォントに設定（省略可能）
+	io.FontDefault = io.Fonts->Fonts.back();
+
+
 }
 
 void ImGuiManager::Finalize()

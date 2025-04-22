@@ -168,6 +168,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Collision\OBBCollider.cpp" />
     <ClCompile Include="Skinning.cpp" />
     <ClCompile Include="engine\Collision\SphereCollider.cpp" />
+    <ClCompile Include="UnityScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\Collision\AABBCollider.h" />
@@ -239,6 +240,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Skinning.h" />
     <ClInclude Include="engine\Collision\SphereCollider.h" />
     <ClInclude Include="StructAnimation.h" />
+    <ClInclude Include="UnityScene.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />

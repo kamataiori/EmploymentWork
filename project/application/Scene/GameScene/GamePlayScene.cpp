@@ -212,6 +212,11 @@ void GamePlayScene::Update()
 		SceneManager::GetInstance()->ChangeScene("TITLE");
 	}
 
+	if (Input::GetInstance()->TriggerKey(DIK_U)) {
+		// シーン切り替え
+		SceneManager::GetInstance()->ChangeScene("Unity");
+	}
+
 	//particle->Emit("particle",/*plane->GetTranslate()*/ { 0.0f,0.0f,-4.0f }, 10);
 	for (auto& emitter : emitters)
 	{
@@ -222,12 +227,12 @@ void GamePlayScene::Update()
 	DrawLine::GetInstance()->Update();
 
 	// 円錐の調整
-	ImGui::Begin("Cone Control");
-	ImGui::DragFloat3("Base Center", &cone.baseCenter.x, 0.1f); // 底面中心
-	ImGui::DragFloat3("Tip", &cone.tip.x, 0.1f);               // 頂点（先端）
-	ImGui::DragFloat("Radius", &cone.radius, 0.1f, 0.1f, 10.0f); // 半径
-	ImGui::DragInt("Segments", &cone.segments, 1, 3, 64);       // 円周分割数
-	ImGui::End();
+	//ImGui::Begin("Cone Control");
+	//ImGui::DragFloat3("Base Center", &cone.baseCenter.x, 0.1f); // 底面中心
+	//ImGui::DragFloat3("Tip", &cone.tip.x, 0.1f);               // 頂点（先端）
+	//ImGui::DragFloat("Radius", &cone.radius, 0.1f, 0.1f, 10.0f); // 半径
+	//ImGui::DragInt("Segments", &cone.segments, 1, 3, 64);       // 円周分割数
+	//ImGui::End();
 }
 
 void GamePlayScene::BackGroundDraw()

@@ -5,4 +5,4 @@
   imgui_impl_win32.cpp
   imgui_tables.cpp
   imgui_widgets.cpp
-  imgui.vcxproj -> C:\Users\k023g\OneDrive\デスクトップ\GE3\project\x64\Debug\imgui.lib
+  imgui.vcxproj -> C:\Users\k023g\OneDrive\デスクトップ\JuegoEngine\project\x64\Debug\imgui.lib

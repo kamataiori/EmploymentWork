@@ -220,45 +220,50 @@ void TitleScene::Update()
 	ImGui::End();
 
 	// Plane の調整
-	ImGui::Begin("Ground Control");
-	ImGui::Text("Adjust Plane parameters:");
-	ImGui::DragFloat3("Normal", &ground.normal.x, 0.1f); // 法線を調整
-	ImGui::DragFloat("Distance", &ground.distance, 0.1f); // 距離を調整
-	ImGui::DragFloat("Size", &ground.size, 0.1f, 1.0f, 20.0f); // サイズを調整
-	ImGui::DragInt("Divisions", &ground.divisions, 1, 1, 50); // グリッド分割数を調整
-	ImGui::End();
+	//ImGui::Begin("Ground Control");
+	//ImGui::Text("Adjust Plane parameters:");
+	//ImGui::DragFloat3("Normal", &ground.normal.x, 0.1f); // 法線を調整
+	//ImGui::DragFloat("Distance", &ground.distance, 0.1f); // 距離を調整
+	//ImGui::DragFloat("Size", &ground.size, 0.1f, 1.0f, 20.0f); // サイズを調整
+	//ImGui::DragInt("Divisions", &ground.divisions, 1, 1, 50); // グリッド分割数を調整
+	//ImGui::End();
 
 	// Capsule の編集
-	ImGui::Begin("Capsule Control");
-	ImGui::DragFloat3("Start", &capsule.start.x, 0.1f); // 開始点を調整
-	ImGui::DragFloat3("End", &capsule.end.x, 0.1f);     // 終了点を調整
-	ImGui::DragFloat("Radius", &capsule.radius, 0.1f, 0.1f, 10.0f); // 半径を調整
-	ImGui::DragInt("Segments", &capsule.segments, 1, 4, 64); // 円周分割数を調整
-	ImGui::DragInt("Rings", &capsule.rings, 1, 2, 32);       // 球部分分割数を調整
-	ImGui::End();
+	//ImGui::Begin("Capsule Control");
+	//ImGui::DragFloat3("Start", &capsule.start.x, 0.1f); // 開始点を調整
+	//ImGui::DragFloat3("End", &capsule.end.x, 0.1f);     // 終了点を調整
+	//ImGui::DragFloat("Radius", &capsule.radius, 0.1f, 0.1f, 10.0f); // 半径を調整
+	//ImGui::DragInt("Segments", &capsule.segments, 1, 4, 64); // 円周分割数を調整
+	//ImGui::DragInt("Rings", &capsule.rings, 1, 2, 32);       // 球部分分割数を調整
+	//ImGui::End();
 
 	// DrawTriangleの更新
 	//drawTriangle_->Update();
 
 	// ImGui ウィンドウ
-	ImGui::Begin("Triangle Control");
+	//ImGui::Begin("Triangle Control");
 
-	// 頂点座標の変更
-	ImGui::DragFloat3("Vertex 1", &triangleP1.x, 0.1f);
-	ImGui::DragFloat3("Vertex 2", &triangleP2.x, 0.1f);
-	ImGui::DragFloat3("Vertex 3", &triangleP3.x, 0.1f);
+	//// 頂点座標の変更
+	//ImGui::DragFloat3("Vertex 1", &triangleP1.x, 0.1f);
+	//ImGui::DragFloat3("Vertex 2", &triangleP2.x, 0.1f);
+	//ImGui::DragFloat3("Vertex 3", &triangleP3.x, 0.1f);
 
-	// 変更を適用
-	if (ImGui::Button("Apply Changes")) {
-		drawTriangle_->ResetData(); // データをクリア
-		drawTriangle_->AddTriangle(triangleP1, triangleP2, triangleP3, triangleColor, triangleAlpha);
-	}
+	//// 変更を適用
+	//if (ImGui::Button("Apply Changes")) {
+	//	drawTriangle_->ResetData(); // データをクリア
+	//	drawTriangle_->AddTriangle(triangleP1, triangleP2, triangleP3, triangleColor, triangleAlpha);
+	//}
 
-	ImGui::End();
+	//ImGui::End();
 
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
 		// シーン切り替え
 		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+	}
+
+	if (Input::GetInstance()->TriggerKey(DIK_U)) {
+		// シーン切り替え
+		SceneManager::GetInstance()->ChangeScene("Unity");
 	}
 }
 

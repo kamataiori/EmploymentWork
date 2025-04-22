@@ -829,8 +829,8 @@ void ParticleManager::BlendState(BlendMode blendMode)
 	}
 
 	// α値のブレンド設定
-	blendDesc_.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-	blendDesc_.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+	blendDesc_.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ZERO;
+	blendDesc_.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ONE;
 	blendDesc_.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
 }
 
