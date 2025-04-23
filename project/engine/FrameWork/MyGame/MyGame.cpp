@@ -54,19 +54,19 @@ void MyGame::Update()
 		ImGui::End();
 	}
 
-	//// Unityレイアウトの有効状態をSceneに通知
-	//auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
-	//if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
-	//	base->SetEnableDockedImGui(useUnityLayout_);
-	//	unityDockInitialized_ = false;
-	//	if (!useUnityLayout_) {
-	//		unityDockInitialized_ = false;
-	//		dockLayoutDelay_ = 0;
-	//	}
-	//}
+	// Unityレイアウトの有効状態をSceneに通知
+	auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+	if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
+		base->SetEnableDockedImGui(useUnityLayout_);
+		unityDockInitialized_ = false;
+		if (!useUnityLayout_) {
+			unityDockInitialized_ = false;
+			dockLayoutDelay_ = 0;
+		}
+	}
 
 	// ======= ✅ Sceneが切り替わったときだけ Dock再初期化 =======
-	static BaseScene* lastScene = nullptr;
+	/*static BaseScene* lastScene = nullptr;
 	auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
 
 	if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
@@ -77,7 +77,7 @@ void MyGame::Update()
 			dockLayoutDelay_ = 0;
 			lastScene = base;
 		}
-	}
+	}*/
 
 #endif
 
