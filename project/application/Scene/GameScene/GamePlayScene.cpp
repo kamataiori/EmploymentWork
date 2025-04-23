@@ -111,6 +111,8 @@ void GamePlayScene::Initialize()
 	collisionMAnager_ = std::make_unique<CollisionManager>();
 	collisionMAnager_->RegisterCollider(player_.get());
 	collisionMAnager_->RegisterCollider(enemy_.get());
+
+	AddRightDockWindow(kWindowName_MonsterControl);
 }
 
 void GamePlayScene::Finalize()
@@ -145,9 +147,6 @@ void GamePlayScene::Update()
 	monsterBall->SetSize({ 100.0f,100.0f });
 	monsterBall->Update();
 
-	ImGui::Begin("monsterBall");
-	ImGui::DragFloat2("transformation", &MonsterPosition.x);
-	ImGui::End();
 
 	// 各スプライトの更新処理
 	for (size_t i = 0; i < sprites.size(); ++i) {
@@ -194,6 +193,8 @@ void GamePlayScene::Update()
 
 	// 衝突判定と応答
 	CheckAllColisions();
+
+	Debug();
 
 	/*ImGui::Begin("light");
 	ImGui::DragFloat3("transform", &BaseScene::GetLight()->cameraLightData->worldPosition.x, 0.01f);
@@ -322,6 +323,17 @@ void GamePlayScene::ForeGroundDraw()
 
 void GamePlayScene::Debug()
 {
+#ifdef _DEBUG
+
+	if (!IsDockedImGuiEnabled()) return;
+
+	// ↓ ここから ImGui::Begin(...) など
+
+	ImGui::Begin(kWindowName_MonsterControl);
+	ImGui::DragFloat2("transformation", &MonsterPosition.x);
+	ImGui::End();
+
+#endif
 }
 
 void GamePlayScene::CheckAllColisions()

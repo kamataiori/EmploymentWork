@@ -321,7 +321,7 @@ void TitleScene::Debug()
 	if (!IsDockedImGuiEnabled()) return;
 
 	// ↓ ここから ImGui::Begin(...) など Scene UI
-	BaseScene::ShowFPS();
+	//BaseScene::ShowFPS();
 
 
 	ImGui::Begin(kWindowName_ParticleControl);

@@ -54,11 +54,31 @@ void MyGame::Update()
 		ImGui::End();
 	}
 
-	// Unityレイアウトの有効状態をSceneに通知
+	//// Unityレイアウトの有効状態をSceneに通知
+	//auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+	//if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
+	//	base->SetEnableDockedImGui(useUnityLayout_);
+	//	unityDockInitialized_ = false;
+	//	if (!useUnityLayout_) {
+	//		unityDockInitialized_ = false;
+	//		dockLayoutDelay_ = 0;
+	//	}
+	//}
+
+	// ======= ✅ Sceneが切り替わったときだけ Dock再初期化 =======
+	static BaseScene* lastScene = nullptr;
 	auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+
 	if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
 		base->SetEnableDockedImGui(useUnityLayout_);
+
+		if (base != lastScene) {
+			unityDockInitialized_ = false;
+			dockLayoutDelay_ = 0;
+			lastScene = base;
+		}
 	}
+
 #endif
 
 
@@ -69,6 +89,25 @@ void MyGame::Update()
 
 	// ImGuiの内部コマンドを生成する
 	ImGui::Render();
+
+	auto now = std::chrono::steady_clock::now();
+	std::chrono::duration<float> delta = now - lastFrameTime_;
+	lastFrameTime_ = now;
+
+	float deltaSec = delta.count();
+	fps_ = 1.0f / deltaSec;
+	frameTimeMs_ = deltaSec * 1000.0f;
+
+	// 平均FPS更新
+	fpsHistory_.push_back(fps_);
+	if (fpsHistory_.size() > kFpsHistorySize) {
+		fpsHistory_.pop_front();
+	}
+
+	// 平均計算
+	float sum = 0.0f;
+	for (float f : fpsHistory_) sum += f;
+	averageFps_ = sum / static_cast<float>(fpsHistory_.size());
 
 }
 
@@ -194,12 +233,29 @@ void MyGame::DrawUnityLayout()
 
 			ImGui::DockBuilderDockWindow("SceneView", dock_center);
 			ImGui::DockBuilderDockWindow("Hierarchy", dock_left_top);
+			ImGui::DockBuilderDockWindow("Performance", dock_left_top);
 			ImGui::DockBuilderDockWindow("Particle Control", dock_left_bottom);
 			ImGui::DockBuilderDockWindow("Inspector", dock_right_top);
 			ImGui::DockBuilderDockWindow("Debug Info", dock_right_bottom);
 			ImGui::DockBuilderDockWindow("Project / Console", dock_bottom);
 
-			// 🔻 TitleScene の登録ウィンドウもここでDock
+			// 仮にウィンドウを1フレームだけ出す（表示はされないが、存在はさせる）
+			/*auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+			if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
+				for (const auto& name : base->GetLeftDockWindows()) {
+					ImGui::Begin(name.c_str());
+					ImGui::End();
+				}
+				for (const auto& name : base->GetRightDockWindows()) {
+					ImGui::Begin(name.c_str());
+					ImGui::End();
+				}
+				for (const auto& name : base->GetBottomDockWindows()) {
+					ImGui::Begin(name.c_str());
+					ImGui::End();
+				}
+			}*/
+
 			auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
 			if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
 				for (const auto& name : base->GetLeftDockWindows()) {
@@ -211,6 +267,7 @@ void MyGame::DrawUnityLayout()
 				for (const auto& name : base->GetBottomDockWindows()) {
 					ImGui::DockBuilderDockWindow(name.c_str(), dock_bottom);
 				}
+
 			}
 
 			ImGui::DockBuilderFinish(dockspaceID);
@@ -242,13 +299,19 @@ void MyGame::DrawLeftPanels()
 
 	if (!useUnityLayout_) return;
 
-	/*ImGui::Begin("Hierarchy");
-	ImGui::Text("Hierarchy内容");
+	// FPS情報パネル（固定左側）
+	ImGui::Begin("Performance");
+
+	ImGui::Text("FPS: %.2f", GetFPS());
+	ImGui::Text("Frame Time: %.2f ms", GetFrameTimeMs());
+	ImGui::Text("Average FPS: %.2f", GetAverageFPS());
+
 	ImGui::End();
 
-	ImGui::Begin("Particle Control");
-	ImGui::Text("パーティクル制御");
-	ImGui::End();*/
+	//// 既存の左パネル内容
+	//ImGui::Begin("Hierarchy");
+	//ImGui::Text("Hierarchy内容");
+	//ImGui::End();
 }
 
 void MyGame::DrawRightPanels()
@@ -257,9 +320,9 @@ void MyGame::DrawRightPanels()
 
 	/*ImGui::Begin("Inspector");
 	ImGui::Text("インスペクター表示");
-	ImGui::End();
+	ImGui::End();*/
 
-	ImGui::Begin("Debug Info");
+	/*ImGui::Begin("Debug Info");
 	ImGui::Text("デバッグ情報やFPS");
 	ImGui::End();*/
 }
@@ -268,9 +331,9 @@ void MyGame::DrawBottomPanel()
 {
 	if (!useUnityLayout_) return;
 
-	/*ImGui::Begin("Project / Console");
+	ImGui::Begin("Project / Console");
 	ImGui::Text("プロジェクト・コンソール表示");
-	ImGui::End();*/
+	ImGui::End();
 }
 
 

@@ -69,6 +69,9 @@ void UnityScene::Initialize()
 	cyrinderEmitters.push_back(std::move(cyrinderEmitter));
 
 	cyrinderParticle->SetFlipYToGroup("cyrinder", true);
+
+	AddRightDockWindow("Ring Control");
+
 }
 
 void UnityScene::Finalize()
@@ -99,7 +102,7 @@ void UnityScene::Update()
 	ringParticle->Update();
 	cyrinderParticle->Update();
 
-	
+	Debug();
 
 	if (Input::GetInstance()->TriggerKey(DIK_T)) {
 		// シーン切り替え
@@ -197,5 +200,26 @@ void UnityScene::ForeGroundDraw()
 
 void UnityScene::Debug()
 {
+#ifdef _DEBUG
+
+	if (!IsDockedImGuiEnabled()) return;
+
+	ImGui::Begin("Ring Control");
+
+	if (!ringEmitters.empty()) {
+		auto& emitter = ringEmitters[0];
+
+		Transform& t = emitter->GetTransform();
+
+		ImGui::Text("Transform");
+		ImGui::DragFloat3("Position", &t.translate.x, 0.1f);
+		ImGui::DragFloat3("Rotation", &t.rotate.x, 0.1f);
+		ImGui::DragFloat3("Scale", &t.scale.x, 0.1f);
+	}
+
+	ImGui::End();
+
+#endif
+
 }
 
