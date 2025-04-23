@@ -125,6 +125,15 @@ void TitleScene::Initialize()
 
 	GlobalVariables::GetInstance()->AddValue<Vector3>("Animation", "position", animationCube->GetTranslate());
 	GlobalVariables::GetInstance()->AddValue<Vector3>("Animation", "rotate", animationCube->GetRotate());
+
+	// ---- Dock配置登録（BaseSceneの機能） ----
+	AddBottomDockWindow(kWindowName_ParticleControl);
+
+	AddRightDockWindow(kWindowName_AABBControl);
+	AddRightDockWindow(kWindowName_OBBControl);
+	AddRightDockWindow(kWindowName_SphereControl);
+	AddLeftDockWindow(kWindowName_DebugInfo);
+
 } 
 
 void TitleScene::Finalize()
@@ -133,7 +142,6 @@ void TitleScene::Finalize()
 
 void TitleScene::Update()
 {
-	BaseScene::ShowFPS();
 
 	//// アルファ値を減少させる
 	//Vector4 color = plane->GetMaterialColor();
@@ -149,19 +157,18 @@ void TitleScene::Update()
 
 	animationCube->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "position"));
 	animationCube->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "rotate"));
+	camera1->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "position"));
+	camera1->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "rotate"));
+
 	animationCube->Update();
 	sneak->Update();
 	// カメラの更新
-	camera1->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "position"));
-	camera1->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "rotate"));
 	camera1->Update();
 
 	for (auto& emitter : emitters)
 	{
 		emitter->Update();
 	}
-	ImGui::Begin("Particle Control");
-	ImGui::Checkbox("Change Speed", &changeSpeed_);
 
 	if (changeSpeed_) {
 		particle->SetVelocityToGroup("particle", { 0.0f, 1.5f, 0.0f }); // 速い速度
@@ -169,9 +176,6 @@ void TitleScene::Update()
 	else {
 		particle->SetVelocityToGroup("particle", { 0.0f, 0.1f, 0.0f }); // 遅い速度
 	}
-
-	ImGui::End();
-
 	for (auto& PrimitiveEmitter : primitiveEmitters)
 	{
 		PrimitiveEmitter->Update();
@@ -192,73 +196,18 @@ void TitleScene::Update()
 	ringParticle->Update();
 	cyrinderParticle->Update();
 
-	ImGui::Begin("Debug Information"); // デバッグ情報用ウィンドウ
-	ImGui::Text("Number of Lines: %zu", DrawLine::GetInstance()->GetLineCount());
-	ImGui::End();
-
-	// AABB の編集
-	ImGui::Begin("AABB Control");
-	ImGui::Text("Adjust AABB parameters:");
-	ImGui::DragFloat3("Min", &aabb.min.x, 0.1f); // AABB の最小点を調整
-	ImGui::DragFloat3("Max", &aabb.max.x, 0.1f); // AABB の最大点を調整
-	ImGui::End();
-
-	// OBB の調整
-	ImGui::Begin("OBB Control");
-	ImGui::DragFloat3("Center", &obb.center.x, 0.1f); // 中心点
-	ImGui::DragFloat3("Size", &obb.size.x, 0.1f, 0.1f, 10.0f); // 各軸方向の半サイズ
-	ImGui::DragFloat3("Orientation X", &obb.orientations[0].x, 0.1f); // X軸方向
-	ImGui::DragFloat3("Orientation Y", &obb.orientations[1].x, 0.1f); // Y軸方向
-	ImGui::DragFloat3("Orientation Z", &obb.orientations[2].x, 0.1f); // Z軸方向
-	ImGui::End();
-
-	// Sphere の編集
-	ImGui::Begin("Sphere Control");
-	ImGui::Text("Adjust Sphere parameters:");
-	ImGui::DragFloat3("Center", &sphere.center.x, 0.1f); // Sphere の中心点を調整
-	ImGui::DragFloat("Radius", &sphere.radius, 0.1f, 0.1f, 100.0f); // Sphere の半径を調整
-	ImGui::End();
-
-	// Plane の調整
-	ImGui::Begin("Ground Control");
-	ImGui::Text("Adjust Plane parameters:");
-	ImGui::DragFloat3("Normal", &ground.normal.x, 0.1f); // 法線を調整
-	ImGui::DragFloat("Distance", &ground.distance, 0.1f); // 距離を調整
-	ImGui::DragFloat("Size", &ground.size, 0.1f, 1.0f, 20.0f); // サイズを調整
-	ImGui::DragInt("Divisions", &ground.divisions, 1, 1, 50); // グリッド分割数を調整
-	ImGui::End();
-
-	// Capsule の編集
-	ImGui::Begin("Capsule Control");
-	ImGui::DragFloat3("Start", &capsule.start.x, 0.1f); // 開始点を調整
-	ImGui::DragFloat3("End", &capsule.end.x, 0.1f);     // 終了点を調整
-	ImGui::DragFloat("Radius", &capsule.radius, 0.1f, 0.1f, 10.0f); // 半径を調整
-	ImGui::DragInt("Segments", &capsule.segments, 1, 4, 64); // 円周分割数を調整
-	ImGui::DragInt("Rings", &capsule.rings, 1, 2, 32);       // 球部分分割数を調整
-	ImGui::End();
-
-	// DrawTriangleの更新
-	//drawTriangle_->Update();
-
-	// ImGui ウィンドウ
-	ImGui::Begin("Triangle Control");
-
-	// 頂点座標の変更
-	ImGui::DragFloat3("Vertex 1", &triangleP1.x, 0.1f);
-	ImGui::DragFloat3("Vertex 2", &triangleP2.x, 0.1f);
-	ImGui::DragFloat3("Vertex 3", &triangleP3.x, 0.1f);
-
-	// 変更を適用
-	if (ImGui::Button("Apply Changes")) {
-		drawTriangle_->ResetData(); // データをクリア
-		drawTriangle_->AddTriangle(triangleP1, triangleP2, triangleP3, triangleColor, triangleAlpha);
-	}
-
-	ImGui::End();
+	// デバッグ
+	Debug();
+	
 
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
 		// シーン切り替え
 		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+	}
+
+	if (Input::GetInstance()->TriggerKey(DIK_U)) {
+		// シーン切り替え
+		SceneManager::GetInstance()->ChangeScene("Unity");
 	}
 }
 
@@ -363,4 +312,84 @@ void TitleScene::ForeGroundDraw()
 	// ================================================
 	// ここまでparticle個々の描画
 	// ================================================
+}
+
+void TitleScene::Debug()
+{
+#ifdef _DEBUG
+
+	if (!IsDockedImGuiEnabled()) return;
+
+	// ↓ ここから ImGui::Begin(...) など Scene UI
+	//BaseScene::ShowFPS();
+
+
+	ImGui::Begin(kWindowName_ParticleControl);
+	ImGui::Checkbox("Change Speed", &changeSpeed_);
+	ImGui::End();
+
+	ImGui::Begin(kWindowName_DebugInfo); // デバッグ情報用ウィンドウ
+	ImGui::Text("Number of Lines: %zu", DrawLine::GetInstance()->GetLineCount());
+	ImGui::End();
+
+	// AABB の編集
+	ImGui::Begin(kWindowName_AABBControl);
+	ImGui::Text("Adjust AABB parameters:");
+	ImGui::DragFloat3("Min", &aabb.min.x, 0.1f); // AABB の最小点を調整
+	ImGui::DragFloat3("Max", &aabb.max.x, 0.1f); // AABB の最大点を調整
+	ImGui::End();
+
+	// OBB の調整
+	ImGui::Begin(kWindowName_OBBControl);
+	ImGui::DragFloat3("Center", &obb.center.x, 0.1f); // 中心点
+	ImGui::DragFloat3("Size", &obb.size.x, 0.1f, 0.1f, 10.0f); // 各軸方向の半サイズ
+	ImGui::DragFloat3("Orientation X", &obb.orientations[0].x, 0.1f); // X軸方向
+	ImGui::DragFloat3("Orientation Y", &obb.orientations[1].x, 0.1f); // Y軸方向
+	ImGui::DragFloat3("Orientation Z", &obb.orientations[2].x, 0.1f); // Z軸方向
+	ImGui::End();
+
+	// Sphere の編集
+	ImGui::Begin(kWindowName_SphereControl);
+	ImGui::Text("Adjust Sphere parameters:");
+	ImGui::DragFloat3("Center", &sphere.center.x, 0.1f); // Sphere の中心点を調整
+	ImGui::DragFloat("Radius", &sphere.radius, 0.1f, 0.1f, 100.0f); // Sphere の半径を調整
+	ImGui::End();
+
+	// Plane の調整
+	//ImGui::Begin("Ground Control");
+	//ImGui::Text("Adjust Plane parameters:");
+	//ImGui::DragFloat3("Normal", &ground.normal.x, 0.1f); // 法線を調整
+	//ImGui::DragFloat("Distance", &ground.distance, 0.1f); // 距離を調整
+	//ImGui::DragFloat("Size", &ground.size, 0.1f, 1.0f, 20.0f); // サイズを調整
+	//ImGui::DragInt("Divisions", &ground.divisions, 1, 1, 50); // グリッド分割数を調整
+	//ImGui::End();
+
+	// Capsule の編集
+	//ImGui::Begin("Capsule Control");
+	//ImGui::DragFloat3("Start", &capsule.start.x, 0.1f); // 開始点を調整
+	//ImGui::DragFloat3("End", &capsule.end.x, 0.1f);     // 終了点を調整
+	//ImGui::DragFloat("Radius", &capsule.radius, 0.1f, 0.1f, 10.0f); // 半径を調整
+	//ImGui::DragInt("Segments", &capsule.segments, 1, 4, 64); // 円周分割数を調整
+	//ImGui::DragInt("Rings", &capsule.rings, 1, 2, 32);       // 球部分分割数を調整
+	//ImGui::End();
+
+	// DrawTriangleの更新
+	//drawTriangle_->Update();
+
+	// ImGui ウィンドウ
+	//ImGui::Begin("Triangle Control");
+
+	//// 頂点座標の変更
+	//ImGui::DragFloat3("Vertex 1", &triangleP1.x, 0.1f);
+	//ImGui::DragFloat3("Vertex 2", &triangleP2.x, 0.1f);
+	//ImGui::DragFloat3("Vertex 3", &triangleP3.x, 0.1f);
+
+	//// 変更を適用
+	//if (ImGui::Button("Apply Changes")) {
+	//	drawTriangle_->ResetData(); // データをクリア
+	//	drawTriangle_->AddTriangle(triangleP1, triangleP2, triangleP3, triangleColor, triangleAlpha);
+	//}
+
+	//ImGui::End();
+#endif
 }

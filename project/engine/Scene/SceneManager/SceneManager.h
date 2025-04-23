@@ -39,6 +39,7 @@ public:
 	/// </summary>
 	void Draw();
 
+
 public:
 	// 次シーン予約
 	void SetNextScene(BaseScene* nextScene) { nextScene_ = nextScene; }
@@ -48,6 +49,9 @@ public:
 	{
 		sceneFactory_ = factory;
 	}
+
+	// 現在のシーンを取得
+	BaseScene* GetCurrentScene() const { return scene_; }
 
 	/// <summary>
 	/// 次シーン予約

@@ -111,6 +111,8 @@ void GamePlayScene::Initialize()
 	collisionMAnager_ = std::make_unique<CollisionManager>();
 	collisionMAnager_->RegisterCollider(player_.get());
 	collisionMAnager_->RegisterCollider(enemy_.get());
+
+	AddRightDockWindow(kWindowName_MonsterControl);
 }
 
 void GamePlayScene::Finalize()
@@ -145,9 +147,6 @@ void GamePlayScene::Update()
 	monsterBall->SetSize({ 100.0f,100.0f });
 	monsterBall->Update();
 
-	ImGui::Begin("monsterBall");
-	ImGui::DragFloat2("transformation", &MonsterPosition.x);
-	ImGui::End();
 
 	// 各スプライトの更新処理
 	for (size_t i = 0; i < sprites.size(); ++i) {
@@ -195,6 +194,8 @@ void GamePlayScene::Update()
 	// 衝突判定と応答
 	CheckAllColisions();
 
+	Debug();
+
 	/*ImGui::Begin("light");
 	ImGui::DragFloat3("transform", &BaseScene::GetLight()->cameraLightData->worldPosition.x, 0.01f);
 	ImGui::DragFloat3("DirectionalDirection", &BaseScene::GetLight()->directionalLightData->direction.x, 0.01f);
@@ -212,6 +213,11 @@ void GamePlayScene::Update()
 		SceneManager::GetInstance()->ChangeScene("TITLE");
 	}
 
+	if (Input::GetInstance()->TriggerKey(DIK_U)) {
+		// シーン切り替え
+		SceneManager::GetInstance()->ChangeScene("Unity");
+	}
+
 	//particle->Emit("particle",/*plane->GetTranslate()*/ { 0.0f,0.0f,-4.0f }, 10);
 	for (auto& emitter : emitters)
 	{
@@ -222,12 +228,12 @@ void GamePlayScene::Update()
 	DrawLine::GetInstance()->Update();
 
 	// 円錐の調整
-	ImGui::Begin("Cone Control");
-	ImGui::DragFloat3("Base Center", &cone.baseCenter.x, 0.1f); // 底面中心
-	ImGui::DragFloat3("Tip", &cone.tip.x, 0.1f);               // 頂点（先端）
-	ImGui::DragFloat("Radius", &cone.radius, 0.1f, 0.1f, 10.0f); // 半径
-	ImGui::DragInt("Segments", &cone.segments, 1, 3, 64);       // 円周分割数
-	ImGui::End();
+	//ImGui::Begin("Cone Control");
+	//ImGui::DragFloat3("Base Center", &cone.baseCenter.x, 0.1f); // 底面中心
+	//ImGui::DragFloat3("Tip", &cone.tip.x, 0.1f);               // 頂点（先端）
+	//ImGui::DragFloat("Radius", &cone.radius, 0.1f, 0.1f, 10.0f); // 半径
+	//ImGui::DragInt("Segments", &cone.segments, 1, 3, 64);       // 円周分割数
+	//ImGui::End();
 }
 
 void GamePlayScene::BackGroundDraw()
@@ -313,6 +319,21 @@ void GamePlayScene::ForeGroundDraw()
 	// ================================================
 	// ここまでparticle個々の描画
 	// ================================================
+}
+
+void GamePlayScene::Debug()
+{
+#ifdef _DEBUG
+
+	if (!IsDockedImGuiEnabled()) return;
+
+	// ↓ ここから ImGui::Begin(...) など
+
+	ImGui::Begin(kWindowName_MonsterControl);
+	ImGui::DragFloat2("transformation", &MonsterPosition.x);
+	ImGui::End();
+
+#endif
 }
 
 void GamePlayScene::CheckAllColisions()

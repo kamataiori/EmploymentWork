@@ -10,6 +10,10 @@ class BaseScene
 public:
 	//------メンバ関数------
 
+	BaseScene() {
+		AddLeftDockWindow("FPS");  // ← コンストラクタで固定Dock登録
+	}
+
 	//仮想デストラクタ
 	virtual ~BaseScene() = default;
 
@@ -42,6 +46,11 @@ public:
 	/// 前景描画
 	/// </summary>
 	virtual void ForeGroundDraw() = 0;
+
+	/// <summary>
+	/// デバッグ用（Imguiなどはこちらへ）
+	/// </summary>
+	virtual void Debug() = 0;
 
 	/// <summary>
 	/// シーンマネージャーをシーンに貸し出すためのSetter
@@ -78,6 +87,25 @@ public:
 		ImGui::Text("Current FPS: %.2f", fps_);
 		ImGui::End();
 	}
+
+public:
+	// Dock候補登録用（MyGame側のDockBuilderで使われる）
+	const std::vector<std::string>& GetLeftDockWindows() const { return leftDockWindows_; }
+	const std::vector<std::string>& GetRightDockWindows() const { return rightDockWindows_; }
+	const std::vector<std::string>& GetBottomDockWindows() const { return bottomDockWindows_; }
+
+	void AddLeftDockWindow(const std::string& name) { leftDockWindows_.push_back(name); }
+	void AddRightDockWindow(const std::string& name) { rightDockWindows_.push_back(name); }
+	void AddBottomDockWindow(const std::string& name) { bottomDockWindows_.push_back(name); }
+
+	void SetEnableDockedImGui(bool enable) { enableDockedImGui_ = enable; }
+	bool IsDockedImGuiEnabled() const { return enableDockedImGui_; }
+
+private:
+	std::vector<std::string> leftDockWindows_;
+	std::vector<std::string> rightDockWindows_;
+	std::vector<std::string> bottomDockWindows_;
+	bool enableDockedImGui_ = true;
 
 private:
 	// シーンマネージャー (借りてくる)

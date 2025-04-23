@@ -14,6 +14,10 @@
 #include "CollisionManager.h"
 #include <Enemy.h>
 
+//inline constexpr const char* kWindowName_PlayerControl = "Player Control";
+//inline constexpr const char* kWindowName_EnemyControl = "Enemy Control";
+inline constexpr const char* kWindowName_MonsterControl = "Monster Control";
+
 class GamePlayScene : public BaseScene
 {
 public:
@@ -48,6 +52,8 @@ public:
 	/// 前景描画
 	/// </summary>
 	void ForeGroundDraw() override;
+
+	void Debug() override;
 
 	/// <summary>
 	/// camera1のセッター

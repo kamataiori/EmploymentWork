@@ -34,6 +34,9 @@ public:
     // 繰り返し設定
     void SetRepeat(bool repeat);
 
+    const Transform& GetTransform() const { return transform_; }
+    Transform& GetTransform() { return transform_; }
+
 private:
     ParticleManager* particleManager_; // ParticleManagerのインスタンスを保持
     std::string name_;                 // パーティクルグループ名
