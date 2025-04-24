@@ -28,7 +28,7 @@ void WinApp::Initialize()
 	////=========COMの初期化=========////
 
 	//システムタイマーの分解能を上げる
-	//timeBeginPeriod(1);
+	timeBeginPeriod(1);
 
 	CoInitializeEx(0, COINITBASE_MULTITHREADED);
 
