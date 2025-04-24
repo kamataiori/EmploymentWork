@@ -134,6 +134,9 @@ void TitleScene::Initialize()
 	AddRightDockWindow(kWindowName_SphereControl);
 	AddLeftDockWindow(kWindowName_DebugInfo);
 
+	fade_ = std::make_unique<Fade>();
+	fade_->Initialize();
+
 } 
 
 void TitleScene::Finalize()
@@ -200,15 +203,45 @@ void TitleScene::Update()
 	Debug();
 	
 
-	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
-		// シーン切り替え
-		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+	//if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+	//	// シーン切り替え
+	//	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+	//}
+
+	//if (Input::GetInstance()->TriggerKey(DIK_U)) {
+	//	// シーン切り替え
+	//	SceneManager::GetInstance()->ChangeScene("Unity");
+	//}
+
+	// フェード処理
+	if (fade_) {
+		fade_->Update();
+
+		// フェードアウト完了後にシーン遷移
+		if (!nextSceneName_.empty() && !fade_->IsFinish()) {
+			SceneManager::GetInstance()->ChangeScene(nextSceneName_);
+			nextSceneName_.clear(); // 一度きりでリセット
+		}
 	}
 
-	if (Input::GetInstance()->TriggerKey(DIK_U)) {
-		// シーン切り替え
-		SceneManager::GetInstance()->ChangeScene("Unity");
+	// キー入力でフェード開始（シーン遷移予約）
+	if (!fade_->IsActive()) {
+		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+			fade_->Start(Fade::Status::FadeOut, 2.0f);
+			nextSceneName_ = "GAMEPLAY";
+		}
+		if (Input::GetInstance()->TriggerKey(DIK_U)) {
+			fade_->Start(Fade::Status::FadeOut, 2.0f);
+			nextSceneName_ = "Unity";
+		}
 	}
+
+	// TitleScene::Update() に強制起動テスト
+	if (Input::GetInstance()->TriggerKey(DIK_F)) {
+		fade_->Start(Fade::Status::FadeOut, 1.0f);
+	}
+
+
 }
 
 void TitleScene::BackGroundDraw()
@@ -294,6 +327,9 @@ void TitleScene::ForeGroundDraw()
 	// ここからSprite個々の前景描画(UIなど)
 	// ================================================
 
+	if (fade_) {
+		fade_->Draw();
+	}
 
 
 	// ================================================

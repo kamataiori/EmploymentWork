@@ -6,6 +6,7 @@
 #include "DrawLine.h"
 #include "DrawTriangle.h"
 #include "Sprite.h"
+#include "Fade.h"
 
 // TitleScene.h の private より上などに（クラス外）
 inline constexpr const char* kWindowName_ParticleControl = "Particle Control";
@@ -93,5 +94,7 @@ private:
 	// 最後の private: 内などに追加
 	bool changeSpeed_ = false;
 
+	std::unique_ptr<Fade> fade_ = nullptr;
+	std::string nextSceneName_ = "";
 };
 
