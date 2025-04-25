@@ -19,6 +19,12 @@ public:
 
 private:
 
+	inline Vector3 Lerp(const Vector3& a, const Vector3& b, float t) {
+		return a + (b - a) * t;
+	}
+
+private:
+
 	Vector3 velocity_{};
 
 

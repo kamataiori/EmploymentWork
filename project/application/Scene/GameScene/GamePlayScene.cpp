@@ -15,7 +15,7 @@ void GamePlayScene::Initialize()
 	player_ = std::make_unique<Player>(this);
 	player_->Initialize();
 
-	followCamera = std::make_unique<FollowCamera>(player_.get(), -2.0f, 2.0f);
+	followCamera = std::make_unique<FollowCamera>(player_.get(), 20.0f, 0.0f);
 
 
 	player_->SetCamera(followCamera.get());

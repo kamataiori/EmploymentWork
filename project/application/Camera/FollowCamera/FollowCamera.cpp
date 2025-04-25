@@ -1,4 +1,5 @@
 #include "FollowCamera.h"
+#include <Input.h>
 
 FollowCamera::FollowCamera(CharacterBase* target, float followDistance, float heightOffset)
     : target(target), followDistance(followDistance), heightOffset(heightOffset)
@@ -7,18 +8,35 @@ FollowCamera::FollowCamera(CharacterBase* target, float followDistance, float he
 
 void FollowCamera::Update()
 {
-    if (target) // ターゲットが存在する場合のみ追従
-    {
-        const Vector3& targetPosition = target->GetTransform().translate; // ターゲットの位置を取得
+    if (!target) return;
 
-        // 対象との方向を計算
-        Vector3 direction = Normalize(transform.translate - targetPosition);
-
-        // 距離と高さを考慮してカメラ位置を設定
-        transform.translate = targetPosition + direction * followDistance;
-        transform.translate.y += heightOffset; // 高さを反映
+    // ← → キーでカメラ回転
+    if (Input::GetInstance()->PushKey(DIK_LEFT)) {
+        angle -= 0.03f;
+    }
+    if (Input::GetInstance()->PushKey(DIK_RIGHT)) {
+        angle += 0.03f;
     }
 
-    // 基底クラスの Update を呼び出す
+    const Vector3& targetPos = target->GetTransform().translate;
+
+    // プレイヤーの向きを基準に後ろ側を計算（Y=3.14 で後ろにいるように）
+    Vector3 offset = {
+        std::sin(angle) * followDistance,
+        heightOffset,
+        std::cos(angle) * followDistance
+    };
+
+    Vector3 desiredPos = targetPos + offset;
+
+    // カメラを滑らかに補間移動
+    float smoothSpeed = 0.1f;
+    transform.translate = Lerp(transform.translate, desiredPos, smoothSpeed);
+
+    // カメラが常にプレイヤーの方向を向くように回転
+    Vector3 direction = Normalize(targetPos - transform.translate);
+    transform.rotate.y = std::atan2(direction.x, direction.z);
+
     Camera::Update();
 }
+
