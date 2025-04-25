@@ -10,10 +10,14 @@ void Player::Initialize()
 
 	object3d_->SetModel("uvChecker.gltf");
 
+	transform_.translate = { -2.0f, 0.0f, 0.0f };
+	transform_.scale = { 1.0f, 1.0f, 1.0f };
+	transform_.rotate = { 0.0f, 3.14f, 0.0f };
+
 	// モデルにSRTを設定
-	object3d_->SetScale({ 1.0f, 1.0f, 1.0f });
-	object3d_->SetRotate({ 0.0f, 3.14f, 0.0f });
-	object3d_->SetTranslate({ -2.0f, 0.0f, 0.0f });
+	object3d_->SetScale(transform_.scale);
+	object3d_->SetRotate(transform_.rotate);
+	object3d_->SetTranslate(transform_.translate);
 
 	// コライダーの初期化
 	SetCollider(this);
@@ -24,6 +28,49 @@ void Player::Initialize()
 
 void Player::Update()
 {
+	// velocityをリセット
+	velocity_ = {};
+
+	if (Input::GetInstance()->PushKey(DIK_W))
+	{
+		velocity_.z = 0.2f;
+	}
+	if (Input::GetInstance()->PushKey(DIK_A))
+	{
+		velocity_.x = -0.2f;
+	}
+	if (Input::GetInstance()->PushKey(DIK_S))
+	{
+		velocity_.z = -0.2f;
+	}
+	if (Input::GetInstance()->PushKey(DIK_D))
+	{
+		velocity_.x = 0.2f;
+	}
+
+	transform_.translate += velocity_;
+
+	Debug();
+
+	// モデルにSRTを設定
+	object3d_->SetScale(transform_.scale);
+	object3d_->SetRotate(transform_.rotate);
+	object3d_->SetTranslate(transform_.translate);
+	object3d_->Update();
+	SetPosition(object3d_->GetTranslate());
+}
+
+void Player::Draw()
+{
+	object3d_->Draw();
+	// SphereCollider の描画
+	SphereCollider::Draw();
+}
+
+void Player::Debug()
+{
+#ifdef DEBUG
+
 	ImGui::Begin("Player Transform");
 
 	// ✅ Translate (位置)
@@ -46,13 +93,5 @@ void Player::Update()
 
 	ImGui::End();
 
-	object3d_->Update();
-	SetPosition(object3d_->GetTranslate());
-}
-
-void Player::Draw()
-{
-	object3d_->Draw();
-	// SphereCollider の描画
-	SphereCollider::Draw();
+#endif // DEBUG
 }

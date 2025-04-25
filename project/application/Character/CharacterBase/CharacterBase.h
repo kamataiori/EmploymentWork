@@ -2,6 +2,7 @@
 #include "Transform.h"
 #include "Object3d.h"
 #include "Collider.h"
+#include "Input.h"
 
 class CharacterBase
 {
@@ -29,9 +30,14 @@ public:
     virtual void Draw() = 0;
 
     /// <summary>
+    /// デバッグの処理（ImGuiなど）
+    /// </summary>
+    virtual void Debug() = 0;
+
+    /// <summary>
     /// Transformを取得
     /// </summary>
-    const Transform& GetTransform() const { return transform; }
+    const Transform& GetTransform() const { return transform_; }
 
     void SetCamera(Camera* camera) { object3d_->SetCamera(camera); }
 
@@ -42,7 +48,7 @@ public:
     Collider* GetCollider() const { return collider_; }
 
 protected:
-    Transform transform; // キャラクターの基本Transform
+    Transform transform_; // キャラクターの基本Transform
 
     BaseScene* baseScene_;
 

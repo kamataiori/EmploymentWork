@@ -15,7 +15,12 @@ public:
 
 	void Draw() override;
 
+	void Debug() override;
+
 private:
+
+	Vector3 velocity_{};
+
 
 };
 

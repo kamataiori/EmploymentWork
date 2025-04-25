@@ -27,6 +27,26 @@ void Enemy::Initialize()
 
 void Enemy::Update()
 {
+	
+	Debug();
+
+	object3d_->Update();
+	SetPosition(object3d_->GetTranslate());
+	//SetScale(object3d_->GetScale());
+	sphere.color = static_cast<int>(Color::WHITE);
+}
+
+void Enemy::Draw()
+{
+	object3d_->Draw();
+	// SphereCollider の描画
+	SphereCollider::Draw();
+}
+
+void Enemy::Debug()
+{
+#ifdef DEBUG
+
 	ImGui::Begin("Enemy Transform");
 
 	// ✅ Translate (位置)
@@ -49,17 +69,8 @@ void Enemy::Update()
 
 	ImGui::End();
 
-	object3d_->Update();
-	SetPosition(object3d_->GetTranslate());
-	//SetScale(object3d_->GetScale());
-	sphere.color = static_cast<int>(Color::WHITE);
-}
+#endif // DEBUG
 
-void Enemy::Draw()
-{
-	object3d_->Draw();
-	// SphereCollider の描画
-	SphereCollider::Draw();
 }
 
 void Enemy::OnCollision()
