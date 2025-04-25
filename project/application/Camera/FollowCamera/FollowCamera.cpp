@@ -30,7 +30,7 @@ void FollowCamera::Update()
     Vector3 desiredPos = targetPos + offset;
 
     // カメラを滑らかに補間移動
-    float smoothSpeed = 0.1f;
+    float smoothSpeed = 0.03f;
     transform.translate = Lerp(transform.translate, desiredPos, smoothSpeed);
 
     // カメラが常にプレイヤーの方向を向くように回転
