@@ -40,6 +40,9 @@ public:  // publicメンバ関数
 	// 
 	uint32_t GetSrvIndex() const { return srvIndex_; }
 
+	void SetPostEffectType(PostEffectType type);
+	PostEffectType GetPostEffectType() const;
+
 private:  // privateメンバ関数
 
 	/// <summary>
@@ -147,6 +150,8 @@ private:  // privateメンバ変数
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState = nullptr;
 
 	std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, kPostEffectCount> pipelineStates_;
+
+	PostEffectType currentEffectType_ = PostEffectType::Normal;
 
 
 	// Shaderをコンパイルする

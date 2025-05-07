@@ -114,5 +114,6 @@ private:
 	std::unique_ptr<CollisionManager> collisionMAnager_;
 
 	Cone cone;
+
 };
 

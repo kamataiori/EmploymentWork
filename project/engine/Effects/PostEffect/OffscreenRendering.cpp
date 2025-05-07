@@ -44,6 +44,18 @@ void OffscreenRendering::Draw()
 	dxCommon_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 }
 
+void OffscreenRendering::SetPostEffectType(PostEffectType type)
+{
+	dxCommon_ = DirectXCommon::GetInstance();
+	CreateAllPSOs();
+	SetPostEffectType(type);  // ← Setter 経由で設定
+}
+
+PostEffectType OffscreenRendering::GetPostEffectType() const
+{
+	return currentEffectType_;
+}
+
 void OffscreenRendering::RenderTexture()
 {
 	// RenderTextureを使って、そこにSceneを描画していくようにするので、RTVも作成する

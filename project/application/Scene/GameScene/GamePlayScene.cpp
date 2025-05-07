@@ -1,6 +1,8 @@
 #include "GamePlayScene.h"
 #include <Input.h>
 #include "SceneManager.h"
+#include <OffscreenRendering.h>
+#include <MyGame.h>
 
 void GamePlayScene::Initialize()
 {
@@ -113,6 +115,7 @@ void GamePlayScene::Initialize()
 	collisionMAnager_->RegisterCollider(enemy_.get());
 
 	AddRightDockWindow(kWindowName_MonsterControl);
+
 }
 
 void GamePlayScene::Finalize()
@@ -189,6 +192,21 @@ void GamePlayScene::Update()
 
 		// 各スプライトを更新
 		sprite->Update();
+	}
+
+	if (Input::GetInstance()->TriggerKey(DIK_K))
+	{
+		//// 現在のポストエフェクトを取得
+		//PostEffectType type = offscreenRendering->GetPostEffectType();
+
+		//// 次のエフェクトに進める
+		//int next = static_cast<int>(type) + 1;
+		//if (next >= static_cast<int>(PostEffectType::Count)) {
+		//	next = 0;
+		//}
+
+		//offscreenRendering->SetPostEffectType(static_cast<PostEffectType>(next));
+
 	}
 
 	// 衝突判定と応答
