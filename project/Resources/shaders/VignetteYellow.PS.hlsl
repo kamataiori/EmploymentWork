@@ -17,7 +17,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     // 16の値を小さくすればするほど暗い範囲が中心よりに狭くなる
     float vignette = correct.x * correct.y * 32.0f;
     // 0.8を変えることで丸い形が濃くなったり薄くなったりする
-    vignette = saturate(pow(vignette, 0.1f));
+    vignette = saturate(pow(vignette, 0.4f));
 
     // 黄色のRGB値
     float3 vignetteColor = float3(1.0f, 1.0f, 0.0f);

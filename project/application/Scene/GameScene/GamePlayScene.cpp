@@ -6,6 +6,7 @@ void GamePlayScene::Initialize()
 {
 	
 	// 3Dオブジェクトの初期化
+	ModelManager::GetInstance()->LoadModel("skydome.obj");
 
 	// 3Dカメラの初期化
 	camera1->SetTranslate({ 0.0f, 0.0f, -20.0f });
@@ -17,6 +18,38 @@ void GamePlayScene::Initialize()
 
 	followCamera = std::make_unique<FollowCamera>(player_.get(), 20.0f, 0.0f);
 
+	skydome_ = std::make_unique<Object3d>(this);
+	skydome_->Initialize();
+	skydome_->SetModel("skydome.obj");
+
+	heel_ = std::make_unique<Sprite>();
+	heel_->Initialize("Resources/heel.png");
+
+	//srand((unsigned int)time(nullptr)); // 乱数初期化
+
+	// 乱数初期化（1回のみ）
+	srand((unsigned int)time(nullptr));
+
+	// heelEffects_ 配列の初期化
+	heelEffects_.clear();
+	for (int i = 0; i < kHeelSpriteCount; ++i) {
+		HeelEffect effect;
+		effect.sprite = std::make_unique<Sprite>();
+		effect.sprite->Initialize("Resources/heel.png");
+
+		effect.state = HeelEffectState::Waiting;
+		effect.scale = 0.0f;
+		effect.lifetime = 0.0f;
+
+		// 出現までの時間をランダムにずらす（最大1秒）
+		effect.respawnTimer = static_cast<float>(rand()) / RAND_MAX * kHeelRespawnTime;
+
+		// 終了までの寿命もランダム（0.6〜1.2秒など）
+		effect.lifetimeLimit = 0.6f + static_cast<float>(rand()) / RAND_MAX * 0.6f;
+
+		heelEffects_.emplace_back(std::move(effect));
+	}
+
 
 	player_->SetCamera(followCamera.get());
 
@@ -24,6 +57,8 @@ void GamePlayScene::Initialize()
 	enemy_->Initialize();
 
 	enemy_->SetCamera(followCamera.get());
+
+	skydome_->SetCamera(followCamera.get());
 
 	DrawLine::GetInstance()->SetCamera(followCamera.get());
 
@@ -59,6 +94,62 @@ void GamePlayScene::Update()
 
 	player_->Update();
 	enemy_->Update();
+	skydome_->Update();
+
+	for (auto& effect : heelEffects_) {
+		switch (effect.state) {
+		case HeelEffectState::Waiting:
+			effect.respawnTimer += 1.0f / 60.0f;
+			if (effect.respawnTimer >= kHeelRespawnTime) {
+				Vector2 center = { 1280 / 2.0f, 720 / 2.0f };
+				Vector2 pos;
+				int tryCount = 10;
+				do {
+					float angle = static_cast<float>(rand()) / RAND_MAX * 2.0f * (float)M_PI;
+					float radius = kHeelMinRadius + static_cast<float>(rand()) / RAND_MAX * (kHeelMaxRadius - kHeelMinRadius);
+
+					Vector2 offset = {
+						cosf(angle) * radius,
+						sinf(angle) * radius
+					};
+					pos = Add(center, offset);
+				} while (!IsFarEnough(pos, heelEffects_, 64.0f) && --tryCount > 0);
+
+				effect.position = pos;
+				effect.scale = 0.0f;
+				effect.lifetime = 0.0f;
+				effect.state = HeelEffectState::Growing;
+				effect.respawnTimer = 0.0f;
+			}
+			break;
+
+		case HeelEffectState::Growing:
+			effect.scale += kHeelGrowSpeed;
+			effect.lifetime += 1.0f / 60.0f;
+
+			if (effect.lifetime >= effect.lifetimeLimit) {
+				effect.state = HeelEffectState::Inactive;
+				effect.scale = 0.0f;
+				effect.lifetime = 0.0f;
+				effect.respawnTimer = 0.0f;
+			}
+			break;
+
+
+		case HeelEffectState::Inactive:
+			effect.state = HeelEffectState::Waiting; // すぐ次へ
+			break;
+		}
+
+		// スプライトに反映
+		effect.sprite->SetPosition(effect.position);
+		effect.sprite->SetSize({ 64.0f * effect.scale, 64.0f * effect.scale });
+		effect.sprite->SetColor({ 1, 1, 1, effect.state == HeelEffectState::Growing ? 1.0f : 0.0f });
+		effect.sprite->Update();
+	}
+
+
+
 
 	// カメラの更新
 	followCamera->Update();
@@ -118,6 +209,7 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
+	skydome_->Draw();
 	player_->Draw();
 	enemy_->Draw();
 
@@ -143,7 +235,12 @@ void GamePlayScene::ForeGroundDraw()
 	// ここからSprite個々の前景描画(UIなど)
 	// ================================================
 
-	
+	// 回復エフェクト（＋アイコン）を円形に配置して描画
+	for (auto& effect : heelEffects_) {
+		if (effect.state == HeelEffectState::Growing) {
+			effect.sprite->Draw();
+		}
+	}
 
 	// ================================================
 	// ここまでSprite個々の前景描画(UIなど)

@@ -45,7 +45,7 @@ void Enemy::Draw()
 
 void Enemy::Debug()
 {
-#ifdef DEBUG
+#ifdef _DEBUG
 
 	ImGui::Begin("Enemy Transform");
 

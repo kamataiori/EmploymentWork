@@ -69,7 +69,7 @@ void Player::Draw()
 
 void Player::Debug()
 {
-#ifdef DEBUG
+#ifdef _DEBUG
 
 	ImGui::Begin("Player Transform");
 

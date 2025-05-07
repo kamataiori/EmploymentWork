@@ -14,10 +14,33 @@
 #include "CollisionManager.h"
 #include <Enemy.h>
 #include <FollowCamera.h>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#include <cstdlib>  // rand()
+#include <ctime>    // time()
+
 
 //inline constexpr const char* kWindowName_PlayerControl = "Player Control";
 //inline constexpr const char* kWindowName_EnemyControl = "Enemy Control";
 inline constexpr const char* kWindowName_MonsterControl = "Monster Control";
+
+enum class HeelEffectState {
+	Waiting,
+	Growing,
+	Inactive
+};
+
+struct HeelEffect {
+	std::unique_ptr<Sprite> sprite;
+	Vector2 position;
+	float scale = 0.0f;
+	float lifetime = 0.0f;
+	float lifetimeLimit = 1.0f; // ← ランダム終了時間（秒）
+	float respawnTimer = 0.0f;
+	HeelEffectState state = HeelEffectState::Waiting;
+
+};
 
 class GamePlayScene : public BaseScene
 {
@@ -77,6 +100,25 @@ public:
 	/// </summary>
 	void CheckAllColisions();
 
+	inline Vector2 Add(const Vector2& a, const Vector2& b) {
+		return { a.x + b.x, a.y + b.y };
+	}
+
+	bool IsFarEnough(const Vector2& newPos, const std::vector<HeelEffect>& effects, float minDistance) {
+		for (const auto& e : effects) {
+			if (e.state == HeelEffectState::Growing) {
+				float dx = newPos.x - e.position.x;
+				float dy = newPos.y - e.position.y;
+				if ((dx * dx + dy * dy) < (minDistance * minDistance)) {
+					return false; // 近すぎる
+				}
+			}
+		}
+		return true;
+	}
+
+
+
 private:
 
 	//3Dカメラの初期化
@@ -87,6 +129,33 @@ private:
 
 	std::unique_ptr<Player> player_;
 	std::unique_ptr<Enemy> enemy_;
+
+	std::unique_ptr<Sprite> heel_;
+	//const int kHeelSpriteCount = 8;
+	//const float kHeelRadius = 300.0f;  // 画面中心からの距離（半径）
+	// heelアイコン複数表示用
+	// heelアイコンの数と表示範囲
+	//const int kHeelSpriteCount = 8;
+	/*const float kHeelMinRadius = 200.0f;
+	const float kHeelMaxRadius = 320.0f;*/
+
+	// スプライトリストと制御フラグ
+	std::vector<std::unique_ptr<Sprite>> heels_;
+	bool isHealing = false;
+	bool healingEffectInitialized = false;
+
+
+	std::vector<HeelEffect> heelEffects_;
+	const int kHeelSpriteCount = 8;
+	const float kHeelMinRadius = 400.0f;
+	const float kHeelMaxRadius = 700.0f;
+	const float kHeelGrowSpeed = 0.01f;
+	const float kHeelMaxScale = 1.0f;
+	const float kHeelRespawnTime = 0.5f;  // 秒ごとに再表示
+	float heelRespawnTimer_ = 0.0f;
+
+
+	std::unique_ptr<Object3d> skydome_;
 
 	std::unique_ptr<CollisionManager> collisionMAnager_;
 
