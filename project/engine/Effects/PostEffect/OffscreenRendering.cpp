@@ -2,7 +2,7 @@
 #include <Logger.h>
 #include <SrvManager.h>
 
-void OffscreenRendering::Initialize()
+void OffscreenRendering::Initialize(PostEffectType type)
 {
 	// 引数で受け取ってメンバ変数に記録する
 	dxCommon_ = DirectXCommon::GetInstance();
@@ -11,7 +11,8 @@ void OffscreenRendering::Initialize()
 	//RenderTexture();
 
 	// グラフィックスパイプラインの生成
-	GraphicsPipelineState();
+	CreateAllPSOs();  // 全PSOを一括生成
+	graphicsPipelineState = pipelineStates_[static_cast<size_t>(type)];
 }
 
 void OffscreenRendering::Update()
@@ -190,52 +191,52 @@ void OffscreenRendering::RootSignature()
 }
 
 
-void OffscreenRendering::GraphicsPipelineState()
-{
-	// ルートシグネチャの生成
-	RootSignature();
-
-	////=========InputLayoutの設定を行う=========////
-
-	InputLayout();
-
-
-	////=========BlendStateの設定を行う=========////
-
-	BlendState();
-
-	////=========RasterizerStateの設定を行う=========////
-
-	RasterizerState();
-
-
-	////=========ShaderをCompileする=========////
-
-	vertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Fullscreen.VS.hlsl",
-		L"vs_6_0"/*, dxCommon->GetDxcUtils(), dxCommon->GetDxcCompiler(), dxCommon->GetIncludeHandler()*/);
-	if (vertexShaderBlob_ == nullptr) {
-		Logger::Log("vertexShaderBlob_\n");
-		exit(1);
-	}
-	assert(vertexShaderBlob_ != nullptr);
-	pixelShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/VignetteYellow.PS.hlsl",
-		L"ps_6_0"/*, dxCommon->GetDxcUtils(), dxCommon->GetDxcCompiler(), dxCommon->GetIncludeHandler()*/);
-	if (pixelShaderBlob_ == nullptr) {
-		Logger::Log("pixelShaderBlob_\n");
-		exit(1);
-	}
-	assert(pixelShaderBlob_ != nullptr);
-
-
-	////=========DepthStencilStateの設定を行う=========////
-
-	DepthStencilState();
-
-
-	////=========PSOを生成する=========////
-
-	PSO();
-}
+//void OffscreenRendering::GraphicsPipelineState(PostEffectType type)
+//{
+//	// ルートシグネチャの生成
+//	RootSignature();
+//
+//	////=========InputLayoutの設定を行う=========////
+//
+//	InputLayout();
+//
+//
+//	////=========BlendStateの設定を行う=========////
+//
+//	BlendState();
+//
+//	////=========RasterizerStateの設定を行う=========////
+//
+//	RasterizerState();
+//
+//
+//	////=========ShaderをCompileする=========////
+//
+//	vertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Fullscreen.VS.hlsl",
+//		L"vs_6_0"/*, dxCommon->GetDxcUtils(), dxCommon->GetDxcCompiler(), dxCommon->GetIncludeHandler()*/);
+//	if (vertexShaderBlob_ == nullptr) {
+//		Logger::Log("vertexShaderBlob_\n");
+//		exit(1);
+//	}
+//	assert(vertexShaderBlob_ != nullptr);
+//	pixelShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/CopyImage.PS.hlsl",
+//		L"ps_6_0"/*, dxCommon->GetDxcUtils(), dxCommon->GetDxcCompiler(), dxCommon->GetIncludeHandler()*/);
+//	if (pixelShaderBlob_ == nullptr) {
+//		Logger::Log("pixelShaderBlob_\n");
+//		exit(1);
+//	}
+//	assert(pixelShaderBlob_ != nullptr);
+//
+//
+//	////=========DepthStencilStateの設定を行う=========////
+//
+//	DepthStencilState();
+//
+//
+//	////=========PSOを生成する=========////
+//
+//	PSO();
+//}
 
 void OffscreenRendering::InputLayout()
 {
@@ -342,3 +343,55 @@ void OffscreenRendering::PSO()
 
 	assert(SUCCEEDED(hr));
 }
+
+void OffscreenRendering::CreateAllPSOs()
+{
+	RootSignature();
+	InputLayout();
+	BlendState();
+	RasterizerState();
+	DepthStencilState();
+
+	struct PostEffectShader {
+		PostEffectType type;
+		std::wstring psPath;
+	};
+
+	std::vector<PostEffectShader> shaders = {
+		{ PostEffectType::Normal, L"Resources/shaders/CopyImage.PS.hlsl" },
+		{ PostEffectType::Blur5x5, L"Resources/shaders/BoxFilter.PS.hlsl" },
+		{ PostEffectType::Blur3x3, L"Resources/shaders/BoxFilter3x3.PS.hlsl" },
+		{ PostEffectType::GaussianFilter , L"Resources/shaders/GaussianFilter.PS.hlsl" },
+		{ PostEffectType::RadialBlur , L"Resources/shaders/RadialBlur.PS.hlsl" },
+		{ PostEffectType::Grayscale, L"Resources/shaders/Grayscale.PS.hlsl" },
+		{ PostEffectType::Vignette, L"Resources/shaders/Vignette.PS.hlsl" },
+	};
+
+	vertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Fullscreen.VS.hlsl", L"vs_6_0");
+
+	for (const auto& shader : shaders) {
+		Microsoft::WRL::ComPtr<IDxcBlob> psBlob =
+			dxCommon_->CompileShader(shader.psPath.c_str(), L"ps_6_0");
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
+		desc.pRootSignature = rootSignature_.Get();
+		desc.InputLayout = inputLayoutDesc_;
+		desc.VS = { vertexShaderBlob_->GetBufferPointer(), vertexShaderBlob_->GetBufferSize() };
+		desc.PS = { psBlob->GetBufferPointer(), psBlob->GetBufferSize() };
+		desc.BlendState = blendDesc_;
+		desc.RasterizerState = rasterizerDesc_;
+		desc.NumRenderTargets = 1;
+		desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		desc.SampleDesc.Count = 1;
+		desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+		desc.DepthStencilState = depthStencilDesc_;
+		desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+
+		HRESULT hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&desc,
+			IID_PPV_ARGS(&pipelineStates_[static_cast<size_t>(shader.type)]));
+		assert(SUCCEEDED(hr));
+	}
+}
+

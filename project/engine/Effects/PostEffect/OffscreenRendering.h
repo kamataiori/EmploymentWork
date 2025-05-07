@@ -1,7 +1,22 @@
 #pragma once
 #include "DirectXCommon.h"
+#include <array>
 
 //class DirectXCommon;
+
+enum class PostEffectType {
+	Normal,
+	Blur5x5,
+	Blur3x3,
+	GaussianFilter,
+	RadialBlur,
+	Grayscale,
+	Vignette,
+	// 追加可能
+	Count
+};
+
+constexpr size_t kPostEffectCount = static_cast<size_t>(PostEffectType::Count);
 
 class OffscreenRendering
 {
@@ -10,7 +25,7 @@ public:  // publicメンバ関数
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize();
+	void Initialize(PostEffectType type);
 
 	/// <summary>
 	/// 更新
@@ -40,7 +55,7 @@ private:  // privateメンバ関数
 	/// <summary>
 	/// グラフィックスパイプラインの生成
 	/// </summary>
-	void GraphicsPipelineState();
+	//void GraphicsPipelineState(PostEffectType type);
 
 	/// <summary>
 	/// InputLayoutの設定
@@ -66,6 +81,8 @@ private:  // privateメンバ関数
 	/// PSOの生成
 	/// </summary>
 	void PSO();
+
+	void CreateAllPSOs();
 
 
 public:  // publicメンバ変数
@@ -128,6 +145,9 @@ private:  // privateメンバ変数
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 	// graphicsPipelineStateの生成
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState = nullptr;
+
+	std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, kPostEffectCount> pipelineStates_;
+
 
 	// Shaderをコンパイルする
 	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob_{};

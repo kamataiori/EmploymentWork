@@ -17,7 +17,7 @@ void MyGame::Initialize()
 	imGuiManager_ = std::make_unique<ImGuiManager>();
 	imGuiManager_->Initialize(winApp.get(), DirectXCommon::GetInstance());
 
-	offscreenRendering->Initialize();
+	offscreenRendering->Initialize(PostEffectType::Normal);
 
 	GlobalVariables::GetInstance()->LoadFiles();
 }
