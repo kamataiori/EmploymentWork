@@ -44,3 +44,24 @@ uint32_t PostEffectManager::GetSrvIndex() const {
 OffscreenRendering* PostEffectManager::GetOffscreen() {
     return postEffect_ ? postEffect_->GetOffscreen() : nullptr;
 }
+
+void PostEffectManager::SetVignetteScale(float scale)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetVignetteScale(scale);
+    }
+}
+
+void PostEffectManager::SetVignettePower(float power)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetVignettePower(power);
+    }
+}
+
+void PostEffectManager::SetVignetteColor(const Vector3& color)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetVignetteColor(color);
+    }
+}

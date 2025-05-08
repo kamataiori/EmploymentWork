@@ -1,6 +1,7 @@
 #pragma once
 #include "DirectXCommon.h"
 #include <array>
+#include <Vector3.h>
 
 //class DirectXCommon;
 
@@ -40,8 +41,35 @@ public:  // publicメンバ関数
 	// 
 	uint32_t GetSrvIndex() const { return srvIndex_; }
 
+	/// <summary>
+	/// ポストエフェクトの種類を設定
+	/// </summary>
 	void SetPostEffectType(PostEffectType type);
+
+	/// <summary>
+	/// 現在のポストエフェクトの種類を取得
+	/// </summary>
 	PostEffectType GetPostEffectType() const;
+
+	/// <summary>
+	/// ビネット専用の定数バッファ初期化
+	/// </summary>
+	void VignetteInitialize(float scale, float power, const Vector3& color);
+
+	/// <summary>
+	/// ビネット：スケールの変更
+	/// </summary>
+	void SetVignetteScale(float scale);
+
+	/// <summary>
+	/// ビネット：パワーの変更
+	/// </summary>
+	void SetVignettePower(float power);
+
+	/// <summary>
+	/// ビネット：カラーの変更
+	/// </summary>
+	void SetVignetteColor(const Vector3& color);
 
 private:  // privateメンバ関数
 
@@ -85,7 +113,15 @@ private:  // privateメンバ関数
 	/// </summary>
 	void PSO();
 
+	/// <summary>
+	/// 全てのポストエフェクト用PSOを生成
+	/// </summary>
 	void CreateAllPSOs();
+
+	/// <summary>
+	/// 全てのRootSignatureを生成
+	/// </summary>
+	void CreateAllRootSignatures();
 
 
 public:  // publicメンバ変数
@@ -149,13 +185,31 @@ private:  // privateメンバ変数
 	// graphicsPipelineStateの生成
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState = nullptr;
 
-	std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, kPostEffectCount> pipelineStates_;
-
-	PostEffectType currentType_ = PostEffectType::Normal;
-
-
 	// Shaderをコンパイルする
 	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob_{};
 	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob_{};
+
+	// PSO配列（各PostEffectTypeごと）
+	std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, kPostEffectCount> pipelineStates_;
+	// RootSignature配列（各PostEffectTypeごと）
+	std::array<Microsoft::WRL::ComPtr<ID3D12RootSignature>, kPostEffectCount> rootSignatures_;
+
+	// 現在のエフェクトタイプ
+	PostEffectType currentType_ = PostEffectType::Normal;
+
+
+	//--------Vignette定数バッファ--------//
+
+	// Vignette用定数バッファ構造体
+	struct VignetteCB {
+		float vignetteScale;
+		float vignettePower;
+		float padding[2] ;
+		Vector3 vignetteColor;
+	};
+
+	// リソースとマッピングポインタ
+	Microsoft::WRL::ComPtr<ID3D12Resource> vignetteCB_;
+	VignetteCB* mappedVignetteCB_ = nullptr;
 
 };

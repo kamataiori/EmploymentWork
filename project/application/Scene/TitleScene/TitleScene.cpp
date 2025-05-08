@@ -201,10 +201,13 @@ void TitleScene::Update()
 	cyrinderParticle->Update();
 
 	if (Input::GetInstance()->TriggerKey(DIK_K)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
+		//PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 	if (Input::GetInstance()->TriggerKey(DIK_L)) {
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_O)) {
+		PostEffectManager::GetInstance()->SetVignetteColor({ 1.0f,0.85f,0.3f });
 	}
 
 	// デバッグ
@@ -235,6 +238,7 @@ void TitleScene::Update()
 	// キー入力でフェード開始（シーン遷移予約）
 	if (!fade_->IsActive()) {
 		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
 			fade_->Start(Fade::Status::FadeOut, 2.0f);
 			nextSceneName_ = "GAMEPLAY";
 		}
