@@ -1,4 +1,5 @@
 #include "SceneManager.h"
+#include <PostEffectManager.h>
 
 SceneManager* SceneManager::instance = nullptr;
 
@@ -41,6 +42,10 @@ void SceneManager::Update()
 
 		// シーンマネージャーをセット
 		scene_->SetSceneManager(this);
+
+		// sceneの最初は基本的にはPostEffectをNormalにする
+		// もし次シーンの最初にNormal意外にしたいときはそのInitializeでSetTypeすればOK
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
 
 		// 次シーンを初期化する
 		scene_->Initialize();

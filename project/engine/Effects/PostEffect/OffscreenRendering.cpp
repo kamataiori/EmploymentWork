@@ -46,14 +46,14 @@ void OffscreenRendering::Draw()
 
 void OffscreenRendering::SetPostEffectType(PostEffectType type)
 {
-	dxCommon_ = DirectXCommon::GetInstance();
-	CreateAllPSOs();
-	SetPostEffectType(type);  // ← Setter 経由で設定
+	if (currentType_ == type) return;  // 同じならスキップ
+	currentType_ = type;
+	graphicsPipelineState = pipelineStates_[static_cast<size_t>(type)];
 }
 
 PostEffectType OffscreenRendering::GetPostEffectType() const
 {
-	return currentEffectType_;
+	return currentType_;
 }
 
 void OffscreenRendering::RenderTexture()

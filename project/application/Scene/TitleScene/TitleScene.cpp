@@ -3,6 +3,7 @@
 #include "Input.h"
 #include "ImGuiManager.h"
 #include "GlobalVariables.h"
+#include <PostEffectManager.h>
 
 void TitleScene::Initialize()
 {
@@ -198,6 +199,13 @@ void TitleScene::Update()
 	primitiveParticle->Update();
 	ringParticle->Update();
 	cyrinderParticle->Update();
+
+	if (Input::GetInstance()->TriggerKey(DIK_K)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_L)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
+	}
 
 	// デバッグ
 	Debug();

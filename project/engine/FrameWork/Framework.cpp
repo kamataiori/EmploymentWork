@@ -74,6 +74,7 @@ void Framework::Finalize()
 	DrawTriangleCommon::GetInstance()->Finalize();
 	// DrawTriangleの終了処理
 	DrawTriangle::GetInstance()->Finalize();
+	PostEffectManager::GetInstance()->Finalize();
 	delete sceneFactory_;
 	spriteCommon.reset();
 	spriteCommon->Finalize();

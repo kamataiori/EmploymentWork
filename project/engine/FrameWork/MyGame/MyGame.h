@@ -1,7 +1,6 @@
 #include "Framework.h"
 #include "SceneFactory.h"
 #include "ImGuiManager.h"
-#include "OffscreenRendering.h"
 #include "GlobalVariables.h"
 #include <deque>
 
@@ -46,7 +45,9 @@ private:
 
 	std::unique_ptr<ImGuiManager> imGuiManager_ = nullptr;
 
-	std::unique_ptr<OffscreenRendering> offscreenRendering = std::make_unique<OffscreenRendering>();
+	//std::unique_ptr<OffscreenRendering> offscreenRendering = std::make_unique<OffscreenRendering>();
+	//std::unique_ptr<PostEffect> postEffect = std::make_unique<PostEffect>();
+
 
 	bool useUnityLayout_ = true;
 	bool unityDockInitialized_ = false;

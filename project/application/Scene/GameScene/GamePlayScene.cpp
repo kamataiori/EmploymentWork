@@ -6,6 +6,8 @@
 
 void GamePlayScene::Initialize()
 {
+	PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
+
 	//-----Spriteの初期化-----
 
 	for (uint32_t i = 0; i < 6; ++i)
@@ -194,19 +196,8 @@ void GamePlayScene::Update()
 		sprite->Update();
 	}
 
-	if (Input::GetInstance()->TriggerKey(DIK_K))
-	{
-		//// 現在のポストエフェクトを取得
-		//PostEffectType type = offscreenRendering->GetPostEffectType();
-
-		//// 次のエフェクトに進める
-		//int next = static_cast<int>(type) + 1;
-		//if (next >= static_cast<int>(PostEffectType::Count)) {
-		//	next = 0;
-		//}
-
-		//offscreenRendering->SetPostEffectType(static_cast<PostEffectType>(next));
-
+	if (Input::GetInstance()->TriggerKey(DIK_K)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
 	// 衝突判定と応答

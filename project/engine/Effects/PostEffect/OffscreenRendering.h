@@ -151,7 +151,7 @@ private:  // privateメンバ変数
 
 	std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, kPostEffectCount> pipelineStates_;
 
-	PostEffectType currentEffectType_ = PostEffectType::Normal;
+	PostEffectType currentType_ = PostEffectType::Normal;
 
 
 	// Shaderをコンパイルする
