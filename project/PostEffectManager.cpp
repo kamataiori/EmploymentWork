@@ -45,6 +45,13 @@ OffscreenRendering* PostEffectManager::GetOffscreen() {
     return postEffect_ ? postEffect_->GetOffscreen() : nullptr;
 }
 
+void PostEffectManager::VignetteInitialize(float scale, float power, const Vector3& color)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->VignetteInitialize(scale, power, color);
+    }
+}
+
 void PostEffectManager::SetVignetteScale(float scale)
 {
     if (postEffect_ && postEffect_->GetOffscreen()) {
@@ -66,6 +73,13 @@ void PostEffectManager::SetVignetteColor(const Vector3& color)
     }
 }
 
+void PostEffectManager::GrayscaleInitialize(float strength, const Vector3& weights)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->GrayscaleInitialize(strength, weights);
+    }
+}
+
 void PostEffectManager::SetGrayscaleStrength(float strength)
 {
     if (postEffect_ && postEffect_->GetOffscreen()) {
@@ -77,6 +91,13 @@ void PostEffectManager::SetGrayscaleWeights(const Vector3& weights)
 {
     if (postEffect_ && postEffect_->GetOffscreen()) {
         postEffect_->GetOffscreen()->SetGrayscaleWeights(weights);
+    }
+}
+
+void PostEffectManager::SepiaInitialize(const Vector3& sepiaColor, float strength)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SepiaInitialize(sepiaColor, strength);
     }
 }
 

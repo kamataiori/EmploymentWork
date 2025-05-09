@@ -20,6 +20,7 @@ public:
 	/// <summary>
 	/// Vignetteのsetter
 	/// </summary>
+	void VignetteInitialize(float scale, float power, const Vector3& color);
 	void SetVignetteScale(float scale);
 	void SetVignettePower(float power);
 	void SetVignetteColor(const Vector3& color);
@@ -27,12 +28,14 @@ public:
 	/// <summary>
 	/// Grayscaleのsetter
 	/// </summary>
+	void GrayscaleInitialize(float strength, const Vector3& weights);
 	void SetGrayscaleStrength(float strength);
 	void SetGrayscaleWeights(const Vector3& weights);
 
 	/// <summary>
 	/// Sepiaのsetter
 	/// </summary>
+	void SepiaInitialize(const Vector3& sepiaColor, float strength);
 	void SetSepiaColor(const Vector3& sepiaColor);
 	void SetSepiaStrength(float strength);
 

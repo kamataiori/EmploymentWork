@@ -18,8 +18,8 @@ void OffscreenRendering::Initialize(PostEffectType type)
 	graphicsPipelineState = pipelineStates_[static_cast<size_t>(type)];
 
 	VignetteInitialize(16.0f, 0.2f, { 1.0f,1.0f,0.0f });
-	GrayscaleInitialize(1.0f,{ 0.2125f, 0.7154f, 0.0721f });
-	SepiaInitialize({ 0.9f, 0.8f, 0.65f }, 0.9f);
+	GrayscaleInitialize(1.0f, { 0.2125f, 0.7154f, 0.0721f });
+	SepiaInitialize({ 1.0f, 74.0f / 107.0f, 43.0f / 107.0f}, 0.9f);
 }
 
 void OffscreenRendering::Update()
