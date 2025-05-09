@@ -507,6 +507,7 @@
     <FxCompile Include="Resources\shaders\SkinningObject3d.VS.hlsl" />
     <FxCompile Include="Resources\shaders\VignetteYellow.PS.hlsl" />
     <FxCompile Include="Resources\shaders\VignetteRed.PS.hlsl" />
+    <FxCompile Include="Resources\shaders\Sepia.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DirectXGame.rc">

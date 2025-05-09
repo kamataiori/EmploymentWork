@@ -17,7 +17,9 @@ void OffscreenRendering::Initialize(PostEffectType type)
 	//currentType_ = type;
 	graphicsPipelineState = pipelineStates_[static_cast<size_t>(type)];
 
-	VignetteInitialize(16.0f,0.2f,{1.0f,1.0f,0.0f});
+	VignetteInitialize(16.0f, 0.2f, { 1.0f,1.0f,0.0f });
+	GrayscaleInitialize(1.0f,{ 0.2125f, 0.7154f, 0.0721f });
+	SepiaInitialize({ 0.9f, 0.8f, 0.65f }, 0.9f);
 }
 
 void OffscreenRendering::Update()
@@ -36,6 +38,12 @@ void OffscreenRendering::Draw()
 
 	if (currentType_ == PostEffectType::Vignette) {
 		cmd->SetGraphicsRootConstantBufferView(1, vignetteCB_->GetGPUVirtualAddress());
+	}
+	else if (currentType_ == PostEffectType::Grayscale && grayscaleCB_) {
+		cmd->SetGraphicsRootConstantBufferView(1, grayscaleCB_->GetGPUVirtualAddress());
+	}
+	else if (currentType_ == PostEffectType::Sepia && sepiaCB_) {
+		cmd->SetGraphicsRootConstantBufferView(1, sepiaCB_->GetGPUVirtualAddress());
 	}
 
 	cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -91,6 +99,66 @@ void OffscreenRendering::SetVignetteColor(const Vector3& color)
 		mappedVignetteCB_->vignetteColor.x = color.x;
 		mappedVignetteCB_->vignetteColor.y = color.y;
 		mappedVignetteCB_->vignetteColor.z = color.z;
+	}
+}
+
+void OffscreenRendering::GrayscaleInitialize(float strength, const Vector3& weights)
+{
+	if (!grayscaleCB_) {
+		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(GrayscaleCB) + 0xFF) & ~0xFF);
+		HRESULT hr = dxCommon_->GetDevice()->CreateCommittedResource(
+			&heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+			IID_PPV_ARGS(&grayscaleCB_));
+		assert(SUCCEEDED(hr));
+		grayscaleCB_->Map(0, nullptr, reinterpret_cast<void**>(&mappedGrayscaleCB_));
+	}
+	mappedGrayscaleCB_->strength = strength;
+	mappedGrayscaleCB_->weights = weights;
+}
+
+void OffscreenRendering::SetGrayscaleStrength(float strength)
+{
+	if (mappedGrayscaleCB_) {
+		mappedGrayscaleCB_->strength = strength;
+	}
+}
+
+void OffscreenRendering::SetGrayscaleWeights(const Vector3& weights)
+{
+	if (mappedGrayscaleCB_) {
+		mappedGrayscaleCB_->weights = weights;
+	}
+}
+
+void OffscreenRendering::SepiaInitialize(const Vector3& sepiaColor, float strength)
+{
+	if (!sepiaCB_) {
+		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(SepiaCB) + 0xFF) & ~0xFF);
+		HRESULT hr = dxCommon_->GetDevice()->CreateCommittedResource(
+			&heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+			IID_PPV_ARGS(&sepiaCB_));
+		assert(SUCCEEDED(hr));
+		sepiaCB_->Map(0, nullptr, reinterpret_cast<void**>(&mappedSepiaCB_));
+	}
+	mappedSepiaCB_->sepiaColor = sepiaColor;
+	mappedSepiaCB_->sepiaStrength = strength;
+}
+
+void OffscreenRendering::SetSepiaColor(const Vector3& sepiaColor)
+{
+	if (mappedSepiaCB_) {
+		mappedSepiaCB_->sepiaColor = sepiaColor;
+	}
+}
+
+void OffscreenRendering::SetSepiaStrength(float strength)
+{
+	if (mappedSepiaCB_) {
+		mappedSepiaCB_->sepiaStrength = strength;
 	}
 }
 
@@ -408,9 +476,10 @@ void OffscreenRendering::CreateAllPSOs()
 		/*{ PostEffectType::Blur5x5, L"Resources/shaders/BoxFilter.PS.hlsl" },
 		{ PostEffectType::Blur3x3, L"Resources/shaders/BoxFilter3x3.PS.hlsl" },
 		{ PostEffectType::GaussianFilter , L"Resources/shaders/GaussianFilter.PS.hlsl" },
-		{ PostEffectType::RadialBlur , L"Resources/shaders/RadialBlur.PS.hlsl" },
-		{ PostEffectType::Grayscale, L"Resources/shaders/Grayscale.PS.hlsl" },*/
+		{ PostEffectType::RadialBlur , L"Resources/shaders/RadialBlur.PS.hlsl" },*/
+		{ PostEffectType::Grayscale, L"Resources/shaders/Grayscale.PS.hlsl" },
 		{ PostEffectType::Vignette, L"Resources/shaders/Vignette.PS.hlsl" },
+		{ PostEffectType::Sepia, L"Resources/shaders/Sepia.PS.hlsl" },
 	};
 
 	//vertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Fullscreen.VS.hlsl", L"vs_6_0");
@@ -450,11 +519,14 @@ void OffscreenRendering::CreateAllRootSignatures()
 		srvParam.InitAsDescriptorTable(1, &range, D3D12_SHADER_VISIBILITY_PIXEL);
 		params.push_back(srvParam);
 
-		if (static_cast<PostEffectType>(i) == PostEffectType::Vignette) {
+		// Vignette や Grayscale など CBV を使うタイプだけ追加
+		PostEffectType type = static_cast<PostEffectType>(i);
+		if (type == PostEffectType::Vignette || type == PostEffectType::Grayscale || type == PostEffectType::Sepia) {
 			CD3DX12_ROOT_PARAMETER cbvParam;
 			cbvParam.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 			params.push_back(cbvParam);
 		}
+
 
 		D3D12_STATIC_SAMPLER_DESC sampler{};
 		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;

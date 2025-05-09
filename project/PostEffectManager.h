@@ -24,6 +24,18 @@ public:
 	void SetVignettePower(float power);
 	void SetVignetteColor(const Vector3& color);
 
+	/// <summary>
+	/// Grayscaleのsetter
+	/// </summary>
+	void SetGrayscaleStrength(float strength);
+	void SetGrayscaleWeights(const Vector3& weights);
+
+	/// <summary>
+	/// Sepiaのsetter
+	/// </summary>
+	void SetSepiaColor(const Vector3& sepiaColor);
+	void SetSepiaStrength(float strength);
+
 private:
 	PostEffectManager() = default;
 	~PostEffectManager() = default;

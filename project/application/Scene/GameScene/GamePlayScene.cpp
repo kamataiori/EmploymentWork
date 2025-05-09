@@ -197,7 +197,7 @@ void GamePlayScene::Update()
 	}
 
 	if (Input::GetInstance()->TriggerKey(DIK_K)) {
-		//PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
 	// 衝突判定と応答

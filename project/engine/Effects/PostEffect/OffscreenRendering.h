@@ -13,6 +13,7 @@ enum class PostEffectType {
 	RadialBlur,
 	Grayscale,
 	Vignette,
+	Sepia,
 	// 追加可能
 	Count
 };
@@ -70,6 +71,40 @@ public:  // publicメンバ関数
 	/// ビネット：カラーの変更
 	/// </summary>
 	void SetVignetteColor(const Vector3& color);
+
+	/// <summary>
+	/// グレースケール専用の定数バッファ初期化
+	/// </summary>
+	void GrayscaleInitialize(float strength, const Vector3& weights);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="strength"></param>
+	void SetGrayscaleStrength(float strength);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="weights"></param>
+	void SetGrayscaleWeights(const Vector3& weights);
+
+	/// <summary>
+	/// セピア専用の定数バッファ初期化
+	/// </summary>
+	void SepiaInitialize(const Vector3& sepiaColor, float strength);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="sepiaColor"></param>
+	void SetSepiaColor(const Vector3& sepiaColor);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="strength"></param>
+	void SetSepiaStrength(float strength);
 
 private:  // privateメンバ関数
 
@@ -212,4 +247,19 @@ private:  // privateメンバ変数
 	Microsoft::WRL::ComPtr<ID3D12Resource> vignetteCB_;
 	VignetteCB* mappedVignetteCB_ = nullptr;
 
+	//--------Grayscale定数バッファ--------//
+	struct GrayscaleCB {
+		float strength;
+		Vector3 weights;
+	};
+	Microsoft::WRL::ComPtr<ID3D12Resource> grayscaleCB_;
+	GrayscaleCB* mappedGrayscaleCB_ = nullptr;
+
+	//--------Sepia定数バッファ--------//
+	struct SepiaCB {
+		Vector3 sepiaColor;
+		float sepiaStrength;
+	};
+	Microsoft::WRL::ComPtr<ID3D12Resource> sepiaCB_;
+	SepiaCB* mappedSepiaCB_ = nullptr;
 };

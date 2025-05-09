@@ -201,13 +201,23 @@ void TitleScene::Update()
 	cyrinderParticle->Update();
 
 	if (Input::GetInstance()->TriggerKey(DIK_K)) {
-		//PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_I)) {
+		PostEffectManager::GetInstance()->SetGrayscaleWeights({ 0.299f, 0.587f, 0.114f });
 	}
 	if (Input::GetInstance()->TriggerKey(DIK_L)) {
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
 	}
 	if (Input::GetInstance()->TriggerKey(DIK_O)) {
 		PostEffectManager::GetInstance()->SetVignetteColor({ 1.0f,0.85f,0.3f });
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_J)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Sepia);
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_M)) {
+		PostEffectManager::GetInstance()->SetSepiaColor({ 0.4f, 0.3f, 0.9f });
+		PostEffectManager::GetInstance()->SetSepiaStrength(0.9f);
 	}
 
 	// デバッグ

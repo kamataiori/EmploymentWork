@@ -65,3 +65,31 @@ void PostEffectManager::SetVignetteColor(const Vector3& color)
         postEffect_->GetOffscreen()->SetVignetteColor(color);
     }
 }
+
+void PostEffectManager::SetGrayscaleStrength(float strength)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetGrayscaleStrength(strength);
+    }
+}
+
+void PostEffectManager::SetGrayscaleWeights(const Vector3& weights)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetGrayscaleWeights(weights);
+    }
+}
+
+void PostEffectManager::SetSepiaColor(const Vector3& sepiaColor)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetSepiaColor(sepiaColor);
+    }
+}
+
+void PostEffectManager::SetSepiaStrength(float strength)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetSepiaStrength(strength);
+    }
+}
