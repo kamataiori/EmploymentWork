@@ -70,4 +70,8 @@ private:
 	float averageFps_ = 0.0f;
 	static constexpr size_t kFpsHistorySize = 60;
 
+	float deltaTime_ = 0.0f;  // 毎フレームの経過秒数
+	std::chrono::steady_clock::time_point prevTime_;
+
+
 };

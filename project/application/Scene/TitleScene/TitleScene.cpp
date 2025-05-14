@@ -226,6 +226,15 @@ void TitleScene::Update()
 		//PostEffectManager::GetInstance()->SetRadialBlurCenter({ 0.2f,0.2f });
 		PostEffectManager::GetInstance()->SetRadialBlurWidth(0.05f);
 	}
+	if (Input::GetInstance()->TriggerKey(DIK_R)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Random);
+		//PostEffectManager::GetInstance()->Set
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_E)) {
+		// 元画像にちらつくノイズを乗せる
+		PostEffectManager::GetInstance()->SetRandomUseImage(true);
+
+	}
 
 	// デバッグ
 	Debug();

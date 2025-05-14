@@ -17,10 +17,12 @@ void OffscreenRendering::Initialize(PostEffectType type)
 	//currentType_ = type;
 	graphicsPipelineState = pipelineStates_[static_cast<size_t>(type)];
 
+	// 各エフェクトの初期化
 	VignetteInitialize(16.0f, 0.2f, { 1.0f,1.0f,0.0f });
 	GrayscaleInitialize(1.0f, { 0.2125f, 0.7154f, 0.0721f });
 	SepiaInitialize({ 1.0f, 74.0f / 107.0f, 43.0f / 107.0f}, 0.9f);
 	RadialBlurInitialize({ 0.5f,0.5f }, 0.01f, 10);
+	RandomInitialize(1.0f,100.0f,0.5f);
 }
 
 void OffscreenRendering::Update()
@@ -48,6 +50,9 @@ void OffscreenRendering::Draw()
 	}
 	else if (currentType_ == PostEffectType::RadialBlur && radialBlurCB_) {
 		cmd->SetGraphicsRootConstantBufferView(1, radialBlurCB_->GetGPUVirtualAddress());
+	}
+	else if (currentType_ == PostEffectType::Random && randomCB_) {
+		cmd->SetGraphicsRootConstantBufferView(1, randomCB_->GetGPUVirtualAddress());
 	}
 
 
@@ -202,6 +207,52 @@ void OffscreenRendering::SetRadialBlurSamples(int numSamples)
 {
 	if (mappedRadialBlurCB_) {
 		mappedRadialBlurCB_->numSamples = numSamples;
+	}
+}
+
+void OffscreenRendering::RandomInitialize(float time, float scale, float intensity)
+{
+	if (!randomCB_) {
+		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(RandomCB) + 0xFF) & ~0xFF);
+		HRESULT hr = dxCommon_->GetDevice()->CreateCommittedResource(
+			&heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+			IID_PPV_ARGS(&randomCB_));
+		assert(SUCCEEDED(hr));
+		randomCB_->Map(0, nullptr, reinterpret_cast<void**>(&mappedRandomCB_));
+	}
+	mappedRandomCB_->time = time;
+	mappedRandomCB_->scale = scale;
+	mappedRandomCB_->intensity = intensity;
+	/*mappedRandomCB_->dummy = 0.0f;*/
+}
+
+void OffscreenRendering::SetRandomTime(float time)
+{
+	if (mappedRandomCB_) {
+		mappedRandomCB_->time = time;
+	}
+}
+
+void OffscreenRendering::SetRandomScale(float scale)
+{
+	if (mappedRandomCB_) {
+		mappedRandomCB_->scale = scale;
+	}
+}
+
+void OffscreenRendering::SetRandomIntensity(float intensity)
+{
+	if (mappedRandomCB_) {
+		mappedRandomCB_->intensity = intensity;
+	}
+}
+
+void OffscreenRendering::SetRandomUseImage(bool useImage)
+{
+	if (mappedRandomCB_) {
+		mappedRandomCB_->useImage = useImage ? 1.0f : 0.0f;
 	}
 }
 
@@ -448,6 +499,7 @@ void OffscreenRendering::CreateAllPSOs()
 		{ PostEffectType::Grayscale, L"Resources/shaders/Grayscale.PS.hlsl" },
 		{ PostEffectType::Vignette, L"Resources/shaders/Vignette.PS.hlsl" },
 		{ PostEffectType::Sepia, L"Resources/shaders/Sepia.PS.hlsl" },
+		{ PostEffectType::Random, L"Resources/shaders/Random.PS.hlsl" },
 	};
 
 	//vertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Fullscreen.VS.hlsl", L"vs_6_0");
@@ -490,7 +542,7 @@ void OffscreenRendering::CreateAllRootSignatures()
 		// Vignette や Grayscale など CBV を使うタイプだけ追加
 		PostEffectType type = static_cast<PostEffectType>(i);
 		if (type == PostEffectType::Vignette || type == PostEffectType::Grayscale || type == PostEffectType::Sepia ||
-			type == PostEffectType::RadialBlur) 
+			type == PostEffectType::RadialBlur || type == PostEffectType::Random) 
 		{
 			CD3DX12_ROOT_PARAMETER cbvParam;
 			cbvParam.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
