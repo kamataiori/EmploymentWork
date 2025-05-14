@@ -1,9 +1,13 @@
 #include "GamePlayScene.h"
 #include <Input.h>
 #include "SceneManager.h"
+#include <OffscreenRendering.h>
+#include <MyGame.h>
 
 void GamePlayScene::Initialize()
 {
+	//PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
+
 	//-----Spriteの初期化-----
 
 	for (uint32_t i = 0; i < 6; ++i)
@@ -113,6 +117,7 @@ void GamePlayScene::Initialize()
 	collisionMAnager_->RegisterCollider(enemy_.get());
 
 	AddRightDockWindow(kWindowName_MonsterControl);
+
 }
 
 void GamePlayScene::Finalize()
@@ -189,6 +194,10 @@ void GamePlayScene::Update()
 
 		// 各スプライトを更新
 		sprite->Update();
+	}
+
+	if (Input::GetInstance()->TriggerKey(DIK_K)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
 	// 衝突判定と応答

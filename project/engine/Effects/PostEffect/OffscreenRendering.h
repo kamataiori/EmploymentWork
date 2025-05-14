@@ -1,7 +1,25 @@
 #pragma once
 #include "DirectXCommon.h"
+#include <array>
+#include <Vector3.h>
+#include <Vector2.h>
 
 //class DirectXCommon;
+
+enum class PostEffectType {
+	Normal,
+	Blur5x5,
+	Blur3x3,
+	GaussianFilter,
+	RadialBlur,
+	Grayscale,
+	Vignette,
+	Sepia,
+	// 追加可能
+	Count
+};
+
+constexpr size_t kPostEffectCount = static_cast<size_t>(PostEffectType::Count);
 
 class OffscreenRendering
 {
@@ -10,7 +28,7 @@ public:  // publicメンバ関数
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize();
+	void Initialize(PostEffectType type);
 
 	/// <summary>
 	/// 更新
@@ -24,6 +42,90 @@ public:  // publicメンバ関数
 
 	// 
 	uint32_t GetSrvIndex() const { return srvIndex_; }
+
+	/// <summary>
+	/// ポストエフェクトの種類を設定
+	/// </summary>
+	void SetPostEffectType(PostEffectType type);
+
+	/// <summary>
+	/// 現在のポストエフェクトの種類を取得
+	/// </summary>
+	PostEffectType GetPostEffectType() const;
+
+	/// <summary>
+	/// ビネット専用の定数バッファ初期化
+	/// </summary>
+	void VignetteInitialize(float scale, float power, const Vector3& color);
+
+	/// <summary>
+	/// ビネット：スケールの変更
+	/// </summary>
+	void SetVignetteScale(float scale);
+
+	/// <summary>
+	/// ビネット：パワーの変更
+	/// </summary>
+	void SetVignettePower(float power);
+
+	/// <summary>
+	/// ビネット：カラーの変更
+	/// </summary>
+	void SetVignetteColor(const Vector3& color);
+
+	/// <summary>
+	/// グレースケール専用の定数バッファ初期化
+	/// </summary>
+	void GrayscaleInitialize(float strength, const Vector3& weights);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="strength"></param>
+	void SetGrayscaleStrength(float strength);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="weights"></param>
+	void SetGrayscaleWeights(const Vector3& weights);
+
+	/// <summary>
+	/// セピア専用の定数バッファ初期化
+	/// </summary>
+	void SepiaInitialize(const Vector3& sepiaColor, float strength);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="sepiaColor"></param>
+	void SetSepiaColor(const Vector3& sepiaColor);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="strength"></param>
+	void SetSepiaStrength(float strength);
+
+	/// <summary>
+	/// ラジアルブラー専用の定数バッファ初期化
+	/// </summary>
+	void RadialBlurInitialize(const Vector2& center, float blurWidth, int numSamples);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void SetRadialBlurCenter(const Vector2& center);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void SetRadialBlurWidth(float blurWidth);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void SetRadialBlurSamples(int numSamples);
 
 private:  // privateメンバ関数
 
@@ -40,7 +142,7 @@ private:  // privateメンバ関数
 	/// <summary>
 	/// グラフィックスパイプラインの生成
 	/// </summary>
-	void GraphicsPipelineState();
+	//void GraphicsPipelineState(PostEffectType type);
 
 	/// <summary>
 	/// InputLayoutの設定
@@ -66,6 +168,16 @@ private:  // privateメンバ関数
 	/// PSOの生成
 	/// </summary>
 	void PSO();
+
+	/// <summary>
+	/// 全てのポストエフェクト用PSOを生成
+	/// </summary>
+	void CreateAllPSOs();
+
+	/// <summary>
+	/// 全てのRootSignatureを生成
+	/// </summary>
+	void CreateAllRootSignatures();
 
 
 public:  // publicメンバ変数
@@ -132,5 +244,54 @@ private:  // privateメンバ変数
 	// Shaderをコンパイルする
 	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob_{};
 	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob_{};
+
+	// PSO配列（各PostEffectTypeごと）
+	std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, kPostEffectCount> pipelineStates_;
+	// RootSignature配列（各PostEffectTypeごと）
+	std::array<Microsoft::WRL::ComPtr<ID3D12RootSignature>, kPostEffectCount> rootSignatures_;
+
+	// 現在のエフェクトタイプ
+	PostEffectType currentType_ = PostEffectType::Normal;
+
+
+	//--------Vignette定数バッファ--------//
+
+	// Vignette用定数バッファ構造体
+	struct VignetteCB {
+		float vignetteScale;
+		float vignettePower;
+		float padding[2] ;
+		Vector3 vignetteColor;
+	};
+
+	// リソースとマッピングポインタ
+	Microsoft::WRL::ComPtr<ID3D12Resource> vignetteCB_;
+	VignetteCB* mappedVignetteCB_ = nullptr;
+
+	//--------Grayscale定数バッファ--------//
+	struct GrayscaleCB {
+		float strength;
+		Vector3 weights;
+	};
+	Microsoft::WRL::ComPtr<ID3D12Resource> grayscaleCB_;
+	GrayscaleCB* mappedGrayscaleCB_ = nullptr;
+
+	//--------Sepia定数バッファ--------//
+	struct SepiaCB {
+		Vector3 sepiaColor;
+		float sepiaStrength;
+	};
+	Microsoft::WRL::ComPtr<ID3D12Resource> sepiaCB_;
+	SepiaCB* mappedSepiaCB_ = nullptr;
+
+	//--------RadialBlur定数バッファ--------//
+
+	struct RadialBlurCB {
+		Vector2 center;
+		float blurWidth;
+		int numSamples;
+	};
+	Microsoft::WRL::ComPtr<ID3D12Resource> radialBlurCB_;
+	RadialBlurCB* mappedRadialBlurCB_ = nullptr;
 
 };

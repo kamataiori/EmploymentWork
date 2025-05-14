@@ -76,6 +76,7 @@ public:
 	/// </summary>
 	void CheckAllColisions();
 
+
 private:
 
 	float offsetX = 100.0f;  //各スプライトのX座標をずらすオフセット値
@@ -114,5 +115,6 @@ private:
 	std::unique_ptr<CollisionManager> collisionMAnager_;
 
 	Cone cone;
+
 };
 

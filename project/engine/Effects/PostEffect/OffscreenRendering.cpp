@@ -1,8 +1,9 @@
 #include "OffscreenRendering.h"
 #include <Logger.h>
 #include <SrvManager.h>
+#include <externals/DirectXTex/d3dx12.h>
 
-void OffscreenRendering::Initialize()
+void OffscreenRendering::Initialize(PostEffectType type)
 {
 	// 引数で受け取ってメンバ変数に記録する
 	dxCommon_ = DirectXCommon::GetInstance();
@@ -11,7 +12,15 @@ void OffscreenRendering::Initialize()
 	//RenderTexture();
 
 	// グラフィックスパイプラインの生成
-	GraphicsPipelineState();
+	CreateAllRootSignatures();
+	CreateAllPSOs();  // 全PSOを一括生成
+	//currentType_ = type;
+	graphicsPipelineState = pipelineStates_[static_cast<size_t>(type)];
+
+	VignetteInitialize(16.0f, 0.2f, { 1.0f,1.0f,0.0f });
+	GrayscaleInitialize(1.0f, { 0.2125f, 0.7154f, 0.0721f });
+	SepiaInitialize({ 1.0f, 74.0f / 107.0f, 43.0f / 107.0f}, 0.9f);
+	RadialBlurInitialize({ 0.5f,0.5f }, 0.01f, 10);
 }
 
 void OffscreenRendering::Update()
@@ -20,27 +29,180 @@ void OffscreenRendering::Update()
 
 void OffscreenRendering::Draw()
 {
-	// ルートシグネチャの設定
-	dxCommon_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+	ID3D12GraphicsCommandList* cmd = dxCommon_->GetCommandList().Get();
+	size_t i = static_cast<size_t>(currentType_);
 
-	// パイプラインステートの設定
-	dxCommon_->GetCommandList()->SetPipelineState(graphicsPipelineState.Get());
+	cmd->SetPipelineState(pipelineStates_[i].Get());
+	cmd->SetGraphicsRootSignature(rootSignatures_[i].Get());
 
-	// トポロジの設定
-	dxCommon_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	cmd->SetGraphicsRootDescriptorTable(0, SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex_));
 
-	//srvIndex_ = SrvManager::GetInstance()->Allocate();
-	////dxCommon_->GetCommandList()->SetGraphicsRootDescriptorTable(0, srvIndex_);
+	if (currentType_ == PostEffectType::Vignette) {
+		cmd->SetGraphicsRootConstantBufferView(1, vignetteCB_->GetGPUVirtualAddress());
+	}
+	else if (currentType_ == PostEffectType::Grayscale && grayscaleCB_) {
+		cmd->SetGraphicsRootConstantBufferView(1, grayscaleCB_->GetGPUVirtualAddress());
+	}
+	else if (currentType_ == PostEffectType::Sepia && sepiaCB_) {
+		cmd->SetGraphicsRootConstantBufferView(1, sepiaCB_->GetGPUVirtualAddress());
+	}
+	else if (currentType_ == PostEffectType::RadialBlur && radialBlurCB_) {
+		cmd->SetGraphicsRootConstantBufferView(1, radialBlurCB_->GetGPUVirtualAddress());
+	}
 
-	//SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, srvIndex_);
 
-	// DescriptorTable（SRV）の設定
-	D3D12_GPU_DESCRIPTOR_HANDLE srvHandle =
-		SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex_);
-	dxCommon_->GetCommandList()->SetGraphicsRootDescriptorTable(0, srvHandle);
+	cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	cmd->DrawInstanced(3, 1, 0, 0);
+}
 
-	// 描画
-	dxCommon_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+void OffscreenRendering::SetPostEffectType(PostEffectType type)
+{
+	if (currentType_ == type) return;  // 同じならスキップ
+	currentType_ = type;
+	graphicsPipelineState = pipelineStates_[static_cast<size_t>(type)];
+}
+
+PostEffectType OffscreenRendering::GetPostEffectType() const
+{
+	return currentType_;
+}
+
+void OffscreenRendering::VignetteInitialize(float scale, float power, const Vector3& color)
+{
+	if (!vignetteCB_) {
+		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(VignetteCB) + 0xFF) & ~0xFF);
+		HRESULT hr = dxCommon_->GetDevice()->CreateCommittedResource(
+			&heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+			IID_PPV_ARGS(&vignetteCB_));
+		assert(SUCCEEDED(hr));
+		vignetteCB_->Map(0, nullptr, reinterpret_cast<void**>(&mappedVignetteCB_));
+	}
+	mappedVignetteCB_->vignetteScale = scale;
+	mappedVignetteCB_->vignettePower = power;
+	mappedVignetteCB_->vignetteColor = color;
+}
+
+void OffscreenRendering::SetVignetteScale(float scale)
+{
+	if (mappedVignetteCB_) {
+		mappedVignetteCB_->vignetteScale = scale;
+	}
+}
+
+void OffscreenRendering::SetVignettePower(float power)
+{
+	if (mappedVignetteCB_) {
+		mappedVignetteCB_->vignettePower = power;
+	}
+}
+
+void OffscreenRendering::SetVignetteColor(const Vector3& color)
+{
+	if (mappedVignetteCB_) {
+		mappedVignetteCB_->vignetteColor.x = color.x;
+		mappedVignetteCB_->vignetteColor.y = color.y;
+		mappedVignetteCB_->vignetteColor.z = color.z;
+	}
+}
+
+void OffscreenRendering::GrayscaleInitialize(float strength, const Vector3& weights)
+{
+	if (!grayscaleCB_) {
+		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(GrayscaleCB) + 0xFF) & ~0xFF);
+		HRESULT hr = dxCommon_->GetDevice()->CreateCommittedResource(
+			&heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+			IID_PPV_ARGS(&grayscaleCB_));
+		assert(SUCCEEDED(hr));
+		grayscaleCB_->Map(0, nullptr, reinterpret_cast<void**>(&mappedGrayscaleCB_));
+	}
+	mappedGrayscaleCB_->strength = strength;
+	mappedGrayscaleCB_->weights = weights;
+}
+
+void OffscreenRendering::SetGrayscaleStrength(float strength)
+{
+	if (mappedGrayscaleCB_) {
+		mappedGrayscaleCB_->strength = strength;
+	}
+}
+
+void OffscreenRendering::SetGrayscaleWeights(const Vector3& weights)
+{
+	if (mappedGrayscaleCB_) {
+		mappedGrayscaleCB_->weights = weights;
+	}
+}
+
+void OffscreenRendering::SepiaInitialize(const Vector3& sepiaColor, float strength)
+{
+	if (!sepiaCB_) {
+		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(SepiaCB) + 0xFF) & ~0xFF);
+		HRESULT hr = dxCommon_->GetDevice()->CreateCommittedResource(
+			&heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+			IID_PPV_ARGS(&sepiaCB_));
+		assert(SUCCEEDED(hr));
+		sepiaCB_->Map(0, nullptr, reinterpret_cast<void**>(&mappedSepiaCB_));
+	}
+	mappedSepiaCB_->sepiaColor = sepiaColor;
+	mappedSepiaCB_->sepiaStrength = strength;
+}
+
+void OffscreenRendering::SetSepiaColor(const Vector3& sepiaColor)
+{
+	if (mappedSepiaCB_) {
+		mappedSepiaCB_->sepiaColor = sepiaColor;
+	}
+}
+
+void OffscreenRendering::SetSepiaStrength(float strength)
+{
+	if (mappedSepiaCB_) {
+		mappedSepiaCB_->sepiaStrength = strength;
+	}
+}
+
+void OffscreenRendering::RadialBlurInitialize(const Vector2& center, float blurWidth, int numSamples)
+{
+	if (!radialBlurCB_) {
+		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(RadialBlurCB) + 0xFF) & ~0xFF);
+		HRESULT hr = dxCommon_->GetDevice()->CreateCommittedResource(
+			&heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+			IID_PPV_ARGS(&radialBlurCB_));
+		assert(SUCCEEDED(hr));
+		radialBlurCB_->Map(0, nullptr, reinterpret_cast<void**>(&mappedRadialBlurCB_));
+	}
+	mappedRadialBlurCB_->center = center;
+	mappedRadialBlurCB_->blurWidth = blurWidth;
+	mappedRadialBlurCB_->numSamples = numSamples;
+}
+
+void OffscreenRendering::SetRadialBlurCenter(const Vector2& center)
+{
+	if (mappedRadialBlurCB_) {
+		mappedRadialBlurCB_->center = center;
+	}
+}
+
+void OffscreenRendering::SetRadialBlurWidth(float blurWidth)
+{
+	if (mappedRadialBlurCB_) {
+		mappedRadialBlurCB_->blurWidth = blurWidth;
+	}
+}
+
+void OffscreenRendering::SetRadialBlurSamples(int numSamples)
+{
+	if (mappedRadialBlurCB_) {
+		mappedRadialBlurCB_->numSamples = numSamples;
+	}
 }
 
 void OffscreenRendering::RenderTexture()
@@ -63,87 +225,12 @@ void OffscreenRendering::RenderTexture()
 
 	//--------SRVの作成--------//
 
-	//// SRVの設定。FormatはResourceと同じにしておく
-	//D3D12_SHADER_RESOURCE_VIEW_DESC renderTextureSrvDesc{};
-	//renderTextureSrvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-	//renderTextureSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	//renderTextureSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	//renderTextureSrvDesc.Texture2D.MipLevels = 1;
-
-	//// SRVの生成
-	//dxCommon_->GetDevice()->CreateShaderResourceView(
-	//	renderTextureResource.Get(),
-	//	&renderTextureSrvDesc,
-	//	dxCommon_->GetCPUDescriptorHandle(SrvManager::GetInstance()->GetSrvDescriptorHeap().Get(), SrvManager::GetInstance()->GetDescriptorSizeSRV(), 10) // 適切なハンドルを取得
-	//);
-
 	srvIndex_ = SrvManager::GetInstance()->Allocate();
 
 	SrvManager::GetInstance()->CreateSRVforTexture2D(srvIndex_, renderTextureResource.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
 
 
 }
-
-//void OffscreenRendering::RootSignature()
-//{
-//	////=========DescriptorRange=========////
-//
-//	descriptorRange_[0].BaseShaderRegister = 0;  //0から始まる
-//	descriptorRange_[0].NumDescriptors = 1;  //数は1
-//	descriptorRange_[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;  //SRVを使う
-//	descriptorRange_[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;  //Offsetを自動計算
-//
-//
-//	////=========RootSignatureを生成する=========////
-//
-//	// RootSignature作成
-//	descriptionRootSignature_.Flags =
-//		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-//
-//
-//	// RootSignature作成。複数設定できるので配列。
-//	rootParameters_[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;    //CBVを使う
-//	rootParameters_[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;    //PixelShaderで使う
-//	rootParameters_[0].Descriptor.ShaderRegister = 0;    //レジスタ番号0とバインド
-//	rootParameters_[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;      //CBVを使う
-//	rootParameters_[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;    //VertexShaderで使う
-//	rootParameters_[1].Descriptor.ShaderRegister = 0;      //レジスタ番号0を使う
-//	rootParameters_[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;  //DescriptorTableを使う
-//	rootParameters_[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-//	rootParameters_[2].DescriptorTable.pDescriptorRanges = descriptorRange_;
-//	rootParameters_[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_);
-//
-//	descriptionRootSignature_.pParameters = rootParameters_;    //ルートパラメータ配列へのポインタ
-//	descriptionRootSignature_.NumParameters = _countof(rootParameters_);    //配列の長さ
-//
-//
-//	////=========Samplerの設定=========////
-//
-//	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
-//	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;  //バイリニアフィルタ
-//	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;  //0～1の範囲外をリピート
-//	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-//	staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-//	staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;  //比較しない
-//	staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX;  //ありったけのMipmapを使う
-//	staticSamplers[0].ShaderRegister = 0;  //レジスタ番号0を使う
-//	staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;  //PixelShaderで使う
-//	descriptionRootSignature_.pStaticSamplers = staticSamplers;
-//	descriptionRootSignature_.NumStaticSamplers = _countof(staticSamplers);
-//
-//
-//	// シリアライズしてバイナリにする
-//	HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature_,
-//		D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-//	if (FAILED(hr)) {
-//		Logger::Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
-//		assert(false);
-//	}
-//	// バイナリを元に生成
-//	hr = dxCommon_->GetDevice().Get()->CreateRootSignature(0, signatureBlob->GetBufferPointer(),
-//		signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature_));
-//	assert(SUCCEEDED(hr));
-//}
 
 void OffscreenRendering::RootSignature()
 {
@@ -190,52 +277,52 @@ void OffscreenRendering::RootSignature()
 }
 
 
-void OffscreenRendering::GraphicsPipelineState()
-{
-	// ルートシグネチャの生成
-	RootSignature();
-
-	////=========InputLayoutの設定を行う=========////
-
-	InputLayout();
-
-
-	////=========BlendStateの設定を行う=========////
-
-	BlendState();
-
-	////=========RasterizerStateの設定を行う=========////
-
-	RasterizerState();
-
-
-	////=========ShaderをCompileする=========////
-
-	vertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Fullscreen.VS.hlsl",
-		L"vs_6_0"/*, dxCommon->GetDxcUtils(), dxCommon->GetDxcCompiler(), dxCommon->GetIncludeHandler()*/);
-	if (vertexShaderBlob_ == nullptr) {
-		Logger::Log("vertexShaderBlob_\n");
-		exit(1);
-	}
-	assert(vertexShaderBlob_ != nullptr);
-	pixelShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/VignetteYellow.PS.hlsl",
-		L"ps_6_0"/*, dxCommon->GetDxcUtils(), dxCommon->GetDxcCompiler(), dxCommon->GetIncludeHandler()*/);
-	if (pixelShaderBlob_ == nullptr) {
-		Logger::Log("pixelShaderBlob_\n");
-		exit(1);
-	}
-	assert(pixelShaderBlob_ != nullptr);
-
-
-	////=========DepthStencilStateの設定を行う=========////
-
-	DepthStencilState();
-
-
-	////=========PSOを生成する=========////
-
-	PSO();
-}
+//void OffscreenRendering::GraphicsPipelineState(PostEffectType type)
+//{
+//	// ルートシグネチャの生成
+//	RootSignature();
+//
+//	////=========InputLayoutの設定を行う=========////
+//
+//	InputLayout();
+//
+//
+//	////=========BlendStateの設定を行う=========////
+//
+//	BlendState();
+//
+//	////=========RasterizerStateの設定を行う=========////
+//
+//	RasterizerState();
+//
+//
+//	////=========ShaderをCompileする=========////
+//
+//	vertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Fullscreen.VS.hlsl",
+//		L"vs_6_0"/*, dxCommon->GetDxcUtils(), dxCommon->GetDxcCompiler(), dxCommon->GetIncludeHandler()*/);
+//	if (vertexShaderBlob_ == nullptr) {
+//		Logger::Log("vertexShaderBlob_\n");
+//		exit(1);
+//	}
+//	assert(vertexShaderBlob_ != nullptr);
+//	pixelShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/CopyImage.PS.hlsl",
+//		L"ps_6_0"/*, dxCommon->GetDxcUtils(), dxCommon->GetDxcCompiler(), dxCommon->GetIncludeHandler()*/);
+//	if (pixelShaderBlob_ == nullptr) {
+//		Logger::Log("pixelShaderBlob_\n");
+//		exit(1);
+//	}
+//	assert(pixelShaderBlob_ != nullptr);
+//
+//
+//	////=========DepthStencilStateの設定を行う=========////
+//
+//	DepthStencilState();
+//
+//
+//	////=========PSOを生成する=========////
+//
+//	PSO();
+//}
 
 void OffscreenRendering::InputLayout()
 {
@@ -342,3 +429,92 @@ void OffscreenRendering::PSO()
 
 	assert(SUCCEEDED(hr));
 }
+
+void OffscreenRendering::CreateAllPSOs()
+{
+	vertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Fullscreen.VS.hlsl", L"vs_6_0");
+
+	struct PostEffectShader {
+		PostEffectType type;
+		std::wstring psPath;
+	};
+
+	std::vector<PostEffectShader> shaders = {
+		{ PostEffectType::Normal, L"Resources/shaders/CopyImage.PS.hlsl" },
+		/*{ PostEffectType::Blur5x5, L"Resources/shaders/BoxFilter.PS.hlsl" },
+		{ PostEffectType::Blur3x3, L"Resources/shaders/BoxFilter3x3.PS.hlsl" },
+		{ PostEffectType::GaussianFilter , L"Resources/shaders/GaussianFilter.PS.hlsl" },*/
+		{ PostEffectType::RadialBlur , L"Resources/shaders/RadialBlur.PS.hlsl" },
+		{ PostEffectType::Grayscale, L"Resources/shaders/Grayscale.PS.hlsl" },
+		{ PostEffectType::Vignette, L"Resources/shaders/Vignette.PS.hlsl" },
+		{ PostEffectType::Sepia, L"Resources/shaders/Sepia.PS.hlsl" },
+	};
+
+	//vertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Fullscreen.VS.hlsl", L"vs_6_0");
+
+	for (const auto& shader : shaders) {
+		auto ps = dxCommon_->CompileShader(shader.psPath.c_str(), L"ps_6_0");
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
+		desc.pRootSignature = rootSignatures_[static_cast<size_t>(shader.type)].Get();
+		desc.VS = { vertexShaderBlob_->GetBufferPointer(), vertexShaderBlob_->GetBufferSize() };
+		desc.PS = { ps->GetBufferPointer(), ps->GetBufferSize() };
+		desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		desc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		desc.InputLayout = { nullptr, 0 };
+		desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+		desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		desc.NumRenderTargets = 1;
+		desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		desc.SampleDesc.Count = 1;
+
+		HRESULT hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineStates_[static_cast<size_t>(shader.type)]));
+		assert(SUCCEEDED(hr));
+	}
+}
+
+void OffscreenRendering::CreateAllRootSignatures()
+{
+	for (size_t i = 0; i < kPostEffectCount; ++i) {
+		CD3DX12_DESCRIPTOR_RANGE range;
+		range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+		std::vector<CD3DX12_ROOT_PARAMETER> params;
+
+		CD3DX12_ROOT_PARAMETER srvParam;
+		srvParam.InitAsDescriptorTable(1, &range, D3D12_SHADER_VISIBILITY_PIXEL);
+		params.push_back(srvParam);
+
+		// Vignette や Grayscale など CBV を使うタイプだけ追加
+		PostEffectType type = static_cast<PostEffectType>(i);
+		if (type == PostEffectType::Vignette || type == PostEffectType::Grayscale || type == PostEffectType::Sepia ||
+			type == PostEffectType::RadialBlur) 
+		{
+			CD3DX12_ROOT_PARAMETER cbvParam;
+			cbvParam.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+			params.push_back(cbvParam);
+		}
+
+
+		D3D12_STATIC_SAMPLER_DESC sampler{};
+		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+		sampler.AddressU = sampler.AddressV = sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		sampler.ShaderRegister = 0;
+		sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+		CD3DX12_ROOT_SIGNATURE_DESC desc;
+		desc.Init((UINT)params.size(), params.data(), 1, &sampler,
+			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+		Microsoft::WRL::ComPtr<ID3DBlob> sigBlob;
+		Microsoft::WRL::ComPtr<ID3DBlob> errBlob;
+		HRESULT hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob);
+		assert(SUCCEEDED(hr));
+
+		hr = dxCommon_->GetDevice()->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignatures_[i]));
+		assert(SUCCEEDED(hr));
+	}
+}
+

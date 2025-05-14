@@ -417,42 +417,6 @@ void DirectXCommon::Finalize()
 	delete instance;
 	instance = nullptr;
 
-	// 順序に沿ってリソースを解放
-	//if (commandList) {
-	//	commandList.Reset();
-	//	//commandList = nullptr;
-	//}
-
-	/*if (commandAllocator) {
-		commandAllocator->Release();
-		commandAllocator = nullptr;
-	}*/
-
-	/*if (commandQueue) {
-		commandQueue->Release();
-		commandQueue = nullptr;
-	}*/
-
-	/*if (fence) {
-		fence->Release();
-		fence = nullptr;
-	}*/
-
-	/*if (fenceEvent) {
-		CloseHandle(fenceEvent);
-		fenceEvent = nullptr;
-	}*/
-
-	/*if (swapChain) {
-		swapChain->Release();
-		swapChain = nullptr;
-	}*/
-
-	/*if (device) {
-		device->Release();
-		device = nullptr;
-	}*/
-
 }
 
 
@@ -841,27 +805,6 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::CreateRenderTextureResourc
 	assert(SUCCEEDED(hr));
 	return resource;
 }
-
-// テクスチャデータの転送
-//Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages)
-//{
-//	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
-//	for (size_t mipLevel = 0; mipLevel < metadata.mipLevels; ++mipLevel)
-//	{
-//		const DirectX::Image* img = mipImages.GetImage(mipLevel, 0, 0);
-//		HRESULT hr = texture->WriteToSubresource(
-//			UINT(mipLevel),
-//			nullptr,
-//			img->pixels,
-//			UINT(img->rowPitch),
-//			UINT(img->slicePitch)
-//		);
-//		assert(SUCCEEDED(hr));
-//	}
-//
-//	return texture;
-//
-//}
 
 [[nodiscard]]
 Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::UploadTextureData(

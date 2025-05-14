@@ -19,8 +19,8 @@ void UnityScene::Initialize()
 	BaseScene::GetLight()->SetSpotLightIntensity({ 4.0f });*/
 
 
-	offscreenRendering_ = std::make_unique<OffscreenRendering>();
-	offscreenRendering_->Initialize();
+	/*offscreenRendering_ = std::make_unique<OffscreenRendering>();
+	offscreenRendering_->Initialize(PostEffectType::Vignette);*/
 
 	// ImGuiスタイルの設定
 	ImGuiStyle& style = ImGui::GetStyle();

@@ -1,6 +1,7 @@
 #pragma once
 #include "Light.h"
 #include <chrono>
+#include "PostEffect.h"
 
 // 前方宣言
 class SceneManager;

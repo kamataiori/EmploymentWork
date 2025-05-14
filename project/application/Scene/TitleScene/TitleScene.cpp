@@ -3,6 +3,7 @@
 #include "Input.h"
 #include "ImGuiManager.h"
 #include "GlobalVariables.h"
+#include <PostEffectManager.h>
 
 void TitleScene::Initialize()
 {
@@ -199,6 +200,33 @@ void TitleScene::Update()
 	ringParticle->Update();
 	cyrinderParticle->Update();
 
+	if (Input::GetInstance()->TriggerKey(DIK_K)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_I)) {
+		PostEffectManager::GetInstance()->SetGrayscaleWeights({ 0.299f, 0.587f, 0.114f });
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_L)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_O)) {
+		PostEffectManager::GetInstance()->SetVignetteColor({ 1.0f,0.85f,0.3f });
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_J)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Sepia);
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_M)) {
+		PostEffectManager::GetInstance()->SetSepiaColor({ 0.4f, 0.3f, 0.9f });
+		PostEffectManager::GetInstance()->SetSepiaStrength(0.9f);
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_B)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_G)) {
+		//PostEffectManager::GetInstance()->SetRadialBlurCenter({ 0.2f,0.2f });
+		PostEffectManager::GetInstance()->SetRadialBlurWidth(0.05f);
+	}
+
 	// デバッグ
 	Debug();
 	
@@ -227,6 +255,7 @@ void TitleScene::Update()
 	// キー入力でフェード開始（シーン遷移予約）
 	if (!fade_->IsActive()) {
 		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
 			fade_->Start(Fade::Status::FadeOut, 2.0f);
 			nextSceneName_ = "GAMEPLAY";
 		}

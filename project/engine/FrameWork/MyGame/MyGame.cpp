@@ -17,11 +17,12 @@ void MyGame::Initialize()
 	imGuiManager_ = std::make_unique<ImGuiManager>();
 	imGuiManager_->Initialize(winApp.get(), DirectXCommon::GetInstance());
 
-	offscreenRendering->Initialize();
+	//offscreenRendering->Initialize(PostEffectType::Normal);
+	//postEffect->Initialize(PostEffectType::Normal);
+	PostEffectManager::GetInstance()->Initialize(PostEffectType::Normal);
 
 	GlobalVariables::GetInstance()->LoadFiles();
 }
-
 
 void MyGame::Finalize()
 {
@@ -144,7 +145,9 @@ void MyGame::Draw()
 
 	SrvManager::GetInstance()->PreDraw();
 
-	offscreenRendering->Draw();
+	//offscreenRendering->Draw();
+	//postEffect->Draw();
+	PostEffectManager::GetInstance()->Draw();
 
 	// ImGuiの描画 (スワップチェーンに対して)
 	imGuiManager_->Draw();
@@ -289,7 +292,7 @@ void MyGame::DrawCenterPanel()
 {
 	ImGui::Begin("SceneView");
 	ImTextureID textureID = (ImTextureID)SrvManager::GetInstance()
-		->GetGPUDescriptorHandle(offscreenRendering->GetSrvIndex()).ptr;
+		->GetGPUDescriptorHandle(PostEffectManager::GetInstance()->GetSrvIndex()).ptr;
 	ImGui::Image(textureID, ImGui::GetContentRegionAvail());
 	ImGui::End();
 }

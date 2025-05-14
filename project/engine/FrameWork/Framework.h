@@ -16,6 +16,7 @@
 #include "DrawTriangleCommon.h"
 #include <DrawTriangle.h>
 #include <Skinning.h>
+#include "PostEffectManager.h"
 
 static const int kWindowWidth = 1280;
 static const int kWindowHeight = 720;
