@@ -20,6 +20,7 @@ void MyGame::Initialize()
 	//offscreenRendering->Initialize(PostEffectType::Normal);
 	//postEffect->Initialize(PostEffectType::Normal);
 	PostEffectManager::GetInstance()->Initialize(PostEffectType::Normal);
+	prevTime_ = std::chrono::steady_clock::now();
 
 	GlobalVariables::GetInstance()->LoadFiles();
 }
@@ -110,6 +111,15 @@ void MyGame::Update()
 	for (float f : fpsHistory_) sum += f;
 	averageFps_ = sum / static_cast<float>(fpsHistory_.size());
 
+	using namespace std::chrono;
+
+	// 時間の差分計算
+	auto randomNow = steady_clock::now();
+	deltaTime_ = duration<float>(randomNow - prevTime_).count();
+	prevTime_ = randomNow;
+
+	// PostEffectManagerにdeltaTimeを渡す
+	PostEffectManager::GetInstance()->RandomUpdate(deltaTime_);
 }
 
 void MyGame::Draw()

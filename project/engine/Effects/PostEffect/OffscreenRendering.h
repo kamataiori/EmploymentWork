@@ -15,6 +15,7 @@ enum class PostEffectType {
 	Grayscale,
 	Vignette,
 	Sepia,
+	Random,
 	// 追加可能
 	Count
 };
@@ -126,6 +127,31 @@ public:  // publicメンバ関数
 	/// 
 	/// </summary>
 	void SetRadialBlurSamples(int numSamples);
+
+	/// <summary>
+	/// ランダム専用の定数バッファ初期化
+	/// </summary>
+	void RandomInitialize(float time, float scale, float intensity);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void SetRandomTime(float time);
+	
+	/// <summary>
+	/// 
+	/// </summary>
+	void SetRandomScale(float scale);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void SetRandomIntensity(float intensity);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void SetRandomUseImage(bool useImage);
 
 private:  // privateメンバ関数
 
@@ -260,7 +286,7 @@ private:  // privateメンバ変数
 	struct VignetteCB {
 		float vignetteScale;
 		float vignettePower;
-		float padding[2] ;
+		float padding[2];
 		Vector3 vignetteColor;
 	};
 
@@ -293,5 +319,16 @@ private:  // privateメンバ変数
 	};
 	Microsoft::WRL::ComPtr<ID3D12Resource> radialBlurCB_;
 	RadialBlurCB* mappedRadialBlurCB_ = nullptr;
+
+	//--------Random定数バッファ--------//
+
+	struct RandomCB { 
+		float time; 
+		float scale; 
+		float intensity; 
+		float useImage;
+	};
+	Microsoft::WRL::ComPtr<ID3D12Resource> randomCB_;
+	RandomCB* mappedRandomCB_ = nullptr;
 
 };

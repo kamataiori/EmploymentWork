@@ -142,3 +142,46 @@ void PostEffectManager::SetRadialBlurSamples(int numSamples)
         postEffect_->GetOffscreen()->SetRadialBlurSamples(numSamples);
     }
 }
+
+void PostEffectManager::RandomInitialize(float time, float scale, float intensity)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->RandomInitialize(time, scale, intensity);
+    }
+}
+
+void PostEffectManager::RandomUpdate(float deltaTime)
+{
+    if (postEffect_ && postEffect_->GetType() == PostEffectType::Random) {
+        randomTime_ += deltaTime;
+        postEffect_->GetOffscreen()->SetRandomTime(randomTime_);
+    }
+}
+
+void PostEffectManager::SetRandomTime(float time)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetRandomTime(time);
+    }
+}
+
+void PostEffectManager::SetRandomScale(float scale)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetRandomScale(scale);
+    }
+}
+
+void PostEffectManager::SetRandomIntensity(float intensity)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetRandomIntensity(intensity);
+    }
+}
+
+void PostEffectManager::SetRandomUseImage(bool useImage)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetRandomUseImage(useImage);
+    }
+}

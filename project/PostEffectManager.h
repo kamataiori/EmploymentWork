@@ -1,4 +1,3 @@
-// PostEffectManager.h
 #pragma once
 #include <memory>
 #include "PostEffect.h"
@@ -47,6 +46,16 @@ public:
 	void SetRadialBlurWidth(float blurWidth);
 	void SetRadialBlurSamples(int numSamples);
 
+	/// <summary>
+	/// Randomのsetter
+	/// </summary>
+	void RandomInitialize(float time, float scale, float intensity);
+	void RandomUpdate(float deltaTime);
+	void SetRandomTime(float time);
+	void SetRandomScale(float scale);
+	void SetRandomIntensity(float intensity);
+	void SetRandomUseImage(bool useImage);
+
 private:
 	PostEffectManager() = default;
 	~PostEffectManager() = default;
@@ -55,4 +64,6 @@ private:
 
 private:
 	std::unique_ptr<PostEffect> postEffect_ = nullptr;
+
+	float randomTime_ = 0.0f;
 };
