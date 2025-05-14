@@ -1,44 +1,40 @@
 #include "Fullscreen.hlsli"
 
-Texture2D<float32_t4> gTexture : register(t0);
+cbuffer RadialBlurSettings : register(b0)
+{
+    float2 center; // ブラーの中心座標（0.0～1.0）
+    float blurWidth; // ブラーの拡がり幅（小さいほど狭い）
+    int numSamples; // サンプル数（多いほど滑らか、処理は重い）
+};
+
+Texture2D<float4> gTexture : register(t0);
 SamplerState gSamplerLinear : register(s0);
 
 struct PixelShaderOutput
 {
-    float32_t4 color : SV_TARGET0;
+    float4 color : SV_TARGET;
 };
 
 PixelShaderOutput main(VertexShaderOutput input)
 {
-    // 中心点 ここを基準に放射状にブラーがかかる
-    const float32_t2 kCenter = float32_t2(0.5f, 0.5f);
+    PixelShaderOutput output;
 
-    // サンプリング数。多いほど滑らかだが重い
-    const int32_t kNumSamples = 10;
+    // テクスチャ座標から中心へのベクトルを計算
+    float2 direction = input.texcoord - center;
 
-    // ぼかしの幅。大きいほど広がる
-    const float32_t kBlurWidth = 0.01f;
+    // サンプル色初期化
+    float3 result = float3(0.0, 0.0, 0.0);
 
-    // 現在のUVに対しての方向を計算
-    float32_t2 direction = input.texcoord - kCenter;
-
-    // 出力色を初期化
-    float32_t3 outputColor = float32_t3(0.0f, 0.0f, 0.0f);
-
-    // サンプリング
-    for (int32_t sampleIndex = 0; sampleIndex < kNumSamples; ++sampleIndex)
+    // 複数のオフセット位置をサンプリングして平均化（放射状）
+    for (int i = 0; i < numSamples; ++i)
     {
-        // 現在のUV座標から放射状にサンプリング点を進めながらサンプリングしていく
-        float32_t2 texcoord = input.texcoord + direction * kBlurWidth * float32_t(sampleIndex);
-        outputColor.rgb += gTexture.Sample(gSamplerLinear, texcoord).rgb;
+        float rate = blurWidth * (float) i;
+        float2 offset = direction * rate;
+        result += gTexture.Sample(gSamplerLinear, input.texcoord - offset).rgb;
     }
 
-    // 平均化する
-    outputColor.rgb *= rcp(kNumSamples);
+    result /= numSamples; // サンプル数で平均化
 
-    // 出力
-    PixelShaderOutput output;
-    output.color.rgb = outputColor;
-    output.color.a = 1.0f;
+    output.color = float4(result, 1.0f); // アルファは固定
     return output;
 }

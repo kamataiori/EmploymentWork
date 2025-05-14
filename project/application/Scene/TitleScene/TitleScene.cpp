@@ -219,6 +219,13 @@ void TitleScene::Update()
 		PostEffectManager::GetInstance()->SetSepiaColor({ 0.4f, 0.3f, 0.9f });
 		PostEffectManager::GetInstance()->SetSepiaStrength(0.9f);
 	}
+	if (Input::GetInstance()->TriggerKey(DIK_B)) {
+		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
+	}
+	if (Input::GetInstance()->TriggerKey(DIK_G)) {
+		//PostEffectManager::GetInstance()->SetRadialBlurCenter({ 0.2f,0.2f });
+		PostEffectManager::GetInstance()->SetRadialBlurWidth(0.05f);
+	}
 
 	// デバッグ
 	Debug();

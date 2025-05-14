@@ -2,6 +2,7 @@
 #include "DirectXCommon.h"
 #include <array>
 #include <Vector3.h>
+#include <Vector2.h>
 
 //class DirectXCommon;
 
@@ -105,6 +106,26 @@ public:  // publicメンバ関数
 	/// </summary>
 	/// <param name="strength"></param>
 	void SetSepiaStrength(float strength);
+
+	/// <summary>
+	/// ラジアルブラー専用の定数バッファ初期化
+	/// </summary>
+	void RadialBlurInitialize(const Vector2& center, float blurWidth, int numSamples);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void SetRadialBlurCenter(const Vector2& center);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void SetRadialBlurWidth(float blurWidth);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void SetRadialBlurSamples(int numSamples);
 
 private:  // privateメンバ関数
 
@@ -262,4 +283,15 @@ private:  // privateメンバ変数
 	};
 	Microsoft::WRL::ComPtr<ID3D12Resource> sepiaCB_;
 	SepiaCB* mappedSepiaCB_ = nullptr;
+
+	//--------RadialBlur定数バッファ--------//
+
+	struct RadialBlurCB {
+		Vector2 center;
+		float blurWidth;
+		int numSamples;
+	};
+	Microsoft::WRL::ComPtr<ID3D12Resource> radialBlurCB_;
+	RadialBlurCB* mappedRadialBlurCB_ = nullptr;
+
 };

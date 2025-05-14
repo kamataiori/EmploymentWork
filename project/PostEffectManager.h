@@ -39,6 +39,14 @@ public:
 	void SetSepiaColor(const Vector3& sepiaColor);
 	void SetSepiaStrength(float strength);
 
+	/// <summary>
+	/// RadialBlurのsetter
+	/// </summary>
+	void RadialBlurInitialize(const Vector2& center, float blurWidth, int numSamples);
+	void SetRadialBlurCenter(const Vector2& center);
+	void SetRadialBlurWidth(float blurWidth);
+	void SetRadialBlurSamples(int numSamples);
+
 private:
 	PostEffectManager() = default;
 	~PostEffectManager() = default;

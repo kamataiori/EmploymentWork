@@ -114,3 +114,31 @@ void PostEffectManager::SetSepiaStrength(float strength)
         postEffect_->GetOffscreen()->SetSepiaStrength(strength);
     }
 }
+
+void PostEffectManager::RadialBlurInitialize(const Vector2& center, float blurWidth, int numSamples)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->RadialBlurInitialize(center, blurWidth, numSamples);
+    }
+}
+
+void PostEffectManager::SetRadialBlurCenter(const Vector2& center)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetRadialBlurCenter(center);
+    }
+}
+
+void PostEffectManager::SetRadialBlurWidth(float blurWidth)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetRadialBlurWidth(blurWidth);
+    }
+}
+
+void PostEffectManager::SetRadialBlurSamples(int numSamples)
+{
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetRadialBlurSamples(numSamples);
+    }
+}
