@@ -370,6 +370,29 @@ void Skinning::ComputePipelineState()
 	assert(SUCCEEDED(hr));
 }
 
+void Skinning::CommonSettingCompute()
+{
+	// Compute用RootSignatureをセット
+	dxCommon_->GetCommandList()->SetComputeRootSignature(ComputeRootSignature_.Get());
+
+	// Compute用PipelineStateをセット
+	dxCommon_->GetCommandList()->SetPipelineState(ComputePipelineState_.Get());
+
+
+	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(1, skinCluster.paletteSrvHandle.second);        // t0
+	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(2, skinCluster.inputVertexSrvHandle.second);    // t1
+	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(3, skinCluster.influenceSrvHandle.second);      // t2
+	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(4, skinCluster.outputVertexUavHandle.second);   // u0
+
+
+	// 各種DescriptorとCBVを設定
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(0, palette_.gpuHandle);        // 例: Palette (t0)
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(1, inputVertex_.gpuHandle);    // 例: InputVertex (t1)
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(2, influence_.gpuHandle);      // 例: Influence (t2)
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(3, outputVertex_.gpuHandle);   // 例: OutputVertex (u0)
+	//dxCommon_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInformation_.buffer->GetGPUVirtualAddress()); // SkinningInfo (b0)
+}
+
 void Skinning::CommonSetting()
 {
 	//ルートシグネチャをセットするコマンド

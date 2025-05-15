@@ -100,4 +100,20 @@ struct SkinCluster {
 	Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource;
 	std::span<WellForGPU> mappedPalette;
 	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle;
+	// 頂点データ（StructuredBuffer）
+	Microsoft::WRL::ComPtr<ID3D12Resource> inputVertexResource;
+	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> inputVertexSrvHandle;
+
+	// インフルエンス（StructuredBuffer）
+	Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource;
+	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> influenceSrvHandle;
+
+	// 出力用頂点バッファ（UAV）
+	Microsoft::WRL::ComPtr<ID3D12Resource> outputVertexResource;
+	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> outputVertexUavHandle;
+
+	// SkinningInformation（CBV）
+	Microsoft::WRL::ComPtr<ID3D12Resource> skinningInfoBuffer;
+	D3D12_GPU_VIRTUAL_ADDRESS skinningInfoGpuAddress;
+
 };

@@ -81,6 +81,11 @@ private:
 public:
 
 	/// <summary>
+    /// Compute用共通設定
+    /// </summary>
+	void CommonSettingCompute();
+
+	/// <summary>
 	/// 共通描画設定
 	/// </summary>
 	void CommonSetting();
@@ -135,6 +140,21 @@ private:
 	// UAV用リソースとディスクリプタ
 	Microsoft::WRL::ComPtr<ID3D12Resource> outputBufferResource_;
 	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> outputUavHandle_;
+
+
+	// SRVリソースのハンドル（t0, t1, t2）
+	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> palette_;
+	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> inputVertex_;
+	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> influence_;
+
+	// UAVリソースのハンドル（u0）
+	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> outputVertex_;
+
+	// CBVリソース（b0）
+	struct SkinningInformation {
+		Microsoft::WRL::ComPtr<ID3D12Resource> buffer;
+	};
+	SkinningInformation skinningInformation_;
 
 };
 
