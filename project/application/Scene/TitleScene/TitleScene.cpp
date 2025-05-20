@@ -55,6 +55,7 @@ void TitleScene::Initialize()
 	camera1 = std::make_unique<Camera>();
 	camera1->SetTranslate({ 0.0f, 0.0f, -15.0f });
 	camera1->SetRotate({ 0.0f, 0.0f, 0.0f });
+	camera1->SetFarClip(2000.0f);
 
 	// カメラのセット
 	plane->SetCamera(camera1.get());
@@ -138,6 +139,8 @@ void TitleScene::Initialize()
 	fade_ = std::make_unique<Fade>();
 	fade_->Initialize();
 
+	skybox->Initialize();
+	skybox->SetCamera(camera1.get());
 } 
 
 void TitleScene::Finalize()
@@ -236,6 +239,8 @@ void TitleScene::Update()
 
 	}
 
+	skybox->Update();
+
 	// デバッグ
 	Debug();
 	
@@ -299,6 +304,8 @@ void TitleScene::BackGroundDraw()
 
 void TitleScene::Draw()
 {
+	skybox->Draw();
+
 	// 3Dオブジェクトの描画前処理。3Dオブジェクトの描画設定に共通のグラフィックスコマンドを積む
 	Object3dCommon::GetInstance()->CommonSetting();
 

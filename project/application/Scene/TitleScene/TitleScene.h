@@ -7,6 +7,7 @@
 #include "DrawTriangle.h"
 #include "Sprite.h"
 #include "Fade.h"
+#include "SkyBox.h"
 
 // TitleScene.h の private より上などに（クラス外）
 inline constexpr const char* kWindowName_ParticleControl = "Particle Control";
@@ -74,6 +75,8 @@ private:
 
 	std::unique_ptr<ParticleManager> cyrinderParticle = std::make_unique<ParticleManager>();
 	std::vector<std::unique_ptr<ParticleEmitter>> cyrinderEmitters;
+
+	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
 
 	AABB aabb;
 	Sphere sphere;
