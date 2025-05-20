@@ -98,9 +98,9 @@ void UnityScene::Update()
 		cyrinderEmitter->Update();
 	}
 
-	primitiveParticle->Update();
-	ringParticle->Update();
-	cyrinderParticle->Update();
+	primitiveParticle->Update(true);
+	ringParticle->Update(true);
+	cyrinderParticle->Update(true);
 
 	Debug();
 

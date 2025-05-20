@@ -195,10 +195,10 @@ void TitleScene::Update()
 		cyrinderEmitter->Update();
 	}
 
-	particle->Update();
-	primitiveParticle->Update();
-	ringParticle->Update();
-	cyrinderParticle->Update();
+	particle->Update(true);
+	primitiveParticle->Update(true);
+	ringParticle->Update(true);
+	cyrinderParticle->Update(true);
 
 	if (Input::GetInstance()->TriggerKey(DIK_K)) {
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);

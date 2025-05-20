@@ -232,7 +232,7 @@ void GamePlayScene::Update()
 	{
 		emitter->Update();
 	}
-	particle->Update();
+	particle->Update(true);
 
 	DrawLine::GetInstance()->Update();
 

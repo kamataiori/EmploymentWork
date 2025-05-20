@@ -50,15 +50,15 @@ public:
 		float frequencyTime;  //頻度用時刻
 	};
 
-    /// <summary>
-    /// 初期化
-    /// </summary>
-    void Initialize(VertexDataType type);
+	/// <summary>
+	/// 初期化
+	/// </summary>
+	void Initialize(VertexDataType type);
 
 	/// <summary>
 	/// 更新
 	/// </summary>
-	void Update();
+	void Update(bool usebillboardMatrix);
 
 	/// <summary>
 	/// 描画
@@ -260,6 +260,18 @@ public:
 	// 色
 	void SetColorToGroup(const std::string& groupName, const Vector4& color);
 
+	std::list<Particle>& GetParticleList(const std::string& groupName) {
+		return particleGroups[groupName].particleList;
+	}
+
+	void ClearGroup(const std::string& groupName) {
+		auto it = particleGroups.find(groupName);
+		if (it != particleGroups.end()) {
+			it->second.particleList.clear();
+			it->second.instanceCount = 0;
+		}
+	}
+
 
 private:
 
@@ -298,7 +310,7 @@ private:
 	// Cameraの初期化
 	Camera* camera_ = nullptr;
 	//常にカメラ目線
-	Transform cameraTransform{ {1.0f,1.0f,1.0f},{1.0f,1.0f,1.0f},{0.0f,23.0f,10.0f}};
+	Transform cameraTransform{ {1.0f,1.0f,1.0f},{1.0f,1.0f,1.0f},{0.0f,23.0f,10.0f} };
 
 	Matrix4x4 worldviewProjectionMatrix;
 
@@ -358,11 +370,11 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO();
 
 private:
-    DirectXCommon* dxCommon_ = nullptr;
-    SrvManager* srvManager_ = nullptr;
+	DirectXCommon* dxCommon_ = nullptr;
+	SrvManager* srvManager_ = nullptr;
 	// Modelの初期化
 	Model* model_ = nullptr;
-   
+
 	//--------RootSignature部分--------//
 
 	//DescriptorRange

@@ -39,7 +39,7 @@ void ParticleManager::Initialize(VertexDataType type)
 
 }
 
-void ParticleManager::Update()
+void ParticleManager::Update(bool usebillboardMatrix)
 {
 	if (!camera_) {
 		return; // カメラが設定されていない場合は何もしない
