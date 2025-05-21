@@ -41,4 +41,5 @@ private: // メンバ変数
 	CharacterBase* target; // キャラクター（PlayerやEnemyなど）
 	float followDistance;  // 対象との距離
 	float heightOffset;    // カメラの高さオフセット
+	float angle = 3.14f;    // カメラの回転角度（Y軸）
 };
