@@ -34,10 +34,9 @@ void SkyBox::Update()
     XMFLOAT4X4 viewFloat;
     memcpy(&viewFloat, &mat, sizeof(Matrix4x4));
 
-    viewFloat.m[3][0] = 0.0f;
+   /* viewFloat.m[3][0] = 0.0f;
     viewFloat.m[3][1] = 0.0f;
-    viewFloat.m[3][2] = 0.0f;
-
+    viewFloat.m[3][2] = 0.0f;*/
 
     XMMATRIX view = XMLoadFloat4x4(&viewFloat);
     XMMATRIX proj = XMLoadFloat4x4(reinterpret_cast<const XMFLOAT4X4*>(&camera_->GetProjectionMatrix()));
