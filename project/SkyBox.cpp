@@ -33,6 +33,7 @@ void SkyBox::Update()
     Matrix4x4 mat = camera_->GetViewMatrix();
     XMFLOAT4X4 viewFloat;
     memcpy(&viewFloat, &mat, sizeof(Matrix4x4));
+
     viewFloat.m[3][0] = 0.0f;
     viewFloat.m[3][1] = 0.0f;
     viewFloat.m[3][2] = 0.0f;
