@@ -1,6 +1,7 @@
 #include "GamePlayScene.h"
 #include <Input.h>
 #include "SceneManager.h"
+#include <GlobalVariables.h>
 
 void GamePlayScene::Initialize()
 {
@@ -21,6 +22,9 @@ void GamePlayScene::Initialize()
 	skydome_ = std::make_unique<Object3d>(this);
 	skydome_->Initialize();
 	skydome_->SetModel("skydome.obj");
+
+	/*GlobalVariables::GetInstance()->AddValue<Vector3>("followCamera", "position", followCamera->GetTranslate());
+	GlobalVariables::GetInstance()->AddValue<Vector3>("followCamera", "rotate", followCamera->GetRotate());*/
 
 	heel_ = std::make_unique<Sprite>();
 	heel_->Initialize("Resources/heel.png");
@@ -90,6 +94,9 @@ void GamePlayScene::Finalize()
 
 void GamePlayScene::Update()
 {
+
+	/*followCamera->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("followCamera", "position"));
+	followCamera->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("followCamera", "rotate"));*/
 	
 
 	player_->Update();
