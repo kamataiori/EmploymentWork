@@ -10,7 +10,7 @@ struct ConstBufferData {
     XMMATRIX wvp;
 };
 
-void SkyBox::Initialize()
+void SkyBox::Initialize(const std::string& textureFilePath, const Vector3& scale)
 {
     dxCommon_ = DirectXCommon::GetInstance();
     /*CreateVertexData();
@@ -21,10 +21,11 @@ void SkyBox::Initialize()
     RootSignature();
     GraphicsPipelineState();
 
-    textureFilePath_ = "Resources/rostock_laage_airport_4k.dds";
+    // 外部から受け取ったファイルパスを記録
+    textureFilePath_ = textureFilePath;
     TextureManager::GetInstance()->LoadTexture(textureFilePath_);
 
-    transform = { {100.0f,100.0f,100.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
+    transform = { scale,{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 }
 
 void SkyBox::Update()

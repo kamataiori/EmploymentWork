@@ -139,7 +139,7 @@ void TitleScene::Initialize()
 	fade_ = std::make_unique<Fade>();
 	fade_->Initialize();
 
-	skybox->Initialize();
+	skybox->Initialize("Resources/rostock_laage_airport_4k.dds",{1000.0f,1000.0f,1000.0f});
 	skybox->SetCamera(camera1.get());
 } 
 

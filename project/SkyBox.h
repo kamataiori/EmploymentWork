@@ -10,7 +10,7 @@
 class SkyBox
 {
 public:
-    void Initialize();
+    void Initialize(const std::string& textureFilePath, const Vector3& scale);
     void Update();
     void Draw();
 
