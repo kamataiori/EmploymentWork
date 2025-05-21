@@ -30,3 +30,15 @@ void Camera::Update()
     //ImGui::DragFloat3("rotate", &transform.rotate.x);
     //ImGui::End();
 }
+
+Matrix4x4 Camera::GetViewMatrix() const
+{
+    Matrix4x4 rx = MakeRotateXMatrix(transform.rotate.x);
+    Matrix4x4 ry = MakeRotateYMatrix(transform.rotate.y);
+    Matrix4x4 rz = MakeRotateZMatrix(transform.rotate.z);
+    Matrix4x4 rot = Multiply(rx, Multiply(ry, rz));
+
+    Matrix4x4 trans = MakeTranslateMatrix(transform.translate);
+
+    return Inverse(Multiply(rot, trans));
+}

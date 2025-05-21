@@ -27,7 +27,8 @@ public:
 
 	//------getter------//
 	const Matrix4x4& GetWorldMatrix() const { return worldMatrix; }
-	const Matrix4x4& GetViewMatrix() const { return viewMatrix; }
+	//const Matrix4x4& GetViewMatrix() const { return viewMatrix; }
+	Matrix4x4 GetViewMatrix() const;
 	const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix; }
 	const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix; }
 	const Vector3& GetRotate() const { return transform.rotate; }
@@ -54,5 +55,8 @@ protected:
 
 	//合成行列
 	Matrix4x4 viewProjectionMatrix;
+
+	Vector3 position{};
+	Vector3 rotation{};
 };
 
