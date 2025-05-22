@@ -48,6 +48,15 @@ void Input::Update()
 	////全キーの入力情報を取得する
 	//BYTE key[256] = {};
 	result = keyboard->GetDeviceState(sizeof(key), key);
+
+	memcpy(&mousePre, &mouse, sizeof(mouse));
+	ZeroMemory(&mouse, sizeof(mouse));
+	GetCursorPos((POINT*)&mouse); // これは位置取得だが、ボタン取得は別APIが必要
+
+	// マウスの状態を取得（DirectInput未使用でWinAPIで代替）
+	SHORT state = GetAsyncKeyState(VK_LBUTTON);
+	mouse.rgbButtons[0] = (state & 0x8000) ? 0x80 : 0x00;
+
 }
 
 bool Input::PushKey(BYTE keyNumber)
@@ -70,4 +79,14 @@ bool Input::TriggerKey(BYTE keyNumber)
 	}
 
 	return false;
+}
+
+bool Input::TriggerMouseLeft()
+{
+	return (mouse.rgbButtons[0] & 0x80) && !(mousePre.rgbButtons[0] & 0x80);
+}
+
+bool Input::PushMouseLeft()
+{
+	return (mouse.rgbButtons[0] & 0x80);
 }

@@ -9,8 +9,6 @@
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
-
-
 //入力
 class Input
 {
@@ -65,6 +63,19 @@ public:
 	/// <returns>トリガーか</returns>
 	bool TriggerKey(BYTE keyNumber);
 
+	/// <summary>
+	/// 左クリックのトリガー
+	/// </summary>
+	/// <returns></returns>
+	bool TriggerMouseLeft();
+
+	/// <summary>
+	/// 左クリック押しっぱなし
+	/// </summary>
+	/// <returns></returns>
+	bool PushMouseLeft();
+
+
 private:
 
 	///========================
@@ -74,18 +85,24 @@ private:
 	/// キーボードのデバイス
 	Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard;
 
-	//DirectInputのインスタンス
+	// DirectInputのインスタンス
 	Microsoft::WRL::ComPtr<IDirectInput8> directInput;
 
-	//全キーの状態
+	// 全キーの状態
 	BYTE key[256] = {};
-	//前回の全キーの状態
+	// 前回の全キーの状態
 	BYTE keyPre[256] = {};
 
 	HRESULT result = {};
 
-	//WindowsAPI
+	// WindowsAPI
 	WinApp* winApp_ = nullptr;
+
+	// 今回のマウス状態
+	DIMOUSESTATE2 mouse{};
+	// 前回のマウス状態
+	DIMOUSESTATE2 mousePre{};
+
 
 };
 

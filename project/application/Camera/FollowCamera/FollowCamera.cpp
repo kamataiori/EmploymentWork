@@ -1,42 +1,45 @@
 #include "FollowCamera.h"
-#include <Input.h>
+#include <cassert>
 
-FollowCamera::FollowCamera(CharacterBase* target, float followDistance, float heightOffset)
-    : target(target), followDistance(followDistance), heightOffset(heightOffset)
-{
+FollowCamera::FollowCamera(CharacterBase* target, float distance, float height, float horizontalOffset)
+    : target_(target), distance_(distance), height_(height), horizontalOffset_(horizontalOffset) {
 }
 
 void FollowCamera::Update()
 {
-    if (!target) return;
+    assert(target_);
 
-    // ← → キーでカメラ回転
-    if (Input::GetInstance()->PushKey(DIK_LEFT)) {
-        angle -= 0.03f;
-    }
-    if (Input::GetInstance()->PushKey(DIK_RIGHT)) {
-        angle += 0.03f;
-    }
+    const Vector3& targetPos = target_->GetTransform().translate;
 
-    const Vector3& targetPos = target->GetTransform().translate;
-
-    // プレイヤーの向きを基準に後ろ側を計算（Y=3.14 で後ろにいるように）
+    // プレイヤーの背後 + 左オフセット + 高さ
     Vector3 offset = {
-        std::sin(angle) * followDistance,
-        heightOffset,
-        std::cos(angle) * followDistance
+        horizontalOffset_,  // ← X軸: 左右位置調整（-でプレイヤーを左寄りに）
+        height_,            // ← Y軸: カメラの高さ
+        distance_           // ← Z軸: カメラが後ろに下がる距離
     };
 
-    Vector3 desiredPos = targetPos + offset;
+    // カメラ位置をプレイヤーからの相対オフセットで即設定（補間なし）
+    transform.translate = targetPos - offset;
 
-    // カメラを滑らかに補間移動
-    float smoothSpeed = 0.03f;
-    transform.translate = Lerp(transform.translate, desiredPos, smoothSpeed);
+    // 視線方向も常にプレイヤーを向く（回転も即更新）
+    Vector3 flatOffset = { 0.0f, height_, distance_ };  // 横ずれ除去
+    Vector3 lookAtPos = targetPos - flatOffset;
 
-    // カメラが常にプレイヤーの方向を向くように回転
-    Vector3 direction = Normalize(targetPos - transform.translate);
-    transform.rotate.y = std::atan2(direction.x, direction.z);
+    Vector3 toTarget = Normalize(targetPos - lookAtPos);
+    transform.rotate.y = std::atan2(toTarget.x, toTarget.z);
 
     Camera::Update();
 }
 
+void FollowCamera::Debug()
+{
+#ifdef _DEBUG
+    ImGui::Begin("FollowCamera");
+
+    ImGui::SliderFloat("Distance (Z)", &distance_, 0.0f, 30.0f);
+    ImGui::SliderFloat("Height (Y)", &height_, -10.0f, 20.0f);
+    ImGui::SliderFloat("Horizontal Offset (X)", &horizontalOffset_, -10.0f, 10.0f);
+
+    ImGui::End();
+#endif
+}

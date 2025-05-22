@@ -5,41 +5,19 @@
 class FollowCamera : public Camera
 {
 public:
-	FollowCamera(CharacterBase* target, float followDistance, float heightOffset);
+    FollowCamera(CharacterBase* target, float distance = 10.0f, float height = 2.0f, float horizontalOffset = -5.0f);
 
-	/// <summary>
-	/// 更新（追従処理）
-	/// </summary>
-	void Update() override;
+    void Update() override;
 
-public: // カメラとターゲットとの距離関係
+    void SetDistance(float d) { distance_ = d; }
+    void SetHeight(float h) { height_ = h; }
+    void SetHorizontalOffset(float offset) { horizontalOffset_ = offset; }
 
-	/// <summary>
-	/// カメラとターゲットとの距離を設定
-	/// </summary>
-	void SetFollowDistance(float distance) { followDistance = distance; }
+    void Debug();
 
-	/// <summary>
-	/// カメラとターゲットとの距離を取得
-	/// </summary>
-	float GetFollowDistance() const { return followDistance; }
-
-public: // カメラの高さ関係
-
-	/// <summary>
-	/// 高さのオフセットを設定
-	/// </summary>
-	void SetHeightOffset(float offset) { heightOffset = offset; }
-
-	/// <summary>
-	/// 高さのオフセットを取得
-	/// </summary>
-	float GetHeightOffset() const { return heightOffset; }
-
-private: // メンバ変数
-
-	CharacterBase* target; // キャラクター（PlayerやEnemyなど）
-	float followDistance;  // 対象との距離
-	float heightOffset;    // カメラの高さオフセット
-	float angle = 3.14f;    // カメラの回転角度（Y軸）
+private:
+    CharacterBase* target_;
+    float distance_;          // プレイヤーとの距離（Z方向）
+    float height_;            // 高さオフセット（Y方向）
+    float horizontalOffset_;  // 横ずらし（X方向）
 };
