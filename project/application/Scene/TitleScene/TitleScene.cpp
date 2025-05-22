@@ -161,6 +161,14 @@ void TitleScene::Update()
 
 	// 各3Dオブジェクトの更新
 	plane->Update();
+	// Planeの位置調整用ImGui
+	ImGui::Begin("Plane Control");
+	Vector3 pos = plane->GetTranslate();
+	if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
+		plane->SetTranslate(pos);
+	}
+	ImGui::End();
+
 
 	animationCube->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "position"));
 	animationCube->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "rotate"));

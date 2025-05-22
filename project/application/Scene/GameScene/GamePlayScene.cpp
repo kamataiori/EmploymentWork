@@ -24,12 +24,19 @@ void GamePlayScene::Initialize()
 	followCamera = std::make_unique<FollowCamera>(player_.get(), 10.0f, -1.5f, -4.0f);
 	followCamera->SetFovY(70.0f * (3.14159265f / 180.0f));
 
+	camera = std::make_unique<Camera>();
+	camera->SetTranslate({ 0.0f, 0.0f, -15.0f });
+	camera->SetRotate({ 0.0f, 0.0f, 0.0f });
+
 	// Objectをカメラにセット
-	player_->SetCamera(followCamera.get());
-	DrawLine::GetInstance()->SetCamera(followCamera.get());
+	/*player_->SetCamera(followCamera.get());*/
+	player_->SetCamera(camera.get());
+	/*DrawLine::GetInstance()->SetCamera(followCamera.get());*/
+	DrawLine::GetInstance()->SetCamera(camera.get());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
-	skybox->SetCamera(followCamera.get());
+	/*skybox->SetCamera(followCamera.get());*/
+	skybox->SetCamera(camera.get());
 
 	// 当たり判定の初期化・セット
 	collisionManager_ = std::make_unique<CollisionManager>();
@@ -49,6 +56,7 @@ void GamePlayScene::Update()
 
 	// カメラの更新
 	followCamera->Update();
+	camera->Update();
 
 	skybox->Update();
 

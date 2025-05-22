@@ -75,4 +75,6 @@ Quaternion Slerp(const Quaternion& start, const Quaternion& end, float t);
 Matrix4x4 transpose(const Matrix4x4& matrix);
 
 // ベクトルを行列で変換する関数
-Vector3 TransformCoord(const Vector3& vec, const Matrix4x4& mat);
+//Vector3 TransformCoord(const Vector3& vec, const Matrix4x4& mat);
+
+Vector3 TransformCoord(const Vector3& vector, const Matrix4x4& matrix);

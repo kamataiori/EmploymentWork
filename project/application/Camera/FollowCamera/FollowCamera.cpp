@@ -28,6 +28,9 @@ void FollowCamera::Update()
     Vector3 toTarget = Normalize(targetPos - lookAtPos);
     transform.rotate.y = std::atan2(toTarget.x, toTarget.z);
 
+    /*transform.rotate = {};
+    transform.translate = { 0, 0, -10.0f };*/
+
     Camera::Update();
 }
 

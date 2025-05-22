@@ -15,28 +15,69 @@ void Player::Initialize()
 
 	// レティクルスプライト初期化
 	InitializeUI();
+
+	// 3Dレティクルの初期化
+	ModelManager::GetInstance()->LoadModel("reticle3D.obj");
+	test_ = std::make_unique<Object3d>(baseScene_);
+	test_->Initialize();
+	test_->SetModel("reticle3D.obj");
+	test_->SetCamera(camera_);
+	testTransform_.translate = { 0.0f,0.0f,100.0f };
+	test_->SetTranslate(testTransform_.translate);
+	/*reticle3D_ = std::make_unique<Object3d>(baseScene_);
+	reticle3D_->Initialize();
+	reticle3D_->SetModel("reticle3D.obj"); 
+	reticle3D_->SetCamera(camera_);
+	reticleTransform_.scale = { 1.0f,1.0f,1.0f };
+	reticle3D_->SetScale(reticleTransform_.scale);*/
+	//reticle3D_->SetTranslate(reticleTransform_.translate);
+
 }
 
 // 毎フレーム更新処理
 void Player::Update()
 {
-	// 入力による移動処理
+	// 入力による移動処理（translateを更新）
 	HandleMovement();
 
-	// レティクルUI更新
-	UpdateUI();
-
-	// マウスクリックでの弾発射
-	HandleShooting();
-
-	// 弾の更新と消滅処理
-	UpdateBullets();
-
-	// Object3dへTransform反映
+	// 自機TransformをObject3dに反映（発射に備えて位置を確定）
 	UpdateTransform();
 
-	// デバッグUI表示
+	// 3Dレティクルのワールド固定位置に設置（自機位置の後に！）
+	/*reticleTransform_.translate = { transform_.translate.x,0.0f,transform_.translate.z + 30.0f };
+	reticle3D_->SetScale(reticleTransform_.scale);
+	reticle3D_->SetTranslate(reticleTransform_.translate);
+	reticle3D_->Update();*/
+
+	// 発射処理（transformとreticleの位置が確定後）
+	HandleShooting();
+
+	// 弾の更新
+	UpdateBullets();
+
+	// UI更新（2Dレティクルなど）
+	UpdateUI();
+
+	// デバッグ表示
 	Debug();
+
+	test_->Update();
+	//test_->SetTranslate(testTransform_.translate);
+
+	Vector3 world = testTransform_.translate;
+	/*Vector3 testWorldPos = {
+		world.m[3][0],
+		world.m[3][1],
+		world.m[3][2]
+	};*/
+
+	ImGui::Begin("Test Control");
+	Vector3 pos = test_->GetTranslate();
+	if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
+		test_->SetTranslate(pos);
+	}
+	ImGui::End();
+
 }
 
 // プレイヤー本体の描画
@@ -44,6 +85,9 @@ void Player::Draw()
 {
 	// モデル描画
 	object3d_->Draw();
+
+	//reticle3D_->Draw();
+	test_->Draw();
 
 	// コライダー描画
 	SphereCollider::Draw();
@@ -78,6 +122,7 @@ void Player::Debug()
 
 	ImGui::Text("Bullet Stock: %d", bulletStock_);
 	ImGui::End();
+
 #endif
 }
 
@@ -122,51 +167,98 @@ void Player::InitializeUI()
 }
 
 // レティクルスプライト位置の更新
-void Player::UpdateUI()
-{
-	float sw = static_cast<float>(1280);
-	float sh = static_cast<float>(720);
+void Player::UpdateUI() {
+	// スクリーンサイズ
+	float sw = 1280.0f;
+	float sh = 720.0f;
 	float spriteSize = 32.0f;
-	reticleSprite_->SetPosition({ (sw - spriteSize) / 2.0f, (sh - spriteSize) / 2.0f });
+
+	Vector2 screenPos = {
+		(sw - spriteSize) / 2.0f,
+		(sh - spriteSize) / 2.0f
+	};
+	reticleSprite_->SetPosition(screenPos);
 	reticleSprite_->Update();
+
 }
+
 
 // 移動入力処理
 void Player::HandleMovement()
 {
 	Vector3 input{};
-	if (Input::GetInstance()->PushKey(DIK_W)) { input.z += 4.0f; }
-	if (Input::GetInstance()->PushKey(DIK_S)) { input.z -= 4.0f; }
-	if (Input::GetInstance()->PushKey(DIK_A)) { input.x -= 4.0f; }
-	if (Input::GetInstance()->PushKey(DIK_D)) { input.x += 4.0f; }
+	if (Input::GetInstance()->PushKey(DIK_W)) { input.z += 1.0f; }
+	if (Input::GetInstance()->PushKey(DIK_S)) { input.z -= 1.0f; }
+	if (Input::GetInstance()->PushKey(DIK_A)) { input.x -= 1.0f; }
+	if (Input::GetInstance()->PushKey(DIK_D)) { input.x += 1.0f; }
 
 	if (input.x != 0.0f || input.z != 0.0f) {
 		input = Normalize(input);
 	}
 
 	float moveSpeed = 2.0f;
-	float ease = 0.25f;
-	velocity_ = Lerp(velocity_, input * moveSpeed, ease);
+	velocity_ = input * moveSpeed;
+
 	transform_.translate += velocity_;
 }
 
+
 // マウス左クリックで弾を発射する処理
-void Player::HandleShooting()
-{
+void Player::HandleShooting() {
 	if (Input::GetInstance()->TriggerMouseLeft() && canShoot_ && bulletStock_ > 0) {
-		Matrix4x4 rotMat = MakeRotateMatrix(transform_.rotate);
-		Vector3 forward = TransformNormal({ 0, 0, -1 }, rotMat);
-		bullets_.push_back(std::make_unique<PlayerBullet>(transform_.translate, forward, baseScene_, camera_));
+		// プレイヤーのワールド座標
+		Matrix4x4 world = object3d_->GetWorldMatrix();
+		Vector3 playerWorldPos = {
+			world.m[3][0],
+			world.m[3][1],
+			world.m[3][2]
+		};
+
+		//playerWorldPos = playerWorldPos - camera_->GetTranslate();
+
+		// スクリーンサイズ（ハードコードまたは定数で）
+		const float screenWidth = 1280.0f;
+		const float screenHeight = 720.0f;
+
+		// 2Dレティクルのスプライト左上の位置
+		Vector2 reticlePos = reticleSprite_->GetPosition();
+
+		// スプライトサイズの中心分だけオフセットして中央に補正（64x64前提）
+		Vector2 centerPos = {
+			reticlePos.x + 32.0f,
+			reticlePos.y + 32.0f
+		};
+
+		// スクリーン → NDC 変換（Y軸反転）
+		Vector3 ndc;
+		ndc.x = (centerPos.x / screenWidth) * 2.0f - 1.0f;
+		ndc.y = 1.0f - (centerPos.y / screenHeight) * 2.0f;
+		ndc.z = 1.0f; // 遠方を想定
+
+		// ビュー×プロジェクションの逆行列で NDC → ワールド座標
+		Matrix4x4 viewProj = Multiply(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
+		Matrix4x4 invViewProj = Inverse(viewProj);
+		Vector3 worldFar = TransformCoord(ndc, invViewProj); // NDC → ワールド空間座標
+
+		worldFar.x = worldFar.x + camera_->GetWorldMatrix().m[3][0];
+		worldFar.y = worldFar.y + camera_->GetWorldMatrix().m[3][1];
+		worldFar.z = 50.0f;
+
+		// 発射方向ベクトル（カメラ中央方向）
+		Vector3 direction = Normalize(worldFar - playerWorldPos);
+
+		// 弾を発射
+		bullets_.push_back(std::make_unique<PlayerBullet>(
+			playerWorldPos, direction, baseScene_, camera_));
+
 		bulletStock_--;
 		canShoot_ = false;
 	}
 
-	// ボタンを離したら再発射可能に
 	if (!Input::GetInstance()->PushMouseLeft()) {
 		canShoot_ = true;
 	}
 
-	// Rキーで弾数リロード
 	if (Input::GetInstance()->TriggerKey(DIK_R)) {
 		bulletStock_ = 10;
 	}

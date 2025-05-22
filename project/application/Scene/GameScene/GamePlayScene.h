@@ -67,6 +67,7 @@ private:
 
 	//3Dカメラの初期化
 	std::unique_ptr<FollowCamera> followCamera;
+	std::unique_ptr<Camera> camera;
 	
 	std::unique_ptr<Player> player_;
 

@@ -67,6 +67,9 @@ private:
 	// レティクルスプライト
 	std::unique_ptr<Sprite> reticleSprite_;
 
+	std::unique_ptr<Object3d> test_;
+	Transform testTransform_;
+
 	// プレイヤー弾リスト
 	std::list<std::unique_ptr<PlayerBullet>> bullets_;
 
