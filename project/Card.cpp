@@ -7,7 +7,7 @@ Card::Card(Suit suit, Rank rank, const std::string& texturePath)
 
 void Card::Initialize() {
     sprite_->Initialize(texturePath_);
-    sprite_->SetSize({ 64.0f, 89.0f }); // 一般的なカード比率
+    sprite_->SetSize({ 128.0f, 178.0f }); // 一般的なカード比率
 }
 
 void Card::Update() {

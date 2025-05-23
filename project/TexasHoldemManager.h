@@ -76,5 +76,10 @@ private:
 
     int playerBetAmount_ = 100; // プレイヤーがベット・レイズする金額（スライダーで変更）
 
+    const float cardWidth = 128.0f;
+    const float cardHeight = 178.0f;
+    const float communityCardY = 300.0f;
+    const float playerCardY = 500.0f;
+    const float cpuCardY = 100.0f;
 
 };

@@ -21,11 +21,11 @@ void TexasHoldemManager::DealHands() {
 
     for (int i = 0; i < 2; ++i) {
         Card* playerCard = cardManager_.DrawCard();
-        playerCard->SetPosition({ 100.0f + i * 70, 500.0f });
+        playerCard->SetPosition({ 100.0f + i * (cardWidth + 10.0f), playerCardY });
         playerHands_.push_back(playerCard);
 
         Card* cpuCard = cardManager_.DrawCard();
-        cpuHands_.push_back(cpuCard); // 位置設定なし（最初は非表示）
+        cpuHands_.push_back(cpuCard);
     }
 }
 
@@ -46,7 +46,7 @@ void TexasHoldemManager::NextPhase() {
         currentPhase_ = Phase::Showdown;
 
         for (int i = 0; i < 2; ++i) {
-            cpuHands_[i]->SetPosition({ 1100.0f + i * 70, 30.0f });
+            cpuHands_[i]->SetPosition({ 100.0f + i * (cardWidth + 10.0f), cpuCardY });
         }
     }
 
@@ -97,7 +97,8 @@ void TexasHoldemManager::DealCommunity() {
 
     for (int i = 0; i < numToAdd; ++i) {
         Card* card = cardManager_.DrawCard();
-        pendingCards_.push_back(card);  // 表示せずに保留
+        card->SetPosition({ float(300 + communityCards_.size() * (cardWidth + 10.0f)), communityCardY });
+        communityCards_.push_back(card);
     }
 }
 
