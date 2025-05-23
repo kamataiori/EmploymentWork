@@ -37,23 +37,38 @@ void TitleScene::Update()
 	// スペースキーが押された瞬間かつ前のフレームでは押されていなかった場合のみ実行
 	if (Input::GetInstance()->PushKey(DIK_SPACE)) {
 		if (!isPressed_) {
-			texasHoldem_.NextPhase();
-			isPressed_ = true;  // 押されたフラグを立てる
+			if (texasHoldem_.GetCurrentPhase() == Phase::Showdown) {
+				texasHoldem_.Reset(); // リスタート！
+			}
+			else {
+				texasHoldem_.NextPhase(); // 通常進行
+			}
+			isPressed_ = true;
 		}
 	}
 	else {
-		isPressed_ = false;  // 離されたらフラグ解除
+		isPressed_ = false;
 	}
 
-	const char* rankName = HandRankToString(texasHoldem_.GetCurrentHandRank());
-
-	ImGui::Begin("HandInfo", nullptr,
+	// プレイヤーの役を常に表示（左上）
+	ImGui::Begin("PlayerHandInfo", nullptr,
 		ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar |
 		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 	ImGui::SetWindowPos(ImVec2(10, 10));
 	ImGui::SetWindowSize(ImVec2(200, 50));
-	ImGui::Text("役: %s", rankName);
+	ImGui::Text("Player: %s", HandRankToString(texasHoldem_.GetCurrentHandRank()));
 	ImGui::End();
+
+	// CPUの役を Showdown のときだけ表示（右上）
+	if (texasHoldem_.GetCurrentPhase() == Phase::Showdown) {
+		ImGui::Begin("CpuHandInfo", nullptr,
+			ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar |
+			ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+		ImGui::SetWindowPos(ImVec2(1080, 10)); // 1280x720想定
+		ImGui::SetWindowSize(ImVec2(200, 50));
+		ImGui::Text("CPU: %s", HandRankToString(texasHoldem_.GetCpuHandRank()));
+		ImGui::End();
+	}
 
 	texasHoldem_.Update();
 
