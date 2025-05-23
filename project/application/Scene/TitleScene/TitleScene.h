@@ -6,8 +6,8 @@
 #include "DrawLine.h"
 #include "DrawTriangle.h"
 #include "Sprite.h"
-#include <TexasHoldemManager.h>
-
+#include "Fade.h"
+#include "SkyBox.h"
 
 // TitleScene.h の private より上などに（クラス外）
 inline constexpr const char* kWindowName_ParticleControl = "Particle Control";
@@ -56,10 +56,47 @@ public:
 
 private:
 
-	std::unique_ptr<Sprite> backGround_ = std::make_unique<Sprite>();
+	// 3Dオブジェクトの初期化
+	std::unique_ptr<Object3d> plane = nullptr;
+	std::unique_ptr<Object3d> animationCube = nullptr;
+	std::unique_ptr<Object3d> sneak = nullptr;
 
-	TexasHoldemManager texasHoldem_;
+	//3Dカメラの初期化
+	std::unique_ptr<Camera> camera1 = std::make_unique<Camera>();
 
-	bool isPressed_ = false;
+	std::unique_ptr<ParticleManager> particle = std::make_unique<ParticleManager>();
+	std::vector<std::unique_ptr<ParticleEmitter>> emitters;
+
+	std::unique_ptr<ParticleManager> primitiveParticle = std::make_unique<ParticleManager>();
+	std::vector<std::unique_ptr<ParticleEmitter>> primitiveEmitters;
+
+	std::unique_ptr<ParticleManager> ringParticle = std::make_unique<ParticleManager>();
+	std::vector<std::unique_ptr<ParticleEmitter>> ringEmitters;
+
+	std::unique_ptr<ParticleManager> cyrinderParticle = std::make_unique<ParticleManager>();
+	std::vector<std::unique_ptr<ParticleEmitter>> cyrinderEmitters;
+
+	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
+
+	AABB aabb;
+	Sphere sphere;
+	Plane ground;
+	Capsule capsule;
+	OBB obb;
+
+	DrawTriangle* drawTriangle_ = nullptr;
+	// 追加するメンバ変数
+	Vector3 triangleP1 = { -1.0f, 0.0f, 0.0f };
+	Vector3 triangleP2 = { 1.0f, 0.0f, 0.0f };
+	Vector3 triangleP3 = { 0.0f, 1.0f, 0.0f };
+	Color triangleColor = Color::BLUE;
+	// 透過度（0.0f = 完全透明, 1.0f = 不透明）
+	float triangleAlpha = 0.3f;
+
+
+	// 最後の private: 内などに追加
+	bool changeSpeed_ = false;
+
+	std::unique_ptr<Fade> fade_ = nullptr;
+	std::string nextSceneName_ = "";
 };
-
