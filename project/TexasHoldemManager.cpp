@@ -6,6 +6,20 @@ void TexasHoldemManager::Initialize() {
     DealHands();
 }
 
+void TexasHoldemManager::DealHands() {
+    playerHands_.clear();
+    cpuHands_.clear();
+
+    for (int i = 0; i < 2; ++i) {
+        Card* playerCard = cardManager_.DrawCard();
+        playerCard->SetPosition({ 100.0f + i * 70, 500.0f });
+        playerHands_.push_back(playerCard);
+
+        Card* cpuCard = cardManager_.DrawCard();
+        cpuHands_.push_back(cpuCard); // 位置設定なし（最初は非表示）
+    }
+}
+
 void TexasHoldemManager::NextPhase() {
     if (currentPhase_ == Phase::PreFlop) {
         currentPhase_ = Phase::Flop;
@@ -21,17 +35,12 @@ void TexasHoldemManager::NextPhase() {
     }
     else if (currentPhase_ == Phase::River) {
         currentPhase_ = Phase::Showdown;
-    }
+        EvaluateHands();
 
-    EvaluatePlayerHand();
-}
-
-void TexasHoldemManager::DealHands() {
-    playerHands_.clear();
-    for (int i = 0; i < 2; ++i) {
-        Card* card = cardManager_.DrawCard();
-        card->SetPosition({ float(100 + i * 70), 500.0f }); // 画面下部
-        playerHands_.push_back(card);
+        // CPUカードの位置を設定して表示
+        for (int i = 0; i < 2; ++i) {
+            cpuHands_[i]->SetPosition({ 1100.0f + i * 70, 100.0f });
+        }
     }
 }
 
@@ -42,16 +51,34 @@ void TexasHoldemManager::DealCommunity() {
 
     for (int i = 0; i < numToAdd; ++i) {
         Card* card = cardManager_.DrawCard();
-        card->SetPosition({ float(300 + communityCards_.size() * 70), 300.0f }); // 中央に並べる
+        card->SetPosition({ float(300 + communityCards_.size() * 70), 300.0f });
         communityCards_.push_back(card);
     }
 }
 
-void TexasHoldemManager::EvaluatePlayerHand()
+void TexasHoldemManager::EvaluateHands() {
+    std::vector<Card*> playerTotal = playerHands_;
+    playerTotal.insert(playerTotal.end(), communityCards_.begin(), communityCards_.end());
+    playerRank_ = EvaluateHand(playerTotal);
+
+    std::vector<Card*> cpuTotal = cpuHands_;
+    cpuTotal.insert(cpuTotal.end(), communityCards_.begin(), communityCards_.end());
+    cpuRank_ = EvaluateHand(cpuTotal);
+}
+
+void TexasHoldemManager::Reset()
 {
-    std::vector<Card*> all = playerHands_;
-    all.insert(all.end(), communityCards_.begin(), communityCards_.end());
-    currentHandRank_ = EvaluateHand(all);
+    // 全部初期化
+    playerHands_.clear();
+    cpuHands_.clear();
+    communityCards_.clear();
+    playerRank_ = HandRank::HighCard;
+    cpuRank_ = HandRank::HighCard;
+    currentPhase_ = Phase::PreFlop;
+
+    cardManager_.Initialize();
+    cardManager_.Shuffle();
+    DealHands();
 }
 
 void TexasHoldemManager::Update() {
@@ -61,4 +88,8 @@ void TexasHoldemManager::Update() {
 void TexasHoldemManager::Draw() {
     for (auto* card : communityCards_) card->Draw();
     for (auto* card : playerHands_) card->Draw();
+
+    if (currentPhase_ == Phase::Showdown) {
+        for (auto* card : cpuHands_) card->Draw();
+    }
 }
