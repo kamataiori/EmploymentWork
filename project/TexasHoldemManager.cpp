@@ -35,11 +35,33 @@ void TexasHoldemManager::NextPhase() {
     }
     else if (currentPhase_ == Phase::River) {
         currentPhase_ = Phase::Showdown;
-        EvaluateHands();
+        DealCommunity(); // ←これが必要なら維持
 
-        // CPUカードの位置を設定して表示
+        // CPUカードの表示位置
         for (int i = 0; i < 2; ++i) {
-            cpuHands_[i]->SetPosition({ 1100.0f + i * 70, 100.0f });
+            cpuHands_[i]->SetPosition({ 1100.0f + i * 70, 30.0f });
+        }
+    }
+
+    // 各フェーズ終了後にプレイヤーのハンド評価を更新
+    std::vector<Card*> playerTotal = playerHands_;
+    playerTotal.insert(playerTotal.end(), communityCards_.begin(), communityCards_.end());
+    playerRank_ = EvaluateHand(playerTotal);
+
+    // ショーダウンでCPUも評価
+    if (currentPhase_ == Phase::Showdown) {
+        std::vector<Card*> cpuTotal = cpuHands_;
+        cpuTotal.insert(cpuTotal.end(), communityCards_.begin(), communityCards_.end());
+        cpuRank_ = EvaluateHand(cpuTotal);
+
+        if (static_cast<int>(playerRank_) > static_cast<int>(cpuRank_)) {
+            winnerName_ = "Player Wins!";
+        }
+        else if (static_cast<int>(playerRank_) < static_cast<int>(cpuRank_)) {
+            winnerName_ = "CPU Wins!";
+        }
+        else {
+            winnerName_ = "Draw!";
         }
     }
 }
@@ -64,6 +86,17 @@ void TexasHoldemManager::EvaluateHands() {
     std::vector<Card*> cpuTotal = cpuHands_;
     cpuTotal.insert(cpuTotal.end(), communityCards_.begin(), communityCards_.end());
     cpuRank_ = EvaluateHand(cpuTotal);
+
+    // 勝敗判定
+    if (static_cast<int>(playerRank_) > static_cast<int>(cpuRank_)) {
+        winnerName_ = "Player Wins!";
+    }
+    else if (static_cast<int>(playerRank_) < static_cast<int>(cpuRank_)) {
+        winnerName_ = "CPU Wins!";
+    }
+    else {
+        winnerName_ = "Draw!";
+    }
 }
 
 void TexasHoldemManager::Reset()
