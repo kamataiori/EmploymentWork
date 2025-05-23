@@ -61,12 +61,13 @@ void TitleScene::Update()
 
 	// CPUの役を Showdown のときだけ表示（右上）
 	if (texasHoldem_.GetCurrentPhase() == Phase::Showdown) {
-		ImGui::Begin("CpuHandInfo", nullptr,
+		// 中央上に勝者表示
+		ImGui::Begin("WinnerDisplay", nullptr,
 			ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar |
 			ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-		ImGui::SetWindowPos(ImVec2(1080, 10)); // 1280x720想定
-		ImGui::SetWindowSize(ImVec2(200, 50));
-		ImGui::Text("CPU: %s", HandRankToString(texasHoldem_.GetCpuHandRank()));
+		ImGui::SetWindowPos(ImVec2(540, 200)); // 中央寄せ（1280px幅想定）
+		ImGui::SetWindowSize(ImVec2(600, 100));
+		ImGui::Text("%s", texasHoldem_.GetWinnerName().c_str());
 		ImGui::End();
 	}
 

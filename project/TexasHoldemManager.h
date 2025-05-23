@@ -25,6 +25,7 @@ public:
     HandRank GetCurrentHandRank() const { return playerRank_; }
     HandRank GetCpuHandRank() const { return cpuRank_; }
     Phase GetCurrentPhase() const { return currentPhase_; }
+    std::string GetWinnerName() const { return winnerName_; }
 
 private:
     CardManager cardManager_;
@@ -36,4 +37,6 @@ private:
 
     HandRank playerRank_ = HandRank::HighCard;
     HandRank cpuRank_ = HandRank::HighCard;
+
+    std::string winnerName_ = "";
 };
