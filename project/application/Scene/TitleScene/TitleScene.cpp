@@ -45,6 +45,16 @@ void TitleScene::Update()
 		isPressed_ = false;  // 離されたらフラグ解除
 	}
 
+	const char* rankName = HandRankToString(texasHoldem_.GetCurrentHandRank());
+
+	ImGui::Begin("HandInfo", nullptr,
+		ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+	ImGui::SetWindowPos(ImVec2(10, 10));
+	ImGui::SetWindowSize(ImVec2(200, 50));
+	ImGui::Text("役: %s", rankName);
+	ImGui::End();
+
 	texasHoldem_.Update();
 
 
@@ -120,6 +130,7 @@ void TitleScene::ForeGroundDraw()
 
 	// カード描画
 	texasHoldem_.Draw();
+
 
 	// ================================================
 	// ここまでSprite個々の前景描画(UIなど)

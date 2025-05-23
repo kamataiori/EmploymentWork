@@ -22,6 +22,8 @@ void TexasHoldemManager::NextPhase() {
     else if (currentPhase_ == Phase::River) {
         currentPhase_ = Phase::Showdown;
     }
+
+    EvaluatePlayerHand();
 }
 
 void TexasHoldemManager::DealHands() {
@@ -43,6 +45,13 @@ void TexasHoldemManager::DealCommunity() {
         card->SetPosition({ float(300 + communityCards_.size() * 70), 300.0f }); // 中央に並べる
         communityCards_.push_back(card);
     }
+}
+
+void TexasHoldemManager::EvaluatePlayerHand()
+{
+    std::vector<Card*> all = playerHands_;
+    all.insert(all.end(), communityCards_.begin(), communityCards_.end());
+    currentHandRank_ = EvaluateHand(all);
 }
 
 void TexasHoldemManager::Update() {
