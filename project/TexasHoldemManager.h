@@ -1,5 +1,6 @@
 #pragma once
 #include "CardManager.h"
+#include "HandRank.h"
 
 enum class Phase {
     PreFlop,
@@ -15,9 +16,12 @@ public:
     void NextPhase();
     void DealHands();
     void DealCommunity();
+    void EvaluatePlayerHand();
 
     void Update();
     void Draw();
+
+    HandRank GetCurrentHandRank() const { return currentHandRank_; }
 
 private:
     CardManager cardManager_;
@@ -25,4 +29,6 @@ private:
 
     std::vector<Card*> playerHands_;
     std::vector<Card*> communityCards_;
+
+    HandRank currentHandRank_ = HandRank::HighCard;
 };
