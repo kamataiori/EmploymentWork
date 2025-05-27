@@ -104,8 +104,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Card.cpp" />
-    <ClCompile Include="CardManager.cpp" />
     <ClCompile Include="engine\Collision\AABBCollider.cpp" />
     <ClCompile Include="engine\Collision\CapsuleCollider.cpp" />
     <ClCompile Include="engine\Collision\Collider.cpp" />
@@ -141,7 +139,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Camera\FPSCamera\FPSCamera.cpp" />
     <ClCompile Include="engine\Debug\GlobalVariables.cpp" />
     <ClCompile Include="Fade.cpp" />
-    <ClCompile Include="HandRank.cpp" />
     <ClCompile Include="ImGuiManager.cpp" />
     <ClCompile Include="engine\3d\Light.cpp" />
     <ClCompile Include="main.cpp" />
@@ -174,12 +171,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Skinning.cpp" />
     <ClCompile Include="engine\Collision\SphereCollider.cpp" />
     <ClCompile Include="SkyBox.cpp" />
-    <ClCompile Include="TexasHoldemManager.cpp" />
     <ClCompile Include="UnityScene.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Card.h" />
-    <ClInclude Include="CardManager.h" />
     <ClInclude Include="engine\Collision\AABBCollider.h" />
     <ClInclude Include="engine\Collision\CapsuleCollider.h" />
     <ClInclude Include="engine\Collision\Collider.h" />
@@ -219,7 +213,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Camera\FPSCamera\FPSCamera.h" />
     <ClInclude Include="engine\Debug\GlobalVariables.h" />
     <ClInclude Include="Fade.h" />
-    <ClInclude Include="HandRank.h" />
     <ClInclude Include="ImGuiManager.h" />
     <ClInclude Include="engine\3d\Light.h" />
     <ClInclude Include="matrix\Matrix3x3.h" />
@@ -253,7 +246,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\Collision\SphereCollider.h" />
     <ClInclude Include="SkyBox.h" />
     <ClInclude Include="StructAnimation.h" />
-    <ClInclude Include="TexasHoldemManager.h" />
     <ClInclude Include="UnityScene.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
