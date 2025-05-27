@@ -53,19 +53,37 @@ void UnityScene::Initialize()
 	primitiveParticle->Initialize(ParticleManager::VertexDataType::Plane);
 	primitiveParticle->CreateParticleGroup("primitive", "Resources/circle2.png", ParticleManager::BlendMode::kBlendModeAdd);
 	// ParticleEmitterの初期化
-	auto primitiveEmitter = std::make_unique<ParticleEmitter>(primitiveParticle.get(), "primitive", Transform{ {0.0f, 0.0f, -4.0f} }, 8, 0.5f, true, true);
+	auto primitiveEmitter = std::make_unique<ParticleEmitter>();
+	primitiveEmitter->Initialize(
+		primitiveParticle.get(),
+		"primitive",
+		Transform{ {0.0f, 0.0f, -4.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+		EmitterConfig{ ShapeType::Primitive, 8, 0.5f, true }
+	);
 	primitiveEmitters.push_back(std::move(primitiveEmitter));
 
 	ringParticle->Initialize(ParticleManager::VertexDataType::Ring);
 	ringParticle->CreateParticleGroup("ring", "Resources/gradationLine.png", ParticleManager::BlendMode::kBlendModeAdd);
 	// ParticleEmitterの初期化
-	auto ringEmitter = std::make_unique<ParticleEmitter>(ringParticle.get(), "ring", Transform{ {0.0f, 0.0f, 0.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} });
+	auto ringEmitter = std::make_unique<ParticleEmitter>();
+	ringEmitter->Initialize(
+		ringParticle.get(),
+		"ring",
+		Transform{ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+		EmitterConfig{ ShapeType::Ring }
+	);
 	ringEmitters.push_back(std::move(ringEmitter));
 
 	cyrinderParticle->Initialize(ParticleManager::VertexDataType::Cylinder);
 	cyrinderParticle->CreateParticleGroup("cyrinder", "Resources/gradationLine.png", ParticleManager::BlendMode::kBlendModeAdd);
 	// ParticleEmitterの初期化
-	auto cyrinderEmitter = std::make_unique<ParticleEmitter>(cyrinderParticle.get(), "cyrinder", Transform{ {0.0f, 0.0f, 0.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} }, true);
+	auto cyrinderEmitter = std::make_unique<ParticleEmitter>();
+	cyrinderEmitter->Initialize(
+		cyrinderParticle.get(),
+		"cyrinder",
+		Transform{ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+		EmitterConfig{ ShapeType::Cylinder }
+	);
 	cyrinderEmitters.push_back(std::move(cyrinderEmitter));
 
 	cyrinderParticle->SetFlipYToGroup("cyrinder", true);
