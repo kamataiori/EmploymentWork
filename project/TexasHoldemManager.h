@@ -40,6 +40,8 @@ public:
     void HandlePlayerAction(const std::string& action); // Check, Bet, Raise, Fold
     void HandleCpuAction();    // CPUの自動行動
     bool IsBettingPhase() const { return bettingPhase_; }
+    void StartCheatPrompt();
+
 
     int GetPot() const { return pot_; }
     int GetPlayerChips() const { return player_.chips; }
@@ -81,5 +83,11 @@ private:
     const float communityCardY = 300.0f;
     const float playerCardY = 500.0f;
     const float cpuCardY = 100.0f;
+
+    bool cheatPromptActive_ = false;
+    bool waitingForCheatResolution_ = false;
+
+    /*bool cheatChoiceMade_ = false;
+    bool cheatChosenCheat_ = false;*/
 
 };

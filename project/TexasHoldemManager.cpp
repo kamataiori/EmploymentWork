@@ -148,12 +148,51 @@ void TexasHoldemManager::Reset()
 void TexasHoldemManager::Update() {
     cardManager_.Update();
 
-    // 保留カードをセットしてからコミュニティに加える
-    for (Card* card : pendingCards_) {
-        card->SetPosition({ float(300 + communityCards_.size() * 70), 300.0f });
-        communityCards_.push_back(card);
+    static bool cheatChoiceMade_ = false;
+    static bool cheatChosenCheat_ = false;
+
+    // イカサマUI表示
+    if (cheatPromptActive_ && !isGameOver_ && !cheatChoiceMade_) {
+        ImGui::Begin("CheatChoice", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+        ImGui::SetWindowPos(ImVec2(520, 400));
+        ImGui::SetWindowSize(ImVec2(250, 100));
+        ImGui::Text("イカサマをしますか？");
+
+        if (ImGui::Button("イカサマする")) {
+            cheatChoiceMade_ = true;
+            cheatChosenCheat_ = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("イカサマしない")) {
+            cheatChoiceMade_ = true;
+            cheatChosenCheat_ = false;
+        }
+        ImGui::End();
+        return;
     }
-    pendingCards_.clear();
+
+    // イカサマの選択結果処理（1フレーム遅延）
+    if (cheatChoiceMade_) {
+        cheatPromptActive_ = false;
+        cheatChoiceMade_ = false;
+
+        if (cheatChosenCheat_) {
+            waitingForCheatResolution_ = true;
+        }
+        else {
+            NextPhase();
+        }
+    }
+
+    // イカサマ実行処理
+    if (waitingForCheatResolution_) {
+        waitingForCheatResolution_ = false;
+        if (rand() % 2 == 0) { // 成功
+            cpu_.currentBet = static_cast<int>(cpu_.currentBet * 1.5f);
+        }
+        NextPhase();
+    }
 
     ImGui::Begin("Chips", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar |
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
@@ -198,6 +237,8 @@ void TexasHoldemManager::Update() {
     }
 }
 
+
+
 void TexasHoldemManager::Draw() {
     for (auto* card : communityCards_) card->Draw();
     for (auto* card : playerHands_) card->Draw();
@@ -211,6 +252,7 @@ void TexasHoldemManager::StartBetting() {
     isPlayerTurn_ = true;
     player_.currentBet = 0;
     cpu_.currentBet = 0;
+    StartCheatPrompt();
 }
 
 void TexasHoldemManager::HandlePlayerAction(const std::string& action) {
@@ -258,4 +300,9 @@ void TexasHoldemManager::HandleCpuAction() {
     }
     bettingPhase_ = false;
     NextPhase();
+}
+
+void TexasHoldemManager::StartCheatPrompt()
+{
+    cheatPromptActive_ = true;
 }
