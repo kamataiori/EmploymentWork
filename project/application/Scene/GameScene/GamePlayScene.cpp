@@ -105,12 +105,20 @@ void GamePlayScene::Initialize()
 	BaseScene::GetLight()->SetSpotLightIntensity({ 4.0f });
 
 
+	// ParticleManagerの初期化
 	particle->Initialize(ParticleManager::VertexDataType::Plane);
-	particle->CreateParticleGroup("particle", "Resources/particleTest.png",ParticleManager::BlendMode::kBlendModeAdd);
-	//particle->CreateParticleGroup("particle2", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd,{32.0f,32.0f});
-	// ParticleEmitterの初期化
-	auto emitter = std::make_unique<ParticleEmitter>(particle.get(), "particle", Transform{ {0.0f, 0.0f, -4.0f} }, 10, 0.5f,true);
+	particle->CreateParticleGroup("particle", "Resources/particleTest.png", ParticleManager::BlendMode::kBlendModeAdd);
+
+	// ParticleEmitterの初期化（新しいInitialize方式）
+	auto emitter = std::make_unique<ParticleEmitter>();
+	emitter->Initialize(
+		particle.get(),
+		"particle",
+		Transform{ {0.0f, 0.0f, -4.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
+		EmitterConfig{ ShapeType::Plane, 10, 0.5f, true }
+	);
 	emitters.push_back(std::move(emitter));
+
 
 	collisionMAnager_ = std::make_unique<CollisionManager>();
 	collisionMAnager_->RegisterCollider(player_.get());

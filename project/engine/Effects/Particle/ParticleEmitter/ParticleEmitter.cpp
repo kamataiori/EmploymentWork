@@ -1,72 +1,102 @@
 #include "ParticleEmitter.h"
+#include "ParticleManager.h"
+#include <cassert>
 
-ParticleEmitter::ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform, uint32_t count, float frequency, bool repeat)
-    : particleManager_(particleManager), name_(name), transform_(transform), count_(count), frequency_(frequency), elapsedTime_(frequency), repeat_(repeat)
+/// 初期化関数（エミッターの設定と初回Emitを行う）
+void ParticleEmitter::Initialize(ParticleManager* particleManager, const std::string& name, const Transform& transform, const EmitterConfig& config)
 {
-    Emit(); // 初期化時に即時発生
+    assert(particleManager); // nullチェック
+
+    particleManager_ = particleManager;
+    name_ = name;
+    transform_ = transform;
+    config_ = config;
+    elapsedTime_ = config.frequency; // 最初のEmitが即時起きるように設定
+    isInitialized_ = true;
+
+    EmitByShape(); // 初期発生
 }
 
-// コンストラクタ
-ParticleEmitter::ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform, uint32_t count, float frequency, bool repeat, bool usePrimitive)
-    : particleManager_(particleManager), name_(name), transform_(transform), count_(count), frequency_(frequency), elapsedTime_(frequency), repeat_(repeat), usePrimitive_(usePrimitive)
-{
-    PrimitiveEmit();
-}
-
-ParticleEmitter::ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform)
-    : particleManager_(particleManager), name_(name), transform_(transform), useRing_(true)
-{
-    RingEmit();
-}
-
-ParticleEmitter::ParticleEmitter(ParticleManager* particleManager, const std::string& name, const Transform& transform, bool useCylinder)
-    : particleManager_(particleManager), name_(name), transform_(transform), useCylinder_(useCylinder)
-{
-    CylinderEmit();
-}
-
-// 更新処理
+/// 更新処理（repeatが有効なら一定時間ごとにEmit）
 void ParticleEmitter::Update()
 {
-    if (!repeat_) return; // 繰り返しフラグがfalseの場合は処理をスキップ
+    if (!isInitialized_ || !config_.repeat) return;
 
-    elapsedTime_ += 1.0f / 60.0f; // フレーム単位の経過時間を加算
+    // フレーム経過（固定60FPS想定）
+    elapsedTime_ += 1.0f / 60.0f;
 
-    if (elapsedTime_ >= frequency_)
-    {
-        if (usePrimitive_) {
-            PrimitiveEmit();
-        }
-        else {
-            Emit();
-        }
-        elapsedTime_ -= frequency_; // 周期的に実行するためリセット
+    // 指定の間隔を超えたらEmit実行
+    if (elapsedTime_ >= config_.frequency) {
+        EmitByShape();
+        elapsedTime_ -= config_.frequency;
     }
 }
 
-// Emit処理
+/// 外部からEmitを強制的に発生させる
 void ParticleEmitter::Emit()
 {
-    particleManager_->Emit(name_, transform_.translate, count_);
+    if (!isInitialized_) return;
+    EmitByShape();
 }
 
-void ParticleEmitter::PrimitiveEmit()
+/// パーティクルの形状に応じたEmitを行う
+void ParticleEmitter::EmitByShape()
 {
-    particleManager_->PrimitiveEmit(name_, transform_.translate, count_);
+    switch (config_.shapeType) {
+    case ShapeType::Plane:
+        particleManager_->Emit(name_, transform_.translate, config_.count);
+        break;
+    case ShapeType::Primitive:
+        particleManager_->PrimitiveEmit(name_, transform_.translate, config_.count);
+        break;
+    case ShapeType::Ring:
+        particleManager_->RingEmit(name_, transform_.translate);
+        break;
+    case ShapeType::Cylinder:
+        particleManager_->CylinderEmit(name_, transform_.translate);
+        break;
+    default:
+        break;
+    }
 }
 
-void ParticleEmitter::RingEmit()
-{
-    particleManager_->RingEmit(name_, transform_.translate);
+// ----- Setter -----
+
+void ParticleEmitter::SetRepeat(bool repeat) {
+    config_.repeat = repeat;
 }
 
-void ParticleEmitter::CylinderEmit()
-{
-    particleManager_->CylinderEmit(name_, transform_.translate);
+void ParticleEmitter::SetCount(uint32_t count) {
+    config_.count = count;
 }
 
-// 繰り返し設定
-void ParticleEmitter::SetRepeat(bool repeat)
-{
-    repeat_ = repeat;
+void ParticleEmitter::SetFrequency(float frequency) {
+    config_.frequency = frequency;
+}
+
+void ParticleEmitter::SetTransform(const Transform& transform) {
+    transform_ = transform;
+}
+
+void ParticleEmitter::SetPosition(const Vector3& position) {
+    transform_.translate = position;
+}
+
+void ParticleEmitter::SetRotation(const Vector3& rotation) {
+    transform_.rotate = rotation;
+}
+
+void ParticleEmitter::SetScale(const Vector3& scale) {
+    transform_.scale = scale;
+}
+
+
+// ----- Getter -----
+
+const Transform& ParticleEmitter::GetTransform() const {
+    return transform_;
+}
+
+Transform& ParticleEmitter::GetTransform() {
+    return transform_;
 }
