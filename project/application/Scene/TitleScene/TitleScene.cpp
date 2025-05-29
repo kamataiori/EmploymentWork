@@ -75,7 +75,7 @@ void TitleScene::Initialize()
 	emitter->Initialize(
 		particle.get(),
 		"particle",
-		Transform{ {0.0f, 0.0f, -4.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
+		Transform{ {1.0f, 1.0f, -4.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
 		EmitterConfig{ ShapeType::Plane, 10, 0.5f, true }
 	);
 	emitters.push_back(std::move(emitter));
@@ -87,7 +87,7 @@ void TitleScene::Initialize()
 	primitiveEmitter->Initialize(
 		primitiveParticle.get(),
 		"primitive",
-		Transform{ {0.0f, 0.0f, -4.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
+		Transform{ {1.0f, 1.0f, -4.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
 		EmitterConfig{ ShapeType::Primitive, 8, 0.5f, true }
 	);
 	primitiveEmitters.push_back(std::move(primitiveEmitter));
@@ -99,7 +99,7 @@ void TitleScene::Initialize()
 	ringEmitter->Initialize(
 		ringParticle.get(),
 		"ring",
-		Transform{ {0.0f, 0.0f, 0.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
+		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
 		EmitterConfig{ ShapeType::Ring }
 	);
 	ringEmitters.push_back(std::move(ringEmitter));
@@ -111,7 +111,7 @@ void TitleScene::Initialize()
 	cyrinderEmitter->Initialize(
 		cyrinderParticle.get(),
 		"cyrinder",
-		Transform{ {0.0f, 0.0f, 0.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
+		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
 		EmitterConfig{ ShapeType::Cylinder }
 	);
 	cyrinderEmitters.push_back(std::move(cyrinderEmitter));
@@ -147,11 +147,11 @@ void TitleScene::Initialize()
 	//drawTriangle_->Initialize();
 	drawTriangle_->SetCamera(camera1.get());
 
-	GlobalVariables::GetInstance()->AddValue<Vector3>("Camera", "position", camera1->GetTranslate());
+	/*GlobalVariables::GetInstance()->AddValue<Vector3>("Camera", "position", camera1->GetTranslate());
 	GlobalVariables::GetInstance()->AddValue<Vector3>("Camera", "rotate", camera1->GetRotate());
 
 	GlobalVariables::GetInstance()->AddValue<Vector3>("Animation", "position", animationCube->GetTranslate());
-	GlobalVariables::GetInstance()->AddValue<Vector3>("Animation", "rotate", animationCube->GetRotate());
+	GlobalVariables::GetInstance()->AddValue<Vector3>("Animation", "rotate", animationCube->GetRotate());*/
 
 	// ---- Dock配置登録（BaseSceneの機能） ----
 	AddBottomDockWindow(kWindowName_ParticleControl);
@@ -187,10 +187,10 @@ void TitleScene::Update()
 	// 各3Dオブジェクトの更新
 	plane->Update();
 
-	animationCube->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "position"));
+	/*animationCube->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "position"));
 	animationCube->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "rotate"));
 	camera1->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "position"));
-	camera1->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "rotate"));
+	camera1->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "rotate"));*/
 
 	animationCube->Update();
 	sneak->Update();
@@ -301,6 +301,10 @@ void TitleScene::Update()
 		if (Input::GetInstance()->TriggerKey(DIK_U)) {
 			fade_->Start(Fade::Status::FadeOut, 2.0f);
 			nextSceneName_ = "Unity";
+		}
+		if (Input::GetInstance()->TriggerKey(DIK_P)) {
+			fade_->Start(Fade::Status::FadeOut, 2.0f);
+			nextSceneName_ = "PARTICLE";
 		}
 	}
 

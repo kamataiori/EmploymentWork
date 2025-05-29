@@ -61,6 +61,9 @@ public:
     /// エミッターのスケールを変更
     void SetScale(const Vector3& scale);
 
+    // ランダム発生フラグの設定
+    void SetUseRandom(bool flag);
+
 
     // ----- Getter -----
 
@@ -70,7 +73,6 @@ public:
     /// Transform（書き換え可能版）
     Transform& GetTransform();
 
-private:
     /// 形状タイプに応じて正しいEmitを呼び分ける
     void EmitByShape();
 
@@ -81,4 +83,6 @@ private:
     EmitterConfig config_{};                      // パーティクル設定
     float elapsedTime_ = 0.0f;                    // 発生時間の蓄積
     bool isInitialized_ = false;                  // 初期化済みフラグ
+    bool useRandom_ = true;
+
 };

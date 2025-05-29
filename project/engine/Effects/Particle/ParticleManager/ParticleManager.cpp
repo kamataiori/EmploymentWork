@@ -478,7 +478,38 @@ ParticleManager::Particle ParticleManager::CylinderMakeNewParticle(const Vector3
 	return particle;
 }
 
-void ParticleManager::Emit(const std::string name, const Vector3& position, uint32_t count)
+void ParticleManager::Emit(const std::string& name, const Transform& transform, uint32_t count, bool useRandomPosition) {
+	if (particleGroups.find(name) == particleGroups.end()) {
+		assert("Specified particle group does not exist!");
+		return;
+	}
+
+	ParticleGroup& group = particleGroups[name];
+
+	if (group.particleList.size() >= count) {
+		return;
+	}
+
+	for (uint32_t i = 0; i < count; ++i) {
+		Particle particle;
+		if (useRandomPosition) {
+			particle = MakeNewParticle(randomEngine, transform.translate);
+		}
+		else {
+			particle.transform.translate = transform.translate;
+			particle.velocity = { 0.0f, 0.0f, 0.0f };
+			particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+			particle.lifeTime = 1.0f;
+			particle.currentTime = 0;
+		}
+		particle.transform.scale = transform.scale;
+		particle.transform.rotate = transform.rotate;
+
+		group.particleList.push_back(particle);
+	}
+}
+
+void ParticleManager::PrimitiveEmit(const std::string name, const Transform& transform, uint32_t count)
 {
 	if (particleGroups.find(name) == particleGroups.end()) {
 		// パーティクルグループが存在しない場合はエラーを出力して終了
@@ -496,37 +527,14 @@ void ParticleManager::Emit(const std::string name, const Vector3& position, uint
 
 	// 指定された数のパーティクルを生成して追加
 	for (uint32_t i = 0; i < count; ++i) {
-		/*Particle newParticle = MakeNewParticle(randomEngine, position);
-		group.particleList.push_back(newParticle);*/
-		group.particleList.push_back(MakeNewParticle(randomEngine, position));
+		Particle particle = PrimitiveMakeNewParticle(randomEngine, transform.translate);
+		particle.transform.rotate = transform.rotate;
+		particle.transform.scale = transform.scale;
+		group.particleList.push_back(particle);
 	}
 }
 
-void ParticleManager::PrimitiveEmit(const std::string name, const Vector3& position, uint32_t count)
-{
-	if (particleGroups.find(name) == particleGroups.end()) {
-		// パーティクルグループが存在しない場合はエラーを出力して終了
-		assert("Specified particle group does not exist!");
-
-	}
-
-	// 指定されたパーティクルグループが存在する場合、そのグループにパーティクルを追加
-	ParticleGroup& group = particleGroups[name];
-
-	// すでにkNumMaxInstanceに達している場合、新しいパーティクルの追加をスキップする
-	if (group.particleList.size() >= count) {
-		return;
-	}
-
-	// 指定された数のパーティクルを生成して追加
-	for (uint32_t i = 0; i < count; ++i) {
-		/*Particle newParticle = MakeNewParticle(randomEngine, position);
-		group.particleList.push_back(newParticle);*/
-		group.particleList.push_back(PrimitiveMakeNewParticle(randomEngine, position));
-	}
-}
-
-void ParticleManager::RingEmit(const std::string name, const Vector3& position)
+void ParticleManager::RingEmit(const std::string name, const Transform& transform)
 {
 	if (particleGroups.find(name) == particleGroups.end()) {
 		assert("Specified particle group does not exist!");
@@ -539,10 +547,13 @@ void ParticleManager::RingEmit(const std::string name, const Vector3& position)
 		return;
 	}
 
-	group.particleList.push_back(RingMakeNewParticle(position));
+	Particle particle = RingMakeNewParticle(transform.translate);
+	particle.transform.rotate = transform.rotate;
+	particle.transform.scale = transform.scale;
+	group.particleList.push_back(particle);
 }
 
-void ParticleManager::CylinderEmit(const std::string& name, const Vector3& position)
+void ParticleManager::CylinderEmit(const std::string& name, const Transform& transform)
 {
 	if (particleGroups.find(name) == particleGroups.end()) {
 		assert("Specified particle group does not exist!");
@@ -554,7 +565,10 @@ void ParticleManager::CylinderEmit(const std::string& name, const Vector3& posit
 		return;
 	}
 
-	group.particleList.push_back(CylinderMakeNewParticle(position));
+	Particle particle = CylinderMakeNewParticle(transform.translate);
+	particle.transform.rotate = transform.rotate;
+	particle.transform.scale = transform.scale;
+	group.particleList.push_back(particle);
 }
 
 void ParticleManager::SetScaleToGroup(const std::string& groupName, const Vector3& scale) {
@@ -602,6 +616,29 @@ void ParticleManager::SetColorToGroup(const std::string& groupName, const Vector
 	}
 }
 
+void ParticleManager::SetLifeTimeToGroup(const std::string& groupName, float lifeTime)
+{
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+
+	for (auto& particle : it->second.particleList) {
+		particle.lifeTime = lifeTime;
+	}
+}
+
+void ParticleManager::SetCurrentTimeToGroup(const std::string& groupName, float currentTime)
+{
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+
+	for (auto& particle : it->second.particleList) {
+		particle.currentTime = currentTime;
+	}
+}
+
+void ParticleManager::DeleteParticleGroup(const std::string& groupName) {
+	particleGroups.erase(groupName);
+}
 
 
 void ParticleManager::AdjustTextureSize(ParticleGroup& group, const std::string& textureFilePath)
