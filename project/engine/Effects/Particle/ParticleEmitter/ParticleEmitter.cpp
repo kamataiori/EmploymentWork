@@ -44,20 +44,21 @@ void ParticleEmitter::EmitByShape()
 {
     switch (config_.shapeType) {
     case ShapeType::Plane:
-        particleManager_->Emit(name_, transform_.translate, config_.count);
+        particleManager_->Emit(name_, transform_, config_.count,useRandom_);
         break;
     case ShapeType::Primitive:
-        particleManager_->PrimitiveEmit(name_, transform_.translate, config_.count);
+        particleManager_->PrimitiveEmit(name_, transform_, config_.count);
         break;
     case ShapeType::Ring:
-        particleManager_->RingEmit(name_, transform_.translate);
+        particleManager_->RingEmit(name_, transform_);
         break;
     case ShapeType::Cylinder:
-        particleManager_->CylinderEmit(name_, transform_.translate);
+        particleManager_->CylinderEmit(name_, transform_);
         break;
     default:
         break;
     }
+
 }
 
 // ----- Setter -----
@@ -88,6 +89,11 @@ void ParticleEmitter::SetRotation(const Vector3& rotation) {
 
 void ParticleEmitter::SetScale(const Vector3& scale) {
     transform_.scale = scale;
+}
+
+void ParticleEmitter::SetUseRandom(bool flag)
+{
+    useRandom_ = flag;
 }
 
 

@@ -237,13 +237,13 @@ public:
 	/// <param name="name"></param>
 	/// <param name="position"></param>
 	/// <param name="count"></param>
-	void Emit(const std::string name, const Vector3& position, uint32_t count);
+	void Emit(const std::string& name, const Transform& transform, uint32_t count, bool useRandomPosition);
 
-	void PrimitiveEmit(const std::string name, const Vector3& position, uint32_t count);
+	void PrimitiveEmit(const std::string name, const Transform& transform, uint32_t count);
 
-	void RingEmit(const std::string name, const Vector3& position);
+	void RingEmit(const std::string name, const Transform& transform);
 
-	void CylinderEmit(const std::string& name, const Vector3& position);
+	void CylinderEmit(const std::string& name, const Transform& transform);
 
 	// スケール
 	void SetScaleToGroup(const std::string& groupName, const Vector3& scale);
@@ -259,6 +259,16 @@ public:
 
 	// 色
 	void SetColorToGroup(const std::string& groupName, const Vector4& color);
+
+	// 寿命（LifeTime）を一括設定
+	void SetLifeTimeToGroup(const std::string& groupName, float lifeTime);
+
+	// 初期時間（CurrentTime）を一括設定
+	void SetCurrentTimeToGroup(const std::string& groupName, float currentTime);
+
+	void DeleteParticleGroup(const std::string& groupName);
+
+	void SetUseBillboard(bool use) { usebillboardMatrix = use; }
 
 
 private:
@@ -285,7 +295,7 @@ private:
 	std::mt19937 randomEngine;
 
 	// パーティクルの最大出力数
-	const uint32_t kNumMaxInstance = 128;
+	const uint32_t kNumMaxInstance = 10000;
 	//とりあえず60fps固定してあるが、実時間を計測して可変fpsで動かせるようにしておくとなおよい
 	const float kDeltaTime = 1.0f / 60.0f;
 

@@ -2,6 +2,7 @@
 #include "TitleScene.h"
 #include "GamePlayScene.h"
 #include "UnityScene.h"
+#include "ParticleEditorScene.h"
 
 BaseScene* SceneFactory::CreateScene(const std::string& sceneName)
 {
@@ -16,6 +17,9 @@ BaseScene* SceneFactory::CreateScene(const std::string& sceneName)
 	}
 	else if (sceneName == "Unity") {
 		newScene = new UnityScene();
+	}
+	else if (sceneName == "PARTICLE") {
+		newScene = new ParticleEditorScene();
 	}
 	
 	return newScene;
