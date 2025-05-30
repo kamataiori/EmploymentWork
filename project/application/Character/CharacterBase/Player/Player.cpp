@@ -10,7 +10,7 @@ void Player::Initialize()
 	object3d_->SetModel("uvChecker.gltf");
 
 	// 初期Transform設定
-	transform.translate = { -2.0f, 0.0f, 0.0f };
+	transform.translate = { -2.0f, 0.0f, -20.0f };
 	transform.rotate = { 0.0f, 3.14f, 0.0f };
 	transform.scale = { 1.0f, 1.0f, 1.0f };
 
@@ -185,7 +185,7 @@ void Player::HandleBullet()
 		bullet_->SetTranslate(object3d_->GetTranslate());
 
 		Vector3 forward = { 0.0f, 0.0f, 1.0f }; // プレイヤーの正面方向に仮固定
-		bullet_->SetVelocity(forward * 0.5f);
+		bullet_->SetVelocity(forward * 1.0f);
 		bullet_->Initialize();
 		bullet_->SetCamera(camera_);
 	}

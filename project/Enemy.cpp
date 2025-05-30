@@ -13,7 +13,7 @@ void Enemy::Initialize()
 	// モデルにSRTを設定
 	object3d_->SetScale({ 1.0f, 1.0f, 1.0f });
 	object3d_->SetRotate({ 0.0f, 3.14f, 0.0f });
-	object3d_->SetTranslate({ 2.0f, 0.0f, 0.0f });
+	object3d_->SetTranslate({ 0.0f, 0.0f, 0.0f });
 
 	// コライダーの初期化
 	SetCollider(this);
@@ -57,12 +57,14 @@ void Enemy::Update()
 
 void Enemy::Draw()
 {
-	object3d_->Draw();
-	// SphereCollider の描画
-	SphereCollider::Draw();
+	if (!isDead_) {
+		object3d_->Draw();
+		SphereCollider::Draw();
+	}
 }
 
 void Enemy::OnCollision()
 {
 	sphere.color = static_cast<int>(Color::RED);
+	isDead_ = true;  // 当たったら死亡フラグON
 }

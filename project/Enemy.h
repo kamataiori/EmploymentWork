@@ -18,6 +18,11 @@ public:
 
 	void OnCollision() override;
 
+	bool IsDead() const { return isDead_; }
+	void SetDead(bool flag) { isDead_ = flag; }
+
 private:
+
+	bool isDead_ = false;
 };
 
