@@ -1,5 +1,4 @@
 #include "Player.h"
-#include <CollisionTypeIdDef.h>
 
 void Player::Initialize()
 {
@@ -24,7 +23,8 @@ void Player::Initialize()
 	SetCollider(this);
 	SetPosition(object3d_->GetTranslate());  // 3Dモデルの位置にコライダーをセット
 	sphere.radius = 2.0f;
-	//SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
+	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
+
 }
 
 void Player::Update()
@@ -185,7 +185,7 @@ void Player::HandleBullet()
 		bullet_->SetTranslate(object3d_->GetTranslate());
 
 		Vector3 forward = { 0.0f, 0.0f, 1.0f }; // プレイヤーの正面方向に仮固定
-		bullet_->SetVelocity(forward * 1.5f);
+		bullet_->SetVelocity(forward * 0.5f);
 		bullet_->Initialize();
 		bullet_->SetCamera(camera_);
 	}
