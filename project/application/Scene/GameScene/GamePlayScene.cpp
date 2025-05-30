@@ -44,8 +44,12 @@ void GamePlayScene::Initialize()
 
 
 	collisionMAnager_ = std::make_unique<CollisionManager>();
-	collisionMAnager_->RegisterCollider(player_.get());
+	/*collisionMAnager_->RegisterCollider(player_.get());
 	collisionMAnager_->RegisterCollider(enemy_.get());
+	if (auto bullet = player_->GetBullet()) {
+		collisionMAnager_->RegisterCollider(bullet);
+	}*/
+
 
 	AddRightDockWindow(kWindowName_MonsterControl);
 
@@ -72,6 +76,16 @@ void GamePlayScene::Update()
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
+	ImGui::Text("bullet_ exists: %s", player_->GetBullet() ? "Yes" : "No");
+
+	collisionMAnager_->RegisterCollider(player_.get());
+	collisionMAnager_->RegisterCollider(enemy_.get());
+	if (player_->GetBullet()) {
+		auto bullet = player_->GetBullet();
+		collisionMAnager_->RegisterCollider(bullet);
+	}
+
+
 	// 衝突判定と応答
 	CheckAllColisions();
 
@@ -86,7 +100,6 @@ void GamePlayScene::Update()
 		// シーン切り替え
 		SceneManager::GetInstance()->ChangeScene("Unity");
 	}
-
 	
 }
 
@@ -180,3 +193,4 @@ void GamePlayScene::CheckAllColisions()
 {
 	collisionMAnager_->CheckAllCollisions();
 }
+

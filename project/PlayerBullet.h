@@ -8,6 +8,8 @@ public:
 	// 明示的に CharacterBase を初期化するコンストラクタ
 	PlayerBullet(BaseScene* baseScene);
 
+	~PlayerBullet();
+
 	// 初期化
 	void Initialize() override;
 
@@ -16,6 +18,8 @@ public:
 
 	// 描画
 	void Draw() override;
+
+	void OnCollision() override;
 
 	// 速度設定
 	void SetVelocity(const Vector3& velocity) { velocity_ = velocity; }
@@ -30,10 +34,11 @@ public:
 		object3d_->SetCamera(camera);
 	}
 
-	bool IsDead() const { return lifeTimer_ >= maxLifeTime_; }
+	bool IsDead() const { return isDead_ || lifeTimer_ >= maxLifeTime_; }
 
 private:
 	Vector3 velocity_ = { 0.0f, 0.0f, 2.0f }; // デフォルト前進速度
 	float lifeTimer_ = 0.0f;
 	const float maxLifeTime_ = 4.0f;
+	bool isDead_ = false;  // 弾が消えるかどうか
 };

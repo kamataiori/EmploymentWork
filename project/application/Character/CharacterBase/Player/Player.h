@@ -16,6 +16,11 @@ public:
 
 	void Draw() override;
 
+	PlayerBullet* GetBullet() const {
+		return bullet_.get();
+	}
+
+
 private:
 
 	// 移動＆ジャンプを処理する関数

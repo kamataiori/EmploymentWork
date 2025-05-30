@@ -4,6 +4,12 @@ PlayerBullet::PlayerBullet(BaseScene* baseScene)
 	: CharacterBase(baseScene), SphereCollider(sphere) {
 }
 
+PlayerBullet::~PlayerBullet()
+{
+	int a = 0;
+	a++;
+}
+
 void PlayerBullet::Initialize()
 {
 	object3d_->Initialize();
@@ -23,6 +29,9 @@ void PlayerBullet::Initialize()
 	SetPosition(transform.translate);
 
 	sphere.radius = 1.0f;
+
+	SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::PlayerBullet));
+
 }
 
 void PlayerBullet::Update()
@@ -47,4 +56,9 @@ void PlayerBullet::Draw()
 {
 	object3d_->Draw();
 	SphereCollider::Draw(); // デバッグ用描画
+}
+
+void PlayerBullet::OnCollision()
+{
+	isDead_ = true;
 }

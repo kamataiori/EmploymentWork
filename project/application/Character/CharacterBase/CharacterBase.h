@@ -4,17 +4,20 @@
 #include "Collider.h"
 #include "Input.h"
 #include <PostEffectManager.h>
+#include <CollisionTypeIdDef.h>
+#include "ParticleManager.h"
+#include "ParticleEmitter.h"
 
 class CharacterBase
 {
 public:
-
-    CharacterBase() = default;
     /// <summary>
     /// コンストラクタ
     /// </summary>
     /// <param name="baseScene"></param>
     CharacterBase(BaseScene* baseScene) : baseScene_(baseScene), collider_(nullptr) { object3d_ = std::make_unique<Object3d>(baseScene_); }
+
+    ~CharacterBase() = default;
 
     /// <summary>
     /// 初期化
