@@ -480,4 +480,19 @@ Vector3 TransformCoord(const Vector3& vec, const Matrix4x4& mat) {
 	};
 }
 
+Matrix4x4 MakeRotateMatrix(const Vector3& rot) {
+	// Z → X → Yの順に回転
+	Matrix4x4 rotZ = MakeRotateZMatrix(rot.z);
+	Matrix4x4 rotX = MakeRotateXMatrix(rot.x);
+	Matrix4x4 rotY = MakeRotateYMatrix(rot.y);
+
+	// 合成（順序は必要に応じて調整）
+	return Multiply(Multiply(rotZ, rotX), rotY);
+}
+
+Vector3 TransformVector(const Vector3& vec, const Matrix4x4& mat) {
+	return TransformCoord(vec, mat);
+}
+
+
 

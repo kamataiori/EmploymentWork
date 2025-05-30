@@ -2,17 +2,20 @@
 #include "Transform.h"
 #include "Object3d.h"
 #include "Collider.h"
+#include "Input.h"
+#include <PostEffectManager.h>
 
 class CharacterBase
 {
 public:
 
+    CharacterBase() = default;
     /// <summary>
     /// コンストラクタ
     /// </summary>
     /// <param name="baseScene"></param>
     CharacterBase(BaseScene* baseScene) : baseScene_(baseScene), collider_(nullptr) { object3d_ = std::make_unique<Object3d>(baseScene_); }
-    
+
     /// <summary>
     /// 初期化
     /// </summary>
@@ -33,7 +36,10 @@ public:
     /// </summary>
     const Transform& GetTransform() const { return transform; }
 
-    void SetCamera(Camera* camera) { object3d_->SetCamera(camera); }
+    void SetCamera(Camera* camera) {
+        camera_ = camera;
+        object3d_->SetCamera(camera);
+    }
 
     // `SetCollider()` を追加
     void SetCollider(Collider* collider) { collider_ = collider; }
@@ -42,6 +48,8 @@ public:
     Collider* GetCollider() const { return collider_; }
 
 protected:
+    Camera* camera_ = nullptr; // カメラを共通保持
+
     Transform transform; // キャラクターの基本Transform
 
     BaseScene* baseScene_;
