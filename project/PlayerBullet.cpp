@@ -6,8 +6,7 @@ PlayerBullet::PlayerBullet(BaseScene* baseScene)
 
 PlayerBullet::~PlayerBullet()
 {
-	int a = 0;
-	a++;
+	
 }
 
 void PlayerBullet::Initialize()
@@ -55,7 +54,7 @@ void PlayerBullet::Update()
 void PlayerBullet::Draw()
 {
 	object3d_->Draw();
-	SphereCollider::Draw(); // デバッグ用描画
+	//SphereCollider::Draw(); // デバッグ用描画
 }
 
 void PlayerBullet::OnCollision()

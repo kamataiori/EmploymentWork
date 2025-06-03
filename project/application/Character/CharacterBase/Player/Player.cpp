@@ -25,6 +25,33 @@ void Player::Initialize()
 	sphere.radius = 2.0f;
 	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
 
+	// ===== パーティクル初期化 =====
+	dustParticle_ = std::make_unique<ParticleManager>();
+	dustParticle_->Initialize(ParticleManager::VertexDataType::Plane);
+	dustParticle_->CreateParticleGroup("dust", "Resources/smoke.png");
+	dustParticle_->SetColorToGroup("dust", { 0.8f, 0.8f, 0.8f, 0.2f }); // 薄灰色＋少し透明
+	dustParticle_->SetLifeTimeToGroup("dust", 0.4f); // 寿命短め
+	dustParticle_->SetVelocityToGroup("dust", { 0.0f, 0.03f, 0.0f }); // 上へゆっくり
+
+	EmitterConfig dustConfig;
+	dustConfig.shapeType = ShapeType::Plane;
+	dustConfig.count = 5;
+	dustConfig.frequency = 0.05f;
+	dustConfig.repeat = true;
+
+	dustEmitter_ = std::make_unique<ParticleEmitter>();
+	dustEmitter_->Initialize(dustParticle_.get(), "dust", transform, dustConfig);
+	dustEmitter_->SetScale({ 0.2f, 0.2f, 0.2f });
+	dustEmitter_->SetUseRandom(true);
+
+
+	dustParticle_->SetColorToGroup(groupName, particleColor);
+	dustParticle_->SetVelocityToGroup(groupName, particleVelocity);
+	dustParticle_->SetLifeTimeToGroup(groupName, particleLifeTime);
+	dustParticle_->SetCurrentTimeToGroup(groupName, particleStartTime);
+	dustParticle_->SetScaleToGroup(groupName, { 0.1f,0.1f,0.1f });
+
+
 }
 
 void Player::Update()
@@ -35,16 +62,28 @@ void Player::Update()
 	// 弾の処理
 	HandleBullet();
 
+	if (Length(move_.direction) > 0.0f && transform.translate.y <= jump_.kGroundHeight)
+	{
+		if (dustEmitter_) {
+			dustEmitter_->SetPosition(transform.translate); // 足元に追従
+			//dustParticle_->SetScaleToGroup(groupName, { 0.1f,0.1f,0.1f });
+			//dustEmitter_->SetScale({ 0.2f, 0.2f, 0.2f });
+			dustEmitter_->Update();
+		}
+		dustParticle_->Update();
+
+	}
+
 	// -------------------------------
 	// ImGui による Transform 調整
 	// -------------------------------
-	ImGui::Begin("Player Transform");
+	/*ImGui::Begin("Player Transform");
 
 	if (ImGui::DragFloat3("Position", &transform.translate.x, 0.1f)) {}
 	if (ImGui::DragFloat3("Rotation", &transform.rotate.x, 0.1f)) {}
 	if (ImGui::DragFloat3("Scale", &transform.scale.x, 0.1f, 0.1f, 10.0f)) {}
 
-	ImGui::End();
+	ImGui::End();*/
 
 	// ------------------------
 	// オブジェクト更新処理
@@ -57,16 +96,40 @@ void Player::Update()
 	// コライダー位置を更新
 	SetPosition(transform.translate);
 
+
+	// 毎フレーム、現在の透明度をパーティクルグループに反映
+	// パーティクルの色（含むアルファ）を反映
+	dustParticle_->SetColorToGroup(groupName, particleColor);
+	dustParticle_->SetVelocityToGroup(groupName, particleVelocity);
 }
 
 void Player::Draw()
 {
 	object3d_->Draw();
 	// SphereCollider の描画
-	SphereCollider::Draw();
+	//SphereCollider::Draw();
 
 	if (bullet_) {
 		bullet_->Draw();
+	}
+}
+
+void Player::SetCamera(Camera* camera)
+{
+	CharacterBase::SetCamera(camera);  // 基底のobject3dにも設定
+
+	if (bullet_) {
+		bullet_->SetCamera(camera);
+	}
+	if (dustParticle_) {
+		dustParticle_->SetCamera(camera);
+	}
+}
+
+void Player::DrawParticle()
+{
+	if (dustParticle_) {
+		dustParticle_->Draw();
 	}
 }
 

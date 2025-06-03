@@ -29,6 +29,10 @@ public:
 	// 初期位置設定（オプション）
 	void SetTranslate(const Vector3& pos) { transform.translate = pos; }
 
+	// 現在の座標（位置）を返す
+	Vector3 GetTranslate() const { return transform.translate; }
+
+
 	void SetCamera(Camera* camera) {
 		camera_ = camera;
 		object3d_->SetCamera(camera);

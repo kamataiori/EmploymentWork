@@ -16,6 +16,11 @@ public:
 
 	void Draw() override;
 
+	void SetCamera(Camera* camera) override;
+
+
+	void DrawParticle();
+
 	PlayerBullet* GetBullet() const {
 		return bullet_.get();
 	}
@@ -60,6 +65,20 @@ private:
 
 	// 弾
 	std::unique_ptr<PlayerBullet> bullet_; // 今回は1発だけ
+
+	// 埃パーティクル用
+	std::unique_ptr<ParticleManager> dustParticle_ = nullptr;
+	std::unique_ptr<ParticleEmitter> dustEmitter_ = nullptr;
+
+	Transform emitterTransform = { {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
+	EmitterConfig config = { ShapeType::Plane, 200, 1.0f, false };
+	std::string groupName = "editor";
+	Vector4 particleColor = { 1.0f, 0.5f, 0.0f, 1.0f };  // 初期は白（完全不透明）
+	Vector3 particleVelocity = { 0.0f, 0.0f, 0.0f };  // 初期速度
+	float particleLifeTime = 1.5f;  // 寿命
+	float particleStartTime = 0.0f; // 開始時間
+	bool useRandomPosition = true;  // ランダム位置を使うか
+	bool useBillboard = true;
 
 };
 

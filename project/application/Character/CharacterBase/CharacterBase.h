@@ -39,7 +39,7 @@ public:
     /// </summary>
     const Transform& GetTransform() const { return transform; }
 
-    void SetCamera(Camera* camera) {
+    virtual void SetCamera(Camera* camera) {
         camera_ = camera;
         object3d_->SetCamera(camera);
     }

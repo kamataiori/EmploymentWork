@@ -177,7 +177,7 @@ void GamePlayScene::Update()
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
-	ImGui::Text("bullet_ exists: %s", player_->GetBullet() ? "Yes" : "No");
+	//ImGui::Text("bullet_ exists: %s", player_->GetBullet() ? "Yes" : "No");
 
 	collisionMAnager_->RegisterCollider(player_.get());
 	collisionMAnager_->RegisterCollider(enemy_.get());
@@ -309,6 +309,8 @@ void GamePlayScene::ForeGroundDraw()
 	ringParticle->Draw();
 
 	primitiveParticle->Draw();
+
+	player_->DrawParticle();
 
 	// ================================================
 	// ここまでparticle個々の描画
