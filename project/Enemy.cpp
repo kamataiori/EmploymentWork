@@ -22,26 +22,26 @@ void Enemy::Initialize()
 	//SetScale(object3d_->GetScale());
 	sphere.radius = 1.5f;
 
-	//SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
+	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
 }
 
 void Enemy::Update()
 {
 	ImGui::Begin("Enemy Transform");
 
-	// ✅ Translate (位置)
+	// Translate (位置)
 	Vector3 position = object3d_->GetTranslate();
 	if (ImGui::DragFloat3("Position", &position.x, 0.1f)) {
 		object3d_->SetTranslate(position);
 	}
 
-	// ✅ Rotate (回転)
+	// Rotate (回転)
 	Vector3 rotation = object3d_->GetRotate();
 	if (ImGui::DragFloat3("Rotation", &rotation.x, 0.1f)) {
 		object3d_->SetRotate(rotation);
 	}
 
-	// ✅ Scale (スケール)
+	// Scale (スケール)
 	Vector3 scale = object3d_->GetScale();
 	if (ImGui::DragFloat3("Scale", &scale.x, 0.1f, 0.1f, 10.0f)) {
 		object3d_->SetScale(scale);
