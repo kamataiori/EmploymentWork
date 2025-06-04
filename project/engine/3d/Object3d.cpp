@@ -6,6 +6,7 @@
 
 Object3d::Object3d(BaseScene* scene)
 {
+    assert(scene && "Object3dにnullptrが渡されました！！");
     baseScene_ = scene;
 }
 
