@@ -168,6 +168,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Effects\PostEffect\PostEffect.cpp" />
     <ClCompile Include="engine\Collision\OBBCollider.cpp" />
     <ClCompile Include="ParticleEditorScene.cpp" />
+    <ClCompile Include="PlayerBullet.cpp" />
     <ClCompile Include="PostEffectManager.cpp" />
     <ClCompile Include="Skinning.cpp" />
     <ClCompile Include="engine\Collision\SphereCollider.cpp" />
@@ -241,6 +242,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\Effects\PostEffect\PostEffect.h" />
     <ClInclude Include="engine\Collision\OBBCollider.h" />
     <ClInclude Include="ParticleEditorScene.h" />
+    <ClInclude Include="PlayerBullet.h" />
     <ClInclude Include="PostEffectManager.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="resource.h" />

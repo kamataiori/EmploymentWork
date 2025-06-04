@@ -76,3 +76,10 @@ Matrix4x4 transpose(const Matrix4x4& matrix);
 
 // ベクトルを行列で変換する関数
 Vector3 TransformCoord(const Vector3& vec, const Matrix4x4& mat);
+
+// 3軸回転から合成回転行列を作る
+Matrix4x4 MakeRotateMatrix(const Vector3& rot);
+
+// ベクトルを行列で変換する（位置ベクトルとして）
+Vector3 TransformVector(const Vector3& vec, const Matrix4x4& mat);
+
