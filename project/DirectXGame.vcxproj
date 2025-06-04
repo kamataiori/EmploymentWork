@@ -141,6 +141,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Fade.cpp" />
     <ClCompile Include="ImGuiManager.cpp" />
     <ClCompile Include="engine\3d\Light.cpp" />
+    <ClCompile Include="JsonLevelLoader.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\math\MathFunctions.cpp" />
     <ClCompile Include="engine\3d\Model.cpp" />
@@ -170,6 +171,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="ParticleEditorScene.cpp" />
     <ClCompile Include="PlayerBullet.cpp" />
     <ClCompile Include="PostEffectManager.cpp" />
+    <ClCompile Include="SceneController.cpp" />
     <ClCompile Include="Skinning.cpp" />
     <ClCompile Include="engine\Collision\SphereCollider.cpp" />
     <ClCompile Include="SkyBox.cpp" />
@@ -217,6 +219,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Fade.h" />
     <ClInclude Include="ImGuiManager.h" />
     <ClInclude Include="engine\3d\Light.h" />
+    <ClInclude Include="JsonLevelLoader.h" />
     <ClInclude Include="matrix\Matrix3x3.h" />
     <ClInclude Include="matrix\Matrix4x4.h" />
     <ClInclude Include="engine\3d\Model.h" />
@@ -246,6 +249,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="PostEffectManager.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="SceneController.h" />
     <ClInclude Include="Skinning.h" />
     <ClInclude Include="engine\Collision\SphereCollider.h" />
     <ClInclude Include="SkyBox.h" />

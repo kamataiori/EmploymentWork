@@ -99,4 +99,8 @@ private:
 
 	std::unique_ptr<Fade> fade_ = nullptr;
 	std::string nextSceneName_ = "";
+
+
+
+	std::unique_ptr<SceneController> sceneController_;
 };

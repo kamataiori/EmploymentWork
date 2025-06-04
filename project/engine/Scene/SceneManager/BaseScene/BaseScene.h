@@ -2,6 +2,7 @@
 #include "Light.h"
 #include <chrono>
 #include "PostEffect.h"
+#include "SceneController.h"
 
 // 前方宣言
 class SceneManager;

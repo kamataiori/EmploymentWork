@@ -40,6 +40,7 @@ void TitleScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("human/walk.gltf");
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 	ModelManager::GetInstance()->LoadModel("axis.obj");
+	ModelManager::GetInstance()->LoadModel("test.obj");
 	plane->SetModel("uvChecker.gltf");
 	animationCube->SetModel("human/walk.gltf");
 	sneak->SetModel("human/sneakWalk.gltf");
@@ -147,11 +148,11 @@ void TitleScene::Initialize()
 	//drawTriangle_->Initialize();
 	drawTriangle_->SetCamera(camera1.get());
 
-	/*GlobalVariables::GetInstance()->AddValue<Vector3>("Camera", "position", camera1->GetTranslate());
+	GlobalVariables::GetInstance()->AddValue<Vector3>("Camera", "position", camera1->GetTranslate());
 	GlobalVariables::GetInstance()->AddValue<Vector3>("Camera", "rotate", camera1->GetRotate());
 
 	GlobalVariables::GetInstance()->AddValue<Vector3>("Animation", "position", animationCube->GetTranslate());
-	GlobalVariables::GetInstance()->AddValue<Vector3>("Animation", "rotate", animationCube->GetRotate());*/
+	GlobalVariables::GetInstance()->AddValue<Vector3>("Animation", "rotate", animationCube->GetRotate());
 
 	// ---- Dock配置登録（BaseSceneの機能） ----
 	AddBottomDockWindow(kWindowName_ParticleControl);
@@ -166,6 +167,12 @@ void TitleScene::Initialize()
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 	skybox->SetCamera(camera1.get());
+
+	sceneController_ = std::make_unique<SceneController>(this);
+	sceneController_->LoadScene("test"); // Resources/Json/test.json を読み込む
+	sceneController_->SetCamera(camera1.get());
+
+
 }
 
 void TitleScene::Finalize()
@@ -187,10 +194,10 @@ void TitleScene::Update()
 	// 各3Dオブジェクトの更新
 	plane->Update();
 
-	/*animationCube->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "position"));
+	animationCube->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "position"));
 	animationCube->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "rotate"));
 	camera1->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "position"));
-	camera1->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "rotate"));*/
+	camera1->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "rotate"));
 
 	animationCube->Update();
 	sneak->Update();
@@ -269,6 +276,8 @@ void TitleScene::Update()
 	// デバッグ
 	Debug();
 
+	sceneController_->Update();
+
 
 	//if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
 	//	// シーン切り替え
@@ -343,7 +352,9 @@ void TitleScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	plane->Draw();
+	//plane->Draw();
+
+	sceneController_->Draw();
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
@@ -378,14 +389,14 @@ void TitleScene::Draw()
 	// 初期三角形を追加
 	//drawTriangle_->AddTriangle(triangleP1, triangleP2, triangleP3, triangleColor, triangleAlpha);
 
-	DrawLine::GetInstance()->DrawAABB(aabb);
-	DrawLine::GetInstance()->DrawSphere(sphere);
-	// 平面の描画
-	DrawLine::GetInstance()->DrawPlane(ground);
-	// カプセルの描画
-	DrawLine::GetInstance()->DrawCapsule(capsule);
-	// OBB を描画
-	DrawLine::GetInstance()->DrawOBB(obb);
+	//DrawLine::GetInstance()->DrawAABB(aabb);
+	//DrawLine::GetInstance()->DrawSphere(sphere);
+	//// 平面の描画
+	//DrawLine::GetInstance()->DrawPlane(ground);
+	//// カプセルの描画
+	//DrawLine::GetInstance()->DrawCapsule(capsule);
+	//// OBB を描画
+	//DrawLine::GetInstance()->DrawOBB(obb);
 
 	// ================================================
 	// ここまでDrawLine個々の描画
@@ -414,10 +425,10 @@ void TitleScene::ForeGroundDraw()
 	// ここからparticle個々の描画
 	// ================================================
 
-	particle->Draw();
+	/*particle->Draw();
 	primitiveParticle->Draw();
 	ringParticle->Draw();
-	cyrinderParticle->Draw();
+	cyrinderParticle->Draw();*/
 
 	// ================================================
 	// ここまでparticle個々の描画
