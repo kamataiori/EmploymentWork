@@ -16,6 +16,7 @@ void GamePlayScene::Initialize()
 
 	// モデル読み込み
 	ModelManager::GetInstance()->LoadModel("ground.obj");
+	ModelManager::GetInstance()->LoadModel("stage.obj");
 
 	// 3Dカメラの初期化
 	camera1->SetTranslate({ 0.0f, 0.0f, -20.0f });
@@ -24,6 +25,7 @@ void GamePlayScene::Initialize()
 	player_->Initialize();
 
 	followCamera = std::make_unique<FollowCamera>(player_.get(), 30.0f, 1.0f);
+	followCamera->SetFarClip(2000.0f);
 
 	enemy_ = std::make_unique<Enemy>(this);
 	enemy_->Initialize();
@@ -40,6 +42,10 @@ void GamePlayScene::Initialize()
 	player_->SetCamera(followCamera.get());
 	enemy_->SetCamera(followCamera.get());
 	DrawLine::GetInstance()->SetCamera(followCamera.get());
+
+	stage_ = std::make_unique<SceneController>(this);
+	stage_->LoadScene("stage"); // Resources/Json/stage.json を読み込む
+	stage_->SetCamera(followCamera.get());
 
 
 
@@ -63,6 +69,7 @@ void GamePlayScene::Finalize()
 void GamePlayScene::Update()
 {
 	// 各3Dオブジェクトの更新
+	stage_->Update();
 	skybox->Update();
 	ground->Update();
 	player_->Update();
@@ -132,6 +139,7 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
+	stage_->Draw();
 	ground->Draw();
 	player_->Draw();
 	enemy_->Draw();

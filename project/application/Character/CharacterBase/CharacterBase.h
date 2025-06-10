@@ -44,10 +44,10 @@ public:
         object3d_->SetCamera(camera);
     }
 
-    // `SetCollider()` を追加
+    // SetCollider()を追加
     void SetCollider(Collider* collider) { collider_ = collider; }
 
-    // `GetCollider()` も追加（必要に応じてアクセス可能）
+    // GetCollider()も追加（必要に応じてアクセス可能）
     Collider* GetCollider() const { return collider_; }
 
 protected:
