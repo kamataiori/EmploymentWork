@@ -56,6 +56,16 @@ public:
 	void SetRandomIntensity(float intensity);
 	void SetRandomUseImage(bool useImage);
 
+	/// <summary>
+	/// Dissolveのsetter
+	/// </summary>
+	void DissolveInitialize(float threshold, float edgeWidth, const Vector3& edgeColor);
+	void SetDissolveThreshold(float value);
+	void SetDissolveEdgeWidth(float value);
+	void SetDissolveEdgeColor(const Vector3& color);
+	void SetDissolveTextures(const std::string& scenePath, const std::string& noisePath);
+
+
 private:
 	PostEffectManager() = default;
 	~PostEffectManager() = default;

@@ -100,7 +100,8 @@ private:
 	std::unique_ptr<Fade> fade_ = nullptr;
 	std::string nextSceneName_ = "";
 
-
+	float sliderValue = 0.0f;
+	bool isDissolve = false;
 
 	std::unique_ptr<SceneController> sceneController_;
 };
