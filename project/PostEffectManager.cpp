@@ -185,3 +185,33 @@ void PostEffectManager::SetRandomUseImage(bool useImage)
         postEffect_->GetOffscreen()->SetRandomUseImage(useImage);
     }
 }
+
+void PostEffectManager::DissolveInitialize(float threshold, float edgeWidth, const Vector3& edgeColor) {
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->DissolveInitialize(threshold, edgeWidth, edgeColor);
+    }
+}
+
+void PostEffectManager::SetDissolveThreshold(float value) {
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetDissolveThreshold(value);
+    }
+}
+
+void PostEffectManager::SetDissolveEdgeWidth(float value) {
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetDissolveEdgeWidth(value);
+    }
+}
+
+void PostEffectManager::SetDissolveEdgeColor(const Vector3& color) {
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetDissolveEdgeColor(color);
+    }
+}
+
+void PostEffectManager::SetDissolveTextures(const std::string& scenePath, const std::string& noisePath) {
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetDissolveTextures(scenePath, noisePath);
+    }
+}

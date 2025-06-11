@@ -2,6 +2,7 @@
 #include <Logger.h>
 #include <SrvManager.h>
 #include <externals/DirectXTex/d3dx12.h>
+#include <TextureManager.h>
 
 void OffscreenRendering::Initialize(PostEffectType type)
 {
@@ -23,6 +24,7 @@ void OffscreenRendering::Initialize(PostEffectType type)
 	SepiaInitialize({ 1.0f, 74.0f / 107.0f, 43.0f / 107.0f}, 0.9f);
 	RadialBlurInitialize({ 0.5f,0.5f }, 0.01f, 10);
 	RandomInitialize(1.0f,100.0f,0.5f);
+	DissolveInitialize(0.3f,0.3f,{0.2f,0.4f,0.5f});
 }
 
 void OffscreenRendering::Update()
@@ -39,20 +41,37 @@ void OffscreenRendering::Draw()
 
 	cmd->SetGraphicsRootDescriptorTable(0, SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex_));
 
-	if (currentType_ == PostEffectType::Vignette) {
-		cmd->SetGraphicsRootConstantBufferView(1, vignetteCB_->GetGPUVirtualAddress());
+	if (currentType_ == PostEffectType::Dissolve) {
+		// Dissolve: gTexture (t0), gMaskTexture (t1)
+		auto sceneHandle = TextureManager::GetInstance()->GetSrvHandleGPU(dissolveScenePath_);
+		auto noiseHandle = TextureManager::GetInstance()->GetSrvHandleGPU(dissolveNoisePath_);
+
+		// SRV t0 と t1 をそれぞれ RootParameter で渡す
+		cmd->SetGraphicsRootDescriptorTable(0, sceneHandle); // gTexture
+		cmd->SetGraphicsRootDescriptorTable(1, noiseHandle); // gMaskTexture
+
+		// CBV: Dissolve の threshold
+		cmd->SetGraphicsRootConstantBufferView(2, dissolveCB_->GetGPUVirtualAddress());
 	}
-	else if (currentType_ == PostEffectType::Grayscale && grayscaleCB_) {
-		cmd->SetGraphicsRootConstantBufferView(1, grayscaleCB_->GetGPUVirtualAddress());
-	}
-	else if (currentType_ == PostEffectType::Sepia && sepiaCB_) {
-		cmd->SetGraphicsRootConstantBufferView(1, sepiaCB_->GetGPUVirtualAddress());
-	}
-	else if (currentType_ == PostEffectType::RadialBlur && radialBlurCB_) {
-		cmd->SetGraphicsRootConstantBufferView(1, radialBlurCB_->GetGPUVirtualAddress());
-	}
-	else if (currentType_ == PostEffectType::Random && randomCB_) {
-		cmd->SetGraphicsRootConstantBufferView(1, randomCB_->GetGPUVirtualAddress());
+	else {
+		// 通常のポストエフェクト
+		cmd->SetGraphicsRootDescriptorTable(0, SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex_));
+
+		if (currentType_ == PostEffectType::Vignette && vignetteCB_) {
+			cmd->SetGraphicsRootConstantBufferView(1, vignetteCB_->GetGPUVirtualAddress());
+		}
+		else if (currentType_ == PostEffectType::Grayscale && grayscaleCB_) {
+			cmd->SetGraphicsRootConstantBufferView(1, grayscaleCB_->GetGPUVirtualAddress());
+		}
+		else if (currentType_ == PostEffectType::Sepia && sepiaCB_) {
+			cmd->SetGraphicsRootConstantBufferView(1, sepiaCB_->GetGPUVirtualAddress());
+		}
+		else if (currentType_ == PostEffectType::RadialBlur && radialBlurCB_) {
+			cmd->SetGraphicsRootConstantBufferView(1, radialBlurCB_->GetGPUVirtualAddress());
+		}
+		else if (currentType_ == PostEffectType::Random && randomCB_) {
+			cmd->SetGraphicsRootConstantBufferView(1, randomCB_->GetGPUVirtualAddress());
+		}
 	}
 
 
@@ -255,6 +274,40 @@ void OffscreenRendering::SetRandomUseImage(bool useImage)
 		mappedRandomCB_->useImage = useImage ? 1.0f : 0.0f;
 	}
 }
+
+void OffscreenRendering::DissolveInitialize(float threshold, float edgeWidth, const Vector3& edgeColor) {
+	if (!dissolveCB_) {
+		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(DissolveCB) + 0xFF) & ~0xFF);
+		HRESULT hr = dxCommon_->GetDevice()->CreateCommittedResource(
+			&heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+			IID_PPV_ARGS(&dissolveCB_));
+		assert(SUCCEEDED(hr));
+		dissolveCB_->Map(0, nullptr, reinterpret_cast<void**>(&mappedDissolveCB_));
+	}
+	mappedDissolveCB_->threshold = threshold;
+	mappedDissolveCB_->edgeWidth = edgeWidth;
+	mappedDissolveCB_->edgeColor = edgeColor;
+}
+
+void OffscreenRendering::SetDissolveThreshold(float value) {
+	if (mappedDissolveCB_) mappedDissolveCB_->threshold = value;
+}
+void OffscreenRendering::SetDissolveEdgeWidth(float value) {
+	if (mappedDissolveCB_) mappedDissolveCB_->edgeWidth = value;
+}
+void OffscreenRendering::SetDissolveEdgeColor(const Vector3& color) {
+	if (mappedDissolveCB_) mappedDissolveCB_->edgeColor = color;
+}
+
+void OffscreenRendering::SetDissolveTextures(const std::string& scenePath, const std::string& noisePath) {
+	TextureManager::GetInstance()->LoadTexture(scenePath);
+	TextureManager::GetInstance()->LoadTexture(noisePath);
+	dissolveScenePath_ = scenePath;
+	dissolveNoisePath_ = noisePath;
+}
+
 
 void OffscreenRendering::RenderTexture()
 {
@@ -500,6 +553,7 @@ void OffscreenRendering::CreateAllPSOs()
 		{ PostEffectType::Vignette, L"Resources/shaders/Vignette.PS.hlsl" },
 		{ PostEffectType::Sepia, L"Resources/shaders/Sepia.PS.hlsl" },
 		{ PostEffectType::Random, L"Resources/shaders/Random.PS.hlsl" },
+		{ PostEffectType::Dissolve, L"Resources/shaders/Dissolve.PS.hlsl" },
 	};
 
 	//vertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Fullscreen.VS.hlsl", L"vs_6_0");
@@ -530,35 +584,69 @@ void OffscreenRendering::CreateAllPSOs()
 void OffscreenRendering::CreateAllRootSignatures()
 {
 	for (size_t i = 0; i < kPostEffectCount; ++i) {
-		CD3DX12_DESCRIPTOR_RANGE range;
-		range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+		PostEffectType type = static_cast<PostEffectType>(i);
 
 		std::vector<CD3DX12_ROOT_PARAMETER> params;
+		CD3DX12_ROOT_SIGNATURE_DESC desc;
 
-		CD3DX12_ROOT_PARAMETER srvParam;
-		srvParam.InitAsDescriptorTable(1, &range, D3D12_SHADER_VISIBILITY_PIXEL);
-		params.push_back(srvParam);
+		if (type == PostEffectType::Dissolve) {
+			// SRV2つ: gTexture (t0), gMaskTexture (t1)
+			CD3DX12_DESCRIPTOR_RANGE range0;
+			range0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // t0
+			CD3DX12_DESCRIPTOR_RANGE range1;
+			range1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1); // t1
 
-		// Vignette や Grayscale など CBV を使うタイプだけ追加
-		PostEffectType type = static_cast<PostEffectType>(i);
-		if (type == PostEffectType::Vignette || type == PostEffectType::Grayscale || type == PostEffectType::Sepia ||
-			type == PostEffectType::RadialBlur || type == PostEffectType::Random) 
-		{
+			CD3DX12_ROOT_PARAMETER srvParam0;
+			srvParam0.InitAsDescriptorTable(1, &range0, D3D12_SHADER_VISIBILITY_PIXEL);
+			params.push_back(srvParam0);
+
+			CD3DX12_ROOT_PARAMETER srvParam1;
+			srvParam1.InitAsDescriptorTable(1, &range1, D3D12_SHADER_VISIBILITY_PIXEL);
+			params.push_back(srvParam1);
+
 			CD3DX12_ROOT_PARAMETER cbvParam;
 			cbvParam.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 			params.push_back(cbvParam);
+
+			D3D12_STATIC_SAMPLER_DESC sampler = {};
+			sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+			sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			sampler.ShaderRegister = 0;
+			sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+			desc.Init((UINT)params.size(), params.data(), 1, &sampler,
+				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 		}
+		else {
+			CD3DX12_DESCRIPTOR_RANGE range;
+			range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // t0
 
+			CD3DX12_ROOT_PARAMETER srvParam;
+			srvParam.InitAsDescriptorTable(1, &range, D3D12_SHADER_VISIBILITY_PIXEL);
+			params.push_back(srvParam);
 
-		D3D12_STATIC_SAMPLER_DESC sampler{};
-		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-		sampler.AddressU = sampler.AddressV = sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		sampler.ShaderRegister = 0;
-		sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+			if (type == PostEffectType::Vignette || type == PostEffectType::Grayscale ||
+				type == PostEffectType::Sepia || type == PostEffectType::RadialBlur ||
+				type == PostEffectType::Random) {
 
-		CD3DX12_ROOT_SIGNATURE_DESC desc;
-		desc.Init((UINT)params.size(), params.data(), 1, &sampler,
-			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+				CD3DX12_ROOT_PARAMETER cbvParam;
+				cbvParam.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+				params.push_back(cbvParam);
+			}
+
+			D3D12_STATIC_SAMPLER_DESC sampler = {};
+			sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+			sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			sampler.ShaderRegister = 0;
+			sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+			desc.Init((UINT)params.size(), params.data(), 1, &sampler,
+				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		}
 
 		Microsoft::WRL::ComPtr<ID3DBlob> sigBlob;
 		Microsoft::WRL::ComPtr<ID3DBlob> errBlob;
@@ -569,4 +657,3 @@ void OffscreenRendering::CreateAllRootSignatures()
 		assert(SUCCEEDED(hr));
 	}
 }
-
