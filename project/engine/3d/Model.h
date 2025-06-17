@@ -10,6 +10,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "StructAnimation.h"
+#include "Skinning.h"
 #include "DrawLine.h"
 
 
@@ -226,7 +227,7 @@ private:
 
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;  // 頂点バッファ
-	Microsoft::WRL::ComPtr<ID3D12Resource> outputVertexResource;  // 頂点バッファ
+	//Microsoft::WRL::ComPtr<ID3D12Resource> outputVertexResource;  // 頂点バッファ
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;  // マテリアル用の定数バッファ
 	// バッファリソース内のデータを指すポインタ
 	VertexData* vertexData = nullptr;
@@ -246,10 +247,10 @@ private:
 	D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite{};
 	uint32_t* mappedIndex = nullptr;
 
-	uint32_t paletteIndex;
+	//uint32_t paletteIndex;
 
-	uint32_t inputIndex = {};
-	uint32_t outPutIndex = {};
+	//uint32_t inputIndex = {};
+	//uint32_t outPutIndex = {};
 
 };
 

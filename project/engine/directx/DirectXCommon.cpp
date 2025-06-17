@@ -773,8 +773,8 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::CreateBufferResourceUAV(si
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
 	HRESULT hr = {};
 
-	D3D12_HEAP_PROPERTIES uploadHEapProperties{};
-	uploadHEapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	D3D12_HEAP_PROPERTIES uavUploadHeapProperties{};
+	uavUploadHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 
 	D3D12_RESOURCE_DESC resourceDesc{};
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -786,7 +786,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::CreateBufferResourceUAV(si
 	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-	hr = this->device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
+	hr = this->device->CreateCommittedResource(&uavUploadHeapProperties, D3D12_HEAP_FLAG_NONE,
 		&resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr,
 		IID_PPV_ARGS(&resource));
 	assert(SUCCEEDED(hr));

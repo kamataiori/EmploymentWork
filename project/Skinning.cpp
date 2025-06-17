@@ -181,6 +181,31 @@ void Skinning::RootSignatureCS()
 
 	ComputeDescriptionRootSignature_.pParameters = ComputeRootParameters_;    //ルートパラメータ配列へのポインタ
 	ComputeDescriptionRootSignature_.NumParameters = _countof(ComputeRootParameters_);    //配列の長さ
+
+	// シリアライズしてバイナリ化
+	Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(
+		&ComputeDescriptionRootSignature_,
+		D3D_ROOT_SIGNATURE_VERSION_1,
+		&signatureBlob,
+		&errorBlob);
+
+	if (FAILED(hr)) {
+		if (errorBlob) {
+			Logger::Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+		}
+		assert(false);
+	}
+
+	// ルートシグネチャを作成
+	hr = dxCommon_->GetDevice()->CreateRootSignature(
+		0,
+		signatureBlob->GetBufferPointer(),
+		signatureBlob->GetBufferSize(),
+		IID_PPV_ARGS(&ComputeRootSignature_));
+	assert(SUCCEEDED(hr));
+
 }
 
 void Skinning::GraphicsPipelineState()
@@ -355,7 +380,7 @@ void Skinning::ComputePipelineState()
 	RootSignatureCS();
 
 	// ComputeShader をコンパイル
-	ComputeShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/SkinningCompute.CS.hlsl", L"cs_6_0");
+	ComputeShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Skinning.CS.hlsli", L"cs_6_0");
 	assert(ComputeShaderBlob_ != nullptr);
 
 	// RootSignature を作っておく（すでに RootSignature_ にあるなら流用OK）
@@ -370,7 +395,7 @@ void Skinning::ComputePipelineState()
 	assert(SUCCEEDED(hr));
 }
 
-void Skinning::CommonSettingCompute()
+void Skinning::CommonSettingCompute(SkinCluster skinCluster)
 {
 	// Compute用RootSignatureをセット
 	dxCommon_->GetCommandList()->SetComputeRootSignature(ComputeRootSignature_.Get());

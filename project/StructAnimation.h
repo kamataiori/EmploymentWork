@@ -105,7 +105,6 @@ struct SkinCluster {
 	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> inputVertexSrvHandle;
 
 	// インフルエンス（StructuredBuffer）
-	Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource;
 	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> influenceSrvHandle;
 
 	// 出力用頂点バッファ（UAV）

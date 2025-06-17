@@ -183,7 +183,7 @@ void Model::PrepareSkinningComputeShader()
 	commandList->SetPipelineState(skinning->GetComputePipelineState());
 
 	// RootParameter[0] : SkinningInformation（CBV）
-	commandList->SetComputeRootConstantBufferView(0, skinCluster.skinningInfoGpuAddress);
+	commandList->SetComputeRootConstantBufferView(0, skinCluster.skinningInfoBuffer->GetGPUVirtualAddress());
 
 	// RootParameter[1] : MatrixPalette（t0）
 	commandList->SetComputeRootDescriptorTable(1, skinCluster.paletteSrvHandle.second);
@@ -196,6 +196,9 @@ void Model::PrepareSkinningComputeShader()
 
 	// RootParameter[4] : OutputVertices（u0）
 	commandList->SetComputeRootDescriptorTable(4, SrvManager::GetInstance()->GetGPUDescriptorHandle(outPutIndex));
+
+	// CSの起動をDispatchで行なう
+	commandList->Dispatch(UINT(modelData.vertices.size() + 1023) / 1024, 1, 1);
 }
 
 

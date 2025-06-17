@@ -83,7 +83,7 @@ public:
 	/// <summary>
     /// Compute用共通設定
     /// </summary>
-	void CommonSettingCompute();
+	void CommonSettingCompute(SkinCluster skinCluster);
 
 	/// <summary>
 	/// 共通描画設定
