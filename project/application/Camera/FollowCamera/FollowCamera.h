@@ -55,5 +55,5 @@ private: // メンバ変数
 	float followDistance;  // 対象との距離
 	float heightOffset;    // カメラの高さオフセット
 	float angle = 3.14f;    // カメラの回転角度（Y軸）
-	float sensitivity_ = 0.005f; // 初期値：感度
+	float sensitivity_ = 0.001f; // 初期値：感度
 };
