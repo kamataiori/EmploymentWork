@@ -16,6 +16,8 @@ public:
 
 	void Draw() override;
 
+	void BulletDraw();
+
 	void OnCollision() override;
 
 	PlayerBullet* GetBullet() const {

@@ -7,12 +7,13 @@ void Player::Initialize()
 
 	// モデル読み込み
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
+	ModelManager::GetInstance()->LoadModel("human/walk.gltf");
 
-	object3d_->SetModel("uvChecker.gltf");
+	object3d_->SetModel("human/walk.gltf");
 
 	// 初期Transform設定
 	transform.translate = { -2.0f, 0.0f, 0.0f };
-	transform.rotate = { 0.0f, 3.14f, 0.0f };
+	transform.rotate = { 0.0f, 0.0f, 0.0f };
 	transform.scale = { 1.0f, 1.0f, 1.0f };
 
 	// object3dにtransformを反映
@@ -35,7 +36,9 @@ void Player::Update()
 
 	FollowCamera* followCam = dynamic_cast<FollowCamera*>(camera_);
 	if (followCam) {
-		transform.rotate.y = followCam->GetAngle();
+		constexpr float PI = 3.141592f;
+		transform.rotate.y = followCam->GetAngle() + PI;
+
 	}
 
 	// 弾の処理
@@ -72,6 +75,10 @@ void Player::Draw()
 	// SphereCollider の描画
 	SphereCollider::Draw();
 
+}
+
+void Player::BulletDraw()
+{
 	if (bullet_) {
 		bullet_->Draw();
 	}
@@ -153,9 +160,6 @@ void Player::Move()
 		// 入力方向ベクトルをプレイヤーの向きに回転
 		Vector3 rotatedDir = TransformVector(move_.direction, rotY);
 
-		// Z方向を反転して前後の逆転を補正
-		rotatedDir.z *= -1.0f;
-
 		// 回転後の方向に沿って移動
 		transform.translate.x += rotatedDir.x * currentSpeed;
 		transform.translate.z += rotatedDir.z * currentSpeed;
@@ -211,12 +215,22 @@ void Player::HandleBullet()
 	// Hキーで弾を1発発射
 	// -------------------------------
 	// 発射処理（Hキー）
-	if (Input::GetInstance()->TriggerKey(DIK_H) && bullet_ == nullptr) {
+	if (Input::GetInstance()->TriggerMouseButton(0) && bullet_ == nullptr) {
 		bullet_ = std::make_unique<PlayerBullet>(baseScene_);
 		bullet_->SetTranslate(object3d_->GetTranslate());
 
-		Vector3 forward = { 0.0f, 0.0f, 1.0f }; // プレイヤーの正面方向に仮固定
-		bullet_->SetVelocity(forward * 0.5f);
+		// プレイヤーのY回転に基づく正面ベクトルを生成
+		float angleY = transform.rotate.y;
+		Vector3 forward = {
+			std::sin(angleY),
+			0.0f,
+			std::cos(angleY)
+		};
+
+		// ベクトルを正規化し、速度スケールを掛ける
+		forward = Normalize(forward) * 0.5f;
+		bullet_->SetVelocity(forward);
+
 		bullet_->Initialize();
 		bullet_->SetCamera(camera_);
 	}
