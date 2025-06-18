@@ -29,6 +29,7 @@ void GamePlayScene::Initialize()
 
 	enemy_ = std::make_unique<Enemy>(this);
 	enemy_->Initialize();
+	enemy_->SetPlayer(player_.get());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 

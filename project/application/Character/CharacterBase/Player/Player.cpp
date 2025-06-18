@@ -1,4 +1,5 @@
 #include "Player.h"
+#include <FollowCamera.h>
 
 void Player::Initialize()
 {
@@ -32,6 +33,11 @@ void Player::Update()
 	// 移動とジャンプ処理
 	Move();
 
+	FollowCamera* followCam = dynamic_cast<FollowCamera*>(camera_);
+	if (followCam) {
+		transform.rotate.y = followCam->GetAngle();
+	}
+
 	// 弾の処理
 	HandleBullet();
 
@@ -57,6 +63,7 @@ void Player::Update()
 	// コライダー位置を更新
 	SetPosition(transform.translate);
 
+	sphere.color = static_cast<int>(Color::WHITE);
 }
 
 void Player::Draw()
@@ -68,6 +75,11 @@ void Player::Draw()
 	if (bullet_) {
 		bullet_->Draw();
 	}
+}
+
+void Player::OnCollision()
+{
+	sphere.color = static_cast<int>(Color::RED);
 }
 
 void Player::Move()
@@ -122,13 +134,33 @@ void Player::Move()
 		move_.direction.x += 1.0f;
 	}
 
-	// 正規化して一定速度で移動
+	//// 正規化して一定速度で移動
+	//if (Length(move_.direction) > 0.0f) {
+	//	move_.direction = Normalize(move_.direction);
+	//	float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
+	//	transform.translate.x += move_.direction.x * currentSpeed;
+	//	transform.translate.z += move_.direction.z * currentSpeed;
+	//}
+
+	// 正規化してプレイヤーの向きに合わせた移動に変換
 	if (Length(move_.direction) > 0.0f) {
 		move_.direction = Normalize(move_.direction);
 		float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
-		transform.translate.x += move_.direction.x * currentSpeed;
-		transform.translate.z += move_.direction.z * currentSpeed;
+
+		// Y軸の回転行列を生成（プレイヤーの向きに応じた回転）
+		Matrix4x4 rotY = MakeRotateYMatrix(transform.rotate.y);
+
+		// 入力方向ベクトルをプレイヤーの向きに回転
+		Vector3 rotatedDir = TransformVector(move_.direction, rotY);
+
+		// Z方向を反転して前後の逆転を補正
+		rotatedDir.z *= -1.0f;
+
+		// 回転後の方向に沿って移動
+		transform.translate.x += rotatedDir.x * currentSpeed;
+		transform.translate.z += rotatedDir.z * currentSpeed;
 	}
+
 
 	// ----------------
 	// 二段ジャンプ処理

@@ -1,5 +1,8 @@
 #include "Enemy.h"
 #include <CollisionTypeIdDef.h>
+#include "EnemyState_Idle.h"
+#include "EnemyState_Dash.h"
+#include "Player.h"
 
 void Enemy::Initialize()
 {
@@ -15,6 +18,8 @@ void Enemy::Initialize()
 	object3d_->SetRotate({ 0.0f, 3.14f, 0.0f });
 	object3d_->SetTranslate({ 2.0f, 0.0f, 0.0f });
 
+	ChangeState(std::make_unique<EnemyState_Idle>());
+
 	// コライダーの初期化
 	SetCollider(this);
 	SetPosition(object3d_->GetTranslate());  // 3Dモデルの位置にコライダーをセット
@@ -27,6 +32,24 @@ void Enemy::Initialize()
 
 void Enemy::Update()
 {
+	// ImGuiデバッグ表示
+	ImGui::Begin("Enemy Debug");
+
+	if (currentState_) {
+		// 現在のステート名を表示
+		ImGui::Text("Current State: %s", currentState_->GetName());
+	}
+	else {
+		ImGui::Text("Current State: None");
+	}
+
+	ImGui::End();
+
+	// ステート更新処理
+	if (currentState_) {
+		currentState_->Update(this);
+	}
+
 	ImGui::Begin("Enemy Transform");
 
 	// Translate (位置)
@@ -49,8 +72,9 @@ void Enemy::Update()
 
 	ImGui::End();
 
-	object3d_->Update();
 	SetPosition(object3d_->GetTranslate());
+	object3d_->SetTranslate(transform.translate);
+	object3d_->Update();
 	//SetScale(object3d_->GetScale());
 	sphere.color = static_cast<int>(Color::WHITE);
 }
@@ -64,5 +88,32 @@ void Enemy::Draw()
 
 void Enemy::OnCollision()
 {
+
 	sphere.color = static_cast<int>(Color::RED);
+
+}
+
+
+void Enemy::ChangeState(std::unique_ptr<EnemyState> State)
+{
+	// 同じ状態名ならスキップ
+	if (currentState_ && std::string(currentState_->GetName()) == State->GetName()) {
+		return;
+	}
+
+	// 状態を切り替え
+	currentState_ = std::move(State);
+	currentState_->Enter(this);
+}
+
+void Enemy::Move(const Vector3& velocity) {
+	transform.translate += velocity;
+}
+
+Vector3 Enemy::GetPlayerPos() const
+{
+	if (player_) {
+		return player_->GetTransform().translate;
+	}
+	return { 0, 0, 0 }; // 参照が無ければ原点
 }

@@ -9,8 +9,6 @@
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
-
-
 //入力
 class Input
 {
@@ -65,6 +63,24 @@ public:
 	/// <returns>トリガーか</returns>
 	bool TriggerKey(BYTE keyNumber);
 
+	// マウス位置取得
+	POINT GetMousePos() const { return mousePos_; }
+	POINT GetMouseMove() const { return mouseMove_; }
+
+	// ホイール量
+	int GetWheel() const { return wheel_ - wheelPrev_; }
+
+	// ボタン押下・トリガー（0:左, 1:右, 2:中, 3:サイド1, 4:サイド2）
+	bool PushMouseButton(int button);     // 押してる
+	bool TriggerMouseButton(int button);  // 押した瞬間
+
+	// X方向に振った？（+1:右, -1:左, 0:動いてない）
+	int GetMouseFlickX() const;
+
+	// Y方向に振った？（+1:下, -1:上, 0:動いてない）
+	int GetMouseFlickY() const;
+
+
 private:
 
 	///========================
@@ -86,6 +102,18 @@ private:
 
 	//WindowsAPI
 	WinApp* winApp_ = nullptr;
+
+	// マウスの状態
+	POINT mousePos_;            // 現在の位置
+	POINT mousePosPrev_;        // 前フレームの位置
+	POINT mouseMove_;           // 移動量
+
+	int wheel_ = 0;             // ホイール量
+	int wheelPrev_ = 0;
+
+	bool mouseButton_[5] = {};      // マウスボタン：左, 右, 中, サイド1, サイド2
+	bool mouseButtonPrev_[5] = {};
+
 
 };
 
