@@ -84,7 +84,7 @@ void GamePlayScene::Update()
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
-	ImGui::Text("bullet_ exists: %s", player_->GetBullet() ? "Yes" : "No");
+	//ImGui::Text("bullet_ exists: %s", player_->GetBullet() ? "Yes" : "No");
 
 	collisionMAnager_->RegisterCollider(player_.get());
 	collisionMAnager_->RegisterCollider(enemy_.get());
@@ -92,7 +92,9 @@ void GamePlayScene::Update()
 		auto bullet = player_->GetBullet();
 		collisionMAnager_->RegisterCollider(bullet);
 	}
-
+	for (const auto& areaAttack : enemy_->GetAreaAttacks()) {
+		collisionMAnager_->RegisterCollider(areaAttack.get());
+	}
 
 	// 衝突判定と応答
 	CheckAllColisions();

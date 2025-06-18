@@ -47,13 +47,13 @@ void Player::Update()
 	// -------------------------------
 	// ImGui による Transform 調整
 	// -------------------------------
-	ImGui::Begin("Player Transform");
+	/*ImGui::Begin("Player Transform");
 
 	if (ImGui::DragFloat3("Position", &transform.translate.x, 0.1f)) {}
 	if (ImGui::DragFloat3("Rotation", &transform.rotate.x, 0.1f)) {}
 	if (ImGui::DragFloat3("Scale", &transform.scale.x, 0.1f, 0.1f, 10.0f)) {}
 
-	ImGui::End();
+	ImGui::End();*/
 
 	// ------------------------
 	// オブジェクト更新処理
