@@ -18,6 +18,9 @@ void FollowCamera::Update()
         angle += 0.03f;
     }
 
+    // マウス横移動でカメラ回転
+    angle += Input::GetInstance()->GetMouseMove().x * sensitivity_;
+
     const Vector3& targetPos = target->GetTransform().translate;
 
     // プレイヤーの向きを基準に後ろ側を計算（Y=3.14 で後ろにいるように）

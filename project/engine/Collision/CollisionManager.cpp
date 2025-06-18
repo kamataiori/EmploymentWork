@@ -44,11 +44,11 @@ void CollisionManager::CheckAllCollisions() {
 // 衝突を無視するペアをチェック
 bool CollisionManager::ShouldIgnoreCollision(CollisionTypeIdDef type1, CollisionTypeIdDef type2) {
     static const std::unordered_set<std::pair<CollisionTypeIdDef, CollisionTypeIdDef>, pair_hash> ignoredPairs = {
-        {CollisionTypeIdDef::kPlayer, CollisionTypeIdDef::kEnemy},
-        {CollisionTypeIdDef::kEnemy, CollisionTypeIdDef::kPlayer},
+        /*{CollisionTypeIdDef::kPlayer, CollisionTypeIdDef::kEnemy},
+        {CollisionTypeIdDef::kEnemy, CollisionTypeIdDef::kPlayer},*/
         {CollisionTypeIdDef::PlayerBullet, CollisionTypeIdDef::kPlayer},
         { CollisionTypeIdDef::kPlayer, CollisionTypeIdDef::PlayerBullet}
-        // 必要ならここに追加（例: 弾同士など）
+        // 必要ならここに追加（例: playerとplayerBulletなど）
     };
 
     return ignoredPairs.find({ type1, type2 }) != ignoredPairs.end();

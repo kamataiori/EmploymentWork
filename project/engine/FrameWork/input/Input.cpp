@@ -48,6 +48,32 @@ void Input::Update()
 	////全キーの入力情報を取得する
 	//BYTE key[256] = {};
 	result = keyboard->GetDeviceState(sizeof(key), key);
+
+	// マウス移動
+	mousePosPrev_ = mousePos_;
+	GetCursorPos(&mousePos_);
+	ScreenToClient(winApp_->GetHwnd(), &mousePos_);
+
+	mouseMove_.x = mousePos_.x - mousePosPrev_.x;
+	mouseMove_.y = mousePos_.y - mousePosPrev_.y;
+
+	// マウスボタン
+	for (int i = 0; i < 5; ++i) {
+		mouseButtonPrev_[i] = mouseButton_[i];
+		mouseButton_[i] = (GetAsyncKeyState(VK_LBUTTON + i) & 0x8000) != 0;
+	}
+
+	// マウスホイール（短期間ならこれで十分）
+	wheelPrev_ = wheel_;
+	wheel_ = 0;
+	MSG msg;
+	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+		if (msg.message == WM_MOUSEWHEEL) {
+			wheel_ += GET_WHEEL_DELTA_WPARAM(msg.wParam);
+		}
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
 }
 
 bool Input::PushKey(BYTE keyNumber)
@@ -71,3 +97,26 @@ bool Input::TriggerKey(BYTE keyNumber)
 
 	return false;
 }
+
+bool Input::PushMouseButton(int button) {
+	if (button < 0 || button >= 5) return false;
+	return mouseButton_[button];
+}
+
+bool Input::TriggerMouseButton(int button) {
+	if (button < 0 || button >= 5) return false;
+	return mouseButton_[button] && !mouseButtonPrev_[button];
+}
+
+int Input::GetMouseFlickX() const {
+	if (mouseMove_.x > 2) return 1;
+	if (mouseMove_.x < -2) return -1;
+	return 0;
+}
+
+int Input::GetMouseFlickY() const {
+	if (mouseMove_.y > 2) return 1;
+	if (mouseMove_.y < -2) return -1;
+	return 0;
+}
+

@@ -16,10 +16,11 @@ public:
 
 	void Draw() override;
 
+	void OnCollision() override;
+
 	PlayerBullet* GetBullet() const {
 		return bullet_.get();
 	}
-
 
 private:
 

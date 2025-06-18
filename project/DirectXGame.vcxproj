@@ -104,6 +104,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="EnemyState.cpp" />
+    <ClCompile Include="EnemyState_Dash.cpp" />
+    <ClCompile Include="EnemyState_Idle.cpp" />
     <ClCompile Include="engine\Collision\AABBCollider.cpp" />
     <ClCompile Include="engine\Collision\CapsuleCollider.cpp" />
     <ClCompile Include="engine\Collision\Collider.cpp" />
@@ -178,6 +181,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="UnityScene.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="EnemyState.h" />
+    <ClInclude Include="EnemyState_Dash.h" />
+    <ClInclude Include="EnemyState_Idle.h" />
     <ClInclude Include="engine\Collision\AABBCollider.h" />
     <ClInclude Include="engine\Collision\CapsuleCollider.h" />
     <ClInclude Include="engine\Collision\Collider.h" />
