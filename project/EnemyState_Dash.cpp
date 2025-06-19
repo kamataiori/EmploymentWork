@@ -21,12 +21,14 @@ void EnemyState_Dash::Enter(Enemy* enemy) {
 }
 
 void EnemyState_Dash::Update(Enemy* enemy) {
-    // 一定時間だけ移動
+    // 現在の位置を取得・加算して再代入
+    Vector3 pos = enemy->GetTransform().translate;
+    pos += direction;
+    enemy->SetTranslate(pos);
+
+    // タイマー更新
     timer += 1.0f / 60.0f;
-    if (timer <= dashTime) {
-        enemy->Move(direction * 1.0f);
-    }
-    else {
-        enemy->ChangeState(std::make_unique<EnemyState_Idle>()); // 待機に戻る
+    if (timer >= dashTime) {
+        enemy->ChangeToRandomState();
     }
 }

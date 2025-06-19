@@ -19,7 +19,7 @@ void FollowCamera::Update()
     }
 
     // マウス横移動でカメラ回転
-    angle += Input::GetInstance()->GetMouseMove().x * sensitivity_;
+    angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
 
     const Vector3& targetPos = target->GetTransform().translate;
 
