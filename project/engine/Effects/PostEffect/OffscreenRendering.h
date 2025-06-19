@@ -16,6 +16,7 @@ enum class PostEffectType {
 	Vignette,
 	Sepia,
 	Random,
+	Dissolve,
 	// 追加可能
 	Count
 };
@@ -152,6 +153,15 @@ public:  // publicメンバ関数
 	/// 
 	/// </summary>
 	void SetRandomUseImage(bool useImage);
+
+	/// <summary>
+	/// ディゾルブ専用の定数バッファ初期化
+	/// </summary>
+	void DissolveInitialize(float threshold, float edgeWidth, const Vector3& edgeColor);
+	void SetDissolveThreshold(float value);
+	void SetDissolveEdgeWidth(float value);
+	void SetDissolveEdgeColor(const Vector3& color);
+	void SetDissolveTextures(const std::string& scenePath, const std::string& noisePath);
 
 private:  // privateメンバ関数
 
@@ -330,5 +340,21 @@ private:  // privateメンバ変数
 	};
 	Microsoft::WRL::ComPtr<ID3D12Resource> randomCB_;
 	RandomCB* mappedRandomCB_ = nullptr;
+
+	//--------Dissolve定数バッファ--------//
+
+	// Dissolve定数バッファ
+	struct DissolveCB {
+		float threshold;
+		float edgeWidth;
+		Vector3 edgeColor;
+	};
+	Microsoft::WRL::ComPtr<ID3D12Resource> dissolveCB_;
+	DissolveCB* mappedDissolveCB_ = nullptr;
+
+	// Dissolve用テクスチャパス
+	std::string dissolveScenePath_;
+	std::string dissolveNoisePath_;
+
 
 };

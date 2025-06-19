@@ -271,6 +271,42 @@ void TitleScene::Update()
 
 	}
 
+	if (Input::GetInstance()->TriggerKey(DIK_D)) {
+		isDissolve = true;
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Dissolve);
+		PostEffectManager::GetInstance()->DissolveInitialize(0.3f, 0.03f, { 1.0f, 0.4f, 0.3f });
+		// 使用するテクスチャを指定
+		PostEffectManager::GetInstance()->SetDissolveTextures(
+			"Resources/noise1.png",     // 通常シーンの画像（gTexture）
+			"Resources/noise0.png"            // マスク画像（gMaskTexture）
+		);
+
+		// しきい値を ImGuiなどでリアルタイム制御も可能
+		PostEffectManager::GetInstance()->SetDissolveThreshold(sliderValue);
+	}
+
+	if (isDissolve = true)
+	{
+		ImGui::Begin("PostEffect Controller");
+
+		// Dissolve 関連 UI
+
+		static float threshold = 0.4f;
+		static float edgeWidth = 0.03f;
+		static Vector3 edgeColor = { 1.0f, 0.4f, 0.3f };
+
+		ImGui::SliderFloat("Threshold", &threshold, 0.0f, 1.0f);
+		ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0f, 0.1f);
+		ImGui::ColorEdit3("Edge Color", &edgeColor.x);
+
+		PostEffectManager::GetInstance()->SetDissolveThreshold(threshold);
+		PostEffectManager::GetInstance()->SetDissolveEdgeWidth(edgeWidth);
+		PostEffectManager::GetInstance()->SetDissolveEdgeColor(edgeColor);
+
+		ImGui::End();
+	}
+
+
 	skybox->Update();
 
 	// デバッグ
