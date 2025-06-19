@@ -1,4 +1,5 @@
 #include "Player.h"
+#include <FollowCamera.h>
 
 void Player::Initialize()
 {
@@ -6,12 +7,13 @@ void Player::Initialize()
 
 	// モデル読み込み
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
+	ModelManager::GetInstance()->LoadModel("human/walk.gltf");
 
-	object3d_->SetModel("uvChecker.gltf");
+	object3d_->SetModel("human/walk.gltf");
 
 	// 初期Transform設定
 	transform.translate = { -2.0f, 0.0f, 0.0f };
-	transform.rotate = { 0.0f, 3.14f, 0.0f };
+	transform.rotate = { 0.0f, 0.0f, 0.0f };
 	transform.scale = { 1.0f, 1.0f, 1.0f };
 
 	// object3dにtransformを反映
@@ -32,19 +34,26 @@ void Player::Update()
 	// 移動とジャンプ処理
 	Move();
 
+	FollowCamera* followCam = dynamic_cast<FollowCamera*>(camera_);
+	if (followCam) {
+		constexpr float PI = 3.141592f;
+		transform.rotate.y = followCam->GetAngle() + PI;
+
+	}
+
 	// 弾の処理
 	HandleBullet();
 
 	// -------------------------------
 	// ImGui による Transform 調整
 	// -------------------------------
-	ImGui::Begin("Player Transform");
+	/*ImGui::Begin("Player Transform");
 
 	if (ImGui::DragFloat3("Position", &transform.translate.x, 0.1f)) {}
 	if (ImGui::DragFloat3("Rotation", &transform.rotate.x, 0.1f)) {}
 	if (ImGui::DragFloat3("Scale", &transform.scale.x, 0.1f, 0.1f, 10.0f)) {}
 
-	ImGui::End();
+	ImGui::End();*/
 
 	// ------------------------
 	// オブジェクト更新処理
@@ -57,6 +66,7 @@ void Player::Update()
 	// コライダー位置を更新
 	SetPosition(transform.translate);
 
+	sphere.color = static_cast<int>(Color::WHITE);
 }
 
 void Player::Draw()
@@ -65,9 +75,18 @@ void Player::Draw()
 	// SphereCollider の描画
 	SphereCollider::Draw();
 
+}
+
+void Player::BulletDraw()
+{
 	if (bullet_) {
 		bullet_->Draw();
 	}
+}
+
+void Player::OnCollision()
+{
+	sphere.color = static_cast<int>(Color::RED);
 }
 
 void Player::Move()
@@ -122,13 +141,30 @@ void Player::Move()
 		move_.direction.x += 1.0f;
 	}
 
-	// 正規化して一定速度で移動
+	//// 正規化して一定速度で移動
+	//if (Length(move_.direction) > 0.0f) {
+	//	move_.direction = Normalize(move_.direction);
+	//	float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
+	//	transform.translate.x += move_.direction.x * currentSpeed;
+	//	transform.translate.z += move_.direction.z * currentSpeed;
+	//}
+
+	// 正規化してプレイヤーの向きに合わせた移動に変換
 	if (Length(move_.direction) > 0.0f) {
 		move_.direction = Normalize(move_.direction);
 		float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
-		transform.translate.x += move_.direction.x * currentSpeed;
-		transform.translate.z += move_.direction.z * currentSpeed;
+
+		// Y軸の回転行列を生成（プレイヤーの向きに応じた回転）
+		Matrix4x4 rotY = MakeRotateYMatrix(transform.rotate.y);
+
+		// 入力方向ベクトルをプレイヤーの向きに回転
+		Vector3 rotatedDir = TransformVector(move_.direction, rotY);
+
+		// 回転後の方向に沿って移動
+		transform.translate.x += rotatedDir.x * currentSpeed;
+		transform.translate.z += rotatedDir.z * currentSpeed;
 	}
+
 
 	// ----------------
 	// 二段ジャンプ処理
@@ -179,12 +215,22 @@ void Player::HandleBullet()
 	// Hキーで弾を1発発射
 	// -------------------------------
 	// 発射処理（Hキー）
-	if (Input::GetInstance()->TriggerKey(DIK_H) && bullet_ == nullptr) {
+	if (Input::GetInstance()->TriggerMouseButton(0) && bullet_ == nullptr) {
 		bullet_ = std::make_unique<PlayerBullet>(baseScene_);
 		bullet_->SetTranslate(object3d_->GetTranslate());
 
-		Vector3 forward = { 0.0f, 0.0f, 1.0f }; // プレイヤーの正面方向に仮固定
-		bullet_->SetVelocity(forward * 0.5f);
+		// プレイヤーのY回転に基づく正面ベクトルを生成
+		float angleY = transform.rotate.y;
+		Vector3 forward = {
+			std::sin(angleY),
+			0.0f,
+			std::cos(angleY)
+		};
+
+		// ベクトルを正規化し、速度スケールを掛ける
+		forward = Normalize(forward) * 0.5f;
+		bullet_->SetVelocity(forward);
+
 		bullet_->Initialize();
 		bullet_->SetCamera(camera_);
 	}

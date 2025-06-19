@@ -36,10 +36,24 @@ public: // カメラの高さ関係
 	/// </summary>
 	float GetHeightOffset() const { return heightOffset; }
 
+	/// <summary>
+	/// カメラの回転角度（Y軸）を設定
+	/// </summary>
+	void SetAngle(float a) { angle = a; }
+
+	/// <summary>
+	/// カメラの回転角度（Y軸）を取得
+	/// </summary>
+	float GetAngle() const { return angle; }
+
+	void SetSensitivity(float s) { sensitivity_ = s; }
+	float GetSensitivity() const { return sensitivity_; }
+
 private: // メンバ変数
 
 	CharacterBase* target; // キャラクター（PlayerやEnemyなど）
 	float followDistance;  // 対象との距離
 	float heightOffset;    // カメラの高さオフセット
 	float angle = 3.14f;    // カメラの回転角度（Y軸）
+	float sensitivity_ = 0.001f; // 初期値：感度
 };

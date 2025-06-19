@@ -18,6 +18,9 @@ void FollowCamera::Update()
         angle += 0.03f;
     }
 
+    // マウス横移動でカメラ回転
+    angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
+
     const Vector3& targetPos = target->GetTransform().translate;
 
     // プレイヤーの向きを基準に後ろ側を計算（Y=3.14 で後ろにいるように）
@@ -30,8 +33,10 @@ void FollowCamera::Update()
     Vector3 desiredPos = targetPos + offset;
 
     // カメラを滑らかに補間移動
-    float smoothSpeed = 0.06f;
-    transform.translate = Lerp(transform.translate, desiredPos, smoothSpeed);
+   /* float smoothSpeed = 0.06f;
+    transform.translate = Lerp(transform.translate, desiredPos, smoothSpeed);*/
+
+    transform.translate = desiredPos;
 
     // カメラが常にプレイヤーの方向を向くように回転
     Vector3 direction = Normalize(targetPos - transform.translate);

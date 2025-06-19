@@ -34,10 +34,14 @@ public:
     /// </summary>
     virtual void Draw() = 0;
 
+    BaseScene* GetBaseScene() const { return baseScene_; }
+
     /// <summary>
     /// Transformを取得
     /// </summary>
     const Transform& GetTransform() const { return transform; }
+
+    void SetTranslate(const Vector3& t) { transform.translate = t; }
 
     void SetCamera(Camera* camera) {
         camera_ = camera;

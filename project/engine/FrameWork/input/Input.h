@@ -9,8 +9,6 @@
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
-
-
 //入力
 class Input
 {
@@ -65,6 +63,14 @@ public:
 	/// <returns>トリガーか</returns>
 	bool TriggerKey(BYTE keyNumber);
 
+	// ボタン押下・トリガー（0:左, 1:右, 2:中, 3:サイド1, 4:サイド2）
+	bool PushMouseButton(int button);     // 押してる
+	bool TriggerMouseButton(int button);  // 押した瞬間
+
+	int GetMouseWheel() const;
+	POINT GetMouseDelta() const;
+
+
 private:
 
 	///========================
@@ -86,6 +92,16 @@ private:
 
 	//WindowsAPI
 	WinApp* winApp_ = nullptr;
+
+	// マウスの状態
+	Microsoft::WRL::ComPtr<IDirectInputDevice8> mouse_;
+
+	DIMOUSESTATE2 mouseState_{};       // 現在のマウス状態
+	DIMOUSESTATE2 mouseStatePrev_{};   // 前フレームの状態
+
+	int wheel_ = 0;                    // ホイール回転量
+	POINT mouseDelta_ = {};            // 移動量
+
 
 };
 

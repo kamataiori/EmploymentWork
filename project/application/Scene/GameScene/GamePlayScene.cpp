@@ -29,6 +29,7 @@ void GamePlayScene::Initialize()
 
 	enemy_ = std::make_unique<Enemy>(this);
 	enemy_->Initialize();
+	enemy_->SetPlayer(player_.get());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 
@@ -83,7 +84,7 @@ void GamePlayScene::Update()
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
-	ImGui::Text("bullet_ exists: %s", player_->GetBullet() ? "Yes" : "No");
+	//ImGui::Text("bullet_ exists: %s", player_->GetBullet() ? "Yes" : "No");
 
 	collisionMAnager_->RegisterCollider(player_.get());
 	collisionMAnager_->RegisterCollider(enemy_.get());
@@ -91,7 +92,9 @@ void GamePlayScene::Update()
 		auto bullet = player_->GetBullet();
 		collisionMAnager_->RegisterCollider(bullet);
 	}
-
+	for (const auto& areaAttack : enemy_->GetAreaAttacks()) {
+		collisionMAnager_->RegisterCollider(areaAttack.get());
+	}
 
 	// 衝突判定と応答
 	CheckAllColisions();
@@ -141,11 +144,26 @@ void GamePlayScene::Draw()
 	// 各オブジェクトの描画
 	stage_->Draw();
 	ground->Draw();
-	player_->Draw();
 	enemy_->Draw();
+	player_->BulletDraw();
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
+	// ================================================
+
+	//	アニメーションオブジェクトの描画前処理。3Dオブジェクトの描画設定に共通のグラフィックスコマンドを積む
+	Skinning::GetInstance()->CommonSetting();
+
+	// ================================================
+	// ここからアニメーションオブジェクトの個々の描画
+	// ================================================
+
+	// 各オブジェクトの描画
+	player_->Draw();
+	
+
+	// ================================================
+	// ここまでアニメーションオブジェクトの個々の描画
 	// ================================================
 
 	// ================================================
