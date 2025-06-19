@@ -34,6 +34,11 @@ void Input::Initialize(WinApp* winApp)
 	//排他制御レベルのセット
 	result = keyboard->SetCooperativeLevel(winApp->GetHwnd(), DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(result));
+
+	directInput->CreateDevice(GUID_SysMouse, &mouse_, nullptr);
+	mouse_->SetDataFormat(&c_dfDIMouse2);
+	mouse_->SetCooperativeLevel(winApp->GetHwnd(), DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	mouse_->Acquire();
 }
 
 void Input::Update()
@@ -49,31 +54,23 @@ void Input::Update()
 	//BYTE key[256] = {};
 	result = keyboard->GetDeviceState(sizeof(key), key);
 
-	// マウス移動
-	mousePosPrev_ = mousePos_;
-	GetCursorPos(&mousePos_);
-	ScreenToClient(winApp_->GetHwnd(), &mousePos_);
+	// 前フレームの状態保存
+	mouseStatePrev_ = mouseState_;
+	ZeroMemory(&mouseState_, sizeof(mouseState_));
 
-	mouseMove_.x = mousePos_.x - mousePosPrev_.x;
-	mouseMove_.y = mousePos_.y - mousePosPrev_.y;
-
-	// マウスボタン
-	for (int i = 0; i < 5; ++i) {
-		mouseButtonPrev_[i] = mouseButton_[i];
-		mouseButton_[i] = (GetAsyncKeyState(VK_LBUTTON + i) & 0x8000) != 0;
+	// 状態取得
+	HRESULT hr = mouse_->GetDeviceState(sizeof(DIMOUSESTATE2), &mouseState_);
+	if (FAILED(hr)) {
+		mouse_->Acquire(); // フォーカス失った場合など
+		return;
 	}
 
-	// マウスホイール（短期間ならこれで十分）
-	wheelPrev_ = wheel_;
-	wheel_ = 0;
-	MSG msg;
-	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-		if (msg.message == WM_MOUSEWHEEL) {
-			wheel_ += GET_WHEEL_DELTA_WPARAM(msg.wParam);
-		}
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
+	// ボタン：0=左, 1=右, 2=中, 3,4=サイド
+	// ホイール
+	wheel_ = static_cast<int>(mouseState_.lZ);
+	// 移動量（相対）
+	mouseDelta_.x = mouseState_.lX;
+	mouseDelta_.y = mouseState_.lY;
 }
 
 bool Input::PushKey(BYTE keyNumber)
@@ -99,24 +96,17 @@ bool Input::TriggerKey(BYTE keyNumber)
 }
 
 bool Input::PushMouseButton(int button) {
-	if (button < 0 || button >= 5) return false;
-	return mouseButton_[button];
+	return (mouseState_.rgbButtons[button] & 0x80);
 }
 
 bool Input::TriggerMouseButton(int button) {
-	if (button < 0 || button >= 5) return false;
-	return mouseButton_[button] && !mouseButtonPrev_[button];
+	return (mouseState_.rgbButtons[button] & 0x80) && !(mouseStatePrev_.rgbButtons[button] & 0x80);
 }
 
-int Input::GetMouseFlickX() const {
-	if (mouseMove_.x > 2) return 1;
-	if (mouseMove_.x < -2) return -1;
-	return 0;
+int Input::GetMouseWheel() const {
+	return wheel_;
 }
 
-int Input::GetMouseFlickY() const {
-	if (mouseMove_.y > 2) return 1;
-	if (mouseMove_.y < -2) return -1;
-	return 0;
+POINT Input::GetMouseDelta() const {
+	return mouseDelta_;
 }
-
