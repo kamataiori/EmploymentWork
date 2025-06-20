@@ -73,6 +73,16 @@ void WinApp::Initialize()
 
 	// ウィンドウを表示する
 	ShowWindow(hwnd, SW_SHOW);
+
+	// === 全画面化追加 ===
+	SetWindowLong(hwnd, GWL_STYLE, WS_POPUP);
+	SetWindowPos(
+		hwnd, HWND_TOP,
+		0, 0,
+		GetSystemMetrics(SM_CXSCREEN),
+		GetSystemMetrics(SM_CYSCREEN),
+		SWP_FRAMECHANGED | SWP_SHOWWINDOW
+	);
 }
 
 void WinApp::UpDate()
