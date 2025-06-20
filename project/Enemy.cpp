@@ -4,6 +4,7 @@
 #include "EnemyState_Dash.h"
 #include "Player.h"
 #include <EnemyState_Attack2.h>
+#include <EnemyState_Attack1.h>
 
 void Enemy::Initialize()
 {
@@ -59,6 +60,12 @@ void Enemy::Update()
 		return a->IsDead();
 		});
 
+	// 通常攻撃オブジェクトの更新
+	for (auto& b : bullets_) {
+		b->Update();
+	}
+	bullets_.remove_if([](const auto& b) { return b->IsDead(); });
+
 
 	//ImGui::Begin("Enemy Transform");
 
@@ -97,6 +104,9 @@ void Enemy::Draw()
 		a->Draw();
 	}
 
+	for (auto& b : bullets_) {
+		b->Draw();
+	}
 
 	// SphereCollider の描画
 	SphereCollider::Draw();
@@ -128,6 +138,7 @@ void Enemy::ChangeToRandomState() {
 	std::vector<std::pair<std::string, std::function<std::unique_ptr<EnemyState>()>>> stateFactories = {
 		{"Idle", []() { return std::make_unique<EnemyState_Idle>(); }},
 		{"Dash", []() { return std::make_unique<EnemyState_Dash>(); }},
+		{"Attack1", []() { return std::make_unique<EnemyState_Attack1>(); }},
 		{"Attack2", []() { return std::make_unique<EnemyState_Attack2>(); }},
 	};
 
@@ -141,6 +152,7 @@ void Enemy::ChangeToRandomState() {
 		stateFactories = {
 			{"Idle", []() { return std::make_unique<EnemyState_Idle>(); }},
 			{"Dash", []() { return std::make_unique<EnemyState_Dash>(); }},
+			{"Attack1", []() { return std::make_unique<EnemyState_Attack1>(); }},
 			{"Attack2", []() { return std::make_unique<EnemyState_Attack2>(); }},
 		};
 	}
@@ -161,6 +173,11 @@ void Enemy::Move(const Vector3& velocity) {
 void Enemy::AddAreaAttack(std::unique_ptr<EnemyAreaAttack> attack)
 {
 	areaAttacks_.push_back(std::move(attack));
+}
+
+void Enemy::AddBullet(std::unique_ptr<EnemyAttackBullet> bullet)
+{
+	bullets_.push_back(std::move(bullet));
 }
 
 Vector3 Enemy::GetPlayerPos() const

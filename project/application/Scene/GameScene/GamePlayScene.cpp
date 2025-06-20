@@ -95,6 +95,9 @@ void GamePlayScene::Update()
 	for (const auto& areaAttack : enemy_->GetAreaAttacks()) {
 		collisionMAnager_->RegisterCollider(areaAttack.get());
 	}
+	for (const auto& bulletAttack : enemy_->GetAttackBulets()) {
+		collisionMAnager_->RegisterCollider(bulletAttack.get());
+	}
 
 	// 衝突判定と応答
 	CheckAllColisions();
@@ -142,7 +145,7 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	stage_->Draw();
+	//stage_->Draw();
 	ground->Draw();
 	enemy_->Draw();
 	player_->BulletDraw();

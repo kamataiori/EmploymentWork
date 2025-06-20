@@ -1,13 +1,13 @@
 #include "EnemyAreaAttack.h"
 
 EnemyAreaAttack::EnemyAreaAttack(BaseScene* scene)
-    : CharacterBase(scene), SphereCollider(sphere)
-{
+    : CharacterBase(scene), SphereCollider(sphere){
     SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::EnemyAreaAttack));
 }
 
 void EnemyAreaAttack::Initialize() {
     // SphereColliderの半径設定（炎の範囲などに応じて）
+    SetCollider(this);
     SetRadius(5.0f);
     SetPosition(transform.translate);
 }

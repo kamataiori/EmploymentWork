@@ -9,5 +9,6 @@ enum class CollisionTypeIdDef : uint32_t
 	kPlayer,
 	kEnemy,
 	PlayerBullet,
+	EnemyBullet,
 	EnemyAreaAttack,
 };
