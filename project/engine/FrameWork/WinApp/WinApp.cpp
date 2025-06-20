@@ -13,10 +13,10 @@ LRESULT WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	switch (msg)
 	{
 		//ウィンドウが破棄された
-	case WM_DESTROY :
-			//OSに対して、アプリの終了を伝える
-			PostQuitMessage(0);
-			return 0;
+	case WM_DESTROY:
+		//OSに対して、アプリの終了を伝える
+		PostQuitMessage(0);
+		return 0;
 	}
 
 	//標準のメッセージ処理を行う
@@ -73,16 +73,6 @@ void WinApp::Initialize()
 
 	// ウィンドウを表示する
 	ShowWindow(hwnd, SW_SHOW);
-
-	// === 全画面化追加 ===
-	SetWindowLong(hwnd, GWL_STYLE, WS_POPUP);
-	SetWindowPos(
-		hwnd, HWND_TOP,
-		0, 0,
-		GetSystemMetrics(SM_CXSCREEN),
-		GetSystemMetrics(SM_CYSCREEN),
-		SWP_FRAMECHANGED | SWP_SHOWWINDOW
-	);
 }
 
 void WinApp::UpDate()
