@@ -105,7 +105,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="EnemyAreaAttack.cpp" />
+    <ClCompile Include="EnemyAttackBullet.cpp" />
     <ClCompile Include="EnemyState.cpp" />
+    <ClCompile Include="EnemyState_Attack1.cpp" />
     <ClCompile Include="EnemyState_Attack2.cpp" />
     <ClCompile Include="EnemyState_Dash.cpp" />
     <ClCompile Include="EnemyState_Idle.cpp" />
@@ -184,7 +186,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EnemyAreaAttack.h" />
+    <ClInclude Include="EnemyAttackBullet.h" />
     <ClInclude Include="EnemyState.h" />
+    <ClInclude Include="EnemyState_Attack1.h" />
     <ClInclude Include="EnemyState_Attack2.h" />
     <ClInclude Include="EnemyState_Dash.h" />
     <ClInclude Include="EnemyState_Idle.h" />
