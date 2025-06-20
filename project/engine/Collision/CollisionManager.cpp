@@ -58,6 +58,7 @@ bool CollisionManager::ShouldIgnoreCollision(CollisionTypeIdDef type1, Collision
 		{ CollisionTypeIdDef::EnemyAreaAttack, CollisionTypeIdDef::EnemyBullet },
 		{ CollisionTypeIdDef::EnemyBullet, CollisionTypeIdDef::EnemyAreaAttack },
 
+		{ CollisionTypeIdDef::EnemyAreaAttack, CollisionTypeIdDef::EnemyAreaAttack },
 		{ CollisionTypeIdDef::EnemyBullet, CollisionTypeIdDef::EnemyBullet },
 	    // 必要ならここに追加（例: playerとplayerBulletなど）
 	};

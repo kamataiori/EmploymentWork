@@ -45,4 +45,5 @@ void EnemyAttackBullet::Draw() {
 void EnemyAttackBullet::OnCollision()
 {
     sphere.color = static_cast<int>(Color::PURPLE);
+    isDead_ = true;
 }
