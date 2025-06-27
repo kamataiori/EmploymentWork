@@ -10,5 +10,5 @@ public:
     const char* GetName() const override { return "Idle"; }
 private:
     float timer_ = 0.0f;
-    float waitTime_ = 3.0f; // 待機時間（秒）
+    float waitTime_ = 4.0f; // 待機時間（秒）
 };

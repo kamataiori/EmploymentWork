@@ -10,5 +10,9 @@ public:
     const char* GetName() const override { return "Attack1"; }
 
 private:
-    float timer_ = 0.0f; // 攻撃後の待機時間
+    // 攻撃後の待機時間
+    float timer_ = 0.0f;
+
+    // 弾の速さ
+    float bulletSpeed = 1.0f;
 };

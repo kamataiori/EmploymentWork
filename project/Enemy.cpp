@@ -12,13 +12,19 @@ void Enemy::Initialize()
 
 	// モデル読み込み
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
+	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");
 
-	object3d_->SetModel("uvChecker.gltf");
+	object3d_->SetModel("human/sneakWalk.gltf");
 
-	// モデルにSRTを設定
-	object3d_->SetScale({ 1.0f, 1.0f, 1.0f });
-	object3d_->SetRotate({ 0.0f, 3.14f, 0.0f });
-	object3d_->SetTranslate({ 2.0f, 0.0f, 0.0f });
+	// 初期Transform設定
+	transform.translate = { 2.0f, 0.0f, 0.0f };
+	transform.rotate = { 0.0f, 0.0f, 0.0f };
+	transform.scale = { 1.0f, 1.0f, 1.0f };
+
+	// object3dにtransformを反映
+	object3d_->SetTranslate(transform.translate);
+	object3d_->SetRotate(transform.rotate);
+	object3d_->SetScale(transform.scale);
 
 	ChangeState(std::make_unique<EnemyState_Idle>());
 
@@ -46,6 +52,17 @@ void Enemy::Update()
 	//}
 
 	//ImGui::End();
+
+	// プレイヤーの方向を向く
+	if (player_) {
+		Vector3 toPlayer = player_->GetTransform().translate - this->GetTransform().translate;
+
+		// Y軸方向だけで角度を計算（上下方向は無視）
+		float angleY = std::atan2(toPlayer.x, toPlayer.z);
+
+		transform.rotate.y = angleY;
+	}
+
 
 	// ステート更新処理
 	if (currentState_) {
@@ -89,16 +106,17 @@ void Enemy::Update()
 
 	//ImGui::End();
 
-	SetPosition(object3d_->GetTranslate());
 	object3d_->SetTranslate(transform.translate);
+	object3d_->SetScale(transform.scale);
+	object3d_->SetRotate(transform.rotate);
 	object3d_->Update();
-	//SetScale(object3d_->GetScale());
+
+	SetPosition(object3d_->GetTranslate());
 	sphere.color = static_cast<int>(Color::WHITE);
 }
 
 void Enemy::Draw()
 {
-	object3d_->Draw();
 
 	for (auto& a : areaAttacks_) {
 		a->Draw();
@@ -112,13 +130,14 @@ void Enemy::Draw()
 	SphereCollider::Draw();
 }
 
+void Enemy::DrawModel()
+{
+	object3d_->Draw();
+}
+
 void Enemy::OnCollision()
 {
 	sphere.color = static_cast<int>(Color::RED);
-
-	//for (auto& attack : areaAttacks_) {
-	//	attack->OnCollision(); // 各範囲攻撃オブジェクトに通知
-	//}
 }
 
 void Enemy::ChangeState(std::unique_ptr<EnemyState> State)
@@ -134,40 +153,65 @@ void Enemy::ChangeState(std::unique_ptr<EnemyState> State)
 }
 
 void Enemy::ChangeToRandomState() {
-	// すべてのステート候補を登録
-	std::vector<std::pair<std::string, std::function<std::unique_ptr<EnemyState>()>>> stateFactories = {
-		{"Idle", []() { return std::make_unique<EnemyState_Idle>(); }},
-		{"Dash", []() { return std::make_unique<EnemyState_Dash>(); }},
-		{"Attack1", []() { return std::make_unique<EnemyState_Attack1>(); }},
-		{"Attack2", []() { return std::make_unique<EnemyState_Attack2>(); }},
+	// 次の状態はIdle（待機）にするかどうか
+	static bool insertIdleNext = true;
+
+	if (insertIdleNext) {
+		// 一度Idle（待機）を挟む
+		insertIdleNext = false;
+		previousStateName_ = "Idle";
+		ChangeState(std::make_unique<EnemyState_Idle>());
+		return;
+	}
+
+	// 各行動と重み（確率）のペア
+	struct WeightedState {
+		std::string name; // ステート名
+		float weight;     // 重み（選ばれやすさ）
+		std::function<std::unique_ptr<EnemyState>()> factory; // ステートを生成する関数
 	};
 
-	// 前回と同じ名前を除外
-	std::erase_if(stateFactories, [this](const auto& pair) {
-		return pair.first == previousStateName_;
+	// ステート候補を定義
+	std::vector<WeightedState> candidates = {
+		{"Dash", dashWeight_, []() { return std::make_unique<EnemyState_Dash>(); }},
+		{"Attack1", attack1Weight_, []() { return std::make_unique<EnemyState_Attack1>(); }},
+		{"Attack2", attack2Weight_, []() { return std::make_unique<EnemyState_Attack2>(); }}
+	};
+
+	// 前回と同じステート名を除外（連続行動を避ける）
+	std::erase_if(candidates, [this](const WeightedState& s) {
+		return s.name == previousStateName_;
 		});
 
-	// 候補がすべて除外されてしまった場合、前回と同じでも許可（無限ループ回避）
-	if (stateFactories.empty()) {
-		stateFactories = {
-			{"Idle", []() { return std::make_unique<EnemyState_Idle>(); }},
-			{"Dash", []() { return std::make_unique<EnemyState_Dash>(); }},
-			{"Attack1", []() { return std::make_unique<EnemyState_Attack1>(); }},
-			{"Attack2", []() { return std::make_unique<EnemyState_Attack2>(); }},
+	// すべて除外された場合は復元（行動できなくなるのを防ぐ）
+	if (candidates.empty()) {
+		candidates = {
+			{"Dash", dashWeight_, []() { return std::make_unique<EnemyState_Dash>(); }},
+			{"Attack1", attack1Weight_, []() { return std::make_unique<EnemyState_Attack1>(); }},
+			{"Attack2", attack2Weight_, []() { return std::make_unique<EnemyState_Attack2>(); }}
 		};
 	}
 
-	// ランダムに選択
-	int index = rand() % stateFactories.size();
-	std::unique_ptr<EnemyState> nextState = stateFactories[index].second();
+	// 重みに基づくランダム選択
+	float totalWeight = 0.0f;
+	for (const auto& c : candidates) {
+		totalWeight += c.weight;
+	}
 
-	// 状態名を記録し、ステートを切り替え
-	previousStateName_ = stateFactories[index].first;
-	ChangeState(std::move(nextState));
-}
+	// 0〜totalWeight の範囲でランダムに選ぶ
+	float rnd = static_cast<float>(rand()) / RAND_MAX * totalWeight;
+	float accum = 0.0f;
 
-void Enemy::Move(const Vector3& velocity) {
-	transform.translate += velocity;
+	// ランダム値がどの範囲に入るかでステート決定
+	for (const auto& c : candidates) {
+		accum += c.weight;
+		if (rnd <= accum) {
+			previousStateName_ = c.name;    // 今回のステート名を記録
+			insertIdleNext = true;          // 次回はIdleを挟むように設定
+			ChangeState(c.factory());       // ステート切り替え
+			return;
+		}
+	}
 }
 
 void Enemy::AddAreaAttack(std::unique_ptr<EnemyAreaAttack> attack)

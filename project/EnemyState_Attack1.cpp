@@ -28,7 +28,7 @@ void EnemyState_Attack1::Enter(Enemy* enemy) {
         bullet->Initialize();
         bullet->SetCamera(enemy->GetCamera());
         bullet->SetTranslate(enemy->GetTransform().translate);
-        bullet->SetVelocity(Normalize(dir) * 0.5f);
+        bullet->SetVelocity(Normalize(dir) * bulletSpeed);
 
         enemy->AddBullet(std::move(bullet)); // bullets_ に追加
     }

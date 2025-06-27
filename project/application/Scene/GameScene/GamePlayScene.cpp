@@ -163,6 +163,7 @@ void GamePlayScene::Draw()
 
 	// 各オブジェクトの描画
 	player_->Draw();
+	enemy_->DrawModel();
 	
 
 	// ================================================

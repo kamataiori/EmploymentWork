@@ -22,11 +22,12 @@ public:
 
 	void Draw() override;
 
+	void DrawModel();
+
 	void OnCollision() override;
 
 	void ChangeState(std::unique_ptr<EnemyState> State);
 	void ChangeToRandomState();
-	void Move(const Vector3& velocity);
 
 	void AddAreaAttack(std::unique_ptr<EnemyAreaAttack> attack);
 
@@ -54,5 +55,10 @@ private:
 	std::list<std::unique_ptr<EnemyAreaAttack>> areaAttacks_;
 
 	Player* player_ = nullptr;
+
+	// 行動が何%で起こるのか
+	float dashWeight_ = 50.0f;
+	float attack1Weight_ = 30.0f;
+	float attack2Weight_ = 20.0f;
 };
 
