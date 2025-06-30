@@ -12,7 +12,7 @@ void Player::Initialize()
 	object3d_->SetModel("human/walk.gltf");
 
 	// 初期Transform設定
-	transform.translate = { -2.0f, 0.0f, 0.0f };
+	transform.translate = { 0.0f, 0.0f, -10.0f };
 	transform.rotate = { 0.0f, 0.0f, 0.0f };
 	transform.scale = { 1.0f, 1.0f, 1.0f };
 
