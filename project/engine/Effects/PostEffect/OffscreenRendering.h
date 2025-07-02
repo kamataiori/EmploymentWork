@@ -282,9 +282,9 @@ private:  // privateメンバ変数
 	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob_{};
 
 	// PSO配列（各PostEffectTypeごと）
-	std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, kPostEffectCount> pipelineStates_;
+	std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, kPostEffectCount> pipelineStates_{};
 	// RootSignature配列（各PostEffectTypeごと）
-	std::array<Microsoft::WRL::ComPtr<ID3D12RootSignature>, kPostEffectCount> rootSignatures_;
+	std::array<Microsoft::WRL::ComPtr<ID3D12RootSignature>, kPostEffectCount> rootSignatures_{};
 
 	// 現在のエフェクトタイプ
 	PostEffectType currentType_ = PostEffectType::Normal;

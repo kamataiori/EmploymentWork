@@ -8,8 +8,9 @@ void Player::Initialize()
 	// モデル読み込み
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 	ModelManager::GetInstance()->LoadModel("human/walk.gltf");
+	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
 
-	object3d_->SetModel("human/walk.gltf");
+	object3d_->SetModel("Warrior.gltf");
 
 	// 初期Transform設定
 	transform.translate = { 0.0f, 0.0f, -10.0f };
