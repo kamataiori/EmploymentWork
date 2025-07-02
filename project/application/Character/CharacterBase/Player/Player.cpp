@@ -74,7 +74,7 @@ void Player::Draw()
 {
 	object3d_->Draw();
 	// SphereCollider の描画
-	SphereCollider::Draw();
+	//SphereCollider::Draw();
 
 }
 

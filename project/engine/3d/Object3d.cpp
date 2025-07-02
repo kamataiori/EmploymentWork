@@ -117,19 +117,8 @@ void Object3d::SetMaterialColor(const Vector4& color)
 
 void Object3d::SetEnableLighting(bool enable)
 {
-    assert(model_); // model_ が初期化されていることを確認
-    Model::Material* material = nullptr;
-
-    // materialData を取得
-    model_->CreateMaterialData(); // 必要に応じてマテリアルデータの初期化を呼び出す
-    material = model_->GetMaterial(); // Model 側で materialData を取得するゲッターを用意
-
-    if (material) {
-        material->enableLighting = enable ? 1 : 0; // bool を int32_t に変換
-    }
-    else {
-        assert(false && "Material data is null");
-    }
+    assert(model_);
+    model_->SetEnableLighting(enable);
 }
 
 void Object3d::SetDefaultCamera()

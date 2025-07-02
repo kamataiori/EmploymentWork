@@ -26,6 +26,8 @@ public:
 		Vector4 position;
 		Vector2 texcoord;
 		Vector3 normal;
+		uint32_t influenceIndex[4];
+		float influenceWeight[4];
 	};
 
 	// マテリアルを拡張する
@@ -51,16 +53,32 @@ public:
 		std::vector<Node> children;  // 子供のNode
 	};
 
-	// ModelData構造体
-	struct ModelData {
-		std::map<std::string, JointWeightData> skinClusterData;
-		std::vector<VertexData>vertices;
+	// Mesh単位でまとめた構造体を追加
+	struct MeshData {
+		std::vector<VertexData> vertices;
 		std::vector<uint32_t> indices;
 		MaterialData material;
+		std::map<std::string, JointWeightData> skinClusterData;
+	};
+
+	// ModelData構造体を修正
+	struct ModelData {
+		std::vector<MeshData> meshes; // 複数メッシュに対応
 		Node rootNode;
 		bool isAnimation;
 	};
 
+	struct MeshInstance {
+		Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;
+		Microsoft::WRL::ComPtr<ID3D12Resource> indexResource;
+		Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;
+		VertexData* vertexData = nullptr;
+		Material* materialData = nullptr;
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+		D3D12_INDEX_BUFFER_VIEW indexBufferView;
+		SkinCluster skinCluster;
+		uint32_t textureIndex = 0;
+	};
 
 	/// <summary>
 	/// 初期化処理
@@ -96,17 +114,17 @@ public:
 	/// <summary>
 	/// 頂点データを作成
 	/// </summary>
-	void CreateVertexData();
+	void CreateVertexData(MeshInstance& instance, const MeshData& data);
 
 	/// <summary>
 	/// 解析したデータを使って作成
 	/// </summary>
-	void CreateIndexResource();
+	void CreateIndexResource(MeshInstance& instance, const MeshData& data);
 
 	/// <summary>
 	/// マテリアルデータの初期化
 	/// </summary>
-	void  CreateMaterialData();
+	void  CreateMaterialData(MeshInstance& instance, const MeshData& data);
 
 	/// <summary>
 	/// .mtlファイルの読み取り
@@ -155,7 +173,7 @@ public:
 	/// <summary>
 	/// SkinClusterの生成
 	/// </summary>
-	SkinCluster CreateSkinCluster(const Microsoft::WRL::ComPtr<ID3D12Device>& device, const Skeleton& skeleton, const ModelData& modelData, const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize);
+	SkinCluster CreateSkinCluster(const Microsoft::WRL::ComPtr<ID3D12Device>& device, const Skeleton& skeleton, const MeshData& meshData , const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize);
 
 	/// <summary>
 	/// ModelDataのGetter
@@ -174,6 +192,9 @@ public:
 
 	// materialDataのゲッター
 	Model::Material* GetMaterial() const { return materialData; }
+
+	void SetEnableLighting(bool enable);
+
 
 private:
 
@@ -213,6 +234,8 @@ private:
 
 	// モデル読み込み
 	ModelData modelData;
+
+	std::vector<MeshInstance> meshInstances_;
 
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;  // 頂点バッファ
