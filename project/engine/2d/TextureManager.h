@@ -54,6 +54,8 @@ public:
 
 	uint32_t GetSrvIndex(const std::string& filePath);
 
+	DirectXCommon* GetDxCommon() const { return dxCommon_; }
+
 private:
 	//テクスチャ1枚分のデータ
 	struct TextureData {

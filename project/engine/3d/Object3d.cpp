@@ -50,6 +50,10 @@ void Object3d::Update()
     /*transformationMatrixData->WVP = Multiply(modelData.rootNode.localMatrix, worldviewProjectionMatrix);*/
     transformationMatrixData->WVP = worldviewProjectionMatrix;
     transformationMatrixData->World = Multiply(modelData.rootNode.localMatrix, worldMatrix_);
+    Matrix4x4 world = Multiply(modelData.rootNode.localMatrix, worldMatrix_);
+    transformationMatrixData->World = world;
+    transformationMatrixData->WorldInverseTranspose = transpose(Inverse(world));
+
 }
 
 void Object3d::ImGuiUpdate(const std::string& Name)

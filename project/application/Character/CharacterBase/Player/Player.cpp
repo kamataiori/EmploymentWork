@@ -6,8 +6,8 @@ void Player::Initialize()
 	object3d_->Initialize();
 
 	// モデル読み込み
-	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-	ModelManager::GetInstance()->LoadModel("human/walk.gltf");
+	//ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
+	//ModelManager::GetInstance()->LoadModel("human/walk.gltf");
 	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
 
 	object3d_->SetModel("Warrior.gltf");

@@ -49,7 +49,13 @@ void Model::Update()
 	// 現在の骨ごとのLocal情報を基に、SkeltonSpaceの情報を更新する
 	Update(skeleton);
 	// SkeltonSpaceの情報を基に、SkinClusterのMatrixPaletteを更新する
-	Update(skinCluster, skeleton);
+	//Update(skinCluster, skeleton);
+
+	for (auto& instance : meshInstances_)
+	{
+		Update(instance.skinCluster, skeleton);
+		
+	}
 
 	/*NodeAnimation& rootNodeAnimation = animation.NodeAnimations[modelData.rootNode.name];
 	Vector3 translate = CalculateValue(rootNodeAnimation.translate.keyframes, animationTime);
@@ -186,9 +192,9 @@ void Model::CreateVertexData(MeshInstance& instance, const MeshData& data)
 	instance.vertexBufferView.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * data.vertices.size());
 	instance.vertexBufferView.StrideInBytes = sizeof(VertexData);
 
-	VertexData* mapped = nullptr;
-	instance.vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
-	std::memcpy(mapped, data.vertices.data(), sizeof(VertexData) * data.vertices.size());
+	//VertexData* mapped = nullptr;
+	instance.vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&instance.vertexData));
+	std::memcpy(instance.vertexData, data.vertices.data(), sizeof(VertexData) * data.vertices.size());
 }
 
 void Model::CreateIndexResource(MeshInstance& instance, const MeshData& data)
@@ -198,14 +204,44 @@ void Model::CreateIndexResource(MeshInstance& instance, const MeshData& data)
 	instance.indexBufferView.SizeInBytes = static_cast<UINT>(sizeof(uint32_t) * data.indices.size());
 	instance.indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
-	uint32_t* mapped = nullptr;
-	instance.indexResource->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
-	std::memcpy(mapped, data.indices.data(), sizeof(uint32_t) * data.indices.size());
+	//uint32_t* mapped = nullptr;
+	instance.indexResource->Map(0, nullptr, reinterpret_cast<void**>(&instance.indexData));
+	std::memcpy(instance.indexData, data.indices.data(), sizeof(uint32_t) * data.indices.size());
 	instance.indexResource->Unmap(0, nullptr);
 }
 
 void Model::CreateMaterialData(MeshInstance& instance, const MeshData& data)
 {
+	//instance.materialResource = modelCommon_->GetDxCommon()->CreateBufferResource(sizeof(Material));
+
+	//instance.materialResource->Map(0, nullptr, reinterpret_cast<void**>(&instance.materialData));
+	//instance.materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	//instance.materialData->enableLighting = true;
+	//instance.materialData->uvTransform = MakeIdentity4x4();
+	//instance.materialData->shininess = 50.0f;
+
+	////// テクスチャ読み込み＆インデックス取得
+	////// ✅ テクスチャパスが空なら白テクスチャを指定する
+	////std::string texPath = data.material.textureFilePath;
+	////if (texPath.empty()) {
+	////	texPath = "Resources/uvChecker.png";
+	////}
+
+	////// ✅ テクスチャを読み込み、インデックスを取得
+	////TextureManager::GetInstance()->LoadTexture(texPath);
+	////instance.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(texPath);
+
+	//const std::string& texPath = data.material.textureFilePath;
+	//if (!texPath.empty()) {
+	//	TextureManager::GetInstance()->LoadTexture(texPath);
+	//	instance.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(texPath);
+	//}
+	//else {
+	//	// テクスチャ未設定の場合、ダミー or 白テクスチャを使う（index=0を仮定）
+	//	instance.textureIndex = 0;
+	//}
+
+
 	instance.materialResource = modelCommon_->GetDxCommon()->CreateBufferResource(sizeof(Material));
 
 	instance.materialResource->Map(0, nullptr, reinterpret_cast<void**>(&instance.materialData));
@@ -214,16 +250,24 @@ void Model::CreateMaterialData(MeshInstance& instance, const MeshData& data)
 	instance.materialData->uvTransform = MakeIdentity4x4();
 	instance.materialData->shininess = 50.0f;
 
-	// テクスチャ読み込み＆インデックス取得
 	const std::string& texPath = data.material.textureFilePath;
+
+	std::string usedTexturePath;
+
 	if (!texPath.empty()) {
-		TextureManager::GetInstance()->LoadTexture(texPath);
-		instance.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(texPath);
+		usedTexturePath = texPath;
 	}
 	else {
-		// テクスチャ未設定の場合、ダミー or 白テクスチャを使う（index=0を仮定）
-		instance.textureIndex = 0;
+		// テクスチャが無ければ白テクスチャを使う
+		usedTexturePath = "Resources/white.png";
 	}
+
+	TextureManager::GetInstance()->LoadTexture(usedTexturePath);
+	instance.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(usedTexturePath);
+
+
+
+
 }
 
 //.mtlファイル読み取り
@@ -335,6 +379,10 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 				meshData.indices.push_back(face.mIndices[element]);
 			}
 		}
+
+		// 16の倍数にするために必要な要素数
+		size_t padding = 16 - meshData.indices.size() % 16;
+		meshData.indices.resize(meshData.indices.size() + padding);
 
 		// スキン情報を取得（Bone）
 		for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex) {
@@ -555,13 +603,23 @@ SkinCluster Model::CreateSkinCluster(const Microsoft::WRL::ComPtr<ID3D12Device>&
 	skinCluster_.inverseBindPoseMatrices.resize(skeleton.joints.size());
 	std::generate(skinCluster_.inverseBindPoseMatrices.begin(), skinCluster_.inverseBindPoseMatrices.end(), MakeIdentity4x4);
 
+	// skeleton側のボーン名一覧を表示
+	for (const auto& [name, index] : skeleton.jointMap) {
+		std::cout << "[Skeleton] joint = " << name << std::endl;
+	}
+
 	// ModelDataのSkinCluster情報を解析してInfluenceの中身を埋める
 	for (const auto& jointWeight : meshData.skinClusterData)
 	{
+		// mesh側のボーン名を表示
+		std::cout << "[MeshData] joint name = " << jointWeight.first << std::endl;
+
 		// ModelのSkinClusterの情報を解析
 		auto it = skeleton.jointMap.find(jointWeight.first);  // JointWeight.firstはjoint名なので、skeltonに対象となるjointが含まれているか判断
 		if (it == skeleton.jointMap.end())
 		{
+			// マッチしなかったボーン名を警告として出力
+			std::cout << "[WARNING] joint not found in skeleton: " << jointWeight.first << std::endl;
 			// そんな名前のjointは存在しないため、次に回す
 			continue;
 		}
@@ -589,8 +647,8 @@ SkinCluster Model::CreateSkinCluster(const Microsoft::WRL::ComPtr<ID3D12Device>&
 
 bool Model::GetEnableLighting() const
 {
-	assert(materialData); // materialData が null でないことを確認
-	return materialData->enableLighting != 0; // enableLighting が 0 でなければ true を返す
+	assert(material); // materialData が null でないことを確認
+	return material->enableLighting != 0; // enableLighting が 0 でなければ true を返す
 }
 
 void Model::SetEnableLighting(bool enable)

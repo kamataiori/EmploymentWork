@@ -22,12 +22,11 @@ public:
 	//--------構造体--------//
 
 	// 頂点データの拡張
-	struct VertexData {
+	struct alignas(16) VertexData {
 		Vector4 position;
 		Vector2 texcoord;
+		//float padding[2];
 		Vector3 normal;
-		uint32_t influenceIndex[4];
-		float influenceWeight[4];
 	};
 
 	// マテリアルを拡張する
@@ -54,7 +53,7 @@ public:
 	};
 
 	// Mesh単位でまとめた構造体を追加
-	struct MeshData {
+	struct  alignas(16) MeshData {
 		std::vector<VertexData> vertices;
 		std::vector<uint32_t> indices;
 		MaterialData material;
@@ -74,6 +73,7 @@ public:
 		Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;
 		VertexData* vertexData = nullptr;
 		Material* materialData = nullptr;
+		uint32_t* indexData = nullptr;
 		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 		D3D12_INDEX_BUFFER_VIEW indexBufferView;
 		SkinCluster skinCluster;
@@ -182,16 +182,16 @@ public:
 	const ModelData& GetModelData() const { return modelData; }
 
 	// materialData->colorのゲッター
-	const Vector4& GetMaterialColor() const { return materialData->color; }
+	const Vector4& GetMaterialColor() const { return material->color; }
 
 	// materialData->colorのセッター
-	void SetMaterialColor(const Vector4& color) { materialData->color = color; }
+	void SetMaterialColor(const Vector4& color) { material->color = color; }
 
 	// materialData->enableLightingのゲッター
 	bool GetEnableLighting() const;
 
 	// materialDataのゲッター
-	Model::Material* GetMaterial() const { return materialData; }
+	Model::Material* GetMaterial() const { return material; }
 
 	void SetEnableLighting(bool enable);
 
@@ -241,8 +241,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;  // 頂点バッファ
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;  // マテリアル用の定数バッファ
 	// バッファリソース内のデータを指すポインタ
-	VertexData* vertexData = nullptr;
-	Material* materialData = nullptr;
+	//VertexData* vertexData = nullptr;
+	Material* material = nullptr;
+	//MaterialData* materialData = nullptr;
 	// バッファリソースの使い道を補完するビュー
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 
@@ -251,7 +252,7 @@ private:
 
 	AnimationData animation;
 	Skeleton skeleton;
-	SkinCluster skinCluster;
+	//SkinCluster skinCluster;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource;
 	//Viewを作成する
