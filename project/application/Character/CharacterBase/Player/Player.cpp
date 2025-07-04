@@ -231,33 +231,34 @@ void Player::HandleBullet()
 {
 	// Hキーで弾を1発発射
 	// -------------------------------
-	// 発射処理（Hキー）
-	if (Input::GetInstance()->TriggerMouseButton(0) && bullet_ == nullptr) {
-		bullet_ = std::make_unique<PlayerBullet>(baseScene_);
-		bullet_->SetTranslate(object3d_->GetTranslate());
+	// 発射処理
+	// 左クリックで攻撃開始
+	if (Input::GetInstance()->TriggerMouseButton(0)) {
 
-		// プレイヤーのY回転に基づく正面ベクトルを生成
-		float angleY = transform.rotate.y;
-		Vector3 forward = {
-			std::sin(angleY),
-			0.0f,
-			std::cos(angleY)
-		};
+		if (bullet_ == nullptr) {
+			bullet_ = std::make_unique<PlayerBullet>(baseScene_);
+			bullet_->SetTranslate(object3d_->GetTranslate());
 
-		// ベクトルを正規化し、速度スケールを掛ける
-		forward = Normalize(forward) * 0.5f;
-		bullet_->SetVelocity(forward);
+			// 正面方向ベクトル
+			float angleY = transform.rotate.y;
+			Vector3 forward = {
+				std::sin(angleY),
+				0.0f,
+				std::cos(angleY)
+			};
+			forward = Normalize(forward) * 0.5f;
+			bullet_->SetVelocity(forward);
 
-		bullet_->Initialize();
-		bullet_->SetCamera(camera_);
+			bullet_->Initialize();
+			bullet_->SetCamera(camera_);
+		}
 	}
 
-	// 更新処理
+	// 弾更新
 	if (bullet_) {
 		bullet_->Update();
-
 		if (bullet_->IsDead()) {
-			bullet_.reset(); // 4秒経ったら削除
+			bullet_.reset();
 		}
 	}
 }

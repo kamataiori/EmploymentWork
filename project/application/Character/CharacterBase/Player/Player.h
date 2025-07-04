@@ -89,6 +89,5 @@ private:
 	AnimationSet animation_; // アニメーション名セット
 	std::string currentAnimationName_;
 
-
 };
 
