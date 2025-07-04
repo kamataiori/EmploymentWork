@@ -11,10 +11,10 @@ void Enemy::Initialize()
 	object3d_->Initialize();
 
 	// モデル読み込み
-	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
+	ModelManager::GetInstance()->LoadModel("axis.obj");
 	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");
 
-	object3d_->SetModel("human/sneakWalk.gltf");
+	object3d_->SetModel("axis.obj");
 
 	// 初期Transform設定
 	transform.translate = { 0.0f, 0.0f, 0.0f };

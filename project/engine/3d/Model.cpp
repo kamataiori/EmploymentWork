@@ -14,6 +14,7 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypat
 	// アニメーション読み込み
 	if (modelData.isAnimation) {
         /*animation = LoadAnimationFile(directorypath, filename);*/
+		// 上のコメントアウトは単一のアニメーションの時に必要 条件で管理する必要あり
 		LoadAllAnimations(directorypath, filename);
         skeleton = CreateSkeleton(modelData.rootNode);
     }
