@@ -50,6 +50,10 @@ void Object3d::Update()
     /*transformationMatrixData->WVP = Multiply(modelData.rootNode.localMatrix, worldviewProjectionMatrix);*/
     transformationMatrixData->WVP = worldviewProjectionMatrix;
     transformationMatrixData->World = Multiply(modelData.rootNode.localMatrix, worldMatrix_);
+    Matrix4x4 world = Multiply(modelData.rootNode.localMatrix, worldMatrix_);
+    transformationMatrixData->World = world;
+    transformationMatrixData->WorldInverseTranspose = transpose(Inverse(world));
+
 }
 
 void Object3d::ImGuiUpdate(const std::string& Name)
@@ -117,18 +121,14 @@ void Object3d::SetMaterialColor(const Vector4& color)
 
 void Object3d::SetEnableLighting(bool enable)
 {
-    assert(model_); // model_ が初期化されていることを確認
-    Model::Material* material = nullptr;
+    assert(model_);
+    model_->SetEnableLighting(enable);
+}
 
-    // materialData を取得
-    model_->CreateMaterialData(); // 必要に応じてマテリアルデータの初期化を呼び出す
-    material = model_->GetMaterial(); // Model 側で materialData を取得するゲッターを用意
-
-    if (material) {
-        material->enableLighting = enable ? 1 : 0; // bool を int32_t に変換
-    }
-    else {
-        assert(false && "Material data is null");
+void Object3d::SetAnimation(const std::string& name)
+{
+    if (model_) {
+        model_->SetAnimation(name);
     }
 }
 

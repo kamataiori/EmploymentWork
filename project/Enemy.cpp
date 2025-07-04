@@ -14,10 +14,10 @@ void Enemy::Initialize()
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");
 
-	object3d_->SetModel("human/sneakWalk.gltf");
+	object3d_->SetModel("uvChecker.gltf");
 
 	// 初期Transform設定
-	transform.translate = { 2.0f, 0.0f, 0.0f };
+	transform.translate = { 0.0f, 0.0f, 0.0f };
 	transform.rotate = { 0.0f, 0.0f, 0.0f };
 	transform.scale = { 1.0f, 1.0f, 1.0f };
 
@@ -41,17 +41,17 @@ void Enemy::Initialize()
 void Enemy::Update()
 {
 	// ImGuiデバッグ表示
-	//ImGui::Begin("Enemy Debug");
+	ImGui::Begin("Enemy Debug");
 
-	//if (currentState_) {
-	//	// 現在のステート名を表示
-	//	ImGui::Text("Current State: %s", currentState_->GetName());
-	//}
-	//else {
-	//	ImGui::Text("Current State: None");
-	//}
+	if (currentState_) {
+		// 現在のステート名を表示
+		ImGui::Text("Current State: %s", currentState_->GetName());
+	}
+	else {
+		ImGui::Text("Current State: None");
+	}
 
-	//ImGui::End();
+	ImGui::End();
 
 	// プレイヤーの方向を向く
 	if (player_) {

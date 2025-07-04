@@ -149,6 +149,7 @@ void GamePlayScene::Draw()
 	ground->Draw();
 	enemy_->Draw();
 	player_->BulletDraw();
+	enemy_->DrawModel();
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
@@ -163,7 +164,6 @@ void GamePlayScene::Draw()
 
 	// 各オブジェクトの描画
 	player_->Draw();
-	enemy_->DrawModel();
 	
 
 	// ================================================

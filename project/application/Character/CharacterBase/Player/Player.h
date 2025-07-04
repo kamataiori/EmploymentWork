@@ -4,6 +4,25 @@
 #include "SphereCollider.h"
 #include <PlayerBullet.h>
 
+// アニメーション名管理構造体
+struct AnimationSet {
+	std::string Death = "Death";
+	std::string Idle = "Idle";
+	std::string Idle_Attacking = "Idle_Attacking";
+	std::string Idle_Weapon = "Idle_Weapon";
+	std::string PickUp = "PickUp";
+	std::string Punch = "Punch";
+	std::string RecieveHit = "RecieveHit";
+	std::string RecieveHit_2 = "RecieveHit_2";
+	std::string Roll = "Roll";
+	std::string Run = "Run";
+	std::string Run_Weapon = "Run_Weapon";
+	std::string Sword_Attack = "Sword_Attack";
+	std::string Sword_AttackFast = "Sword_AttackFast";
+	std::string Walk = "Walk";
+};
+
+
 class Player : public CharacterBase, public SphereCollider
 {
 public:
@@ -31,6 +50,9 @@ private:
 
 	// 弾処理まとめ関数
 	void HandleBullet();
+
+	// アニメーションを設定する関数
+	void SetAnimationIfChanged(const std::string& name);
 
 private:
 
@@ -63,6 +85,9 @@ private:
 
 	// 弾
 	std::unique_ptr<PlayerBullet> bullet_; // 今回は1発だけ
+
+	AnimationSet animation_; // アニメーション名セット
+	std::string currentAnimationName_;
 
 };
 

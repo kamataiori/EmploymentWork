@@ -143,3 +143,4 @@ uint32_t TextureManager::GetSrvIndex(const std::string& filePath)
 	TextureData& textureData = textureDatas[filePath];
 	return textureData.srvIndex;
 }
+
