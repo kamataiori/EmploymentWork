@@ -151,7 +151,7 @@ void Player::Move()
 
 	// 入力があったならRun、それ以外はIdle
 	if (isMoving) {
-		SetAnimationIfChanged(animation_.Run);
+		SetAnimationIfChanged(animation_.Run_Weapon);
 	}
 	else {
 		SetAnimationIfChanged(animation_.Idle);
