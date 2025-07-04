@@ -146,6 +146,10 @@ public:
 	/// </summary>
 	AnimationData LoadAnimationFile(const std::string& directoryPath, const std::string& fileName);
 
+	void LoadAllAnimations(const std::string& directoryPath, const std::string& fileName);
+
+	void SetAnimation(const std::string& name);
+
 	/// <summary>
 	/// NodeからJointを作る関数
 	/// </summary>
@@ -255,11 +259,16 @@ private:
 	//SkinCluster skinCluster;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource;
-	//Viewを作成する
+	// Viewを作成する
 	D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite{};
 	uint32_t* mappedIndex = nullptr;
 
 	uint32_t paletteIndex;
+
+	// 
+	std::map<std::string, AnimationData> animationMap_;
+	AnimationData* currentAnimation_ = nullptr;
+
 
 };
 

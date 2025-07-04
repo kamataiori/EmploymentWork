@@ -13,7 +13,8 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypat
 	modelData = LoadModelFile(directorypath, filename);
 	// アニメーション読み込み
 	if (modelData.isAnimation) {
-        animation = LoadAnimationFile(directorypath, filename);
+        /*animation = LoadAnimationFile(directorypath, filename);*/
+		LoadAllAnimations(directorypath, filename);
         skeleton = CreateSkeleton(modelData.rootNode);
     }
 
@@ -41,30 +42,40 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypat
 
 void Model::Update()
 {
-	animationTime += 1.0f / 60.0f;  // 時間を進める
-	animationTime = std::fmod(animationTime, animation.duration);  // 繰り返し再生
-
-	// 骨ごとの状態を決める
-	AppAnimation(skeleton, animation, animationTime);
-	// 現在の骨ごとのLocal情報を基に、SkeltonSpaceの情報を更新する
-	Update(skeleton);
-	// SkeltonSpaceの情報を基に、SkinClusterのMatrixPaletteを更新する
-	//Update(skinCluster, skeleton);
-
-	for (auto& instance : meshInstances_)
-	{
-		Update(instance.skinCluster, skeleton);
-		
+	if (currentAnimation_) {
+		animationTime += 1.0f / 60.0f;
+		animationTime = std::fmod(animationTime, currentAnimation_->duration);
+		AppAnimation(skeleton, *currentAnimation_, animationTime);
+		Update(skeleton);
+		for (auto& instance : meshInstances_) {
+			Update(instance.skinCluster, skeleton);
+		}
 	}
 
-	/*NodeAnimation& rootNodeAnimation = animation.NodeAnimations[modelData.rootNode.name];
-	Vector3 translate = CalculateValue(rootNodeAnimation.translate.keyframes, animationTime);
-	Quaternion rotate = CalculateValue(rootNodeAnimation.rotate.keyframes, animationTime);
-	Vector3 scale = CalculateValue(rootNodeAnimation.scale.keyframes, animationTime);
+	//animationTime += 1.0f / 60.0f;  // 時間を進める
+	//animationTime = std::fmod(animationTime, animation.duration);  // 繰り返し再生
 
-	Matrix4x4 localMatrix = MakeAffineMatrix(scale, rotate, translate);
+	//// 骨ごとの状態を決める
+	//AppAnimation(skeleton, animation, animationTime);
+	//// 現在の骨ごとのLocal情報を基に、SkeltonSpaceの情報を更新する
+	//Update(skeleton);
+	//// SkeltonSpaceの情報を基に、SkinClusterのMatrixPaletteを更新する
+	////Update(skinCluster, skeleton);
 
-	modelData.rootNode.localMatrix = localMatrix;*/
+	//for (auto& instance : meshInstances_)
+	//{
+	//	Update(instance.skinCluster, skeleton);
+	//	
+	//}
+
+	///*NodeAnimation& rootNodeAnimation = animation.NodeAnimations[modelData.rootNode.name];
+	//Vector3 translate = CalculateValue(rootNodeAnimation.translate.keyframes, animationTime);
+	//Quaternion rotate = CalculateValue(rootNodeAnimation.rotate.keyframes, animationTime);
+	//Vector3 scale = CalculateValue(rootNodeAnimation.scale.keyframes, animationTime);
+
+	//Matrix4x4 localMatrix = MakeAffineMatrix(scale, rotate, translate);
+
+	//modelData.rootNode.localMatrix = localMatrix;*/
 }
 
 void Model::Update(Skeleton& skeleton)
@@ -501,6 +512,60 @@ AnimationData Model::LoadAnimationFile(const std::string& directoryPath, const s
 	// 解析完了
 	return animation;
 
+}
+
+void Model::LoadAllAnimations(const std::string& directoryPath, const std::string& fileName)
+{
+	Assimp::Importer importer;
+	std::string filePath = directoryPath + "/" + fileName;
+	const aiScene* scene = importer.ReadFile(filePath.c_str(), 0);
+	assert(scene && scene->HasAnimations());
+
+	for (uint32_t i = 0; i < scene->mNumAnimations; ++i) {
+		aiAnimation* animationAssimp = scene->mAnimations[i];
+		AnimationData animation;
+		animation.duration = float(animationAssimp->mDuration / animationAssimp->mTicksPerSecond);
+
+		for (uint32_t channelIndex = 0; channelIndex < animationAssimp->mNumChannels; ++channelIndex) {
+			aiNodeAnim* nodeAnim = animationAssimp->mChannels[channelIndex];
+			NodeAnimation& nodeAnimation = animation.NodeAnimations[nodeAnim->mNodeName.C_Str()];
+			for (uint32_t k = 0; k < nodeAnim->mNumPositionKeys; ++k) {
+				KeyframeVector3 keyframe;
+				keyframe.time = float(nodeAnim->mPositionKeys[k].mTime / animationAssimp->mTicksPerSecond);
+				keyframe.value = { -nodeAnim->mPositionKeys[k].mValue.x, nodeAnim->mPositionKeys[k].mValue.y, nodeAnim->mPositionKeys[k].mValue.z };
+				nodeAnimation.translate.keyframes.push_back(keyframe);
+			}
+			for (uint32_t k = 0; k < nodeAnim->mNumRotationKeys; ++k) {
+				KeyframeQuaternion keyframe;
+				keyframe.time = float(nodeAnim->mRotationKeys[k].mTime / animationAssimp->mTicksPerSecond);
+				keyframe.value = { nodeAnim->mRotationKeys[k].mValue.x, -nodeAnim->mRotationKeys[k].mValue.y, -nodeAnim->mRotationKeys[k].mValue.z, nodeAnim->mRotationKeys[k].mValue.w };
+				nodeAnimation.rotate.keyframes.push_back(keyframe);
+			}
+			for (uint32_t k = 0; k < nodeAnim->mNumScalingKeys; ++k) {
+				KeyframeVector3 keyframe;
+				keyframe.time = float(nodeAnim->mScalingKeys[k].mTime / animationAssimp->mTicksPerSecond);
+				keyframe.value = { nodeAnim->mScalingKeys[k].mValue.x, nodeAnim->mScalingKeys[k].mValue.y, nodeAnim->mScalingKeys[k].mValue.z };
+				nodeAnimation.scale.keyframes.push_back(keyframe);
+			}
+		}
+
+		std::string animName = animationAssimp->mName.C_Str();
+		if (animName.empty()) {
+			animName = "Anim_" + std::to_string(i);
+		}
+		animationMap_[animName] = animation;
+	}
+}
+
+void Model::SetAnimation(const std::string& name)
+{
+	if (animationMap_.count(name)) {
+		currentAnimation_ = &animationMap_[name];
+		animationTime = 0.0f;
+	}
+	else {
+		OutputDebugStringA(("Animation not found: " + name + "\n").c_str());
+	}
 }
 
 int32_t Model::CreateJoint(const Node& node, const std::optional<int32_t>& parent, std::vector<Joint>& joints)

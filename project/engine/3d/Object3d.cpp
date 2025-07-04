@@ -125,6 +125,13 @@ void Object3d::SetEnableLighting(bool enable)
     model_->SetEnableLighting(enable);
 }
 
+void Object3d::SetAnimation(const std::string& name)
+{
+    if (model_) {
+        model_->SetAnimation(name);
+    }
+}
+
 void Object3d::SetDefaultCamera()
 {
     // `Object3dCommon` からデフォルトカメラを取得
