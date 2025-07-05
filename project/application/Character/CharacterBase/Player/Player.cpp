@@ -11,7 +11,7 @@ void Player::Initialize()
 	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
 
 	object3d_->SetModel("Warrior.gltf");
-	object3d_->SetAnimation(animation_.Idle);
+	//object3d_->SetAnimation(animation_.Idle);
 
 	// 初期Transform設定
 	transform.translate = { 0.0f, 0.0f, -10.0f };
@@ -34,7 +34,10 @@ void Player::Initialize()
 void Player::Update()
 {
 	// 移動とジャンプ処理
-	Move();
+	/*if (!isAttacking_)*/ {
+		Move();
+
+	}
 
 	FollowCamera* followCam = dynamic_cast<FollowCamera*>(camera_);
 	if (followCam) {
@@ -111,6 +114,7 @@ void Player::Move()
 
 	// ダッシュ中タイマー処理
 	if (move_.isDashing) {
+		//SetAnimationIfChanged(animation_.Roll);
 		move_.dashTimer -= 1.0f / 60.0f; // フレーム単位で減算（60FPS想定）
 		if (move_.dashTimer <= 0.0f) {
 			move_.isDashing = false;
@@ -150,11 +154,14 @@ void Player::Move()
 	}
 
 	// 入力があったならRun、それ以外はIdle
-	if (isMoving) {
-		SetAnimationIfChanged(animation_.Run_Weapon);
-	}
-	else {
-		SetAnimationIfChanged(animation_.Idle);
+	// Move() のアニメーション部分
+	if (!isAttacking_) {
+		if (isMoving) {
+			SetAnimationIfChanged(animation_.Run_Weapon);
+		}
+		else {
+			SetAnimationIfChanged(animation_.Idle);
+		}
 	}
 
 
@@ -229,11 +236,20 @@ void Player::Move()
 
 void Player::HandleBullet()
 {
-	// Hキーで弾を1発発射
-	// -------------------------------
-	// 発射処理
+	// 攻撃アニメ再生中か？
+	if (isAttacking_) {
+		attackAnimTimer_ -= 1.0f / 60.0f;
+		if (attackAnimTimer_ <= 0.0f) {
+			isAttacking_ = false;
+			SetAnimationIfChanged(animation_.Idle);
+		}
+	}
+
 	// 左クリックで攻撃開始
-	if (Input::GetInstance()->TriggerMouseButton(0)) {
+	if (Input::GetInstance()->TriggerMouseButton(0) && !isAttacking_) {
+		SetAnimationIfChanged(animation_.Sword_Attack);
+		isAttacking_ = true;
+		attackAnimTimer_ = kAttackAnimDuration_;
 
 		if (bullet_ == nullptr) {
 			bullet_ = std::make_unique<PlayerBullet>(baseScene_);
@@ -262,6 +278,7 @@ void Player::HandleBullet()
 		}
 	}
 }
+
 
 void Player::SetAnimationIfChanged(const std::string& name)
 {
