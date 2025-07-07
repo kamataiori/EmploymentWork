@@ -196,7 +196,9 @@ void Model::CreateMaterialData(MeshInstance& instance, const MeshData& data)
 	instance.materialResource = modelCommon_->GetDxCommon()->CreateBufferResource(sizeof(Material));
 
 	instance.materialResource->Map(0, nullptr, reinterpret_cast<void**>(&instance.materialData));
-	instance.materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	//instance.materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	// ここでマテリアルの色を設定
+	instance.materialData->color = data.material.color;  // ←変更前は固定値
 	instance.materialData->enableLighting = true;
 	instance.materialData->uvTransform = MakeIdentity4x4();
 	instance.materialData->shininess = 50.0f;
@@ -355,20 +357,44 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 
 		// 対応するマテリアル取得
 		if (mesh->mMaterialIndex < scene->mNumMaterials) {
-			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-			if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-				aiString texturePath;
-				if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
-					if (strlen(texturePath.C_Str()) > 0) {
-						meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
+			//aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+			//if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+			//	aiString texturePath;
+			//	if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
+			//		if (strlen(texturePath.C_Str()) > 0) {
+			//			meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
+			//		}
+			//	}
+			//}
+			///*if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+			//	aiString texturePath;
+			//	material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
+			//	meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
+			//}*/
+			// aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+			if (mesh->mMaterialIndex < scene->mNumMaterials) {
+				aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+
+				// テクスチャ読み取り（既存）
+				if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+					aiString texturePath;
+					if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
+						if (strlen(texturePath.C_Str()) > 0) {
+							meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
+						}
 					}
 				}
+
+				// ベースカラーを読み取り
+				aiColor4D diffuse;
+				if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &diffuse)) {
+					meshData.material.color = { diffuse.r, diffuse.g, diffuse.b, diffuse.a };
+				}
+				else {
+					meshData.material.color = { 1.0f, 1.0f, 1.0f, 1.0f }; // fallback: 白
+				}
 			}
-			/*if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-				aiString texturePath;
-				material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
-				meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
-			}*/
+
 		}
 
 		// meshData を modelData に追加

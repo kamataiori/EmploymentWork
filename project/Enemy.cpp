@@ -13,8 +13,9 @@ void Enemy::Initialize()
 	// モデル読み込み
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");
+	ModelManager::GetInstance()->LoadModel("matest.obj");
 
-	object3d_->SetModel("uvChecker.gltf");
+	object3d_->SetModel("matest.obj");
 
 	// 初期Transform設定
 	transform.translate = { 0.0f, 0.0f, 0.0f };

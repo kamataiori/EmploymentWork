@@ -42,6 +42,7 @@ public:
 	struct MaterialData {
 		std::string textureFilePath;
 		uint32_t textureIndex = 0;
+		Vector4 color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	};
 
 	// Node構造体
