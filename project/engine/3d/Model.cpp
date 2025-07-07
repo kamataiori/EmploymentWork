@@ -112,37 +112,6 @@ void Model::Update(SkinCluster& skinCluster, const Skeleton& skeleton)
 	}
 }
 
-//void Model::Draw()
-//{
-//	for (const auto& instance : meshInstances_)
-//	{
-//		// 頂点バッファ（位置＋スキニング）
-//		D3D12_VERTEX_BUFFER_VIEW vbvs[2] = {
-//			instance.vertexBufferView,
-//			instance.skinCluster.influenceBufferView
-//		};
-//		modelCommon_->GetDxCommon()->GetCommandList()->IASetVertexBuffers(0, 2, vbvs);
-//
-//		// インデックスバッファ
-//		modelCommon_->GetDxCommon()->GetCommandList()->IASetIndexBuffer(&instance.indexBufferView);
-//
-//		// マテリアル定数バッファ
-//		modelCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootConstantBufferView(0, instance.materialResource->GetGPUVirtualAddress());
-//
-//		// テクスチャSRV
-//		SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, instance.textureIndex);
-//
-//		// パレットSRV（アニメーションが有効な場合）
-//		if (modelData.isAnimation) {
-//			modelCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(7, instance.skinCluster.paletteSrvHandle.second);
-//		}
-//
-//		// 描画
-//		uint32_t indexCount = instance.indexBufferView.SizeInBytes / sizeof(uint32_t);
-//		modelCommon_->GetDxCommon()->GetCommandList()->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
-//	}
-//}
-
 void Model::Draw()
 {
 	// スキン無しメッシュでは vbvs[1] に無効なビューを渡さないようにしている
@@ -224,36 +193,6 @@ void Model::CreateIndexResource(MeshInstance& instance, const MeshData& data)
 
 void Model::CreateMaterialData(MeshInstance& instance, const MeshData& data)
 {
-	//instance.materialResource = modelCommon_->GetDxCommon()->CreateBufferResource(sizeof(Material));
-
-	//instance.materialResource->Map(0, nullptr, reinterpret_cast<void**>(&instance.materialData));
-	//instance.materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	//instance.materialData->enableLighting = true;
-	//instance.materialData->uvTransform = MakeIdentity4x4();
-	//instance.materialData->shininess = 50.0f;
-
-	////// テクスチャ読み込み＆インデックス取得
-	////// ✅ テクスチャパスが空なら白テクスチャを指定する
-	////std::string texPath = data.material.textureFilePath;
-	////if (texPath.empty()) {
-	////	texPath = "Resources/uvChecker.png";
-	////}
-
-	////// ✅ テクスチャを読み込み、インデックスを取得
-	////TextureManager::GetInstance()->LoadTexture(texPath);
-	////instance.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(texPath);
-
-	//const std::string& texPath = data.material.textureFilePath;
-	//if (!texPath.empty()) {
-	//	TextureManager::GetInstance()->LoadTexture(texPath);
-	//	instance.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(texPath);
-	//}
-	//else {
-	//	// テクスチャ未設定の場合、ダミー or 白テクスチャを使う（index=0を仮定）
-	//	instance.textureIndex = 0;
-	//}
-
-
 	instance.materialResource = modelCommon_->GetDxCommon()->CreateBufferResource(sizeof(Material));
 
 	instance.materialResource->Map(0, nullptr, reinterpret_cast<void**>(&instance.materialData));
@@ -276,9 +215,6 @@ void Model::CreateMaterialData(MeshInstance& instance, const MeshData& data)
 
 	TextureManager::GetInstance()->LoadTexture(usedTexturePath);
 	instance.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(usedTexturePath);
-
-
-
 
 }
 
