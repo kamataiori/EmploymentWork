@@ -22,9 +22,10 @@ public:
 	//--------構造体--------//
 
 	// 頂点データの拡張
-	struct VertexData {
+	struct alignas(16) VertexData {
 		Vector4 position;
 		Vector2 texcoord;
+		//float padding[2];
 		Vector3 normal;
 	};
 
@@ -51,16 +52,33 @@ public:
 		std::vector<Node> children;  // 子供のNode
 	};
 
-	// ModelData構造体
-	struct ModelData {
-		std::map<std::string, JointWeightData> skinClusterData;
-		std::vector<VertexData>vertices;
+	// Mesh単位でまとめた構造体を追加
+	struct  alignas(16) MeshData {
+		std::vector<VertexData> vertices;
 		std::vector<uint32_t> indices;
 		MaterialData material;
+		std::map<std::string, JointWeightData> skinClusterData;
+	};
+
+	// ModelData構造体を修正
+	struct ModelData {
+		std::vector<MeshData> meshes; // 複数メッシュに対応
 		Node rootNode;
 		bool isAnimation;
 	};
 
+	struct MeshInstance {
+		Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;
+		Microsoft::WRL::ComPtr<ID3D12Resource> indexResource;
+		Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;
+		VertexData* vertexData = nullptr;
+		Material* materialData = nullptr;
+		uint32_t* indexData = nullptr;
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+		D3D12_INDEX_BUFFER_VIEW indexBufferView;
+		SkinCluster skinCluster;
+		uint32_t textureIndex = 0;
+	};
 
 	/// <summary>
 	/// 初期化処理
@@ -96,17 +114,17 @@ public:
 	/// <summary>
 	/// 頂点データを作成
 	/// </summary>
-	void CreateVertexData();
+	void CreateVertexData(MeshInstance& instance, const MeshData& data);
 
 	/// <summary>
 	/// 解析したデータを使って作成
 	/// </summary>
-	void CreateIndexResource();
+	void CreateIndexResource(MeshInstance& instance, const MeshData& data);
 
 	/// <summary>
 	/// マテリアルデータの初期化
 	/// </summary>
-	void  CreateMaterialData();
+	void  CreateMaterialData(MeshInstance& instance, const MeshData& data);
 
 	/// <summary>
 	/// .mtlファイルの読み取り
@@ -127,6 +145,10 @@ public:
 	/// Animation解析の関数
 	/// </summary>
 	AnimationData LoadAnimationFile(const std::string& directoryPath, const std::string& fileName);
+
+	void LoadAllAnimations(const std::string& directoryPath, const std::string& fileName);
+
+	void SetAnimation(const std::string& name);
 
 	/// <summary>
 	/// NodeからJointを作る関数
@@ -155,7 +177,7 @@ public:
 	/// <summary>
 	/// SkinClusterの生成
 	/// </summary>
-	SkinCluster CreateSkinCluster(const Microsoft::WRL::ComPtr<ID3D12Device>& device, const Skeleton& skeleton, const ModelData& modelData, const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize);
+	SkinCluster CreateSkinCluster(const Microsoft::WRL::ComPtr<ID3D12Device>& device, const Skeleton& skeleton, const MeshData& meshData , const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize);
 
 	/// <summary>
 	/// ModelDataのGetter
@@ -164,16 +186,19 @@ public:
 	const ModelData& GetModelData() const { return modelData; }
 
 	// materialData->colorのゲッター
-	const Vector4& GetMaterialColor() const { return materialData->color; }
+	const Vector4& GetMaterialColor() const { return material->color; }
 
 	// materialData->colorのセッター
-	void SetMaterialColor(const Vector4& color) { materialData->color = color; }
+	void SetMaterialColor(const Vector4& color) { material->color = color; }
 
 	// materialData->enableLightingのゲッター
 	bool GetEnableLighting() const;
 
 	// materialDataのゲッター
-	Model::Material* GetMaterial() const { return materialData; }
+	Model::Material* GetMaterial() const { return material; }
+
+	void SetEnableLighting(bool enable);
+
 
 private:
 
@@ -214,12 +239,15 @@ private:
 	// モデル読み込み
 	ModelData modelData;
 
+	std::vector<MeshInstance> meshInstances_;
+
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;  // 頂点バッファ
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;  // マテリアル用の定数バッファ
 	// バッファリソース内のデータを指すポインタ
-	VertexData* vertexData = nullptr;
-	Material* materialData = nullptr;
+	//VertexData* vertexData = nullptr;
+	Material* material = nullptr;
+	//MaterialData* materialData = nullptr;
 	// バッファリソースの使い道を補完するビュー
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 
@@ -228,14 +256,19 @@ private:
 
 	AnimationData animation;
 	Skeleton skeleton;
-	SkinCluster skinCluster;
+	//SkinCluster skinCluster;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource;
-	//Viewを作成する
+	// Viewを作成する
 	D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite{};
 	uint32_t* mappedIndex = nullptr;
 
 	uint32_t paletteIndex;
+
+	// 
+	std::map<std::string, AnimationData> animationMap_;
+	AnimationData* currentAnimation_ = nullptr;
+
 
 };
 

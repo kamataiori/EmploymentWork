@@ -37,3 +37,15 @@ private:
     // 登録されたコライダーのリスト
     std::list<Collider*> colliders;
 };
+
+// ---------- CollisionTypeIdDef をハッシュ可能にする ----------
+namespace std {
+    template <>
+    struct hash<CollisionTypeIdDef> {
+        size_t operator()(const CollisionTypeIdDef& type) const {
+            return std::hash<std::underlying_type_t<CollisionTypeIdDef>>{}(
+                static_cast<std::underlying_type_t<CollisionTypeIdDef>>(type)
+                );
+        }
+    };
+}

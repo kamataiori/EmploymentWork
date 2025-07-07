@@ -13,10 +13,10 @@ LRESULT WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	switch (msg)
 	{
 		//ウィンドウが破棄された
-	case WM_DESTROY :
-			//OSに対して、アプリの終了を伝える
-			PostQuitMessage(0);
-			return 0;
+	case WM_DESTROY:
+		//OSに対して、アプリの終了を伝える
+		PostQuitMessage(0);
+		return 0;
 	}
 
 	//標準のメッセージ処理を行う

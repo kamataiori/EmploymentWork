@@ -85,6 +85,7 @@ public:
     // enableLightingのセッター
     void SetEnableLighting(bool enable);
 
+    void SetAnimation(const std::string& name);
 
     //--------getter--------//
     const Vector3& GetScale() const { return transform.scale; }

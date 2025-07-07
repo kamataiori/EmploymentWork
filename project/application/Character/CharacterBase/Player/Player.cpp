@@ -6,13 +6,15 @@ void Player::Initialize()
 	object3d_->Initialize();
 
 	// モデル読み込み
-	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-	ModelManager::GetInstance()->LoadModel("human/walk.gltf");
+	//ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
+	//ModelManager::GetInstance()->LoadModel("human/walk.gltf");
+	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
 
-	object3d_->SetModel("human/walk.gltf");
+	object3d_->SetModel("Warrior.gltf");
+	//object3d_->SetAnimation(animation_.Idle);
 
 	// 初期Transform設定
-	transform.translate = { -2.0f, 0.0f, 0.0f };
+	transform.translate = { 0.0f, 0.0f, -10.0f };
 	transform.rotate = { 0.0f, 0.0f, 0.0f };
 	transform.scale = { 1.0f, 1.0f, 1.0f };
 
@@ -32,7 +34,10 @@ void Player::Initialize()
 void Player::Update()
 {
 	// 移動とジャンプ処理
-	Move();
+	/*if (!isAttacking_)*/ {
+		Move();
+
+	}
 
 	FollowCamera* followCam = dynamic_cast<FollowCamera*>(camera_);
 	if (followCam) {
@@ -73,7 +78,7 @@ void Player::Draw()
 {
 	object3d_->Draw();
 	// SphereCollider の描画
-	SphereCollider::Draw();
+	//SphereCollider::Draw();
 
 }
 
@@ -109,6 +114,7 @@ void Player::Move()
 
 	// ダッシュ中タイマー処理
 	if (move_.isDashing) {
+		//SetAnimationIfChanged(animation_.Roll);
 		move_.dashTimer -= 1.0f / 60.0f; // フレーム単位で減算（60FPS想定）
 		if (move_.dashTimer <= 0.0f) {
 			move_.isDashing = false;
@@ -128,18 +134,36 @@ void Player::Move()
 	// -------------------------------
 	move_.direction = { 0.0f, 0.0f, 0.0f };
 
+	bool isMoving = false;
+
 	if (Input::GetInstance()->PushKey(DIK_W)) {
 		move_.direction.z += 1.0f;
+		isMoving = true;
 	}
 	if (Input::GetInstance()->PushKey(DIK_S)) {
 		move_.direction.z -= 1.0f;
+		isMoving = true;
 	}
 	if (Input::GetInstance()->PushKey(DIK_A)) {
 		move_.direction.x -= 1.0f;
+		isMoving = true;
 	}
 	if (Input::GetInstance()->PushKey(DIK_D)) {
 		move_.direction.x += 1.0f;
+		isMoving = true;
 	}
+
+	// 入力があったならRun、それ以外はIdle
+	// Move() のアニメーション部分
+	if (!isAttacking_) {
+		if (isMoving) {
+			SetAnimationIfChanged(animation_.Run_Weapon);
+		}
+		else {
+			SetAnimationIfChanged(animation_.Idle);
+		}
+	}
+
 
 	//// 正規化して一定速度で移動
 	//if (Length(move_.direction) > 0.0f) {
@@ -212,35 +236,54 @@ void Player::Move()
 
 void Player::HandleBullet()
 {
-	// Hキーで弾を1発発射
-	// -------------------------------
-	// 発射処理（Hキー）
-	if (Input::GetInstance()->TriggerMouseButton(0) && bullet_ == nullptr) {
-		bullet_ = std::make_unique<PlayerBullet>(baseScene_);
-		bullet_->SetTranslate(object3d_->GetTranslate());
-
-		// プレイヤーのY回転に基づく正面ベクトルを生成
-		float angleY = transform.rotate.y;
-		Vector3 forward = {
-			std::sin(angleY),
-			0.0f,
-			std::cos(angleY)
-		};
-
-		// ベクトルを正規化し、速度スケールを掛ける
-		forward = Normalize(forward) * 0.5f;
-		bullet_->SetVelocity(forward);
-
-		bullet_->Initialize();
-		bullet_->SetCamera(camera_);
+	// 攻撃アニメ再生中か？
+	if (isAttacking_) {
+		attackAnimTimer_ -= 1.0f / 60.0f;
+		if (attackAnimTimer_ <= 0.0f) {
+			isAttacking_ = false;
+			SetAnimationIfChanged(animation_.Idle);
+		}
 	}
 
-	// 更新処理
+	// 左クリックで攻撃開始
+	if (Input::GetInstance()->TriggerMouseButton(0) && !isAttacking_) {
+		SetAnimationIfChanged(animation_.Sword_Attack);
+		isAttacking_ = true;
+		attackAnimTimer_ = kAttackAnimDuration_;
+
+		if (bullet_ == nullptr) {
+			bullet_ = std::make_unique<PlayerBullet>(baseScene_);
+			bullet_->SetTranslate(object3d_->GetTranslate());
+
+			// 正面方向ベクトル
+			float angleY = transform.rotate.y;
+			Vector3 forward = {
+				std::sin(angleY),
+				0.0f,
+				std::cos(angleY)
+			};
+			forward = Normalize(forward) * 0.5f;
+			bullet_->SetVelocity(forward);
+
+			bullet_->Initialize();
+			bullet_->SetCamera(camera_);
+		}
+	}
+
+	// 弾更新
 	if (bullet_) {
 		bullet_->Update();
-
 		if (bullet_->IsDead()) {
-			bullet_.reset(); // 4秒経ったら削除
+			bullet_.reset();
 		}
+	}
+}
+
+
+void Player::SetAnimationIfChanged(const std::string& name)
+{
+	if (currentAnimationName_ != name) {
+		object3d_->SetAnimation(name);
+		currentAnimationName_ = name;
 	}
 }

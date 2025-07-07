@@ -22,6 +22,6 @@ public:
 
 private:
 	float lifetime_ = 0.0f;
-	float maxLifetime_ = 3.0f;
+	float maxLifetime_ = 6.0f;
 	bool isDead_ = false;
 };
