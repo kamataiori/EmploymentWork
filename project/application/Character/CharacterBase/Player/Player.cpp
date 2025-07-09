@@ -9,8 +9,13 @@ void Player::Initialize()
 	//ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 	//ModelManager::GetInstance()->LoadModel("human/walk.gltf");
 	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
+	ModelManager::GetInstance()->LoadModel("Sam.gltf");
+	ModelManager::GetInstance()->LoadModel("Monk.gltf");
 
 	object3d_->SetModel("Warrior.gltf");
+
+
+	//object3d_->SetModel("Sam.gltf");
 	//object3d_->SetAnimation(animation_.Idle);
 
 	// 初期Transform設定
@@ -158,9 +163,11 @@ void Player::Move()
 	if (!isAttacking_) {
 		if (isMoving) {
 			SetAnimationIfChanged(animation_.Run_Weapon);
+			//SetAnimationIfChanged(MonkAnimation_.Run);
 		}
 		else {
 			SetAnimationIfChanged(animation_.Idle);
+			//SetAnimationIfChanged(MonkAnimation_.Idle);
 		}
 	}
 
@@ -242,12 +249,14 @@ void Player::HandleBullet()
 		if (attackAnimTimer_ <= 0.0f) {
 			isAttacking_ = false;
 			SetAnimationIfChanged(animation_.Idle);
+			//SetAnimationIfChanged(MonkAnimation_.Idle);
 		}
 	}
 
 	// 左クリックで攻撃開始
 	if (Input::GetInstance()->TriggerMouseButton(0) && !isAttacking_) {
 		SetAnimationIfChanged(animation_.Sword_Attack);
+		//SetAnimationIfChanged(MonkAnimation_.Attack);
 		isAttacking_ = true;
 		attackAnimTimer_ = kAttackAnimDuration_;
 
@@ -278,7 +287,6 @@ void Player::HandleBullet()
 		}
 	}
 }
-
 
 void Player::SetAnimationIfChanged(const std::string& name)
 {
