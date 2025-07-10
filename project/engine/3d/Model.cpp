@@ -523,8 +523,12 @@ void Model::LoadAllAnimations(const std::string& directoryPath, const std::strin
 void Model::SetAnimation(const std::string& name)
 {
 	if (animationMap_.count(name)) {
-		currentAnimation_ = &animationMap_[name];
-		animationTime = 0.0f;
+		if (currentAnimation_ != &animationMap_[name]) {
+			prevAnimation_ = currentAnimation_;  // 前回のアニメ
+			currentAnimation_ = &animationMap_[name];
+			animationTime = 0.0f;
+			blendTime_ = 0.0f; // 補間開始
+		}
 	}
 	else {
 		OutputDebugStringA(("Animation not found: " + name + "\n").c_str());
@@ -578,16 +582,53 @@ Skeleton Model::CreateSkeleton(const Node& rootNode)
 
 void Model::AppAnimation(Skeleton& skeleton, const AnimationData& animation, float animationTime)
 {
-	for (Joint& joint : skeleton.joints)
-	{
-		// 対象のJointのAnimationがあれば、値の適用を行う。下記のif文はC++17から可能になった初期化付きif文。
-		if (auto it = animation.NodeAnimations.find(joint.name); it != animation.NodeAnimations.end())
-		{
-			const NodeAnimation& rootNodeAnimation = (*it).second;
-			joint.transform.translate = CalculateValue(rootNodeAnimation.translate.keyframes, animationTime);
-			joint.transform.rotate = CalculateValue(rootNodeAnimation.rotate.keyframes, animationTime);
-			joint.transform.scale = CalculateValue(rootNodeAnimation.scale.keyframes, animationTime);
+	//for (Joint& joint : skeleton.joints)
+	//{
+	//	// 対象のJointのAnimationがあれば、値の適用を行う。下記のif文はC++17から可能になった初期化付きif文。
+	//	if (auto it = animation.NodeAnimations.find(joint.name); it != animation.NodeAnimations.end())
+	//	{
+	//		const NodeAnimation& rootNodeAnimation = (*it).second;
+	//		joint.transform.translate = CalculateValue(rootNodeAnimation.translate.keyframes, animationTime);
+	//		joint.transform.rotate = CalculateValue(rootNodeAnimation.rotate.keyframes, animationTime);
+	//		joint.transform.scale = CalculateValue(rootNodeAnimation.scale.keyframes, animationTime);
+	//	}
+	//}
+	for (Joint& joint : skeleton.joints) {
+		if (auto it = animation.NodeAnimations.find(joint.name); it != animation.NodeAnimations.end()) {
+			const NodeAnimation& anim = it->second;
+
+			Vector3 newTranslate = CalculateValue(anim.translate.keyframes, animationTime);
+			Quaternion newRotate = CalculateValue(anim.rotate.keyframes, animationTime);
+			Vector3 newScale = CalculateValue(anim.scale.keyframes, animationTime);
+
+			if (prevAnimation_ && blendTime_ < blendDuration_) {
+				if (auto prevIt = prevAnimation_->NodeAnimations.find(joint.name); prevIt != prevAnimation_->NodeAnimations.end()) {
+					const NodeAnimation& prevAnim = prevIt->second;
+
+					Vector3 oldTranslate = CalculateValue(prevAnim.translate.keyframes, animationTime);
+					Quaternion oldRotate = CalculateValue(prevAnim.rotate.keyframes, animationTime);
+					Vector3 oldScale = CalculateValue(prevAnim.scale.keyframes, animationTime);
+
+					float t = blendTime_ / blendDuration_;
+					joint.transform.translate = Lerp(oldTranslate, newTranslate, t);
+					joint.transform.rotate = Slerpex(oldRotate, newRotate, t);
+					joint.transform.scale = Lerp(oldScale, newScale, t);
+					continue;
+				}
+			}
+
+			joint.transform.translate = newTranslate;
+			joint.transform.rotate = newRotate;
+			joint.transform.scale = newScale;
 		}
+	}
+
+	// 補間時間を更新
+	if (blendTime_ < blendDuration_) {
+		blendTime_ += 1.0f / 60.0f;
+	}
+	else {
+		prevAnimation_ = nullptr;
 	}
 }
 

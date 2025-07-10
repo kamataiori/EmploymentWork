@@ -257,6 +257,10 @@ private:
 
 	AnimationData animation;
 	Skeleton skeleton;
+	AnimationData* prevAnimation_ = nullptr;
+	float blendTime_ = 0.0f;
+	float blendDuration_ = 0.4f; // 補間に使う秒数
+
 	//SkinCluster skinCluster;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource;
