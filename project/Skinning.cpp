@@ -1,5 +1,6 @@
 #include "Skinning.h"
 #include <Logger.h>
+#include <externals/DirectXTex/d3dx12.h>
 
 Skinning* Skinning::instance = nullptr;
 
@@ -16,8 +17,12 @@ void Skinning::Initialize()
 	// 引数で受け取ってメンバ変数に記録する
 	dxCommon_ = DirectXCommon::GetInstance();
 
+	// Compute用のPSO
+	ComputePipelineState();
+
 	// グラフィックスパイプラインの生成
 	GraphicsPipelineState();
+
 }
 
 void Skinning::Finalize()
@@ -34,6 +39,7 @@ void Skinning::RootSignature()
 	DescriptorRange_[0].NumDescriptors = 1;  //数は1
 	DescriptorRange_[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;  //SRVを使う
 	DescriptorRange_[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;  //Offsetを自動計算
+
 
 	////=========RootSignatureを生成する=========////
 
@@ -118,6 +124,90 @@ void Skinning::RootSignature()
 	assert(SUCCEEDED(hr));
 }
 
+void Skinning::RootSignatureCS()
+{
+	D3D12_DESCRIPTOR_RANGE DescriptorRangeUAV[4] = {};
+	DescriptorRangeUAV[0].BaseShaderRegister = 0;  // register(t0)
+	DescriptorRangeUAV[0].NumDescriptors = 1;
+	DescriptorRangeUAV[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // ←重要！
+	DescriptorRangeUAV[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	DescriptorRangeUAV[1].BaseShaderRegister = 1;  // register(t1)
+	DescriptorRangeUAV[1].NumDescriptors = 1;
+	DescriptorRangeUAV[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // ←重要！
+	DescriptorRangeUAV[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	DescriptorRangeUAV[2].BaseShaderRegister = 2;  // register(t2)
+	DescriptorRangeUAV[2].NumDescriptors = 1;
+	DescriptorRangeUAV[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // ←重要！
+	DescriptorRangeUAV[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	DescriptorRangeUAV[3].BaseShaderRegister = 0;  // register(u0)
+	DescriptorRangeUAV[3].NumDescriptors = 1;
+	DescriptorRangeUAV[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // ←重要！
+	DescriptorRangeUAV[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	////=========RootSignatureを生成する=========////
+
+	//RootSignature作成
+	ComputeDescriptionRootSignature_.Flags =
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	//RootSignature作成
+	// 0.SkinningInfomation
+	ComputeRootParameters_[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;    //CBVを使う
+	ComputeRootParameters_[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;    //ComputeShaderで使う
+	ComputeRootParameters_[0].Descriptor.ShaderRegister = 0;    //レジスタ番号0とバインド
+	// 1.Palette
+	ComputeRootParameters_[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	ComputeRootParameters_[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;    //ComputeShaderで使う
+	ComputeRootParameters_[1].DescriptorTable.pDescriptorRanges = &DescriptorRangeUAV[0];
+	ComputeRootParameters_[1].DescriptorTable.NumDescriptorRanges = 1;
+	// 2.InputVertices
+	ComputeRootParameters_[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	ComputeRootParameters_[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;    //ComputeShaderで使う
+	ComputeRootParameters_[2].DescriptorTable.pDescriptorRanges = &DescriptorRangeUAV[1];
+	ComputeRootParameters_[2].DescriptorTable.NumDescriptorRanges = 1;
+	// 3.Influences
+	ComputeRootParameters_[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	ComputeRootParameters_[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;    //ComputeShaderで使う
+	ComputeRootParameters_[3].DescriptorTable.pDescriptorRanges = &DescriptorRangeUAV[2];
+	ComputeRootParameters_[3].DescriptorTable.NumDescriptorRanges = 1;
+	// 4.OutputVertices
+	ComputeRootParameters_[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	ComputeRootParameters_[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;    //ComputeShaderで使う
+	ComputeRootParameters_[4].DescriptorTable.pDescriptorRanges = &DescriptorRangeUAV[3];
+	ComputeRootParameters_[4].DescriptorTable.NumDescriptorRanges = 1;
+
+	ComputeDescriptionRootSignature_.pParameters = ComputeRootParameters_;    //ルートパラメータ配列へのポインタ
+	ComputeDescriptionRootSignature_.NumParameters = _countof(ComputeRootParameters_);    //配列の長さ
+
+	// シリアライズしてバイナリ化
+	Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(
+		&ComputeDescriptionRootSignature_,
+		D3D_ROOT_SIGNATURE_VERSION_1,
+		&signatureBlob,
+		&errorBlob);
+
+	if (FAILED(hr)) {
+		if (errorBlob) {
+			Logger::Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+		}
+		assert(false);
+	}
+
+	// ルートシグネチャを作成
+	hr = dxCommon_->GetDevice()->CreateRootSignature(
+		0,
+		signatureBlob->GetBufferPointer(),
+		signatureBlob->GetBufferSize(),
+		IID_PPV_ARGS(&ComputeRootSignature_));
+	assert(SUCCEEDED(hr));
+
+}
+
 void Skinning::GraphicsPipelineState()
 {
 	//ルートシグネチャの生成
@@ -139,7 +229,7 @@ void Skinning::GraphicsPipelineState()
 
 	////=========ShaderをCompileする=========////
 
-	VertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/SkinningObject3d.VS.hlsl", L"vs_6_0");
+	VertexShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
 	if (VertexShaderBlob_ == nullptr) {
 		Logger::Log("vertexShaderBlob_\n");
 		exit(1);
@@ -165,7 +255,7 @@ void Skinning::GraphicsPipelineState()
 
 void Skinning::InputLayout()
 {
-	InputElementDescs_[0].SemanticName = "POSITION";
+	/*InputElementDescs_[0].SemanticName = "POSITION";
 	InputElementDescs_[0].SemanticIndex = 0;
 	InputElementDescs_[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	InputElementDescs_[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
@@ -192,7 +282,15 @@ void Skinning::InputLayout()
 	InputElementDescs_[4].InputSlot = 1;
 	InputElementDescs_[4].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 	InputLayoutDesc_.pInputElementDescs = InputElementDescs_.data();
-	InputLayoutDesc_.NumElements = InputElementDescs_.size();
+	InputLayoutDesc_.NumElements = InputElementDescs_.size();*/
+
+	// 共通3つ
+	InputElementDescs_[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	InputElementDescs_[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,      0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	InputElementDescs_[2] = { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	InputLayoutDesc_.pInputElementDescs = InputElementDescs_.data();
+	InputLayoutDesc_.NumElements = 3;
 }
 
 void Skinning::BlendState()
@@ -282,6 +380,116 @@ void Skinning::PSO()
 	HRESULT hr = dxCommon_->GetDevice().Get()->CreateGraphicsPipelineState(&GraphicsPipelineStateDesc_,
 		IID_PPV_ARGS(&GraphicsPipelineState_));
 	assert(SUCCEEDED(hr));
+}
+
+void Skinning::ComputePipelineState()
+{
+	//ルートシグネチャの生成
+	RootSignatureCS();
+
+	// ComputeShader をコンパイル
+	ComputeShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Skinning.CS.hlsl", L"cs_6_0");
+	assert(ComputeShaderBlob_ != nullptr);
+
+	// RootSignature を作っておく（すでに RootSignature_ にあるなら流用OK）
+
+	// ComputePipeline の作成
+	D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc{};
+	computePipelineStateDesc.CS.pShaderBytecode = ComputeShaderBlob_->GetBufferPointer();
+	computePipelineStateDesc.CS.BytecodeLength = ComputeShaderBlob_->GetBufferSize();
+	computePipelineStateDesc.pRootSignature = ComputeRootSignature_.Get();
+
+	HRESULT hr = dxCommon_->GetDevice()->CreateComputePipelineState(&computePipelineStateDesc, IID_PPV_ARGS(&ComputePipelineState_));
+	assert(SUCCEEDED(hr));
+}
+
+void Skinning::PrepareSkinningComputeShader(SkinCluster& skinCluster)
+{
+	//auto commandList = dxCommon_->GetCommandList();
+
+	//// RootSignatureとPSOをセット
+	//commandList->SetComputeRootSignature(ComputeRootSignature_.Get());
+	//commandList->SetPipelineState(computePipelineState_.Get());
+
+	//// RootParameter[0] : CBV（SkinningInformation）
+	//commandList->SetComputeRootConstantBufferView(0, skinCluster.skinningInfoGpuAddress);
+
+	//// RootParameter[1] : SRV（MatrixPalette）
+	//commandList->SetComputeRootDescriptorTable(1, skinCluster.paletteSrvHandle.second);
+
+	//// RootParameter[2] : SRV（InputVertex）
+	//commandList->SetComputeRootDescriptorTable(2, skinCluster.inputVertexSrvHandle.second);
+
+	//// RootParameter[3] : SRV（Influence）
+	//commandList->SetComputeRootDescriptorTable(3, skinCluster.influenceSrvHandle.second);
+
+	//// RootParameter[4] : UAV（OutputVertex）
+	//commandList->SetComputeRootDescriptorTable(4, skinCluster.outputVertexUavHandle.second);
+
+	//// Dispatch呼び出し
+	//constexpr uint32_t kThreadCount = 1024;
+	//uint32_t vertexCount = static_cast<uint32_t>(skinCluster.mappedInfluence.size());
+	//uint32_t dispatchCount = (vertexCount + kThreadCount - 1) / kThreadCount;
+	//commandList->Dispatch(dispatchCount, 1, 1);
+
+	//// UAV → VertexBuffer用にリソースバリア
+	//D3D12_RESOURCE_BARRIER barrier{};
+	//barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	//barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	//barrier.Transition.pResource = skinCluster.outputVertexResource.Get();
+	//barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+	//barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+	//barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+	//commandList->ResourceBarrier(1, &barrier);
+}
+
+void Skinning::CommonSettingCompute(SkinCluster skinCluster)
+{
+	// Compute用RootSignatureをセット
+	dxCommon_->GetCommandList()->SetComputeRootSignature(ComputeRootSignature_.Get());
+
+	// Compute用PipelineStateをセット
+	dxCommon_->GetCommandList()->SetPipelineState(ComputePipelineState_.Get());
+
+	SrvManager::GetInstance()->PreDraw();
+
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(0, skinCluster.paletteSrvHandle.second);        // t0
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(1, skinCluster.inputVertexSrvHandle.second);    // t1
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(2, skinCluster.influenceSrvHandle.second);      // t2
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(3, skinCluster.outputVertexUavHandle.second);   // u0
+	//dxCommon_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInformation_.buffer->GetGPUVirtualAddress());
+
+	dxCommon_->GetCommandList()->SetComputeRootConstantBufferView(0, skinCluster.skinningInfoGpuAddress); // b0
+	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(1, skinCluster.paletteSrvHandle.second); // t0
+	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(2, skinCluster.inputVertexSrvHandle.second);   // t1
+	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(3, skinCluster.influenceSrvHandle.second);     // t2
+	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(4, skinCluster.outputVertexUavHandle.second); // u0
+
+
+	// 各種DescriptorとCBVを設定
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(0, palette_.gpuHandle);        // 例: Palette (t0)
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(1, inputVertex_.gpuHandle);    // 例: InputVertex (t1)
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(2, influence_.gpuHandle);      // 例: Influence (t2)
+	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(3, outputVertex_.gpuHandle);   // 例: OutputVertex (u0)
+	//dxCommon_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInformation_.buffer->GetGPUVirtualAddress()); // SkinningInfo (b0)
+
+	// Dispatch呼び出し
+	constexpr uint32_t kThreadCount = 1024;
+	uint32_t vertexCount = static_cast<uint32_t>(skinCluster.mappedInfluence.size());
+	uint32_t dispatchCount = (vertexCount + kThreadCount - 1) / kThreadCount;
+	dxCommon_->GetCommandList()->Dispatch(dispatchCount, 1, 1);
+
+	// UAV → VertexBuffer用にリソースバリア
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = skinCluster.outputVertexResource.Get();
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+	dxCommon_->GetCommandList()->ResourceBarrier(1, &barrier);
 }
 
 void Skinning::CommonSetting()

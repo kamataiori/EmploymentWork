@@ -585,6 +585,7 @@
     <FxCompile Include="Resources\shaders\Skybox.VS.hlsl" />
     <FxCompile Include="Resources\shaders\Skybox.PS.hlsl" />
     <FxCompile Include="Resources\shaders\Dissolve.PS.hlsl" />
+    <FxCompile Include="Resources\shaders\Skinning.CS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DirectXGame.rc">
