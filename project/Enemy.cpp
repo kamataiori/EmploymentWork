@@ -11,10 +11,13 @@ void Enemy::Initialize()
 	object3d_->Initialize();
 
 	// モデル読み込み
-	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");
+	/*ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
+	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");*/
+	ModelManager::GetInstance()->LoadModel("matest.obj");
+	ModelManager::GetInstance()->LoadModel("Skeleton.gltf");
+	ModelManager::GetInstance()->LoadModel("Sam.gltf");
 
-	object3d_->SetModel("uvChecker.gltf");
+	object3d_->SetModel("Skeleton.gltf");
 
 	// 初期Transform設定
 	transform.translate = { 0.0f, 0.0f, 0.0f };
@@ -25,6 +28,8 @@ void Enemy::Initialize()
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
+
+	object3d_->SetAnimation(animation_.Idle);
 
 	ChangeState(std::make_unique<EnemyState_Idle>());
 
@@ -230,4 +235,12 @@ Vector3 Enemy::GetPlayerPos() const
 		return player_->GetTransform().translate;
 	}
 	return { 0, 0, 0 }; // 参照が無ければ原点
+}
+
+void Enemy::SetAnimationIfChanged(const std::string& name)
+{
+	if (currentAnimationName_ != name) {
+		object3d_->SetAnimation(name);
+		currentAnimationName_ = name;
+	}
 }

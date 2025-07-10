@@ -42,6 +42,7 @@ public:
 	struct MaterialData {
 		std::string textureFilePath;
 		uint32_t textureIndex = 0;
+		Vector4 color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	};
 
 	// Node構造体
@@ -256,6 +257,10 @@ private:
 
 	AnimationData animation;
 	Skeleton skeleton;
+	AnimationData* prevAnimation_ = nullptr;
+	float blendTime_ = 0.0f;
+	float blendDuration_ = 0.4f; // 補間に使う秒数
+
 	//SkinCluster skinCluster;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource;

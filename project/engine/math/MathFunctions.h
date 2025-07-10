@@ -74,6 +74,8 @@ float ProjectOBBOnAxis(const OBB& obb, const Vector3& axis);
 
 Quaternion Slerp(const Quaternion& start, const Quaternion& end, float t);
 
+Quaternion Slerpex(const Quaternion& q0, const Quaternion& q1, float t);
+
 Matrix4x4 transpose(const Matrix4x4& matrix);
 
 // ベクトルを行列で変換する関数

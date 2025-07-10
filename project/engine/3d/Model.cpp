@@ -112,37 +112,6 @@ void Model::Update(SkinCluster& skinCluster, const Skeleton& skeleton)
 	}
 }
 
-//void Model::Draw()
-//{
-//	for (const auto& instance : meshInstances_)
-//	{
-//		// 頂点バッファ（位置＋スキニング）
-//		D3D12_VERTEX_BUFFER_VIEW vbvs[2] = {
-//			instance.vertexBufferView,
-//			instance.skinCluster.influenceBufferView
-//		};
-//		modelCommon_->GetDxCommon()->GetCommandList()->IASetVertexBuffers(0, 2, vbvs);
-//
-//		// インデックスバッファ
-//		modelCommon_->GetDxCommon()->GetCommandList()->IASetIndexBuffer(&instance.indexBufferView);
-//
-//		// マテリアル定数バッファ
-//		modelCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootConstantBufferView(0, instance.materialResource->GetGPUVirtualAddress());
-//
-//		// テクスチャSRV
-//		SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, instance.textureIndex);
-//
-//		// パレットSRV（アニメーションが有効な場合）
-//		if (modelData.isAnimation) {
-//			modelCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(7, instance.skinCluster.paletteSrvHandle.second);
-//		}
-//
-//		// 描画
-//		uint32_t indexCount = instance.indexBufferView.SizeInBytes / sizeof(uint32_t);
-//		modelCommon_->GetDxCommon()->GetCommandList()->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
-//	}
-//}
-
 void Model::Draw()
 {
 	// スキン無しメッシュでは vbvs[1] に無効なビューを渡さないようにしている
@@ -224,40 +193,12 @@ void Model::CreateIndexResource(MeshInstance& instance, const MeshData& data)
 
 void Model::CreateMaterialData(MeshInstance& instance, const MeshData& data)
 {
-	//instance.materialResource = modelCommon_->GetDxCommon()->CreateBufferResource(sizeof(Material));
-
-	//instance.materialResource->Map(0, nullptr, reinterpret_cast<void**>(&instance.materialData));
-	//instance.materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	//instance.materialData->enableLighting = true;
-	//instance.materialData->uvTransform = MakeIdentity4x4();
-	//instance.materialData->shininess = 50.0f;
-
-	////// テクスチャ読み込み＆インデックス取得
-	////// ✅ テクスチャパスが空なら白テクスチャを指定する
-	////std::string texPath = data.material.textureFilePath;
-	////if (texPath.empty()) {
-	////	texPath = "Resources/uvChecker.png";
-	////}
-
-	////// ✅ テクスチャを読み込み、インデックスを取得
-	////TextureManager::GetInstance()->LoadTexture(texPath);
-	////instance.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(texPath);
-
-	//const std::string& texPath = data.material.textureFilePath;
-	//if (!texPath.empty()) {
-	//	TextureManager::GetInstance()->LoadTexture(texPath);
-	//	instance.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(texPath);
-	//}
-	//else {
-	//	// テクスチャ未設定の場合、ダミー or 白テクスチャを使う（index=0を仮定）
-	//	instance.textureIndex = 0;
-	//}
-
-
 	instance.materialResource = modelCommon_->GetDxCommon()->CreateBufferResource(sizeof(Material));
 
 	instance.materialResource->Map(0, nullptr, reinterpret_cast<void**>(&instance.materialData));
-	instance.materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	//instance.materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	// ここでマテリアルの色を設定
+	instance.materialData->color = data.material.color;  // ←変更前は固定値
 	instance.materialData->enableLighting = true;
 	instance.materialData->uvTransform = MakeIdentity4x4();
 	instance.materialData->shininess = 50.0f;
@@ -276,9 +217,6 @@ void Model::CreateMaterialData(MeshInstance& instance, const MeshData& data)
 
 	TextureManager::GetInstance()->LoadTexture(usedTexturePath);
 	instance.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(usedTexturePath);
-
-
-
 
 }
 
@@ -419,20 +357,44 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 
 		// 対応するマテリアル取得
 		if (mesh->mMaterialIndex < scene->mNumMaterials) {
-			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-			if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-				aiString texturePath;
-				if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
-					if (strlen(texturePath.C_Str()) > 0) {
-						meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
+			//aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+			//if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+			//	aiString texturePath;
+			//	if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
+			//		if (strlen(texturePath.C_Str()) > 0) {
+			//			meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
+			//		}
+			//	}
+			//}
+			///*if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+			//	aiString texturePath;
+			//	material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
+			//	meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
+			//}*/
+			// aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+			if (mesh->mMaterialIndex < scene->mNumMaterials) {
+				aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+
+				// テクスチャ読み取り（既存）
+				if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+					aiString texturePath;
+					if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
+						if (strlen(texturePath.C_Str()) > 0) {
+							meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
+						}
 					}
 				}
+
+				// ベースカラーを読み取り
+				aiColor4D diffuse;
+				if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &diffuse)) {
+					meshData.material.color = { diffuse.r, diffuse.g, diffuse.b, diffuse.a };
+				}
+				else {
+					meshData.material.color = { 1.0f, 1.0f, 1.0f, 1.0f }; // fallback: 白
+				}
 			}
-			/*if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-				aiString texturePath;
-				material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
-				meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
-			}*/
+
 		}
 
 		// meshData を modelData に追加
@@ -561,8 +523,12 @@ void Model::LoadAllAnimations(const std::string& directoryPath, const std::strin
 void Model::SetAnimation(const std::string& name)
 {
 	if (animationMap_.count(name)) {
-		currentAnimation_ = &animationMap_[name];
-		animationTime = 0.0f;
+		if (currentAnimation_ != &animationMap_[name]) {
+			prevAnimation_ = currentAnimation_;  // 前回のアニメ
+			currentAnimation_ = &animationMap_[name];
+			animationTime = 0.0f;
+			blendTime_ = 0.0f; // 補間開始
+		}
 	}
 	else {
 		OutputDebugStringA(("Animation not found: " + name + "\n").c_str());
@@ -616,16 +582,53 @@ Skeleton Model::CreateSkeleton(const Node& rootNode)
 
 void Model::AppAnimation(Skeleton& skeleton, const AnimationData& animation, float animationTime)
 {
-	for (Joint& joint : skeleton.joints)
-	{
-		// 対象のJointのAnimationがあれば、値の適用を行う。下記のif文はC++17から可能になった初期化付きif文。
-		if (auto it = animation.NodeAnimations.find(joint.name); it != animation.NodeAnimations.end())
-		{
-			const NodeAnimation& rootNodeAnimation = (*it).second;
-			joint.transform.translate = CalculateValue(rootNodeAnimation.translate.keyframes, animationTime);
-			joint.transform.rotate = CalculateValue(rootNodeAnimation.rotate.keyframes, animationTime);
-			joint.transform.scale = CalculateValue(rootNodeAnimation.scale.keyframes, animationTime);
+	//for (Joint& joint : skeleton.joints)
+	//{
+	//	// 対象のJointのAnimationがあれば、値の適用を行う。下記のif文はC++17から可能になった初期化付きif文。
+	//	if (auto it = animation.NodeAnimations.find(joint.name); it != animation.NodeAnimations.end())
+	//	{
+	//		const NodeAnimation& rootNodeAnimation = (*it).second;
+	//		joint.transform.translate = CalculateValue(rootNodeAnimation.translate.keyframes, animationTime);
+	//		joint.transform.rotate = CalculateValue(rootNodeAnimation.rotate.keyframes, animationTime);
+	//		joint.transform.scale = CalculateValue(rootNodeAnimation.scale.keyframes, animationTime);
+	//	}
+	//}
+	for (Joint& joint : skeleton.joints) {
+		if (auto it = animation.NodeAnimations.find(joint.name); it != animation.NodeAnimations.end()) {
+			const NodeAnimation& anim = it->second;
+
+			Vector3 newTranslate = CalculateValue(anim.translate.keyframes, animationTime);
+			Quaternion newRotate = CalculateValue(anim.rotate.keyframes, animationTime);
+			Vector3 newScale = CalculateValue(anim.scale.keyframes, animationTime);
+
+			if (prevAnimation_ && blendTime_ < blendDuration_) {
+				if (auto prevIt = prevAnimation_->NodeAnimations.find(joint.name); prevIt != prevAnimation_->NodeAnimations.end()) {
+					const NodeAnimation& prevAnim = prevIt->second;
+
+					Vector3 oldTranslate = CalculateValue(prevAnim.translate.keyframes, animationTime);
+					Quaternion oldRotate = CalculateValue(prevAnim.rotate.keyframes, animationTime);
+					Vector3 oldScale = CalculateValue(prevAnim.scale.keyframes, animationTime);
+
+					float t = blendTime_ / blendDuration_;
+					joint.transform.translate = Lerp(oldTranslate, newTranslate, t);
+					joint.transform.rotate = Slerpex(oldRotate, newRotate, t);
+					joint.transform.scale = Lerp(oldScale, newScale, t);
+					continue;
+				}
+			}
+
+			joint.transform.translate = newTranslate;
+			joint.transform.rotate = newRotate;
+			joint.transform.scale = newScale;
 		}
+	}
+
+	// 補間時間を更新
+	if (blendTime_ < blendDuration_) {
+		blendTime_ += 1.0f / 60.0f;
+	}
+	else {
+		prevAnimation_ = nullptr;
 	}
 }
 
