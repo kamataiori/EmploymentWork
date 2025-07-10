@@ -22,7 +22,7 @@ public:
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize();
+	void Initialize(bool isAnimation);
 
 	/// <summary>
 	/// 終了

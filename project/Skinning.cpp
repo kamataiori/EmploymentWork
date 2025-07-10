@@ -12,7 +12,7 @@ Skinning* Skinning::GetInstance()
 	return instance;
 }
 
-void Skinning::Initialize()
+void Skinning::Initialize(bool isAnimation)
 {
 	// 引数で受け取ってメンバ変数に記録する
 	dxCommon_ = DirectXCommon::GetInstance();
@@ -255,7 +255,7 @@ void Skinning::GraphicsPipelineState()
 
 void Skinning::InputLayout()
 {
-	InputElementDescs_[0].SemanticName = "POSITION";
+	/*InputElementDescs_[0].SemanticName = "POSITION";
 	InputElementDescs_[0].SemanticIndex = 0;
 	InputElementDescs_[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	InputElementDescs_[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
@@ -282,7 +282,15 @@ void Skinning::InputLayout()
 	InputElementDescs_[4].InputSlot = 1;
 	InputElementDescs_[4].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 	InputLayoutDesc_.pInputElementDescs = InputElementDescs_.data();
-	InputLayoutDesc_.NumElements = InputElementDescs_.size();
+	InputLayoutDesc_.NumElements = InputElementDescs_.size();*/
+
+	// 共通3つ
+	InputElementDescs_[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	InputElementDescs_[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,      0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	InputElementDescs_[2] = { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	InputLayoutDesc_.pInputElementDescs = InputElementDescs_.data();
+	InputLayoutDesc_.NumElements = 3;
 }
 
 void Skinning::BlendState()
