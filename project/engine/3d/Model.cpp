@@ -130,9 +130,6 @@ void Model::Draw()
 			vbvs[0].SizeInBytes = instance.vertexBufferView.SizeInBytes;
 			vbvs[0].StrideInBytes = instance.vertexBufferView.StrideInBytes;
 
-			// Stream1: Influence
-			//vbvs[1] = instance.skinCluster.influenceBufferView;
-
 			modelCommon_->GetDxCommon()->GetCommandList()->IASetVertexBuffers(0, 1, vbvs);
 		}
 		else {
@@ -385,21 +382,6 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 
 		// 対応するマテリアル取得
 		if (mesh->mMaterialIndex < scene->mNumMaterials) {
-			//aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-			//if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-			//	aiString texturePath;
-			//	if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
-			//		if (strlen(texturePath.C_Str()) > 0) {
-			//			meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
-			//		}
-			//	}
-			//}
-			///*if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-			//	aiString texturePath;
-			//	material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
-			//	meshData.material.textureFilePath = directoryPath + "/" + texturePath.C_Str();
-			//}*/
-			// aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 			if (mesh->mMaterialIndex < scene->mNumMaterials) {
 				aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
@@ -786,12 +768,6 @@ SkinCluster Model::CreateSkinCluster(
 	skinCluster.skinningInfoBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mappedCount));
 	*mappedCount = static_cast<uint32_t>(meshData.vertices.size());
 	skinCluster.skinningInfoGpuAddress = skinCluster.skinningInfoBuffer->GetGPUVirtualAddress();
-
-	//// VertexInfluence用のBufferViewも設定する必要がある
-	//skinCluster.influenceBufferView.BufferLocation = skinCluster.influenceResource->GetGPUVirtualAddress();
-	//skinCluster.influenceBufferView.SizeInBytes = static_cast<UINT>(sizeof(VertexInfluence) * influences.size());
-	//skinCluster.influenceBufferView.StrideInBytes = sizeof(VertexInfluence); // 重要
-
 
 	return skinCluster;
 }

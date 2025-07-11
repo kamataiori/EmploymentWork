@@ -269,28 +269,9 @@ void Skinning::InputLayout()
 	InputElementDescs_[2].SemanticIndex = 0;
 	InputElementDescs_[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
 	InputElementDescs_[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-	/*InputElementDescs_[3].SemanticName = "WEIGHT";
-	InputElementDescs_[3].SemanticIndex = 0;
-	InputElementDescs_[3].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	InputElementDescs_[3].InputSlot = 1;
-	InputElementDescs_[3].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-	InputElementDescs_[4].SemanticName = "INDEX";
-	InputElementDescs_[4].SemanticIndex = 0;
-	InputElementDescs_[4].Format = DXGI_FORMAT_R32G32B32A32_SINT;
-	InputElementDescs_[4].InputSlot = 1;*/
-	//InputElementDescs_[4].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 	InputLayoutDesc_.pInputElementDescs = InputElementDescs_.data();
 	InputLayoutDesc_.NumElements = InputElementDescs_.size();
 
-	// 共通3つ
-	/*InputElementDescs_[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	InputElementDescs_[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,      0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	InputElementDescs_[2] = { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-
-	InputLayoutDesc_.pInputElementDescs = InputElementDescs_.data();
-	InputLayoutDesc_.NumElements = 3;*/
 }
 
 void Skinning::BlendState()
@@ -391,8 +372,6 @@ void Skinning::ComputePipelineState()
 	ComputeShaderBlob_ = dxCommon_->CompileShader(L"Resources/shaders/Skinning.CS.hlsl", L"cs_6_0");
 	assert(ComputeShaderBlob_ != nullptr);
 
-	// RootSignature を作っておく（すでに RootSignature_ にあるなら流用OK）
-
 	// ComputePipeline の作成
 	D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc{};
 	computePipelineStateDesc.CS.pShaderBytecode = ComputeShaderBlob_->GetBufferPointer();
@@ -412,12 +391,6 @@ void Skinning::CommonSettingCompute(SkinCluster skinCluster)
 	dxCommon_->GetCommandList()->SetPipelineState(ComputePipelineState_.Get());
 
 	SrvManager::GetInstance()->PreDraw();
-
-	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(0, skinCluster.paletteSrvHandle.second);        // t0
-	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(1, skinCluster.inputVertexSrvHandle.second);    // t1
-	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(2, skinCluster.influenceSrvHandle.second);      // t2
-	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(3, skinCluster.outputVertexUavHandle.second);   // u0
-	//dxCommon_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInformation_.buffer->GetGPUVirtualAddress());
 
 	dxCommon_->GetCommandList()->SetComputeRootConstantBufferView(0, skinCluster.skinningInfoGpuAddress); // b0
 	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(1, skinCluster.paletteSrvHandle.second); // t0
