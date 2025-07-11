@@ -9,8 +9,8 @@ void Player::Initialize()
 	//ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 	//ModelManager::GetInstance()->LoadModel("human/walk.gltf");
 	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
-	ModelManager::GetInstance()->LoadModel("Sam.gltf");
-	ModelManager::GetInstance()->LoadModel("Monk.gltf");
+	/*ModelManager::GetInstance()->LoadModel("Sam.gltf");
+	ModelManager::GetInstance()->LoadModel("Monk.gltf");*/
 
 	object3d_->SetModel("Warrior.gltf");
 
