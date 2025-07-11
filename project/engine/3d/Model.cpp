@@ -13,7 +13,7 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypat
 	modelData = LoadModelFile(directorypath, filename);
 	// アニメーション読み込み
 	if (modelData.isAnimation) {
-        /*animation = LoadAnimationFile(directorypath, filename);*/
+       ///* animation =*/ LoadAnimationFile(directorypath, filename);
 		// 上のコメントアウトは単一のアニメーションの時に必要 条件で管理する必要あり
 		LoadAllAnimations(directorypath, filename);
         skeleton = CreateSkeleton(modelData.rootNode);
@@ -121,7 +121,7 @@ void Model::Update(SkinCluster& skinCluster, const Skeleton& skeleton)
 void Model::Draw()
 {
 	for (const auto& instance : meshInstances_) {
-		D3D12_VERTEX_BUFFER_VIEW vbvs[2];
+		D3D12_VERTEX_BUFFER_VIEW vbvs[1];
 
 		// アニメーション対応モデルでスキンがある場合
 		if (modelData.isAnimation && !instance.skinCluster.inverseBindPoseMatrices.empty()) {
@@ -171,8 +171,6 @@ void Model::Draw()
 		}
 	}
 }
-
-
 
 void Model::DrawSkeleton(const Matrix4x4& worldMatrix)
 {

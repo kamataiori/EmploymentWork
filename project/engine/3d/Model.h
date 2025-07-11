@@ -22,7 +22,7 @@ public:
 	//--------構造体--------//
 
 	// 頂点データの拡張
-	struct alignas(16) VertexData {
+	struct VertexData {
 		Vector4 position;
 		Vector2 texcoord;
 		//float padding[2];

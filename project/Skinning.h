@@ -80,8 +80,6 @@ private:
 
 public:
 
-	void PrepareSkinningComputeShader(SkinCluster& skinCluster);
-
 	/// <summary>
 	/// Compute用共通設定
 	/// </summary>
@@ -106,7 +104,7 @@ private:
 
 	D3D12_ROOT_PARAMETER RootParameters_[8] = {};
 
-	std::array<D3D12_INPUT_ELEMENT_DESC, 5> InputElementDescs_{};
+	std::array<D3D12_INPUT_ELEMENT_DESC, 3> InputElementDescs_{};
 
 	D3D12_BLEND_DESC BlendDesc_{};
 

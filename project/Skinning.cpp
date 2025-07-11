@@ -255,7 +255,7 @@ void Skinning::GraphicsPipelineState()
 
 void Skinning::InputLayout()
 {
-	/*InputElementDescs_[0].SemanticName = "POSITION";
+	InputElementDescs_[0].SemanticName = "POSITION";
 	InputElementDescs_[0].SemanticIndex = 0;
 	InputElementDescs_[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	InputElementDescs_[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
@@ -270,7 +270,7 @@ void Skinning::InputLayout()
 	InputElementDescs_[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
 	InputElementDescs_[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-	InputElementDescs_[3].SemanticName = "WEIGHT";
+	/*InputElementDescs_[3].SemanticName = "WEIGHT";
 	InputElementDescs_[3].SemanticIndex = 0;
 	InputElementDescs_[3].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	InputElementDescs_[3].InputSlot = 1;
@@ -279,18 +279,18 @@ void Skinning::InputLayout()
 	InputElementDescs_[4].SemanticName = "INDEX";
 	InputElementDescs_[4].SemanticIndex = 0;
 	InputElementDescs_[4].Format = DXGI_FORMAT_R32G32B32A32_SINT;
-	InputElementDescs_[4].InputSlot = 1;
-	InputElementDescs_[4].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	InputElementDescs_[4].InputSlot = 1;*/
+	//InputElementDescs_[4].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 	InputLayoutDesc_.pInputElementDescs = InputElementDescs_.data();
-	InputLayoutDesc_.NumElements = InputElementDescs_.size();*/
+	InputLayoutDesc_.NumElements = InputElementDescs_.size();
 
 	// 共通3つ
-	InputElementDescs_[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	/*InputElementDescs_[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 	InputElementDescs_[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,      0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 	InputElementDescs_[2] = { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 
 	InputLayoutDesc_.pInputElementDescs = InputElementDescs_.data();
-	InputLayoutDesc_.NumElements = 3;
+	InputLayoutDesc_.NumElements = 3;*/
 }
 
 void Skinning::BlendState()
@@ -403,47 +403,6 @@ void Skinning::ComputePipelineState()
 	assert(SUCCEEDED(hr));
 }
 
-void Skinning::PrepareSkinningComputeShader(SkinCluster& skinCluster)
-{
-	//auto commandList = dxCommon_->GetCommandList();
-
-	//// RootSignatureとPSOをセット
-	//commandList->SetComputeRootSignature(ComputeRootSignature_.Get());
-	//commandList->SetPipelineState(computePipelineState_.Get());
-
-	//// RootParameter[0] : CBV（SkinningInformation）
-	//commandList->SetComputeRootConstantBufferView(0, skinCluster.skinningInfoGpuAddress);
-
-	//// RootParameter[1] : SRV（MatrixPalette）
-	//commandList->SetComputeRootDescriptorTable(1, skinCluster.paletteSrvHandle.second);
-
-	//// RootParameter[2] : SRV（InputVertex）
-	//commandList->SetComputeRootDescriptorTable(2, skinCluster.inputVertexSrvHandle.second);
-
-	//// RootParameter[3] : SRV（Influence）
-	//commandList->SetComputeRootDescriptorTable(3, skinCluster.influenceSrvHandle.second);
-
-	//// RootParameter[4] : UAV（OutputVertex）
-	//commandList->SetComputeRootDescriptorTable(4, skinCluster.outputVertexUavHandle.second);
-
-	//// Dispatch呼び出し
-	//constexpr uint32_t kThreadCount = 1024;
-	//uint32_t vertexCount = static_cast<uint32_t>(skinCluster.mappedInfluence.size());
-	//uint32_t dispatchCount = (vertexCount + kThreadCount - 1) / kThreadCount;
-	//commandList->Dispatch(dispatchCount, 1, 1);
-
-	//// UAV → VertexBuffer用にリソースバリア
-	//D3D12_RESOURCE_BARRIER barrier{};
-	//barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	//barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	//barrier.Transition.pResource = skinCluster.outputVertexResource.Get();
-	//barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-	//barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-	//barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-	//commandList->ResourceBarrier(1, &barrier);
-}
-
 void Skinning::CommonSettingCompute(SkinCluster skinCluster)
 {
 	// Compute用RootSignatureをセット
@@ -466,19 +425,11 @@ void Skinning::CommonSettingCompute(SkinCluster skinCluster)
 	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(3, skinCluster.influenceSrvHandle.second);     // t2
 	dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(4, skinCluster.outputVertexUavHandle.second); // u0
 
-
-	// 各種DescriptorとCBVを設定
-	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(0, palette_.gpuHandle);        // 例: Palette (t0)
-	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(1, inputVertex_.gpuHandle);    // 例: InputVertex (t1)
-	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(2, influence_.gpuHandle);      // 例: Influence (t2)
-	//dxCommon_->GetCommandList()->SetComputeRootDescriptorTable(3, outputVertex_.gpuHandle);   // 例: OutputVertex (u0)
-	//dxCommon_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInformation_.buffer->GetGPUVirtualAddress()); // SkinningInfo (b0)
-
 	// Dispatch呼び出し
 	constexpr uint32_t kThreadCount = 1024;
 	uint32_t vertexCount = static_cast<uint32_t>(skinCluster.mappedInfluence.size());
 	uint32_t dispatchCount = (vertexCount + kThreadCount - 1) / kThreadCount;
-	dxCommon_->GetCommandList()->Dispatch(dispatchCount, 1, 1);
+ 	dxCommon_->GetCommandList()->Dispatch(dispatchCount, 1, 1);
 
 	// UAV → VertexBuffer用にリソースバリア
 	D3D12_RESOURCE_BARRIER barrier{};
