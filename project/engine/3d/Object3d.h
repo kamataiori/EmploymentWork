@@ -97,6 +97,14 @@ public:
 
     const Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }
 
+    /// <summary>
+    /// 指定したジョイントのワールド座標を取得する（モデルがアニメーション付きの場合のみ）
+    /// </summary>
+    /// <param name="jointName">取得するボーン名</param>
+    /// <returns>ワールド座標（取得できなければ std::nullopt）</returns>
+    std::optional<Vector3> GetJointWorldPosition(const std::string& jointName) const;
+
+
 
 private:
 

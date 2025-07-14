@@ -108,9 +108,18 @@ public:
 	void Draw();
 
 	/// <summary>
-    /// 骨を描画
-    /// </summary>
+	/// 骨を描画
+	/// </summary>
 	void DrawSkeleton(const Matrix4x4& worldMatrix);
+
+	/// <summary>
+    /// 指定したジョイント名のワールド座標を取得
+    /// </summary>
+    /// <param name="jointName">取得したいボーン名</param>
+    /// <param name="modelWorldMatrix">モデルのワールド行列</param>
+    /// <returns>ワールド空間上の位置（存在しない場合は std::nullopt）</returns>
+	std::optional<Vector3> GetJointWorldPosition(const std::string& jointName, const Matrix4x4& modelWorldMatrix) const;
+
 
 	/// <summary>
 	/// 頂点データを作成
@@ -178,7 +187,7 @@ public:
 	/// <summary>
 	/// SkinClusterの生成
 	/// </summary>
-	SkinCluster CreateSkinCluster(const Microsoft::WRL::ComPtr<ID3D12Device>& device, const Skeleton& skeleton, const MeshData& meshData , const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize);
+	SkinCluster CreateSkinCluster(const Microsoft::WRL::ComPtr<ID3D12Device>& device, const Skeleton& skeleton, const MeshData& meshData, const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize);
 
 	/// <summary>
 	/// ModelDataのGetter

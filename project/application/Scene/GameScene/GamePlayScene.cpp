@@ -22,10 +22,12 @@ void GamePlayScene::Initialize()
 	camera1->SetTranslate({ 0.0f, 0.0f, -20.0f });
 
 	player_ = std::make_unique<Player>(this);
-	player_->Initialize();
 
 	followCamera = std::make_unique<FollowCamera>(player_.get(), 30.0f, 1.0f);
 	followCamera->SetFarClip(2000.0f);
+
+	player_->Initialize();
+	player_->SetCamera(followCamera.get());
 
 	enemy_ = std::make_unique<Enemy>(this);
 	enemy_->Initialize();
@@ -40,7 +42,6 @@ void GamePlayScene::Initialize()
 
 	skybox->SetCamera(followCamera.get());
 	ground->SetCamera(followCamera.get());
-	player_->SetCamera(followCamera.get());
 	enemy_->SetCamera(followCamera.get());
 	DrawLine::GetInstance()->SetCamera(followCamera.get());
 
@@ -56,7 +57,6 @@ void GamePlayScene::Initialize()
 	if (auto bullet = player_->GetBullet()) {
 		collisionMAnager_->RegisterCollider(bullet);
 	}*/
-
 
 	AddRightDockWindow(kWindowName_MonsterControl);
 
@@ -98,6 +98,7 @@ void GamePlayScene::Update()
 	for (const auto& bulletAttack : enemy_->GetAttackBulets()) {
 		collisionMAnager_->RegisterCollider(bulletAttack.get());
 	}
+
 
 	// 衝突判定と応答
 	CheckAllColisions();
@@ -199,6 +200,7 @@ void GamePlayScene::ForeGroundDraw()
 	// ================================================
 	// ここからparticle個々の描画
 	// ================================================
+
 
 
 	// ================================================

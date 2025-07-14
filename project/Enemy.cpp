@@ -45,18 +45,18 @@ void Enemy::Initialize()
 
 void Enemy::Update()
 {
-	// ImGuiデバッグ表示
-	ImGui::Begin("Enemy Debug");
+	//// ImGuiデバッグ表示
+	//ImGui::Begin("Enemy Debug");
 
-	if (currentState_) {
-		// 現在のステート名を表示
-		ImGui::Text("Current State: %s", currentState_->GetName());
-	}
-	else {
-		ImGui::Text("Current State: None");
-	}
+	//if (currentState_) {
+	//	// 現在のステート名を表示
+	//	ImGui::Text("Current State: %s", currentState_->GetName());
+	//}
+	//else {
+	//	ImGui::Text("Current State: None");
+	//}
 
-	ImGui::End();
+	//ImGui::End();
 
 	// プレイヤーの方向を向く
 	if (player_) {
@@ -132,7 +132,7 @@ void Enemy::Draw()
 	}
 
 	// SphereCollider の描画
-	SphereCollider::Draw();
+	//SphereCollider::Draw();
 }
 
 void Enemy::DrawModel()

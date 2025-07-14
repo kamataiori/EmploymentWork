@@ -105,10 +105,11 @@ private:
 	std::string currentAnimationName_;
 
 
-	// Player.h に追加
+
 	bool isAttacking_ = false;
 	float attackAnimTimer_ = 0.0f;
 	const float kAttackAnimDuration_ = 0.8f; // 攻撃アニメの長さに応じて調整
+
 
 };
 

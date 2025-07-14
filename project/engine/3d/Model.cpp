@@ -186,6 +186,24 @@ void Model::DrawSkeleton(const Matrix4x4& worldMatrix)
 	DrawLine::GetInstance()->DrawBone(jointPositions, parentIndices);
 }
 
+std::optional<Vector3> Model::GetJointWorldPosition(const std::string& jointName, const Matrix4x4& modelWorldMatrix) const
+{
+	// アニメーション未対応の場合はスキップ
+	if (!modelData.isAnimation) return std::nullopt;
+
+	// jointMapから該当ジョイントを探す
+	auto it = skeleton.jointMap.find(jointName);
+	if (it == skeleton.jointMap.end()) return std::nullopt;
+
+	int jointIndex = it->second;
+	if (jointIndex < 0 || jointIndex >= static_cast<int>(skeleton.joints.size())) return std::nullopt;
+
+	const Joint& joint = skeleton.joints[jointIndex];
+
+	// ワールド座標へ変換して返す
+	return TransformCoord(joint.skeletonSpaceMatrix.Translation(), modelWorldMatrix);
+}
+
 void Model::CreateVertexData(MeshInstance& instance, const MeshData& data)
 {
 	assert(!data.vertices.empty()); // 追加：空でないかチェック
