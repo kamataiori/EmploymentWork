@@ -22,6 +22,20 @@ struct AnimationSet {
 	std::string Walk = "Walk";
 };
 
+struct MonkAnimationSet {
+	std::string Attack = "Attack";
+	std::string Attack2 = "Attack2";
+	std::string Death = "Death";
+	std::string Idle = "Idle";
+	std::string Idle_Attacking = "Idle_Attacking";
+	std::string PickUp = "PickUp";
+	std::string RecieveHit = "RecieveHit";
+	std::string RecieveHit_Attacking = "RecieveHit_Attacking";
+	std::string Roll = "Roll";
+	std::string Run = "Run";
+	std::string Walk = "Walk";
+};
+
 
 class Player : public CharacterBase, public SphereCollider
 {
@@ -87,13 +101,15 @@ private:
 	std::unique_ptr<PlayerBullet> bullet_; // 今回は1発だけ
 
 	AnimationSet animation_; // アニメーション名セット
+	MonkAnimationSet MonkAnimation_;
 	std::string currentAnimationName_;
 
 
-	// Player.h に追加
+
 	bool isAttacking_ = false;
 	float attackAnimTimer_ = 0.0f;
 	const float kAttackAnimDuration_ = 0.8f; // 攻撃アニメの長さに応じて調整
+
 
 };
 

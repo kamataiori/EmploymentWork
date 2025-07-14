@@ -41,45 +41,45 @@ void MyGame::Update()
 
 	ApplyImGuiStyle();
 #ifdef _DEBUG
-	// Unity風レイアウトの表示
-	if (useUnityLayout_) {
-		DrawUnityLayout();
-	}
-
-	// レイアウト切り替えUI
-	if (!useUnityLayout_) {
-		ImGui::Begin("レイアウト切替");
-		if (ImGui::Button("Unity風レイアウトに戻す")) {
-			useUnityLayout_ = true;
-			unityDockInitialized_ = false;
-		}
-		ImGui::End();
-	}
-
-	//// Unityレイアウトの有効状態をSceneに通知
-	//auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
-	//if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
-	//	base->SetEnableDockedImGui(useUnityLayout_);
-	//	unityDockInitialized_ = false;
-	//	if (!useUnityLayout_) {
-	//		unityDockInitialized_ = false;
-	//		dockLayoutDelay_ = 0;
-	//	}
+	//// Unity風レイアウトの表示
+	//if (useUnityLayout_) {
+	//	DrawUnityLayout();
 	//}
 
-	//======= ✅ Sceneが切り替わったときだけ Dock再初期化 =======
-	static BaseScene* lastScene = nullptr;
-	auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+	//// レイアウト切り替えUI
+	//if (!useUnityLayout_) {
+	//	ImGui::Begin("レイアウト切替");
+	//	if (ImGui::Button("Unity風レイアウトに戻す")) {
+	//		useUnityLayout_ = true;
+	//		unityDockInitialized_ = false;
+	//	}
+	//	ImGui::End();
+	//}
 
-	if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
-		base->SetEnableDockedImGui(useUnityLayout_);
+	////// Unityレイアウトの有効状態をSceneに通知
+	////auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+	////if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
+	////	base->SetEnableDockedImGui(useUnityLayout_);
+	////	unityDockInitialized_ = false;
+	////	if (!useUnityLayout_) {
+	////		unityDockInitialized_ = false;
+	////		dockLayoutDelay_ = 0;
+	////	}
+	////}
 
-		if (base != lastScene) {
-			unityDockInitialized_ = false;
-			dockLayoutDelay_ = 0;
-			lastScene = base;
-		}
-	}
+	////======= ✅ Sceneが切り替わったときだけ Dock再初期化 =======
+	//static BaseScene* lastScene = nullptr;
+	//auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+
+	//if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
+	//	base->SetEnableDockedImGui(useUnityLayout_);
+
+	//	if (base != lastScene) {
+	//		unityDockInitialized_ = false;
+	//		dockLayoutDelay_ = 0;
+	//		lastScene = base;
+	//	}
+	//}
 
 #endif
 
@@ -87,7 +87,7 @@ void MyGame::Update()
 	// 基底クラスの更新処理
 	Framework::Update();
 
-	GlobalVariables::GetInstance()->Update();
+	//GlobalVariables::GetInstance()->Update();
 
 	// ImGuiの内部コマンドを生成する
 	ImGui::Render();

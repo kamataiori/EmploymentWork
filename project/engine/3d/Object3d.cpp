@@ -146,3 +146,10 @@ const Vector4& Object3d::GetMaterialColor() const
     assert(model_);
     return model_->GetMaterialColor();
 }
+
+std::optional<Vector3> Object3d::GetJointWorldPosition(const std::string& jointName) const
+{
+    if (!model_) return std::nullopt;
+
+    return model_->GetJointWorldPosition(jointName, worldMatrix_);
+}

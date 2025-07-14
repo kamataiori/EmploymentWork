@@ -9,8 +9,13 @@ void Player::Initialize()
 	//ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 	//ModelManager::GetInstance()->LoadModel("human/walk.gltf");
 	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
+	/*ModelManager::GetInstance()->LoadModel("Sam.gltf");
+	ModelManager::GetInstance()->LoadModel("Monk.gltf");*/
 
 	object3d_->SetModel("Warrior.gltf");
+
+
+	//object3d_->SetModel("Sam.gltf");
 	//object3d_->SetAnimation(animation_.Idle);
 
 	// 初期Transform設定
@@ -28,6 +33,7 @@ void Player::Initialize()
 	SetPosition(object3d_->GetTranslate());  // 3Dモデルの位置にコライダーをセット
 	sphere.radius = 2.0f;
 	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
+
 
 }
 
@@ -48,6 +54,7 @@ void Player::Update()
 
 	// 弾の処理
 	HandleBullet();
+
 
 	// -------------------------------
 	// ImGui による Transform 調整
@@ -78,7 +85,7 @@ void Player::Draw()
 {
 	object3d_->Draw();
 	// SphereCollider の描画
-	//SphereCollider::Draw();
+	SphereCollider::Draw();
 
 }
 
@@ -158,9 +165,11 @@ void Player::Move()
 	if (!isAttacking_) {
 		if (isMoving) {
 			SetAnimationIfChanged(animation_.Run_Weapon);
+			//SetAnimationIfChanged(MonkAnimation_.Run);
 		}
 		else {
 			SetAnimationIfChanged(animation_.Idle);
+			//SetAnimationIfChanged(MonkAnimation_.Idle);
 		}
 	}
 
@@ -242,10 +251,10 @@ void Player::HandleBullet()
 		if (attackAnimTimer_ <= 0.0f) {
 			isAttacking_ = false;
 			SetAnimationIfChanged(animation_.Idle);
+			//SetAnimationIfChanged(MonkAnimation_.Idle);
 		}
 	}
 
-	// 左クリックで攻撃開始
 	if (Input::GetInstance()->TriggerMouseButton(0) && !isAttacking_) {
 		SetAnimationIfChanged(animation_.Sword_Attack);
 		isAttacking_ = true;
@@ -253,22 +262,35 @@ void Player::HandleBullet()
 
 		if (bullet_ == nullptr) {
 			bullet_ = std::make_unique<PlayerBullet>(baseScene_);
-			bullet_->SetTranslate(object3d_->GetTranslate());
 
-			// 正面方向ベクトル
-			float angleY = transform.rotate.y;
+			// 手のボーン名
+			const std::string boneName = "Weapon.R";
+
+			// ボーンのワールド座標取得
+			std::optional<Vector3> handPosOpt = object3d_->GetJointWorldPosition(boneName);
+			if (!handPosOpt.has_value()) {
+				// 取得失敗時はキャラの中心から撃つ
+				handPosOpt = transform.translate;
+			}
+			Vector3 handPos = handPosOpt.value();
+
+			// 進行方向（Y回転ベースの前方ベクトル）
 			Vector3 forward = {
-				std::sin(angleY),
+				std::sin(transform.rotate.y),
 				0.0f,
-				std::cos(angleY)
+				std::cos(transform.rotate.y)
 			};
 			forward = Normalize(forward) * 0.5f;
+
+			bullet_->SetTranslate(handPos);
 			bullet_->SetVelocity(forward);
 
 			bullet_->Initialize();
 			bullet_->SetCamera(camera_);
 		}
 	}
+
+
 
 	// 弾更新
 	if (bullet_) {
@@ -278,7 +300,6 @@ void Player::HandleBullet()
 		}
 	}
 }
-
 
 void Player::SetAnimationIfChanged(const std::string& name)
 {

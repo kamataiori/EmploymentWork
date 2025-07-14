@@ -22,7 +22,7 @@ public:
 	//--------構造体--------//
 
 	// 頂点データの拡張
-	struct alignas(16) VertexData {
+	struct VertexData {
 		Vector4 position;
 		Vector2 texcoord;
 		//float padding[2];
@@ -42,6 +42,7 @@ public:
 	struct MaterialData {
 		std::string textureFilePath;
 		uint32_t textureIndex = 0;
+		Vector4 color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	};
 
 	// Node構造体
@@ -107,9 +108,18 @@ public:
 	void Draw();
 
 	/// <summary>
-    /// 骨を描画
-    /// </summary>
+	/// 骨を描画
+	/// </summary>
 	void DrawSkeleton(const Matrix4x4& worldMatrix);
+
+	/// <summary>
+    /// 指定したジョイント名のワールド座標を取得
+    /// </summary>
+    /// <param name="jointName">取得したいボーン名</param>
+    /// <param name="modelWorldMatrix">モデルのワールド行列</param>
+    /// <returns>ワールド空間上の位置（存在しない場合は std::nullopt）</returns>
+	std::optional<Vector3> GetJointWorldPosition(const std::string& jointName, const Matrix4x4& modelWorldMatrix) const;
+
 
 	/// <summary>
 	/// 頂点データを作成
@@ -177,7 +187,7 @@ public:
 	/// <summary>
 	/// SkinClusterの生成
 	/// </summary>
-	SkinCluster CreateSkinCluster(const Microsoft::WRL::ComPtr<ID3D12Device>& device, const Skeleton& skeleton, const MeshData& meshData , const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize);
+	SkinCluster CreateSkinCluster(const Microsoft::WRL::ComPtr<ID3D12Device>& device, const Skeleton& skeleton, const MeshData& meshData, const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize);
 
 	/// <summary>
 	/// ModelDataのGetter
@@ -245,9 +255,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;  // 頂点バッファ
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;  // マテリアル用の定数バッファ
 	// バッファリソース内のデータを指すポインタ
-	//VertexData* vertexData = nullptr;
 	Material* material = nullptr;
-	//MaterialData* materialData = nullptr;
 	// バッファリソースの使い道を補完するビュー
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 
@@ -256,7 +264,9 @@ private:
 
 	AnimationData animation;
 	Skeleton skeleton;
-	//SkinCluster skinCluster;
+	AnimationData* prevAnimation_ = nullptr;
+	float blendTime_ = 0.0f;
+	float blendDuration_ = 0.4f; // 補間に使う秒数
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource;
 	// Viewを作成する
