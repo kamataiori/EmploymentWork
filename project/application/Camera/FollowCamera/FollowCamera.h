@@ -24,6 +24,16 @@ public: // カメラとターゲットとの距離関係
 	/// </summary>
 	float GetFollowDistance() const { return followDistance; }
 
+	/// <summary>
+	/// ターゲットを後から設定する
+	/// </summary>
+	void SetTarget(CharacterBase* newTarget) { target = newTarget; }
+
+	/// <summary>
+	/// 現在のターゲットを取得する
+	/// </summary>
+	CharacterBase* GetTarget() const { return target; }
+
 public: // カメラの高さ関係
 
 	/// <summary>

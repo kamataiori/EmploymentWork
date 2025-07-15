@@ -58,6 +58,14 @@ void PlayerBullet::Draw()
 	SphereCollider::Draw(); // デバッグ用描画
 }
 
+void PlayerBullet::SkinningDraw()
+{
+}
+
+void PlayerBullet::ParticleDraw()
+{
+}
+
 void PlayerBullet::OnCollision()
 {
 	isDead_ = true;

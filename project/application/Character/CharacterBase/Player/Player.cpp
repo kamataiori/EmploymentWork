@@ -1,310 +1,78 @@
 #include "Player.h"
-#include <FollowCamera.h>
 
-void Player::Initialize()
-{
-	object3d_->Initialize();
-
-	// モデル読み込み
-	//ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-	//ModelManager::GetInstance()->LoadModel("human/walk.gltf");
-	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
-	/*ModelManager::GetInstance()->LoadModel("Sam.gltf");
-	ModelManager::GetInstance()->LoadModel("Monk.gltf");*/
-
-	object3d_->SetModel("Warrior.gltf");
-
-
-	//object3d_->SetModel("Sam.gltf");
-	//object3d_->SetAnimation(animation_.Idle);
-
-	// 初期Transform設定
-	transform.translate = { 0.0f, 0.0f, -10.0f };
-	transform.rotate = { 0.0f, 0.0f, 0.0f };
-	transform.scale = { 1.0f, 1.0f, 1.0f };
-
-	// object3dにtransformを反映
-	object3d_->SetTranslate(transform.translate);
-	object3d_->SetRotate(transform.rotate);
-	object3d_->SetScale(transform.scale);
-
-	// コライダーの初期化
-	SetCollider(this);
-	SetPosition(object3d_->GetTranslate());  // 3Dモデルの位置にコライダーをセット
-	sphere.radius = 2.0f;
-	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
-
-
+Player::Player(BaseScene* scene) : scene_(scene) {
+    
+    // プレイヤー切り替え処理を行うクラスを生成
+    changer_ = std::make_unique<PlayerChange>();
 }
 
-void Player::Update()
-{
-	// 移動とジャンプ処理
-	/*if (!isAttacking_)*/ {
-		Move();
+void Player::Initialize(FollowCamera* camera) {
+    
+    camera_ = camera;
 
-	}
-
-	FollowCamera* followCam = dynamic_cast<FollowCamera*>(camera_);
-	if (followCam) {
-		constexpr float PI = 3.141592f;
-		transform.rotate.y = followCam->GetAngle() + PI;
-
-	}
-
-	// 弾の処理
-	HandleBullet();
-
-
-	// -------------------------------
-	// ImGui による Transform 調整
-	// -------------------------------
-	/*ImGui::Begin("Player Transform");
-
-	if (ImGui::DragFloat3("Position", &transform.translate.x, 0.1f)) {}
-	if (ImGui::DragFloat3("Rotation", &transform.rotate.x, 0.1f)) {}
-	if (ImGui::DragFloat3("Scale", &transform.scale.x, 0.1f, 0.1f, 10.0f)) {}
-
-	ImGui::End();*/
-
-	// ------------------------
-	// オブジェクト更新処理
-	// ------------------------
-	object3d_->SetTranslate(transform.translate);
-	object3d_->SetRotate(transform.rotate);
-	object3d_->SetScale(transform.scale);
-	object3d_->Update();
-
-	// コライダー位置を更新
-	SetPosition(transform.translate);
-
-	sphere.color = static_cast<int>(Color::WHITE);
+    // 最初だけプレイヤー生成（Rogue, Warriorなど）
+    currentPlayer_ = std::make_unique<PlayerWarrior>(scene_);
+    currentPlayer_->Initialize();
+    currentPlayer_->SetCamera(camera_);
 }
 
-void Player::Draw()
-{
-	object3d_->Draw();
-	// SphereCollider の描画
-	SphereCollider::Draw();
+void Player::Update() {
 
+    // プレイヤーの切り替え（1キー = Warrior、2キー = Rogue）
+    if (Input::GetInstance()->TriggerKey(DIK_1)) {
+        ChangePlayer(PlayerType::Warrior);
+    }
+    if (Input::GetInstance()->TriggerKey(DIK_2)) {
+        ChangePlayer(PlayerType::Rogue);
+    }
+
+    // 現在のプレイヤーを更新
+    if (currentPlayer_) {
+        currentPlayer_->Update();
+    }
 }
 
-void Player::BulletDraw()
-{
-	if (bullet_) {
-		bullet_->Draw();
-	}
+void Player::Draw() {
+    
+    if (currentPlayer_) {
+        currentPlayer_->Draw();
+    }
 }
 
-void Player::OnCollision()
-{
-	sphere.color = static_cast<int>(Color::RED);
+void Player::SkinningDraw() {
+    
+    if (currentPlayer_) {
+        currentPlayer_->SkinningDraw();
+    }
 }
 
-void Player::Move()
+void Player::ParticlDraw()
 {
-	// -------------------------------
-	// ダッシュ制御：1回だけ発動可能
-	// -------------------------------
-	// Bキーを初めて押した瞬間だけダッシュ許可（空中でも可）
-	if (!move_.isDashKeyHeld_ && Input::GetInstance()->PushKey(DIK_B) && !move_.hasDashed_) {
-		move_.isDashing = true;
-		move_.dashTimer = move_.kDashDuration;
-		move_.hasDashed_ = true;
-		move_.isDashKeyHeld_ = true;
-	}
-
-	// Bキーを離したら、次の押下を受付可能にする
-	if (!Input::GetInstance()->PushKey(DIK_B)) {
-		move_.isDashKeyHeld_ = false;
-	}
-
-	// ダッシュ中タイマー処理
-	if (move_.isDashing) {
-		//SetAnimationIfChanged(animation_.Roll);
-		move_.dashTimer -= 1.0f / 60.0f; // フレーム単位で減算（60FPS想定）
-		if (move_.dashTimer <= 0.0f) {
-			move_.isDashing = false;
-			move_.dashTimer = 0.0f;
-		}
-		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
-	}
-	else {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
-	}
-
-	// -------------------------------
-	// 入力による左右・前後移動処理
-	// -------------------------------
-	// -------------------------------
-	// WASD入力による方向ベクトル計算
-	// -------------------------------
-	move_.direction = { 0.0f, 0.0f, 0.0f };
-
-	bool isMoving = false;
-
-	if (Input::GetInstance()->PushKey(DIK_W)) {
-		move_.direction.z += 1.0f;
-		isMoving = true;
-	}
-	if (Input::GetInstance()->PushKey(DIK_S)) {
-		move_.direction.z -= 1.0f;
-		isMoving = true;
-	}
-	if (Input::GetInstance()->PushKey(DIK_A)) {
-		move_.direction.x -= 1.0f;
-		isMoving = true;
-	}
-	if (Input::GetInstance()->PushKey(DIK_D)) {
-		move_.direction.x += 1.0f;
-		isMoving = true;
-	}
-
-	// 入力があったならRun、それ以外はIdle
-	// Move() のアニメーション部分
-	if (!isAttacking_) {
-		if (isMoving) {
-			SetAnimationIfChanged(animation_.Run_Weapon);
-			//SetAnimationIfChanged(MonkAnimation_.Run);
-		}
-		else {
-			SetAnimationIfChanged(animation_.Idle);
-			//SetAnimationIfChanged(MonkAnimation_.Idle);
-		}
-	}
-
-
-	//// 正規化して一定速度で移動
-	//if (Length(move_.direction) > 0.0f) {
-	//	move_.direction = Normalize(move_.direction);
-	//	float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
-	//	transform.translate.x += move_.direction.x * currentSpeed;
-	//	transform.translate.z += move_.direction.z * currentSpeed;
-	//}
-
-	// 正規化してプレイヤーの向きに合わせた移動に変換
-	if (Length(move_.direction) > 0.0f) {
-		move_.direction = Normalize(move_.direction);
-		float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
-
-		// Y軸の回転行列を生成（プレイヤーの向きに応じた回転）
-		Matrix4x4 rotY = MakeRotateYMatrix(transform.rotate.y);
-
-		// 入力方向ベクトルをプレイヤーの向きに回転
-		Vector3 rotatedDir = TransformVector(move_.direction, rotY);
-
-		// 回転後の方向に沿って移動
-		transform.translate.x += rotatedDir.x * currentSpeed;
-		transform.translate.z += rotatedDir.z * currentSpeed;
-	}
-
-
-	// ----------------
-	// 二段ジャンプ処理
-	// ----------------
-	// -------------------------------
-	// 地面に接地していたらリセット
-	// -------------------------------
-	if (transform.translate.y <= jump_.kGroundHeight) {
-		transform.translate.y = jump_.kGroundHeight;
-		jump_.isJumping = false;
-		jump_.velocity = 0.0f;
-		jump_.jumpCount = 0;
-		jump_.canJump_ = true;  // 接地時に再ジャンプを許可
-		move_.hasDashed_ = false; // 接地時にダッシュ再許可
-	}
-
-	// -------------------------------
-	// Spaceキーを押した → ジャンプ条件確認
-	// -------------------------------
-	if (jump_.canJump_ && Input::GetInstance()->PushKey(DIK_SPACE) &&
-		jump_.jumpCount < jump_.kMaxJumpCount) {
-
-		// ジャンプ開始
-		jump_.velocity = jump_.kInitialVelocity;
-		jump_.isJumping = true;
-		jump_.jumpCount++;
-
-		// 今はジャンプ許可しない（離されるまで）
-		jump_.canJump_ = false;
-	}
-
-	// Spaceキーが離されたらジャンプを再許可
-	if (!Input::GetInstance()->PushKey(DIK_SPACE)) {
-		jump_.canJump_ = true;
-	}
-
-	// -------------------------------
-	// ジャンプ中のY移動＆重力
-	// -------------------------------
-	if (jump_.isJumping) {
-		transform.translate.y += jump_.velocity;
-		jump_.velocity -= jump_.kGravity;
-	}
+    currentPlayer_->ParticleDraw();
 }
 
-void Player::HandleBullet()
-{
-	// 攻撃アニメ再生中か？
-	if (isAttacking_) {
-		attackAnimTimer_ -= 1.0f / 60.0f;
-		if (attackAnimTimer_ <= 0.0f) {
-			isAttacking_ = false;
-			SetAnimationIfChanged(animation_.Idle);
-			//SetAnimationIfChanged(MonkAnimation_.Idle);
-		}
-	}
+void Player::OnCollision() {
 
-	if (Input::GetInstance()->TriggerMouseButton(0) && !isAttacking_) {
-		SetAnimationIfChanged(animation_.Sword_Attack);
-		isAttacking_ = true;
-		attackAnimTimer_ = kAttackAnimDuration_;
-
-		if (bullet_ == nullptr) {
-			bullet_ = std::make_unique<PlayerBullet>(baseScene_);
-
-			// 手のボーン名
-			const std::string boneName = "Weapon.R";
-
-			// ボーンのワールド座標取得
-			std::optional<Vector3> handPosOpt = object3d_->GetJointWorldPosition(boneName);
-			if (!handPosOpt.has_value()) {
-				// 取得失敗時はキャラの中心から撃つ
-				handPosOpt = transform.translate;
-			}
-			Vector3 handPos = handPosOpt.value();
-
-			// 進行方向（Y回転ベースの前方ベクトル）
-			Vector3 forward = {
-				std::sin(transform.rotate.y),
-				0.0f,
-				std::cos(transform.rotate.y)
-			};
-			forward = Normalize(forward) * 0.5f;
-
-			bullet_->SetTranslate(handPos);
-			bullet_->SetVelocity(forward);
-
-			bullet_->Initialize();
-			bullet_->SetCamera(camera_);
-		}
-	}
-
-
-
-	// 弾更新
-	if (bullet_) {
-		bullet_->Update();
-		if (bullet_->IsDead()) {
-			bullet_.reset();
-		}
-	}
+    if (currentPlayer_) {
+        currentPlayer_->OnCollision();
+    }
 }
 
-void Player::SetAnimationIfChanged(const std::string& name)
+void Player::ChangePlayer(PlayerType type) {
+    
+    // モデルだけを切り替える（object3d_はそのまま）
+    changer_->ChangeModel(currentPlayer_.get(), type);
+    currentPlayer_->SetAnimationNames();
+    // カメラの再設定（必須なら）
+    if (camera_) {
+        currentPlayer_->SetCamera(camera_);
+    }
+
+    // 現在の種類を記録
+    currentType_ = type;
+}
+
+CharacterBase* Player::GetCurrentCharacter() const
 {
-	if (currentAnimationName_ != name) {
-		object3d_->SetAnimation(name);
-		currentAnimationName_ = name;
-	}
+    return currentPlayer_.get();  // currentPlayer_ は CharacterBase を継承している
 }

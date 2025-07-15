@@ -59,14 +59,14 @@ void Enemy::Update()
 	//ImGui::End();
 
 	// プレイヤーの方向を向く
-	if (player_) {
-		Vector3 toPlayer = player_->GetTransform().translate - this->GetTransform().translate;
+	//if (player_) {
+	//	Vector3 toPlayer = player_->GetTransform().translate - this->GetTransform().translate;
 
-		// Y軸方向だけで角度を計算（上下方向は無視）
-		float angleY = std::atan2(toPlayer.x, toPlayer.z);
+	//	// Y軸方向だけで角度を計算（上下方向は無視）
+	//	float angleY = std::atan2(toPlayer.x, toPlayer.z);
 
-		transform.rotate.y = angleY;
-	}
+	//	transform.rotate.y = angleY;
+	//}
 
 
 	// ステート更新処理
@@ -231,9 +231,9 @@ void Enemy::AddBullet(std::unique_ptr<EnemyAttackBullet> bullet)
 
 Vector3 Enemy::GetPlayerPos() const
 {
-	if (player_) {
+	/*if (player_) {
 		return player_->GetTransform().translate;
-	}
+	}*/
 	return { 0, 0, 0 }; // 参照が無ければ原点
 }
 

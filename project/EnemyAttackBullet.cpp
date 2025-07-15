@@ -42,6 +42,14 @@ void EnemyAttackBullet::Draw() {
     SphereCollider::Draw();
 }
 
+void EnemyAttackBullet::SkinningDraw()
+{
+}
+
+void EnemyAttackBullet::ParticleDraw()
+{
+}
+
 void EnemyAttackBullet::OnCollision()
 {
     sphere.color = static_cast<int>(Color::PURPLE);

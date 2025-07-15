@@ -89,6 +89,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MinSpace</Optimization>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -176,7 +178,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Effects\PostEffect\PostEffect.cpp" />
     <ClCompile Include="engine\Collision\OBBCollider.cpp" />
     <ClCompile Include="ParticleEditorScene.cpp" />
+    <ClCompile Include="PlayerBase.cpp" />
     <ClCompile Include="PlayerBullet.cpp" />
+    <ClCompile Include="PlayerChange.cpp" />
+    <ClCompile Include="PlayerRogue.cpp" />
+    <ClCompile Include="PlayerWarrior.cpp" />
     <ClCompile Include="PostEffectManager.cpp" />
     <ClCompile Include="SceneController.cpp" />
     <ClCompile Include="Skinning.cpp" />
@@ -185,6 +191,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="UnityScene.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AnimationSet.h" />
     <ClInclude Include="EnemyAreaAttack.h" />
     <ClInclude Include="EnemyAttackBullet.h" />
     <ClInclude Include="EnemyState.h" />
@@ -259,10 +266,16 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\Effects\PostEffect\PostEffect.h" />
     <ClInclude Include="engine\Collision\OBBCollider.h" />
     <ClInclude Include="ParticleEditorScene.h" />
+    <ClInclude Include="PlayerBase.h" />
     <ClInclude Include="PlayerBullet.h" />
+    <ClInclude Include="PlayerChange.h" />
+    <ClInclude Include="PlayerRogue.h" />
+    <ClInclude Include="PlayerType.h" />
+    <ClInclude Include="PlayerWarrior.h" />
     <ClInclude Include="PostEffectManager.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="RogueAnimationSet.h" />
     <ClInclude Include="SceneController.h" />
     <ClInclude Include="Skinning.h" />
     <ClInclude Include="engine\Collision\SphereCollider.h" />

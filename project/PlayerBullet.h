@@ -19,6 +19,10 @@ public:
 	// 描画
 	void Draw() override;
 
+	void SkinningDraw() override;
+
+	void ParticleDraw() override;
+
 	void OnCollision() override;
 
 	// 速度設定
