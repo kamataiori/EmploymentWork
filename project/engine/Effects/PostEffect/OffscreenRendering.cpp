@@ -581,6 +581,27 @@ void OffscreenRendering::CreateAllPSOs()
 	}
 }
 
+void GetLastErrorMessage() {
+	LPVOID lpMsgBuf;
+	DWORD dw = GetLastError();
+
+	if (FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		dw,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&lpMsgBuf,
+		0, NULL) == 0) {
+		MessageBox(NULL, TEXT("FormatMessage failed"), TEXT("Error"), MB_OK);
+		ExitProcess(dw);
+	}
+	MessageBox(nullptr, static_cast<LPCTSTR>(lpMsgBuf), TEXT("Error"), MB_OK);
+
+	LocalFree(lpMsgBuf);
+}
+
 void OffscreenRendering::CreateAllRootSignatures()
 {
 	for (size_t i = 0; i < kPostEffectCount; ++i) {
@@ -655,20 +676,20 @@ void OffscreenRendering::CreateAllRootSignatures()
 		assert(SUCCEEDED(hr));
 
 		if (FAILED(hr)) {
-			OutputDebugStringA("CreateRootSignature failed!\n");
+			OutputDebugStringA("11CreateRootSignature failed!\n");
 			OutputDebugStringA(std::to_string(i).c_str());
-
+			OutputDebugStringA(std::to_string(hr).c_str());
 		}
 		hr = dxCommon_->GetDevice()->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignatures_[i]));
 		
 		if (FAILED(hr)) {
-			OutputDebugStringA("CreateRootSignature failed!\n");
+			OutputDebugStringA("22CreateRootSignature failed!\n");
 			OutputDebugStringA(std::to_string(i).c_str());
 
 			// hrの内容も表示するとよい
-
 		}
 		
 		assert(SUCCEEDED(hr));
 	}
 }
+

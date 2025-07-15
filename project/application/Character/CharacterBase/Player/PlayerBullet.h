@@ -2,12 +2,13 @@
 #include "CharacterBase.h"
 #include "SphereCollider.h"
 
-class EnemyBullet : public CharacterBase, public SphereCollider
+class PlayerBullet : public CharacterBase, public SphereCollider
 {
 public:
-	EnemyBullet(BaseScene* baseScene);
+	// 明示的に CharacterBase を初期化するコンストラクタ
+	PlayerBullet(BaseScene* baseScene);
 
-	~EnemyBullet();
+	~PlayerBullet();
 
 	// 初期化
 	void Initialize() override;
@@ -17,6 +18,10 @@ public:
 
 	// 描画
 	void Draw() override;
+
+	void SkinningDraw() override;
+
+	void ParticleDraw() override;
 
 	void OnCollision() override;
 
@@ -41,4 +46,3 @@ private:
 	const float maxLifeTime_ = 4.0f;
 	bool isDead_ = false;  // 弾が消えるかどうか
 };
-

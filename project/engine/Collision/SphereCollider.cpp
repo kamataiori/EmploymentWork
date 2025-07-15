@@ -15,7 +15,11 @@ bool SphereCollider::Dispatch(Collider* other) {
 
 void SphereCollider::Draw()
 {
+#ifdef _DEBUG
+
     DrawLine::GetInstance()->DrawSphere(sphere, 16, 16);
+
+#endif
 }
 
 Vector3 SphereCollider::GetCenter() const

@@ -20,49 +20,65 @@ public:
     ~CharacterBase() = default;
 
     /// <summary>
-    /// 初期化
+    /// 初期化処理
     /// </summary>
     virtual void Initialize() = 0;
 
     /// <summary>
-    /// 更新
+    /// 更新処理
     /// </summary>
     virtual void Update() = 0;
 
     /// <summary>
-    /// 描画
+    /// 通常のObject専用の描画処理
     /// </summary>
     virtual void Draw() = 0;
 
-    BaseScene* GetBaseScene() const { return baseScene_; }
+    /// <summary>
+    /// Skiningのモデル専用の描画処理
+    /// </summary>
+    virtual void SkinningDraw() = 0;
 
     /// <summary>
-    /// Transformを取得
+    /// パーティクル専用の描画処理
     /// </summary>
+    virtual void ParticleDraw() = 0;
+
+    // Sceneを取得
+    BaseScene* GetBaseScene() const { return baseScene_; }
+
+    /// Transformを取得
     const Transform& GetTransform() const { return transform; }
 
+    // Transformをセット
     void SetTranslate(const Vector3& t) { transform.translate = t; }
 
+    // Cameraをセット
     void SetCamera(Camera* camera) {
         camera_ = camera;
         object3d_->SetCamera(camera);
     }
 
-    // SetCollider()を追加
+    // SetColliderをセット
     void SetCollider(Collider* collider) { collider_ = collider; }
 
-    // GetCollider()も追加（必要に応じてアクセス可能）
+    // GetColliderをセット
     Collider* GetCollider() const { return collider_; }
 
 protected:
-    Camera* camera_ = nullptr; // カメラを共通保持
+    // カメラを共通保持
+    Camera* camera_ = nullptr;
 
-    Transform transform; // キャラクターの基本Transform
+    // キャラクターの基本Transform
+    Transform transform;
 
+    // シーンの宣言
     BaseScene* baseScene_;
 
+    // オブジェクトの宣言
     std::unique_ptr<Object3d> object3d_;
 
-    Collider* collider_; // コライダーを管理
+    // コライダーを管理
+    Collider* collider_;
 
 };

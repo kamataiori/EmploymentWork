@@ -1,14 +1,16 @@
-#include "EnemyBullet.h"
+#include "PlayerBullet.h"
 
-EnemyBullet::EnemyBullet(BaseScene* baseScene)
+PlayerBullet::PlayerBullet(BaseScene* baseScene)
 	: CharacterBase(baseScene), SphereCollider(sphere) {
 }
 
-EnemyBullet::~EnemyBullet()
+PlayerBullet::~PlayerBullet()
 {
+	int a = 0;
+	a++;
 }
 
-void EnemyBullet::Initialize()
+void PlayerBullet::Initialize()
 {
 	object3d_->Initialize();
 	ModelManager::GetInstance()->LoadModel("bullet.obj");
@@ -28,11 +30,11 @@ void EnemyBullet::Initialize()
 
 	sphere.radius = 1.0f;
 
-	SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::EnemyBullet));
+	SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::PlayerBullet));
 
 }
 
-void EnemyBullet::Update()
+void PlayerBullet::Update()
 {
 	// 弾を前進させる
 	transform.translate += velocity_;
@@ -50,13 +52,21 @@ void EnemyBullet::Update()
 	lifeTimer_ += 1.0f / 60.0f; // 仮に60FPS前提でフレームタイミングで更新
 }
 
-void EnemyBullet::Draw()
+void PlayerBullet::Draw()
 {
 	object3d_->Draw();
 	SphereCollider::Draw(); // デバッグ用描画
 }
 
-void EnemyBullet::OnCollision()
+void PlayerBullet::SkinningDraw()
+{
+}
+
+void PlayerBullet::ParticleDraw()
+{
+}
+
+void PlayerBullet::OnCollision()
 {
 	isDead_ = true;
 }

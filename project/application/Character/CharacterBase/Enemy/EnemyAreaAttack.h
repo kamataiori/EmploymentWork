@@ -8,6 +8,8 @@ public:
 	void Initialize() override;
 	void Update() override;
 	void Draw() override;
+	void SkinningDraw() override;
+	void ParticleDraw() override;
 	void OnCollision() override;
 
 	void SetLifetime(float time) {
