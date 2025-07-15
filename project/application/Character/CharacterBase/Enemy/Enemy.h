@@ -5,8 +5,8 @@
 #include "OBBCollider.h"
 #include "EnemyState.h"
 #include <memory>
-#include <EnemyAreaAttack.h>
-#include <EnemyAttackBullet.h>
+#include <Enemy/EnemyAreaAttack.h>
+#include <Enemy/EnemyAttackBullet.h>
 
 class Player; // 前方宣言
 

@@ -15,6 +15,8 @@ void GamePlayScene::Initialize()
 	BaseScene::GetLight()->SetDirectionalLightColor({ 1.0f,1.0f,1.0f,1.0f });
 
 	// モデル読み込み
+	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
+	ModelManager::GetInstance()->LoadModel("Rogue.gltf");
 	ModelManager::GetInstance()->LoadModel("ground.obj");
 	ModelManager::GetInstance()->LoadModel("stage.obj");
 
@@ -23,15 +25,11 @@ void GamePlayScene::Initialize()
 
 	player_ = std::make_unique<Player>(this);
 
-	followCamera = std::make_unique<FollowCamera>(player_.get(), 30.0f, 1.0f);
+	followCamera = std::make_unique<FollowCamera>(player_->GetCurrentCharacter(), 30.0f, 1.0f);
 	followCamera->SetFarClip(2000.0f);
 
-	player_->Initialize();
-	player_->SetCamera(followCamera.get());
-
-	enemy_ = std::make_unique<Enemy>(this);
-	enemy_->Initialize();
-	enemy_->SetPlayer(player_.get());
+	player_->Initialize(followCamera.get());
+	followCamera->SetTarget(player_->Get());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 
@@ -42,7 +40,6 @@ void GamePlayScene::Initialize()
 
 	skybox->SetCamera(followCamera.get());
 	ground->SetCamera(followCamera.get());
-	enemy_->SetCamera(followCamera.get());
 	DrawLine::GetInstance()->SetCamera(followCamera.get());
 
 	stage_ = std::make_unique<SceneController>(this);
@@ -52,11 +49,6 @@ void GamePlayScene::Initialize()
 
 
 	collisionMAnager_ = std::make_unique<CollisionManager>();
-	/*collisionMAnager_->RegisterCollider(player_.get());
-	collisionMAnager_->RegisterCollider(enemy_.get());
-	if (auto bullet = player_->GetBullet()) {
-		collisionMAnager_->RegisterCollider(bullet);
-	}*/
 
 	AddRightDockWindow(kWindowName_MonsterControl);
 
@@ -74,7 +66,6 @@ void GamePlayScene::Update()
 	skybox->Update();
 	ground->Update();
 	player_->Update();
-	enemy_->Update();
 
 	// カメラの更新
 	camera1->Update();
@@ -84,20 +75,19 @@ void GamePlayScene::Update()
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
-	//ImGui::Text("bullet_ exists: %s", player_->GetBullet() ? "Yes" : "No");
 
-	collisionMAnager_->RegisterCollider(player_.get());
-	collisionMAnager_->RegisterCollider(enemy_.get());
-	if (player_->GetBullet()) {
+	collisionMAnager_->RegisterCollider(player_->Get());
+	//collisionMAnager_->RegisterCollider(enemy_.get());
+	/*if (player_->GetBullet()) {
 		auto bullet = player_->GetBullet();
 		collisionMAnager_->RegisterCollider(bullet);
-	}
-	for (const auto& areaAttack : enemy_->GetAreaAttacks()) {
+	}*/
+	/*for (const auto& areaAttack : enemy_->GetAreaAttacks()) {
 		collisionMAnager_->RegisterCollider(areaAttack.get());
 	}
 	for (const auto& bulletAttack : enemy_->GetAttackBulets()) {
 		collisionMAnager_->RegisterCollider(bulletAttack.get());
-	}
+	}*/
 
 
 	// 衝突判定と応答
@@ -146,10 +136,8 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	//stage_->Draw();
 	ground->Draw();
-	enemy_->Draw();
-	player_->BulletDraw();
+	player_->Draw();
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
@@ -163,8 +151,7 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	player_->Draw();
-	enemy_->DrawModel();
+	player_->SkinningDraw();
 	
 
 	// ================================================
@@ -201,7 +188,7 @@ void GamePlayScene::ForeGroundDraw()
 	// ここからparticle個々の描画
 	// ================================================
 
-
+	player_->ParticlDraw();
 
 	// ================================================
 	// ここまでparticle個々の描画

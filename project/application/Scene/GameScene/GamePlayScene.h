@@ -12,7 +12,7 @@
 #include "Player.h"
 #include "DrawLine.h"
 #include "CollisionManager.h"
-#include <Enemy.h>
+#include <Enemy/Enemy.h>
 #include <FollowCamera.h>
 #include "SkyBox.h"
 
@@ -89,7 +89,6 @@ private:
 	std::unique_ptr<Object3d> ground;
 
 	std::unique_ptr<Player> player_;
-	std::unique_ptr<Enemy> enemy_;
 
 	std::unique_ptr<CollisionManager> collisionMAnager_;
 

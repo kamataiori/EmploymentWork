@@ -26,6 +26,14 @@ void EnemyAreaAttack::Draw() {
     SphereCollider::Draw();
 }
 
+void EnemyAreaAttack::SkinningDraw()
+{
+}
+
+void EnemyAreaAttack::ParticleDraw()
+{
+}
+
 void EnemyAreaAttack::OnCollision()
 {
     sphere.color = static_cast<int>(Color::BLUE);
