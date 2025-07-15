@@ -12,7 +12,7 @@
 #include "Player.h"
 #include "DrawLine.h"
 #include "CollisionManager.h"
-#include <Enemy.h>
+#include <Enemy/Enemy.h>
 #include <FollowCamera.h>
 #include "SkyBox.h"
 

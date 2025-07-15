@@ -3,8 +3,8 @@
 #include "EnemyState_Idle.h"
 #include "EnemyState_Dash.h"
 #include "Player.h"
-#include <EnemyState_Attack2.h>
-#include <EnemyState_Attack1.h>
+#include <Enemy/EnemyState_Attack2.h>
+#include <Enemy/EnemyState_Attack1.h>
 
 void Enemy::Initialize()
 {

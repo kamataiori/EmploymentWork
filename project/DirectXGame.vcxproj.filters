@@ -162,9 +162,6 @@
     <ClCompile Include="engine\FrameWork\Audio\Audio.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="ImGuiManager.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="engine\3d\Light.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -213,13 +210,10 @@
     <ClCompile Include="engine\Collision\CollisionFunctions.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Enemy.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\Enemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="engine\Debug\GlobalVariables.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Skinning.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="engine\Debug\Color.cpp">
@@ -240,61 +234,67 @@
     <ClCompile Include="engine\Debug\DrawTriangleCommon.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="UnityScene.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Fade.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Idle.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PostEffectManager.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Dash.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="SkyBox.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyAreaAttack.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="ParticleEditorScene.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Attack2.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerBullet.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyAttackBullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="JsonLevelLoader.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Attack1.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="SceneController.cpp">
+    <ClCompile Include="engine\Scene\ParticleEditorScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="EnemyState.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="EnemyState_Idle.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerBullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="EnemyState_Dash.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerChange.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="EnemyAreaAttack.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerRogue.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="EnemyState_Attack2.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerWarrior.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="EnemyAttackBullet.cpp">
+    <ClCompile Include="engine\3d\Skinning.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="EnemyState_Attack1.cpp">
+    <ClCompile Include="engine\Scene\Fade.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerBase.cpp">
+    <ClCompile Include="engine\Scene\UnityScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerWarrior.cpp">
+    <ClCompile Include="engine\FrameWork\ImGuiManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerRogue.cpp">
+    <ClCompile Include="engine\3d\JsonLevelLoader.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerChange.cpp">
+    <ClCompile Include="engine\3d\SceneController.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\SkyBox.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\Effects\PostEffect\PostEffectManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -425,9 +425,6 @@
     <ClInclude Include="engine\FrameWork\Audio\Audio.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ImGuiManager.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="engine\3d\Light.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -482,22 +479,13 @@
     <ClInclude Include="engine\Collision\CollisionFunctions.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Enemy.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\Enemy.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\Collision\CollisionTypeIdDef.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\Debug\GlobalVariables.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="StructAnimation.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Quaternion.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Skinning.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\Debug\Color.h">
@@ -518,70 +506,82 @@
     <ClInclude Include="engine\Debug\DrawTriangleCommon.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="UnityScene.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Fade.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Idle.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PostEffectManager.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Dash.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="SkyBox.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyAreaAttack.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ParticleEditorScene.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Attack2.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerBullet.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyAttackBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="JsonLevelLoader.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Attack1.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="SceneController.h">
+    <ClInclude Include="engine\Scene\ParticleEditorScene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="EnemyState.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerBase.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="EnemyState_Idle.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="EnemyState_Dash.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerChange.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="EnemyAreaAttack.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerRogue.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="EnemyState_Attack2.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerType.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="EnemyAttackBullet.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerWarrior.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="EnemyState_Attack1.h">
+    <ClInclude Include="engine\Effects\PostEffect\PostEffectManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerBase.h">
+    <ClInclude Include="engine\math\Quaternion.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerWarrior.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\RogueAnimationSet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerRogue.h">
+    <ClInclude Include="engine\3d\Skinning.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerChange.h">
+    <ClInclude Include="engine\3d\StructAnimation.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerType.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\AnimationSet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="AnimationSet.h">
+    <ClInclude Include="engine\Scene\Fade.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="RogueAnimationSet.h">
+    <ClInclude Include="engine\Scene\UnityScene.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\FrameWork\ImGuiManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\JsonLevelLoader.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\SceneController.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\SkyBox.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
