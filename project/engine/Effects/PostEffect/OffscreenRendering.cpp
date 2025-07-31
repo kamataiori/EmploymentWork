@@ -545,9 +545,9 @@ void OffscreenRendering::CreateAllPSOs()
 
 	std::vector<PostEffectShader> shaders = {
 		{ PostEffectType::Normal, L"Resources/shaders/CopyImage.PS.hlsl" },
-		/*{ PostEffectType::Blur5x5, L"Resources/shaders/BoxFilter.PS.hlsl" },
+		{ PostEffectType::Blur5x5, L"Resources/shaders/BoxFilter.PS.hlsl" },
 		{ PostEffectType::Blur3x3, L"Resources/shaders/BoxFilter3x3.PS.hlsl" },
-		{ PostEffectType::GaussianFilter , L"Resources/shaders/GaussianFilter.PS.hlsl" },*/
+		{ PostEffectType::GaussianFilter , L"Resources/shaders/GaussianFilter.PS.hlsl" },
 		{ PostEffectType::RadialBlur , L"Resources/shaders/RadialBlur.PS.hlsl" },
 		{ PostEffectType::Grayscale, L"Resources/shaders/Grayscale.PS.hlsl" },
 		{ PostEffectType::Vignette, L"Resources/shaders/Vignette.PS.hlsl" },

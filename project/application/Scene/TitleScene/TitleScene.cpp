@@ -181,6 +181,69 @@ void TitleScene::Finalize()
 
 void TitleScene::Update()
 {
+	// === ImGui：PostEffectType選択 ===
+#ifdef _DEBUG
+	ImGui::Begin("Post Effect");
+
+	const char* postEffectNames[] = {
+		"Normal",
+		"Blur5x5",
+		"Blur3x3",
+		"GaussianFilter",
+		"RadialBlur",
+		"Grayscale",
+		"Vignette",
+		"Sepia",
+		"Random",
+		"Dissolve"
+	};
+
+	// 現在の PostEffectType を int に変換
+	int currentType = static_cast<int>(PostEffectManager::GetInstance()->GetType());
+	static bool isDissolve = false;
+
+	// コンボボックスで切り替え
+	if (ImGui::Combo("Effect Type", &currentType, postEffectNames, IM_ARRAYSIZE(postEffectNames))) {
+		PostEffectType selected = static_cast<PostEffectType>(currentType);
+		PostEffectManager::GetInstance()->SetType(selected);
+
+		if (selected == PostEffectType::Dissolve) {
+			isDissolve = true;
+			PostEffectManager::GetInstance()->DissolveInitialize(0.3f, 0.03f, { 1.0f, 0.4f, 0.3f });
+			PostEffectManager::GetInstance()->SetDissolveTextures(
+				"Resources/noise1.png", // 通常シーンの画像（gTexture）
+				"Resources/noise0.png"  // マスク画像（gMaskTexture）
+			);
+		}
+		else {
+			isDissolve = false;
+		}
+	}
+
+	ImGui::End();
+
+	// Dissolve エフェクト用コントローラー
+	if (isDissolve) {
+		ImGui::Begin("PostEffect Controller");
+
+		static float threshold = 0.4f;
+		static float edgeWidth = 0.03f;
+		static Vector3 edgeColor = { 1.0f, 0.4f, 0.3f };
+
+		ImGui::SliderFloat("Threshold", &threshold, 0.0f, 1.0f);
+		ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0f, 0.1f);
+		ImGui::ColorEdit3("Edge Color", &edgeColor.x);
+
+		PostEffectManager::GetInstance()->SetDissolveThreshold(threshold);
+		PostEffectManager::GetInstance()->SetDissolveEdgeWidth(edgeWidth);
+		PostEffectManager::GetInstance()->SetDissolveEdgeColor(edgeColor);
+
+		ImGui::End();
+	}
+
+#endif
+
+
 
 	//// アルファ値を減少させる
 	//Vector4 color = plane->GetMaterialColor();
@@ -235,82 +298,68 @@ void TitleScene::Update()
 	ringParticle->Update();
 	cyrinderParticle->Update();
 
-	if (Input::GetInstance()->TriggerKey(DIK_K)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_I)) {
-		PostEffectManager::GetInstance()->SetGrayscaleWeights({ 0.299f, 0.587f, 0.114f });
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_L)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_O)) {
-		PostEffectManager::GetInstance()->SetVignetteColor({ 1.0f,0.85f,0.3f });
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_J)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Sepia);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_M)) {
-		PostEffectManager::GetInstance()->SetSepiaColor({ 0.4f, 0.3f, 0.9f });
-		PostEffectManager::GetInstance()->SetSepiaStrength(0.9f);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_B)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_G)) {
-		//PostEffectManager::GetInstance()->SetRadialBlurCenter({ 0.2f,0.2f });
-		PostEffectManager::GetInstance()->SetRadialBlurWidth(0.05f);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_R)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Random);
-		//PostEffectManager::GetInstance()->Set
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_E)) {
-		// 元画像にちらつくノイズを乗せる
-		PostEffectManager::GetInstance()->SetRandomUseImage(true);
+	//if (Input::GetInstance()->TriggerKey(DIK_N)) {
+	//	PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
+	//}
+	//if (Input::GetInstance()->TriggerKey(DIK_K)) {
+	//	PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
+	//}
+	//if (Input::GetInstance()->TriggerKey(DIK_L)) {
+	//	PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
+	//}
+	//if (Input::GetInstance()->TriggerKey(DIK_J)) {
+	//	PostEffectManager::GetInstance()->SetType(PostEffectType::Sepia);
+	//}
+	//if (Input::GetInstance()->TriggerKey(DIK_B)) {
+	//	PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
+	//}
+	//if (Input::GetInstance()->TriggerKey(DIK_R)) {
+	//	PostEffectManager::GetInstance()->SetType(PostEffectType::Random);
+	//}
+	//if (Input::GetInstance()->TriggerKey(DIK_E)) {
+	//	// 元画像にちらつくノイズを乗せる
+	//	PostEffectManager::GetInstance()->SetRandomUseImage(true);
+	//}
+	//if (Input::GetInstance()->TriggerKey(DIK_D)) {
+	//	isDissolve = true;
+	//	PostEffectManager::GetInstance()->SetType(PostEffectType::Dissolve);
+	//	PostEffectManager::GetInstance()->DissolveInitialize(0.3f, 0.03f, { 1.0f, 0.4f, 0.3f });
+	//	// 使用するテクスチャを指定
+	//	PostEffectManager::GetInstance()->SetDissolveTextures(
+	//		"Resources/noise1.png",     // 通常シーンの画像（gTexture）
+	//		"Resources/noise0.png"            // マスク画像（gMaskTexture）
+	//	);
 
-	}
+	//	// しきい値を ImGuiなどでリアルタイム制御も可能
+	//	PostEffectManager::GetInstance()->SetDissolveThreshold(sliderValue);
+	//}
 
-	if (Input::GetInstance()->TriggerKey(DIK_D)) {
-		isDissolve = true;
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Dissolve);
-		PostEffectManager::GetInstance()->DissolveInitialize(0.3f, 0.03f, { 1.0f, 0.4f, 0.3f });
-		// 使用するテクスチャを指定
-		PostEffectManager::GetInstance()->SetDissolveTextures(
-			"Resources/noise1.png",     // 通常シーンの画像（gTexture）
-			"Resources/noise0.png"            // マスク画像（gMaskTexture）
-		);
+	//if (isDissolve = true)
+	//{
+	//	ImGui::Begin("PostEffect Controller");
 
-		// しきい値を ImGuiなどでリアルタイム制御も可能
-		PostEffectManager::GetInstance()->SetDissolveThreshold(sliderValue);
-	}
+	//	// Dissolve 関連 UI
 
-	if (isDissolve = true)
-	{
-		ImGui::Begin("PostEffect Controller");
+	//	static float threshold = 0.4f;
+	//	static float edgeWidth = 0.03f;
+	//	static Vector3 edgeColor = { 1.0f, 0.4f, 0.3f };
 
-		// Dissolve 関連 UI
+	//	ImGui::SliderFloat("Threshold", &threshold, 0.0f, 1.0f);
+	//	ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0f, 0.1f);
+	//	ImGui::ColorEdit3("Edge Color", &edgeColor.x);
 
-		static float threshold = 0.4f;
-		static float edgeWidth = 0.03f;
-		static Vector3 edgeColor = { 1.0f, 0.4f, 0.3f };
+	//	PostEffectManager::GetInstance()->SetDissolveThreshold(threshold);
+	//	PostEffectManager::GetInstance()->SetDissolveEdgeWidth(edgeWidth);
+	//	PostEffectManager::GetInstance()->SetDissolveEdgeColor(edgeColor);
 
-		ImGui::SliderFloat("Threshold", &threshold, 0.0f, 1.0f);
-		ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0f, 0.1f);
-		ImGui::ColorEdit3("Edge Color", &edgeColor.x);
-
-		PostEffectManager::GetInstance()->SetDissolveThreshold(threshold);
-		PostEffectManager::GetInstance()->SetDissolveEdgeWidth(edgeWidth);
-		PostEffectManager::GetInstance()->SetDissolveEdgeColor(edgeColor);
-
-		ImGui::End();
-	}
+	//	ImGui::End();
+	//}
 
 
 	skybox->Update();
 
 	// デバッグ
-	Debug();
+	//Debug();
 
 	sceneController_->Update();
 
@@ -404,8 +453,8 @@ void TitleScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	animationCube->Draw();
-	sneak->Draw();
+	/*animationCube->Draw();
+	sneak->Draw();*/
 
 	// ================================================
 	// ここまでアニメーションオブジェクトの個々の描画
