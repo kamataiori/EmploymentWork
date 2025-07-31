@@ -102,7 +102,7 @@ private:
 
 	D3D12_ROOT_SIGNATURE_DESC DescriptionRootSignature_{};
 
-	D3D12_ROOT_PARAMETER RootParameters_[8] = {};
+	D3D12_ROOT_PARAMETER RootParameters_[9] = {};
 
 	std::array<D3D12_INPUT_ELEMENT_DESC, 3> InputElementDescs_{};
 

@@ -147,7 +147,7 @@ void Model::Draw()
 
 		// パレットSRV（スキンありの場合のみ）
 		if (modelData.isAnimation && !instance.skinCluster.inverseBindPoseMatrices.empty()) {
-			modelCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(7, instance.skinCluster.paletteSrvHandle.second);
+			modelCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(8, instance.skinCluster.paletteSrvHandle.second);
 		}
 
 		// 描画

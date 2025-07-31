@@ -70,6 +70,8 @@ ConstantBuffer<Camera> gCamera : register(b2);
 ConstantBuffer<PointLight> gPointLight : register(b3);
 ConstantBuffer<SpotLight> gSpotLight : register(b4);
 
+TextureCube<float4> gEnvironmentMap : register(t1);
+
 PixelShaderOutput main(VertexShaderOutput input)
 {
     float4 transformedUV = mul(float4(input.texcoord, 0.0f, 1.0f), gMaterial.uvTransform);
@@ -128,8 +130,13 @@ PixelShaderOutput main(VertexShaderOutput input)
         specularPow = pow(saturate(RdotE), gMaterial.shininess);
         float3 specularSpotLight = gSpotLight.color.rgb * gSpotLight.intensity * specularPow * attenuationFactor * falloffFactor;
 
+        float3 cameraToPosition = normalize(input.worldPosition - gCamera.worldPosition);
+        float3 reflectedVector = reflect(cameraToPosition, normalize(input.normal));
+        float4 environmentColor = gEnvironmentMap.Sample(gSampler, reflectedVector);
+        
         // 全部足して最終的な色を計算する
         output.color.rgb = diffuseDirectionalLight + specularDirectionalLight + diffusePointLight + specularPointLight + diffuseSpotLight + specularSpotLight;
+        output.color.rgb += environmentColor.rgb;
         output.color.a = gMaterial.color.a * textureColor.a;
     }
     else
@@ -137,6 +144,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         // Lightしない場合
         output.color = gMaterial.color * textureColor;
     }
+   
 
     return output;
 }

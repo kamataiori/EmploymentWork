@@ -82,6 +82,8 @@ void Object3d::Draw()
 
     object3dCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootConstantBufferView(6, baseScene_->GetLight()->GetSpotLightGPUAddress());
 
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(7, TextureManager::GetInstance()->GetTextureIndexByFilePath("Resources/rostock_laage_airport_4k.dds"));
+
     // 3Dモデルが割り当てられていたら描画する
     if (model_) {
         model_->Draw();
