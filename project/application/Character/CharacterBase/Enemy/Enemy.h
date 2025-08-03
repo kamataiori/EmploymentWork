@@ -42,6 +42,8 @@ public:
 	void Draw() override;
 
 	void DrawModel();
+	void SkinningDraw() override;
+	void ParticleDraw() override;
 
 	void OnCollision() override;
 

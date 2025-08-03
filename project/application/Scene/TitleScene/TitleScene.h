@@ -104,4 +104,6 @@ private:
 	bool isDissolve = false;
 
 	std::unique_ptr<SceneController> sceneController_;
+
+	std::unique_ptr<Sprite> title = std::make_unique<Sprite>();
 };

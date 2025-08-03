@@ -50,7 +50,7 @@ void PlayerBase::Update()
 void PlayerBase::Draw()
 {
 	// SphereCollider の描画
-	SphereCollider::Draw();
+	//SphereCollider::Draw();
 }
 
 void PlayerBase::SkinningDraw()

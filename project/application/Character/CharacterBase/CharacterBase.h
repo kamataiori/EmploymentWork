@@ -50,8 +50,12 @@ public:
     /// Transformを取得
     const Transform& GetTransform() const { return transform; }
 
+    void SetTarnsform(const Transform& transform_) { transform = transform_;  }
+
     // Transformをセット
     void SetTranslate(const Vector3& t) { transform.translate = t; }
+    void SetRotate(const Vector3& t) { transform.rotate = t; }
+    void SetScale(const Vector3& t) { transform.scale = t; }
 
     // Cameraをセット
     void SetCamera(Camera* camera) {

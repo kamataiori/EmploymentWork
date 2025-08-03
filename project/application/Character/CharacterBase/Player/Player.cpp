@@ -2,18 +2,22 @@
 
 Player::Player(BaseScene* scene) : scene_(scene) {
     
-    // プレイヤー切り替え処理を行うクラスを生成
-    changer_ = std::make_unique<PlayerChange>();
 }
 
 void Player::Initialize(FollowCamera* camera) {
     
     camera_ = camera;
 
-    // 最初だけプレイヤー生成（Rogue, Warriorなど）
-    currentPlayer_ = std::make_unique<PlayerWarrior>(scene_);
-    currentPlayer_->Initialize();
-    currentPlayer_->SetCamera(camera_);
+    // 全プレイヤー生成
+    warrior_ = std::make_unique<PlayerWarrior>(scene_);
+    rogue_ = std::make_unique<PlayerRogue>(scene_);
+
+    warrior_->Initialize();
+    warrior_->SetCamera(camera_);
+    rogue_->Initialize();
+    rogue_->SetCamera(camera_);
+
+    currentPlayer_ = warrior_.get();  // 最初は Warrior
 }
 
 void Player::Update() {
@@ -59,20 +63,36 @@ void Player::OnCollision() {
 }
 
 void Player::ChangePlayer(PlayerType type) {
-    
-    // モデルだけを切り替える（object3d_はそのまま）
-    changer_->ChangeModel(currentPlayer_.get(), type);
-    currentPlayer_->SetAnimationNames();
-    // カメラの再設定（必須なら）
-    if (camera_) {
-        currentPlayer_->SetCamera(camera_);
+    if (currentType_ == type) return;
+
+    Transform oldTransform;
+    if (currentPlayer_) {
+        oldTransform = currentPlayer_->GetTransform();
     }
 
-    // 現在の種類を記録
+    switch (type) {
+    case PlayerType::Warrior:
+        currentPlayer_ = warrior_.get();
+        break;
+    case PlayerType::Rogue:
+        currentPlayer_ = rogue_.get();
+        break;
+    }
+
+    if (currentPlayer_) {
+        currentPlayer_->SetTranslate(oldTransform.translate);
+        currentPlayer_->SetRotate(oldTransform.rotate);
+        currentPlayer_->SetScale(oldTransform.scale);
+
+        currentPlayer_->Initialize();  // transform は上で設定済みなので初期化内で再初期化されない
+
+        currentPlayer_->SetCamera(camera_);
+        currentPlayer_->SetAnimationNames();
+    }
+
     currentType_ = type;
 }
 
-CharacterBase* Player::GetCurrentCharacter() const
-{
-    return currentPlayer_.get();  // currentPlayer_ は CharacterBase を継承している
+CharacterBase* Player::GetCurrentCharacter() const {
+    return currentPlayer_;
 }

@@ -19,17 +19,22 @@ void GamePlayScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("Rogue.gltf");
 	ModelManager::GetInstance()->LoadModel("ground.obj");
 	ModelManager::GetInstance()->LoadModel("stage.obj");
+	ModelManager::GetInstance()->LoadModel("skydome.obj");
 
 	// 3Dカメラの初期化
 	camera1->SetTranslate({ 0.0f, 0.0f, -20.0f });
 
 	player_ = std::make_unique<Player>(this);
+	enemy_ = std::make_unique<Enemy>(this);
 
 	followCamera = std::make_unique<FollowCamera>(player_->GetCurrentCharacter(), 30.0f, 1.0f);
 	followCamera->SetFarClip(2000.0f);
 
 	player_->Initialize(followCamera.get());
 	followCamera->SetTarget(player_->Get());
+
+	enemy_->Initialize();
+	enemy_->SetCamera(followCamera.get());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 
@@ -38,8 +43,14 @@ void GamePlayScene::Initialize()
 	ground->SetModel("ground.obj");
 	ground->SetTranslate({ 0.0f,-1.0f,0.0f });
 
+	sky = std::make_unique<Object3d>(this);
+	sky->Initialize();
+	sky->SetModel("skydome.obj");
+	sky->SetTranslate({ 0.0f,0.0f,0.0f });
+
 	skybox->SetCamera(followCamera.get());
 	ground->SetCamera(followCamera.get());
+	sky->SetCamera(followCamera.get());
 	DrawLine::GetInstance()->SetCamera(followCamera.get());
 
 	stage_ = std::make_unique<SceneController>(this);
@@ -65,7 +76,9 @@ void GamePlayScene::Update()
 	stage_->Update();
 	skybox->Update();
 	ground->Update();
+	sky->Update();
 	player_->Update();
+	enemy_->Update();
 
 	// カメラの更新
 	camera1->Update();
@@ -126,7 +139,7 @@ void GamePlayScene::BackGroundDraw()
 void GamePlayScene::Draw()
 {
 
-	skybox->Draw();
+	//skybox->Draw();
 
 	// 3Dオブジェクトの描画前処理。3Dオブジェクトの描画設定に共通のグラフィックスコマンドを積む
 	Object3dCommon::GetInstance()->CommonSetting();
@@ -136,8 +149,10 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
+	sky->Draw();
 	ground->Draw();
 	player_->Draw();
+	enemy_->Draw();
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
@@ -152,6 +167,7 @@ void GamePlayScene::Draw()
 
 	// 各オブジェクトの描画
 	player_->SkinningDraw();
+	enemy_->DrawModel();
 	
 
 	// ================================================

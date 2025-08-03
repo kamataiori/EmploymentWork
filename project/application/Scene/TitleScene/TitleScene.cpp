@@ -172,7 +172,8 @@ void TitleScene::Initialize()
 	sceneController_->LoadScene("test"); // Resources/Json/test.json を読み込む
 	sceneController_->SetCamera(camera1.get());
 
-
+	title = std::make_unique<Sprite>();
+	title->Initialize("Resources/title.png");
 }
 
 void TitleScene::Finalize()
@@ -181,7 +182,7 @@ void TitleScene::Finalize()
 
 void TitleScene::Update()
 {
-
+	title->Update();
 	//// アルファ値を減少させる
 	//Vector4 color = plane->GetMaterialColor();
 	////color.w = 0.5f;
@@ -194,10 +195,10 @@ void TitleScene::Update()
 	// 各3Dオブジェクトの更新
 	plane->Update();
 
-	animationCube->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "position"));
+	/*animationCube->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "position"));
 	animationCube->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "rotate"));
 	camera1->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "position"));
-	camera1->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "rotate"));
+	camera1->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "rotate"));*/
 
 	animationCube->Update();
 	sneak->Update();
@@ -287,30 +288,30 @@ void TitleScene::Update()
 
 	if (isDissolve = true)
 	{
-		ImGui::Begin("PostEffect Controller");
+		//ImGui::Begin("PostEffect Controller");
 
-		// Dissolve 関連 UI
+		//// Dissolve 関連 UI
 
-		static float threshold = 0.4f;
-		static float edgeWidth = 0.03f;
-		static Vector3 edgeColor = { 1.0f, 0.4f, 0.3f };
+		//static float threshold = 0.4f;
+		//static float edgeWidth = 0.03f;
+		//static Vector3 edgeColor = { 1.0f, 0.4f, 0.3f };
 
-		ImGui::SliderFloat("Threshold", &threshold, 0.0f, 1.0f);
-		ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0f, 0.1f);
-		ImGui::ColorEdit3("Edge Color", &edgeColor.x);
+		//ImGui::SliderFloat("Threshold", &threshold, 0.0f, 1.0f);
+		//ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0f, 0.1f);
+		//ImGui::ColorEdit3("Edge Color", &edgeColor.x);
 
-		PostEffectManager::GetInstance()->SetDissolveThreshold(threshold);
-		PostEffectManager::GetInstance()->SetDissolveEdgeWidth(edgeWidth);
-		PostEffectManager::GetInstance()->SetDissolveEdgeColor(edgeColor);
+		//PostEffectManager::GetInstance()->SetDissolveThreshold(threshold);
+		//PostEffectManager::GetInstance()->SetDissolveEdgeWidth(edgeWidth);
+		//PostEffectManager::GetInstance()->SetDissolveEdgeColor(edgeColor);
 
-		ImGui::End();
+		//ImGui::End();
 	}
 
 
 	skybox->Update();
 
 	// デバッグ
-	Debug();
+	//Debug();
 
 	sceneController_->Update();
 
@@ -338,7 +339,7 @@ void TitleScene::Update()
 
 	// キー入力でフェード開始（シーン遷移予約）
 	if (!fade_->IsActive()) {
-		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
 			fade_->Start(Fade::Status::FadeOut, 2.0f);
 			nextSceneName_ = "GAMEPLAY";
@@ -447,6 +448,8 @@ void TitleScene::ForeGroundDraw()
 	// ================================================
 	// ここからSprite個々の前景描画(UIなど)
 	// ================================================
+
+	title->Draw();
 
 	if (fade_) {
 		fade_->Draw();
