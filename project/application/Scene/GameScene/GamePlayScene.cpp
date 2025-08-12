@@ -31,7 +31,7 @@ void GamePlayScene::Initialize()
 	followCamera->SetFarClip(2000.0f);
 
 	player_->Initialize(followCamera.get());
-	followCamera->SetTarget(player_->Get());
+	/*followCamera->SetTarget(player_->Get());*/
 
 	enemy_->Initialize();
 	enemy_->SetCamera(followCamera.get());

@@ -99,5 +99,8 @@ private:
 	// インスタンス
 	JumpControl jump_;
 
+	// 1回目だけデフォルトTransformを入れる
+	bool isFirstInitialize_ = true;
+
 };
 

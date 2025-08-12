@@ -3,27 +3,27 @@
 void PlayerBase::Initialize()
 {
 	// object3dの初期化
-	/*object3d_.reset(new Object3d(scene_));*/
 	object3d_->Initialize();
 
-	// 読み込んだ物をsetする
 	const char* modelName = GetModelName();
 	ModelManager::GetInstance()->LoadModel(modelName);
 	object3d_->SetModel(modelName);
 
-	// 初期Transform設定
-	transform.translate = { 0.0f, 0.0f, -10.0f };
-	transform.rotate = { 0.0f, 0.0f, 0.0f };
-	transform.scale = { 1.0f, 1.0f, 1.0f };
+	// ▼ここを毎回実行しない
+	if (isFirstInitialize_) {
+		transform.translate = { 0.0f, 0.0f, -10.0f };
+		transform.rotate = { 0.0f, 0.0f,  0.0f };
+		transform.scale = { 1.0f, 1.0f,  1.0f };
+		isFirstInitialize_ = false;
+	}
 
-	// object3dにtransformを反映
+	// ここは常に現在のtransformを反映
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
 
-	// コライダーの初期化
 	SetCollider(this);
-	SetPosition(object3d_->GetTranslate());  // 3Dモデルの位置にコライダーをセット
+	SetPosition(transform.translate);
 	sphere.radius = 2.0f;
 	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
 }

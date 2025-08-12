@@ -18,6 +18,8 @@ void Player::Initialize(FollowCamera* camera) {
     rogue_->SetCamera(camera_);
 
     currentPlayer_ = warrior_.get();  // 最初は Warrior
+    camera_->SetTarget(currentPlayer_); // 初期ターゲットもここで設定
+
 }
 
 void Player::Update() {
@@ -66,32 +68,31 @@ void Player::ChangePlayer(PlayerType type) {
     if (currentType_ == type) return;
 
     Transform oldTransform;
-    if (currentPlayer_) {
-        oldTransform = currentPlayer_->GetTransform();
-    }
+    if (currentPlayer_) oldTransform = currentPlayer_->GetTransform();
 
     switch (type) {
-    case PlayerType::Warrior:
-        currentPlayer_ = warrior_.get();
-        break;
-    case PlayerType::Rogue:
-        currentPlayer_ = rogue_.get();
-        break;
+    case PlayerType::Warrior: currentPlayer_ = warrior_.get(); break;
+    case PlayerType::Rogue:   currentPlayer_ = rogue_.get();   break;
     }
 
     if (currentPlayer_) {
+        // 先にTransformを復元
         currentPlayer_->SetTranslate(oldTransform.translate);
         currentPlayer_->SetRotate(oldTransform.rotate);
         currentPlayer_->SetScale(oldTransform.scale);
 
-        currentPlayer_->Initialize();  // transform は上で設定済みなので初期化内で再初期化されない
-
+        // 再初期化（モデル等のみ）
+        currentPlayer_->Initialize();
         currentPlayer_->SetCamera(camera_);
         currentPlayer_->SetAnimationNames();
+
+        // 追従対象を現在のプレイヤーに差し替える
+        camera_->SetTarget(currentPlayer_);
     }
 
     currentType_ = type;
 }
+
 
 CharacterBase* Player::GetCurrentCharacter() const {
     return currentPlayer_;
