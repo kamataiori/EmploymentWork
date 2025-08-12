@@ -3,6 +3,10 @@
 #include "Collider.h"
 #include "SphereCollider.h"
 #include "AnimationSet.h"
+#include "PlayerAnimation.h"
+#include "PlayerAnimKey.h"
+
+//class PlayerAnimation;
 
 class PlayerBase : public CharacterBase, public SphereCollider
 {
@@ -55,6 +59,8 @@ public:
 	// 派生クラスでアニメーション名を再設定する
 	virtual void SetAnimationNames() = 0;
 
+	void SetAnimationController(PlayerAnimation* ctrl) { animCtrl_ = ctrl; }
+
 protected:
 
 	// 派生クラスで指定するモデル名
@@ -65,6 +71,9 @@ protected:
 
 	/// アニメーションセットを取得する（派生クラスでオーバーライド）
 	virtual const AnimationSet& GetAnimation() const = 0;
+
+	// アニメーション解決コントローラ（Playerが用意するインスタンスを束ねる）
+	PlayerAnimation* animCtrl_ = nullptr;
 
 
 private:

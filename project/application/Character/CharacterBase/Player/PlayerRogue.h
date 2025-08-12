@@ -22,10 +22,8 @@ public:
     // アニメーションセットを外部から差し替える
     void SetAnimationNames() override;
 
-    //// アニメーションセットを取得（ChangePlayer用）
-    //const AnimationSet& GetAnimationSet() const {
-    //    return animation_;
-    //}
+    /// <summary>Rogue用の生アニメセット（Blender名そのまま）を返す</summary>
+    const RogueAnimationSet& GetRogueAnimSet() const { return rogueAnim_; }
 
 protected:
     // Rogue モデルの名前を返す
@@ -37,10 +35,13 @@ protected:
         return baseAnim_;
     }
 
+
+
 private:
 
-    // アニメーションの名前
-    RogueAnimationSet animation_;
+    // Rogue専用：Blender での実アニメ名の集合（Idle/Run など）
+    RogueAnimationSet rogueAnim_;
 
+    // 共通キー（AnimationSet）に写したマップ（Run_Weapon が無い場合は Run に寄せる等）
     AnimationSet baseAnim_;
 };

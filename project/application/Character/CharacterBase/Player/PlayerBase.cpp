@@ -142,13 +142,28 @@ void PlayerBase::Move()
 		transform.translate.z += rotatedDir.z * currentSpeed;
 	}
 
-	const auto& anim = GetAnimation();
+	/*const auto& anim = GetAnimation();
 
 	if (isMoving) {
 		SetAnimationIfChanged(anim.Run_Weapon);
 	}
 	else {
 		SetAnimationIfChanged(anim.Idle);
+	}*/
+
+	// （コントローラがあれば優先。無ければ従来動作でフォールバック）
+	if (animCtrl_) {
+		if (isMoving) {
+			SetAnimationIfChanged(animCtrl_->Resolve(PlayerAnimKey::RunWeapon));
+		}
+		else {
+			SetAnimationIfChanged(animCtrl_->Resolve(PlayerAnimKey::Idle));
+		}
+	}
+	else {
+		const auto& anim = GetAnimation();
+		if (isMoving) { SetAnimationIfChanged(anim.Run_Weapon); }
+		else { SetAnimationIfChanged(anim.Idle); }
 	}
 
 

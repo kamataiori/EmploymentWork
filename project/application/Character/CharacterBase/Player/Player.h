@@ -4,6 +4,7 @@
 #include "PlayerChange.h"
 #include "FollowCamera.h"
 #include "PlayerType.h"
+#include "PlayerAnimation.h"
 
 class Player {
 public:
@@ -70,5 +71,7 @@ private:
 
     std::unique_ptr<PlayerWarrior> warrior_;
     std::unique_ptr<PlayerRogue> rogue_;
+
+    PlayerAnimation anim_;  // 共通キー→実名 変換クラス
 
 };
