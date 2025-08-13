@@ -72,6 +72,6 @@ private:
     std::unique_ptr<PlayerWarrior> warrior_;
     std::unique_ptr<PlayerRogue> rogue_;
 
-    PlayerAnimation anim_;  // 共通キー→実名 変換クラス
+    PlayerAnimation anim_;
 
 };

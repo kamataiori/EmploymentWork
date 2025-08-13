@@ -6,7 +6,8 @@
 #include "PlayerAnimation.h"
 #include "PlayerAnimKey.h"
 
-//class PlayerAnimation;
+class PlayerAnimation;
+enum class PlayerAnimKey : unsigned int;
 
 class PlayerBase : public CharacterBase, public SphereCollider
 {
@@ -56,10 +57,11 @@ public:
 	// モデル変更（切り替え用）
 	void ChangeModel(const char* modelName);
 
-	// 派生クラスでアニメーション名を再設定する
-	virtual void SetAnimationNames() = 0;
-
+	// アニメーション解決コントローラ
 	void SetAnimationController(PlayerAnimation* ctrl) { animCtrl_ = ctrl; }
+
+	// 任意のタイミングでキー再生したいとき用（攻撃側から呼ぶ想定）
+	void PlayAnimKey(PlayerAnimKey key);
 
 protected:
 
@@ -69,17 +71,11 @@ protected:
 	// アニメーションを設定する関数
 	void SetAnimationIfChanged(const std::string& name);
 
-	/// アニメーションセットを取得する（派生クラスでオーバーライド）
-	virtual const AnimationSet& GetAnimation() const = 0;
-
-	// アニメーション解決コントローラ（Playerが用意するインスタンスを束ねる）
-	PlayerAnimation* animCtrl_ = nullptr;
-
-
 private:
 
 	// アニメーションの名前
 	std::string currentAnimationName_;
+	PlayerAnimation* animCtrl_ = nullptr;
 
 	// 移動制御に関する構造体
 	struct MoveControl {

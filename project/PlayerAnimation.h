@@ -1,33 +1,31 @@
 #pragma once
 #include <unordered_map>
 #include <string>
-#include <optional>
-#include <functional>
 #include "PlayerAnimKey.h"
-#include "AnimationSet.h"        // Warrior 用（Idle, Run_Weapon など）
-#include "RogueAnimationSet.h"   // Rogue 用（Idle, Run など）
+#include "PlayerType.h"
 
-struct AnimKeyHash {
-    size_t operator()(PlayerAnimKey k) const noexcept { return static_cast<size_t>(k); }
+struct PlayerAnimKeyHash {
+    size_t operator()(PlayerAnimKey k) const noexcept { return (size_t)k; }
 };
 
 class PlayerAnimation {
 public:
-    // 文字列名を直接上書きしたいとき用（攻撃クラスから差し替え可能）
-    void SetAlias(PlayerAnimKey key, const std::string& motionName);
+    // 現在のプレイヤー種別に合わせてマッピングを組む
+    void Use(PlayerType type);
 
-    // 現在のプレイヤー（Warrior/Rogue）に合わせたマッピングを構築
-    void UseWarrior(const AnimationSet& w);
-    void UseRogue(const RogueAnimationSet& r);
+    // 必要に応じて、外から個別上書きも可能
+    void SetAlias(PlayerAnimKey key, const std::string& clip);
 
-    // 共通キーから実名を取得（見つからなければ空文字）
+    // 共有キーから実クリップ名へ
     std::string Resolve(PlayerAnimKey key) const;
 
 private:
-    std::unordered_map<PlayerAnimKey, std::string, AnimKeyHash> map_;
+    std::unordered_map<PlayerAnimKey, std::string, PlayerAnimKeyHash> map_;
 
-    // 安全フォールバック（空なら fallback を返す）
-    static std::string Or(const std::string& primary, const std::string& fallback) {
-        return primary.empty() ? fallback : primary;
+    static std::string Or(const std::string& a, const std::string& b) {
+        return a.empty() ? b : a;
     }
+
+    void UseWarrior(); // Warrior.gltf 用の既定テーブル
+    void UseRogue();   // Rogue.gltf   用の既定テーブル
 };

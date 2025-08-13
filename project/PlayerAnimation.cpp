@@ -1,61 +1,71 @@
 #include "PlayerAnimation.h"
 
-void PlayerAnimation::SetAlias(PlayerAnimKey key, const std::string& motionName) {
-    map_[key] = motionName;
+void PlayerAnimation::Use(PlayerType type) {
+    switch (type) {
+    case PlayerType::Warrior: UseWarrior(); break;
+    case PlayerType::Rogue:   UseRogue();   break;
+    }
 }
 
-void PlayerAnimation::UseWarrior(const AnimationSet& w) {
-    map_.clear();
-    // Locomotion
-    map_[PlayerAnimKey::Idle] = w.Idle;
-    map_[PlayerAnimKey::IdleWeapon] = w.Idle_Weapon;
-    map_[PlayerAnimKey::IdleAttacking] = w.Idle_Attacking;
-    map_[PlayerAnimKey::Walk] = w.Walk;
-    map_[PlayerAnimKey::Run] = w.Run;
-    map_[PlayerAnimKey::RunWeapon] = Or(w.Run_Weapon, w.Run); // 無ければRunにフォールバック
-    map_[PlayerAnimKey::Roll] = w.Roll;
-
-    // Combat
-    map_[PlayerAnimKey::Punch] = w.Punch;
-    map_[PlayerAnimKey::SwordAttack] = w.Sword_Attack;
-    map_[PlayerAnimKey::SwordAttackFast] = w.Sword_AttackFast;
-    map_[PlayerAnimKey::AttackA] = w.Sword_Attack;
-    map_[PlayerAnimKey::AttackB] = w.Sword_AttackFast;
-
-    // Other
-    map_[PlayerAnimKey::PickUp] = w.PickUp;
-    map_[PlayerAnimKey::Hit1] = w.RecieveHit;
-    map_[PlayerAnimKey::Hit2] = w.RecieveHit_2;
-    map_[PlayerAnimKey::Death] = w.Death;
-}
-
-void PlayerAnimation::UseRogue(const RogueAnimationSet& r) {
-    map_.clear();
-    // Locomotion
-    map_[PlayerAnimKey::Idle] = r.Idle;
-    map_[PlayerAnimKey::IdleWeapon] = r.Idle;      // Rogueに武器別Idleが無ければIdleに寄せる
-    map_[PlayerAnimKey::IdleAttacking] = r.Attacking_Idle;
-    map_[PlayerAnimKey::Walk] = r.Walk;
-    map_[PlayerAnimKey::Run] = r.Run;
-    map_[PlayerAnimKey::RunWeapon] = Or(r.Run, r.Walk); // RogueはRun_Weaponが無い → Run or Walk
-    map_[PlayerAnimKey::Roll] = r.Roll;
-
-    // Combat
-    map_[PlayerAnimKey::Punch] = r.Punch;
-    map_[PlayerAnimKey::DaggerAttack] = r.Dagger_Attack;
-    map_[PlayerAnimKey::DaggerAttack2] = r.Dagger_Attack2;
-    map_[PlayerAnimKey::AttackA] = r.Dagger_Attack;
-    map_[PlayerAnimKey::AttackB] = r.Dagger_Attack2;
-
-    // Other
-    map_[PlayerAnimKey::PickUp] = r.PickUp;
-    map_[PlayerAnimKey::Hit1] = r.RecieveHit;
-    map_[PlayerAnimKey::Hit2] = r.RecieveHit_2;
-    map_[PlayerAnimKey::Death] = r.Death;
+void PlayerAnimation::SetAlias(PlayerAnimKey key, const std::string& clip) {
+    map_[key] = clip;
 }
 
 std::string PlayerAnimation::Resolve(PlayerAnimKey key) const {
     auto it = map_.find(key);
-    if (it == map_.end()) { return {}; }
+    if (it == map_.end()) return {};
     return it->second;
+}
+
+// ---- ここが “モデルごとの実クリップ名” の置き場所 ----
+// ※ 必要ならあとから好きに編集可能（FBX/GLTFの実名に揃える）
+
+void PlayerAnimation::UseWarrior() {
+    map_.clear();
+
+    // locomotion
+    map_[PlayerAnimKey::Idle] = "Idle";
+    map_[PlayerAnimKey::RunWeapon] = "Run_Weapon";
+    map_[PlayerAnimKey::Run] = Or("Run", map_[PlayerAnimKey::RunWeapon]); // 無ければRun_Weaponで代用
+    map_[PlayerAnimKey::Walk] = "Walk";
+    map_[PlayerAnimKey::Roll] = "Roll";
+
+    // combat
+    map_[PlayerAnimKey::SwordAttack] = "Sword_Attack";
+    map_[PlayerAnimKey::SwordAttackFast] = "Sword_AttackFast";
+    map_[PlayerAnimKey::AttackA] = map_[PlayerAnimKey::SwordAttack];
+    map_[PlayerAnimKey::AttackB] = map_[PlayerAnimKey::SwordAttackFast];
+    map_[PlayerAnimKey::Punch] = "Punch";
+
+    // others
+    map_[PlayerAnimKey::IdleAttacking] = "Idle_Attacking";
+    map_[PlayerAnimKey::PickUp] = "PickUp";
+    map_[PlayerAnimKey::Hit1] = "RecieveHit";
+    map_[PlayerAnimKey::Hit2] = "RecieveHit_2";
+    map_[PlayerAnimKey::Death] = "Death";
+}
+
+void PlayerAnimation::UseRogue() {
+    map_.clear();
+
+    // locomotion
+    map_[PlayerAnimKey::Idle] = "Idle";
+    map_[PlayerAnimKey::Run] = "Run";
+    map_[PlayerAnimKey::RunWeapon] = map_[PlayerAnimKey::Run]; // RogueはRun_Weaponが無い前提
+    map_[PlayerAnimKey::Walk] = "Walk";
+    map_[PlayerAnimKey::Roll] = "Roll";
+
+    // combat
+    map_[PlayerAnimKey::AttackA] = "Dagger_Attack";
+    map_[PlayerAnimKey::AttackB] = "Dagger_Attack2";
+    map_[PlayerAnimKey::SwordAttack] = map_[PlayerAnimKey::AttackA]; // 共通キーから見て代用
+    map_[PlayerAnimKey::SwordAttackFast] = map_[PlayerAnimKey::AttackB];
+    map_[PlayerAnimKey::Punch] = "Punch";
+
+    // others
+    map_[PlayerAnimKey::IdleAttacking] = "Attacking_Idle";
+    map_[PlayerAnimKey::PickUp] = "PickUp";
+    map_[PlayerAnimKey::Hit1] = "RecieveHit";
+    map_[PlayerAnimKey::Hit2] = "RecieveHit_2";
+    map_[PlayerAnimKey::Death] = "Death";
 }

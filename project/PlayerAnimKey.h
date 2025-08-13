@@ -2,25 +2,22 @@
 #include <cstdint>
 
 enum class PlayerAnimKey : uint32_t {
-    // Locomotion
+    // locomotion
     Idle,
-    IdleWeapon,
-    IdleAttacking,
-    Walk,
     Run,
     RunWeapon,
     Roll,
+    Walk,
 
-    // Combat (増えてもOK)
-    AttackA,
-    AttackB,
+    // combat
     SwordAttack,
     SwordAttackFast,
-    DaggerAttack,
-    DaggerAttack2,
-
-    // Other
+    AttackA,
+    AttackB,
     Punch,
+
+    // others
+    IdleAttacking,
     PickUp,
     Hit1,
     Hit2,

@@ -151,19 +151,13 @@ void PlayerBase::Move()
 		SetAnimationIfChanged(anim.Idle);
 	}*/
 
-	// （コントローラがあれば優先。無ければ従来動作でフォールバック）
 	if (animCtrl_) {
 		if (isMoving) {
-			SetAnimationIfChanged(animCtrl_->Resolve(PlayerAnimKey::RunWeapon));
+			PlayAnimKey(PlayerAnimKey::RunWeapon);   // 走り
 		}
 		else {
-			SetAnimationIfChanged(animCtrl_->Resolve(PlayerAnimKey::Idle));
+			PlayAnimKey(PlayerAnimKey::Idle);        // 待機
 		}
-	}
-	else {
-		const auto& anim = GetAnimation();
-		if (isMoving) { SetAnimationIfChanged(anim.Run_Weapon); }
-		else { SetAnimationIfChanged(anim.Idle); }
 	}
 
 
@@ -217,10 +211,16 @@ void PlayerBase::ChangeModel(const char* modelName)
 	object3d_->SetModel(modelName);
 }
 
+void PlayerBase::PlayAnimKey(PlayerAnimKey key)
+{
+	if (!animCtrl_) return;
+	SetAnimationIfChanged(animCtrl_->Resolve(key));
+}
+
 void PlayerBase::SetAnimationIfChanged(const std::string& name)
 {
-	if (currentAnimationName_ != name) {
-		object3d_->SetAnimation(name);
-		currentAnimationName_ = name;
-	}
+	if (name.empty()) return;              // 安全ガード
+	if (currentAnimationName_ == name) return;
+	object3d_->SetAnimation(name);
+	currentAnimationName_ = name;
 }

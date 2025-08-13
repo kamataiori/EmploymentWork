@@ -13,26 +13,19 @@ void Player::Initialize(FollowCamera* camera) {
     warrior_ = std::make_unique<PlayerWarrior>(scene_);
     rogue_ = std::make_unique<PlayerRogue>(scene_);
 
-    // ★先に currentPlayer_ を決める（null のまま使わない）
+    // 先に現在プレイヤーを決める
     currentPlayer_ = warrior_.get();
 
-    // ★コントローラを両者に配線（切替後も安全）
-    warrior_->SetAnimationController(&anim_);
-    rogue_->SetAnimationController(&anim_);
-
-    // ★現プレイヤーに合わせてマッピングを構築
-    anim_.UseWarrior(warrior_->GetAnimationSet());
-
-    // ここから初期化
+    // 先に両者Initialize（モデル+アニメ読み込み可能状態）
     warrior_->Initialize();
     rogue_->Initialize();
 
-    // ここでコントローラ配線（どちらにも渡しておくと切替後も安全）
+    // どちらにもコントローラ配線（切替後も安全）
     warrior_->SetAnimationController(&anim_);
     rogue_->SetAnimationController(&anim_);
 
-    // そして初期プレイヤーに合わせてマッピングを構築
-    anim_.UseWarrior(warrior_->GetAnimationSet());
+    // 初期はWarriorマッピングを使用
+    anim_.Use(PlayerType::Warrior);
 
     // カメラ
     warrior_->SetCamera(camera_);
@@ -89,37 +82,23 @@ void Player::ChangePlayer(PlayerType type) {
     Transform oldT;
     if (currentPlayer_) oldT = currentPlayer_->GetTransform();
 
-    switch (type) {
-    case PlayerType::Warrior: currentPlayer_ = warrior_.get(); break;
-    case PlayerType::Rogue:   currentPlayer_ = rogue_.get();   break;
-    }
-
-    if (currentPlayer_) {
-        // Transform復元 → 再初期化（2回目以降はTransform初期化しない）
-        currentPlayer_->SetTranslate(oldT.translate);
-        currentPlayer_->SetRotate(oldT.rotate);
-        currentPlayer_->SetScale(oldT.scale);
-        currentPlayer_->Initialize();
-
-        // ★ コントローラを差し替え
-        currentPlayer_->SetAnimationController(&anim_);
-
-        // ★ マッピングを切り替え
-        if (type == PlayerType::Warrior) {
-            anim_.UseWarrior(warrior_->GetAnimationSet());
-        }
-        else {
-            // Rogue は RogueAnimationSet を公開するゲッターを用意してください
-            // 例: const RogueAnimationSet& GetRogueAnimSet() const { return animation_; }
-            anim_.UseRogue(rogue_->GetRogueAnimSet());
-        }
-
-        // カメラ追従も切替
-        currentPlayer_->SetCamera(camera_);
-        camera_->SetTarget(currentPlayer_);
-    }
-
+    // 切り替え
     currentType_ = type;
+    currentPlayer_ = (type == PlayerType::Warrior) ? static_cast<PlayerBase*>(warrior_.get())
+        : static_cast<PlayerBase*>(rogue_.get());
+
+    // Transform復元 → 再初期化
+    currentPlayer_->SetTranslate(oldT.translate);
+    currentPlayer_->SetRotate(oldT.rotate);
+    currentPlayer_->SetScale(oldT.scale);
+    currentPlayer_->Initialize();
+
+    // コントローラは既に配線済み。マッピングだけ差し替え
+    anim_.Use(type);
+
+    // カメラ追従
+    currentPlayer_->SetCamera(camera_);
+    camera_->SetTarget(currentPlayer_);
 }
 
 
