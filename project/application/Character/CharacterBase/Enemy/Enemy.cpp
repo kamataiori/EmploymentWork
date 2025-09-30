@@ -140,6 +140,14 @@ void Enemy::DrawModel()
 	object3d_->Draw();
 }
 
+void Enemy::SkinningDraw()
+{
+}
+
+void Enemy::ParticleDraw()
+{
+}
+
 void Enemy::OnCollision()
 {
 	sphere.color = static_cast<int>(Color::RED);

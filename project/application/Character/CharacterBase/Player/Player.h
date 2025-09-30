@@ -4,6 +4,7 @@
 #include "PlayerChange.h"
 #include "FollowCamera.h"
 #include "PlayerType.h"
+#include "PlayerAnimation.h"
 
 class Player {
 public:
@@ -52,7 +53,7 @@ public:
     /// 現在のプレイヤー（PlayerBase）を取得
     /// </summary>
     /// <returns>PlayerBase*（主に外部からアクセス用）</returns>
-    PlayerBase* Get() const { return currentPlayer_.get(); }
+    PlayerBase* Get() const { return currentPlayer_; }
 
     CharacterBase* GetCurrentCharacter() const;
 
@@ -64,9 +65,13 @@ private:
     // 追従カメラ（Scene側で管理）
     FollowCamera* camera_ = nullptr;
     // 現在のプレイヤー
-    std::unique_ptr<PlayerBase> currentPlayer_;
-    std::unique_ptr<PlayerChange> changer_;
-
+    PlayerBase* currentPlayer_ = nullptr;
     // 現在のプレイヤーの種類
     PlayerType currentType_ = PlayerType::Warrior;
+
+    std::unique_ptr<PlayerWarrior> warrior_;
+    std::unique_ptr<PlayerRogue> rogue_;
+
+    PlayerAnimation anim_;
+
 };
