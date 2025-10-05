@@ -106,13 +106,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyAreaAttack.cpp" />
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyAttackBullet.cpp" />
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState.cpp" />
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Attack1.cpp" />
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Attack2.cpp" />
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Dash.cpp" />
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Idle.cpp" />
+    <ClCompile Include="BehaviorTree.cpp" />
     <ClCompile Include="engine\3d\JsonLevelLoader.cpp" />
     <ClCompile Include="engine\3d\SceneController.cpp" />
     <ClCompile Include="engine\3d\SkyBox.cpp" />
@@ -186,14 +180,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="PlayerAnimKey.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyAreaAttack.h" />
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyAttackBullet.h" />
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState.h" />
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Attack1.h" />
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Attack2.h" />
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Dash.h" />
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Idle.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\AnimationSet.h" />
+    <ClInclude Include="BehaviorTree.h" />
+    <ClInclude Include="BTNodeEditor.h" />
     <ClInclude Include="engine\3d\JsonLevelLoader.h" />
     <ClInclude Include="engine\3d\SceneController.h" />
     <ClInclude Include="engine\3d\SkyBox.h" />
@@ -222,14 +211,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\check\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\directx\DirectXCommon.h" />
     <ClInclude Include="engine\Scene\UnityScene.h" />
-    <ClInclude Include="externals\imgui\imconfig.h" />
-    <ClInclude Include="externals\imgui\imgui.h" />
-    <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
-    <ClInclude Include="externals\imgui\imgui_impl_win32.h" />
-    <ClInclude Include="externals\imgui\imgui_internal.h" />
-    <ClInclude Include="externals\imgui\imstb_rectpack.h" />
-    <ClInclude Include="externals\imgui\imstb_textedit.h" />
-    <ClInclude Include="externals\imgui\imstb_truetype.h" />
     <ClInclude Include="engine\FrameWork\input\Input.h" />
     <ClInclude Include="engine\logger\Logger.h" />
     <ClInclude Include="engine\math\MathFunctions.h" />
@@ -283,9 +264,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />
     <ClInclude Include="engine\FrameWork\WinApp\WinApp.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="externals\imgui\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">

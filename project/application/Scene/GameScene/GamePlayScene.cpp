@@ -35,6 +35,7 @@ void GamePlayScene::Initialize()
 
 	enemy_->Initialize();
 	enemy_->SetCamera(followCamera.get());
+	enemy_->SetTarget(player_->GetCurrentCharacter());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 
@@ -167,8 +168,7 @@ void GamePlayScene::Draw()
 
 	// 各オブジェクトの描画
 	player_->SkinningDraw();
-	enemy_->DrawModel();
-	
+	enemy_->SkinningDraw();
 
 	// ================================================
 	// ここまでアニメーションオブジェクトの個々の描画

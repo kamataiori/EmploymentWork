@@ -210,27 +210,6 @@
     <ClCompile Include="engine\Debug\DrawTriangleCommon.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Idle.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Dash.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyAreaAttack.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Attack2.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyAttackBullet.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyState_Attack1.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="engine\Scene\ParticleEditorScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -279,20 +258,11 @@
     <ClCompile Include="PlayerAnimation.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="BehaviorTree.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="externals\imgui\imconfig.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imstb_rectpack.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imstb_textedit.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imstb_truetype.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="vector\Vector2.h">
       <Filter>ヘッダー ファイル\math</Filter>
     </ClInclude>
@@ -307,18 +277,6 @@
     </ClInclude>
     <ClInclude Include="matrix\Matrix4x4.h">
       <Filter>ヘッダー ファイル\math</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imgui.h">
-      <Filter>ヘッダー ファイル\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imgui_impl_dx12.h">
-      <Filter>ヘッダー ファイル\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imgui_impl_win32.h">
-      <Filter>ヘッダー ファイル\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imgui_internal.h">
-      <Filter>ヘッダー ファイル\imgui</Filter>
     </ClInclude>
     <ClInclude Include="engine\FrameWork\input\Input.h">
       <Filter>ヘッダー ファイル</Filter>
@@ -488,27 +446,6 @@
     <ClInclude Include="engine\Debug\DrawTriangleCommon.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Idle.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Dash.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyAreaAttack.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Attack2.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyAttackBullet.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Attack1.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="engine\Scene\ParticleEditorScene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -572,9 +509,12 @@
     <ClInclude Include="PlayerAnimation.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="externals\imgui\LICENSE.txt" />
+    <ClInclude Include="BehaviorTree.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="BTNodeEditor.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

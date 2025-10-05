@@ -1,91 +1,61 @@
 #pragma once
 #include "CharacterBase.h"
-#include "Collider.h"
 #include "SphereCollider.h"
-#include "OBBCollider.h"
-#include "EnemyState.h"
+#include "CollisionTypeIdDef.h"
+
+#include "BehaviorTree.h"
+#include "BTNodeEditor.h"
+
 #include <memory>
-#include <Enemy/EnemyAreaAttack.h>
-#include <Enemy/EnemyAttackBullet.h>
+#include <string>
+#include <unordered_map>
 
-class Player; // 前方宣言
-
-struct SkeltonAnimationSet {
-	std::string Death = "Death";
-	std::string Duck = "Duck";
-	std::string HitReact = "HitReact";
-	std::string Idle = "Idle";
-	std::string Jump = "Jump";
-	std::string Jump_Idle = "Jump_Idle";
-	std::string Jump_Idlea = "Jump_Idlea";
-	std::string Jump_Land = "Jump_Land";
-	std::string No = "No";
-	std::string Punch = "Punch";
-	std::string Run = "Run";
-	std::string Sword = "Sword";
-	std::string Walk = "Walk";
-	std::string Wave = "Wave";
-	std::string Yes = "Yes";
-};
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
 
 
 class Enemy : public CharacterBase, public SphereCollider
 {
 public:
 
-	Enemy(BaseScene* baseScene_) : CharacterBase(baseScene_), SphereCollider(sphere) {}
+    Enemy(BaseScene* baseScene_) : CharacterBase(baseScene_), SphereCollider(sphere) {}
+   /* ~Enemy() override = default;*/
 
-	void Initialize() override;
+    void Initialize() override;
+    void Update() override;
+    void Draw() override;
+    void OnCollision();
+    void SkinningDraw() override;
+    void ParticleDraw() override;
 
-	void Update() override;
+    void SetTarget(CharacterBase* t){ bb_.target = t; }
+    void SetMoveSpeed(float s){ bb_.moveSpeed = s; }
 
-	void Draw() override;
-
-	void DrawModel();
-	void SkinningDraw() override;
-	void ParticleDraw() override;
-
-	void OnCollision() override;
-
-	void ChangeState(std::unique_ptr<EnemyState> State);
-	void ChangeToRandomState();
-
-	void AddAreaAttack(std::unique_ptr<EnemyAreaAttack> attack);
-
-	void AddBullet(std::unique_ptr<EnemyAttackBullet> bullet);
-
-	const std::list<std::unique_ptr<EnemyAreaAttack>>& GetAreaAttacks() const {
-		return areaAttacks_;
-	}
-
-	const std::list<std::unique_ptr<EnemyAttackBullet>>& GetAttackBulets() const {
-		return bullets_;
-	}
-
-	void SetPlayer(Player* player) { player_ = player; }
-	Vector3 GetPlayerPos() const;
-
-	Camera* GetCamera() const { return camera_; }
-
-	// アニメーションを設定する関数
-	void SetAnimationIfChanged(const std::string& name);
+    // 可視化用に必要なら
+    BTNode* RootBT(){ return tree_.Root(); }
 
 private:
+    void BuildBehaviorTree();
+    float GetDeltaTime() const;
+    void BuildBTView();
+    void DrawBTView();
 
-	std::unique_ptr<EnemyState> currentState_;
-	std::string previousStateName_ = "";
+    // 追尾のみ
+    float stopDistance_ = 0.2f;
 
-	std::list<std::unique_ptr<EnemyAttackBullet>> bullets_;
-	std::list<std::unique_ptr<EnemyAreaAttack>> areaAttacks_;
+private:
+    BehaviorTree tree_;
+    BTBlackboard bb_;
 
-	Player* player_ = nullptr;
-
-	// 行動が何%で起こるのか
-	float dashWeight_ = 50.0f;
-	float attack1Weight_ = 30.0f;
-	float attack2Weight_ = 20.0f;
-
-	SkeltonAnimationSet animation_; // アニメーション名セット
-	std::string currentAnimationName_;
+    // 可視化保持
+    btvis::IdGen visIds_;
+    std::unique_ptr<btvis::GraphView> visGraph_;
+    std::unordered_map<const BTNode*, btvis::NodeBase*> visBind_;
+    BTNode* nodeRoot_ = nullptr;
+    BTNode* nodeChase_ = nullptr;
 };
 

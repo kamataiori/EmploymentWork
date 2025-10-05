@@ -1,6 +1,6 @@
 #include "MyGame.h"
 #include <UnityScene.h>
-#include <externals/imgui/imgui_internal.h>
+#include <imgui_internal.h>
 
 void MyGame::Initialize()
 {

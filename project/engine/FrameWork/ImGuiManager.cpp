@@ -1,5 +1,5 @@
 #include "ImGuiManager.h"
-#include <externals/imgui/imgui_impl_win32.h>
+#include <imgui_impl_win32.h>
 #include <SrvManager.h>
 
 void ImGuiManager::Initialize(WinApp* winApp, DirectXCommon* dxCommon)

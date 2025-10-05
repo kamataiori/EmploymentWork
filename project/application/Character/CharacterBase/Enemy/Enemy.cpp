@@ -1,10 +1,12 @@
 #include "Enemy.h"
 #include <CollisionTypeIdDef.h>
-#include "EnemyState_Idle.h"
-#include "EnemyState_Dash.h"
-#include "Player.h"
-#include <Enemy/EnemyState_Attack2.h>
-#include <Enemy/EnemyState_Attack1.h>
+#include <cmath>
+
+static inline float LenXZ(const Vector3& d) { return std::sqrt(d.x * d.x + d.z * d.z); }
+//
+//Enemy::Enemy(BaseScene* scene)
+//{
+//}
 
 void Enemy::Initialize()
 {
@@ -16,8 +18,9 @@ void Enemy::Initialize()
 	ModelManager::GetInstance()->LoadModel("matest.obj");
 	ModelManager::GetInstance()->LoadModel("Skeleton.gltf");
 	ModelManager::GetInstance()->LoadModel("Sam.gltf");
+	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 
-	object3d_->SetModel("Skeleton.gltf");
+	object3d_->SetModel("uvChecker.gltf");
 
 	// 初期Transform設定
 	transform.translate = { 0.0f, 0.0f, 0.0f };
@@ -29,9 +32,6 @@ void Enemy::Initialize()
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
 
-	object3d_->SetAnimation(animation_.Idle);
-
-	ChangeState(std::make_unique<EnemyState_Idle>());
 
 	// コライダーの初期化
 	SetCollider(this);
@@ -41,75 +41,53 @@ void Enemy::Initialize()
 	sphere.radius = 1.5f;
 
 	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
+
+	BuildBehaviorTree();
+	BuildBTView();
 }
 
 void Enemy::Update()
 {
-	//// ImGuiデバッグ表示
-	//ImGui::Begin("Enemy Debug");
+	const float dt = GetDeltaTime();
 
-	//if (currentState_) {
-	//	// 現在のステート名を表示
-	//	ImGui::Text("Current State: %s", currentState_->GetName());
-	//}
-	//else {
-	//	ImGui::Text("Current State: None");
-	//}
+	// ターゲット距離（XZ）
+	if (bb_.target) {
+		Vector3 d = bb_.target->GetTransform().translate - transform.translate;
+		d.y = 0.0f;
+		bb_.distToTarget = LenXZ(d);
+	}
+	else {
+		bb_.distToTarget = 9999.0f;
+	}
 
+	// BT実行
+	tree_.Tick(bb_, dt);
+
+	// 可視化
+	DrawBTView();
+
+	//ImGui::Begin("IMGUI SMOKE");
+	//ImGui::Text("frame=%d", ImGui::GetFrameCount());
 	//ImGui::End();
 
-	// プレイヤーの方向を向く
-	//if (player_) {
-	//	Vector3 toPlayer = player_->GetTransform().translate - this->GetTransform().translate;
-
-	//	// Y軸方向だけで角度を計算（上下方向は無視）
-	//	float angleY = std::atan2(toPlayer.x, toPlayer.z);
-
-	//	transform.rotate.y = angleY;
+	//// ★テスト：ctx を作って直に 1 ノードだけ出す
+	//static ax::NodeEditor::EditorContext* testCtx = nullptr;
+	//if (!testCtx) {
+	//	ax::NodeEditor::Config cfg; cfg.SettingsFile = nullptr;
+	//	testCtx = ax::NodeEditor::CreateEditor(&cfg);
 	//}
 
-
-	// ステート更新処理
-	if (currentState_) {
-		currentState_->Update(this);
-	}
-
-	// 範囲攻撃オブジェクトの更新
-	for (auto& a : areaAttacks_) {
-		a->Update();
-	}
-	areaAttacks_.remove_if([](const std::unique_ptr<EnemyAreaAttack>& a) {
-		return a->IsDead();
-		});
-
-	// 通常攻撃オブジェクトの更新
-	for (auto& b : bullets_) {
-		b->Update();
-	}
-	bullets_.remove_if([](const auto& b) { return b->IsDead(); });
-
-
-	//ImGui::Begin("Enemy Transform");
-
-	//// Translate (位置)
-	//Vector3 position = object3d_->GetTranslate();
-	//if (ImGui::DragFloat3("Position", &position.x, 0.1f)) {
-	//	object3d_->SetTranslate(position);
-	//}
-
-	//// Rotate (回転)
-	//Vector3 rotation = object3d_->GetRotate();
-	//if (ImGui::DragFloat3("Rotation", &rotation.x, 0.1f)) {
-	//	object3d_->SetRotate(rotation);
-	//}
-
-	//// Scale (スケール)
-	//Vector3 scale = object3d_->GetScale();
-	//if (ImGui::DragFloat3("Scale", &scale.x, 0.1f, 0.1f, 10.0f)) {
-	//	object3d_->SetScale(scale);
-	//}
-
+	//ax::NodeEditor::SetCurrentEditor(testCtx);
+	//ImGui::Begin("NE SMOKE");
+	//ax::NodeEditor::Begin("NE");
+	//ax::NodeEditor::BeginNode(ax::NodeEditor::NodeId(1));
+	//ImGui::Text("hello node-editor");
+	//ax::NodeEditor::EndNode();
+	//ax::NodeEditor::End();
 	//ImGui::End();
+	//ax::NodeEditor::SetCurrentEditor(nullptr);
+
+
 
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetScale(transform.scale);
@@ -122,22 +100,10 @@ void Enemy::Update()
 
 void Enemy::Draw()
 {
-
-	for (auto& a : areaAttacks_) {
-		a->Draw();
-	}
-
-	for (auto& b : bullets_) {
-		b->Draw();
-	}
+	object3d_->Draw();
 
 	// SphereCollider の描画
 	//SphereCollider::Draw();
-}
-
-void Enemy::DrawModel()
-{
-	object3d_->Draw();
 }
 
 void Enemy::SkinningDraw()
@@ -153,102 +119,67 @@ void Enemy::OnCollision()
 	sphere.color = static_cast<int>(Color::RED);
 }
 
-void Enemy::ChangeState(std::unique_ptr<EnemyState> State)
-{
-	// 同じ状態名ならスキップ
-	if (currentState_ && std::string(currentState_->GetName()) == State->GetName()) {
-		return;
-	}
+void Enemy::BuildBehaviorTree() {
+	// 追尾アクション（これだけ）
+	auto actChase = std::make_unique<BTAction>("ChaseTarget",
+		[this](BTBlackboard& bb, float dt)->BTStatus {
+			if (!bb.target) return BTStatus::Failure;
+			Vector3 to = bb.target->GetTransform().translate - transform.translate;
+			to.y = 0.0f;
+			float dist = LenXZ(to);
+			if (dist <= stopDistance_) return BTStatus::Success;
 
-	// 状態を切り替え
-	currentState_ = std::move(State);
-	currentState_->Enter(this);
-}
-
-void Enemy::ChangeToRandomState() {
-	// 次の状態はIdle（待機）にするかどうか
-	static bool insertIdleNext = true;
-
-	if (insertIdleNext) {
-		// 一度Idle（待機）を挟む
-		insertIdleNext = false;
-		previousStateName_ = "Idle";
-		ChangeState(std::make_unique<EnemyState_Idle>());
-		return;
-	}
-
-	// 各行動と重み（確率）のペア
-	struct WeightedState {
-		std::string name; // ステート名
-		float weight;     // 重み（選ばれやすさ）
-		std::function<std::unique_ptr<EnemyState>()> factory; // ステートを生成する関数
-	};
-
-	// ステート候補を定義
-	std::vector<WeightedState> candidates = {
-		{"Dash", dashWeight_, []() { return std::make_unique<EnemyState_Dash>(); }},
-		{"Attack1", attack1Weight_, []() { return std::make_unique<EnemyState_Attack1>(); }},
-		{"Attack2", attack2Weight_, []() { return std::make_unique<EnemyState_Attack2>(); }}
-	};
-
-	// 前回と同じステート名を除外（連続行動を避ける）
-	std::erase_if(candidates, [this](const WeightedState& s) {
-		return s.name == previousStateName_;
+			if (dist > 1e-6f) {
+				to.x /= dist; to.z /= dist;
+				transform.translate.x += to.x * bb.moveSpeed * dt;
+				transform.translate.z += to.z * bb.moveSpeed * dt;
+			}
+			return BTStatus::Running;
 		});
+	BTNode* rawChase = actChase.get();
 
-	// すべて除外された場合は復元（行動できなくなるのを防ぐ）
-	if (candidates.empty()) {
-		candidates = {
-			{"Dash", dashWeight_, []() { return std::make_unique<EnemyState_Dash>(); }},
-			{"Attack1", attack1Weight_, []() { return std::make_unique<EnemyState_Attack1>(); }},
-			{"Attack2", attack2Weight_, []() { return std::make_unique<EnemyState_Attack2>(); }}
-		};
-	}
+	// Root = Selector( Chase )
+	auto root = std::make_unique<BTSelector>("Root");
+	BTNode* rawRoot = root.get();
+	root->Add(std::move(actChase));
+	tree_.SetRoot(std::move(root));
 
-	// 重みに基づくランダム選択
-	float totalWeight = 0.0f;
-	for (const auto& c : candidates) {
-		totalWeight += c.weight;
-	}
-
-	// 0〜totalWeight の範囲でランダムに選ぶ
-	float rnd = static_cast<float>(rand()) / RAND_MAX * totalWeight;
-	float accum = 0.0f;
-
-	// ランダム値がどの範囲に入るかでステート決定
-	for (const auto& c : candidates) {
-		accum += c.weight;
-		if (rnd <= accum) {
-			previousStateName_ = c.name;    // 今回のステート名を記録
-			insertIdleNext = true;          // 次回はIdleを挟むように設定
-			ChangeState(c.factory());       // ステート切り替え
-			return;
-		}
-	}
+	// 可視化用保持
+	nodeRoot_ = rawRoot;
+	nodeChase_ = rawChase;
 }
 
-void Enemy::AddAreaAttack(std::unique_ptr<EnemyAreaAttack> attack)
-{
-	areaAttacks_.push_back(std::move(attack));
+float Enemy::GetDeltaTime() const {
+	// あなたのエンジンのΔt関数に差し替え
+	return 1.0f / 60.0f;
 }
 
-void Enemy::AddBullet(std::unique_ptr<EnemyAttackBullet> bullet)
-{
-	bullets_.push_back(std::move(bullet));
+void Enemy::BuildBTView() {
+	if (!visGraph_) visGraph_ = std::make_unique<btvis::GraphView>(&visIds_);
+
+	auto* vRoot = visGraph_->AddNode<btvis::CompositeNodeView>("Root");
+	auto* vChs = visGraph_->AddNode<btvis::ActionNodeView>("ChaseTarget");
+
+	// 一度だけで十分（描画フレーム内で遅延実行されます）
+	visGraph_->AutoLayoutGrid();
+
+	visBind_.clear();
+	visBind_[nodeRoot_] = vRoot;
+	visBind_[nodeChase_] = vChs;
+
+	tree_.SetVisual([this](const BTNode* n, BTStatus s) {
+		auto it = visBind_.find(n);
+		if (it == visBind_.end()) return;
+		using ES = btvis::ExecState;
+		ES st = (s == BTStatus::Running) ? ES::Running
+			: (s == BTStatus::Success) ? ES::Succeeded
+			: ES::Failed;
+		it->second->SetExecState(st);
+		});
 }
 
-Vector3 Enemy::GetPlayerPos() const
-{
-	/*if (player_) {
-		return player_->GetTransform().translate;
-	}*/
-	return { 0, 0, 0 }; // 参照が無ければ原点
-}
+void Enemy::DrawBTView() {
 
-void Enemy::SetAnimationIfChanged(const std::string& name)
-{
-	if (currentAnimationName_ != name) {
-		object3d_->SetAnimation(name);
-		currentAnimationName_ = name;
-	}
+	visGraph_->Draw("Enemy BT");
+
 }
