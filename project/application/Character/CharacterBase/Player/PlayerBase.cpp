@@ -207,7 +207,7 @@ void PlayerBase::Move()
 
 void PlayerBase::ChangeModel(const char* modelName)
 {
-	ModelManager::GetInstance()->LoadModel(modelName);
+	//ModelManager::GetInstance()->LoadModel(modelName);
 	object3d_->SetModel(modelName);
 }
 

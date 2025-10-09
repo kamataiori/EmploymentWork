@@ -1,6 +1,5 @@
 #pragma once
 #include "PlayerBase.h"
-#include "RogueAnimationSet.h"
 
 class PlayerRogue : public PlayerBase
 {

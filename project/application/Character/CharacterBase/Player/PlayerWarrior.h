@@ -1,6 +1,5 @@
 #pragma once
 #include "PlayerBase.h"
-#include <AnimationSet.h>
 
 class PlayerWarrior : public PlayerBase
 {

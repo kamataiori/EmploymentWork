@@ -2,7 +2,6 @@
 #include "CharacterBase.h"
 #include "Collider.h"
 #include "SphereCollider.h"
-#include "AnimationSet.h"
 #include "PlayerAnimation.h"
 #include "PlayerAnimKey.h"
 
@@ -57,7 +56,7 @@ public:
 	// モデル変更（切り替え用）
 	void ChangeModel(const char* modelName);
 
-	// アニメーション解決コントローラ
+	// アニメーションコントローラ
 	void SetAnimationController(PlayerAnimation* ctrl) { animCtrl_ = ctrl; }
 
 	// 任意のタイミングでキー再生したいとき用（攻撃側から呼ぶ想定）

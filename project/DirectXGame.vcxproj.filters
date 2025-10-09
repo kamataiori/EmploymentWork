@@ -240,9 +240,6 @@
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerBullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Player\PlayerChange.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerRogue.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -518,9 +515,6 @@
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Player\PlayerChange.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerRogue.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -536,16 +530,10 @@
     <ClInclude Include="engine\math\Quaternion.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Player\RogueAnimationSet.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="engine\3d\Skinning.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\StructAnimation.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Player\AnimationSet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\Scene\Fade.h">

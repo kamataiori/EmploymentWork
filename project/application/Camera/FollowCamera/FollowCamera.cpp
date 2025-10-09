@@ -42,6 +42,9 @@ void FollowCamera::Update()
     Vector3 direction = Normalize(targetPos - transform.translate);
     transform.rotate.y = std::atan2(direction.x, direction.z);
 
+    float lookDownAngle = 0.25f;  // 下に約14度（-0.25rad ≒ -14°）
+    transform.rotate.x = lookDownAngle;
+
     Camera::Update();
 }
 

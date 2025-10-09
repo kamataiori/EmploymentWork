@@ -1,10 +1,11 @@
 #pragma once
 #include <memory>
 #include "PlayerBase.h"
-#include "PlayerChange.h"
 #include "FollowCamera.h"
 #include "PlayerType.h"
 #include "PlayerAnimation.h"
+#include <PlayerRogue.h>
+#include <PlayerWarrior.h>
 
 class Player {
 public:

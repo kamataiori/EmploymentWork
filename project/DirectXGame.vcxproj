@@ -177,7 +177,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Scene\ParticleEditorScene.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerBase.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerBullet.cpp" />
-    <ClCompile Include="application\Character\CharacterBase\Player\PlayerChange.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerRogue.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerWarrior.cpp" />
     <ClCompile Include="engine\3d\Skinning.cpp" />
@@ -193,7 +192,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Attack2.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Dash.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Idle.h" />
-    <ClInclude Include="application\Character\CharacterBase\Player\AnimationSet.h" />
     <ClInclude Include="engine\3d\JsonLevelLoader.h" />
     <ClInclude Include="engine\3d\SceneController.h" />
     <ClInclude Include="engine\3d\SkyBox.h" />
@@ -266,7 +264,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\Scene\ParticleEditorScene.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerBase.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerBullet.h" />
-    <ClInclude Include="application\Character\CharacterBase\Player\PlayerChange.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerRogue.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerType.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerWarrior.h" />
@@ -275,7 +272,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="PlayerAnimation.h" />
     <ClInclude Include="PlayerAnimKey.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="application\Character\CharacterBase\Player\RogueAnimationSet.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
     <ClInclude Include="engine\Collision\SphereCollider.h" />
     <ClInclude Include="engine\3d\StructAnimation.h" />
