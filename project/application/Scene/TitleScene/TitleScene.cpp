@@ -4,6 +4,12 @@
 #include "ImGuiManager.h"
 #include "GlobalVariables.h"
 #include <PostEffectManager.h>
+#include <algorithm>
+#include <cmath>
+#include <vector>
+#include <memory>
+
+
 
 void TitleScene::Initialize()
 {
@@ -174,6 +180,111 @@ void TitleScene::Initialize()
 
 	title = std::make_unique<Sprite>();
 	title->Initialize("Resources/title.png");
+
+	// 画面サイズは 1280x720 固定
+	const float screenW = 1280.0f;
+	const float screenH = 720.0f;
+
+	// -------------------------------
+	// タイトル（タ・イ・ト・ル）
+	// -------------------------------
+	const float titleY = 160.0f; // 最終ライン
+	float gap = 28.0f;          // 文字間（小さくすると詰まる）
+	const float widthScaleTitle = 0.2f; // 実効幅係数（小さいほど詰まる）
+
+	// テクスチャ（実ファイル名に合わせて変更OK）
+	const char* kTitleTex[4] = {
+		"Resources/numberT.png",  // タ（ここは仮名→実 PNG に合わせて）
+		"Resources/numberI.png",  // イ
+		"Resources/numberTo.png", // ト
+		"Resources/numberR.png"   // ル
+	};
+
+	// 一旦読み込んでサイズ取得
+	std::vector<std::unique_ptr<Sprite>> temp;
+	for (int i = 0; i < 4; i++) {
+		auto sp = std::make_unique<Sprite>();
+		sp->Initialize(kTitleTex[i]);
+		sp->SetAnchorPoint({ 0.5f, 0.5f });
+		temp.push_back(std::move(sp));
+	}
+
+	// 総幅（実効幅）でセンタリング
+	float totalW = 0.0f;
+	for (auto& s : temp) totalW += s->GetSize().x * widthScaleTitle;
+	totalW += gap * 3.0f; // 4文字→隙間3つ
+
+	float cursor = (screenW - totalW) * 0.5f;
+	for (int i = 0; i < 4; i++) {
+		LetterAnim L;
+		L.sp = std::move(temp[i]);
+
+		float wEff = L.sp->GetSize().x * widthScaleTitle;
+		float x = cursor + wEff * 0.5f; // アンカー(0.5)なので中央合わせ
+		L.goal = { x, titleY };
+		L.start = { x, -L.sp->GetSize().y - 40.0f }; // 画面上から
+		L.delay = i * 0.20f;  // 左→右へ 0.20 秒刻み
+		L.duration = 0.75f;   // ゆっくり目
+		titleLetters_.push_back(std::move(L));
+
+		cursor += wEff + gap;
+	}
+
+	// -------------------------------
+	// space（s p a c e）
+	// -------------------------------
+	const float spaceY = 520.0f; // 最終ライン
+	float gap2 = 20.0f;          // 文字間
+	const float widthScaleSpace = 0.20f; // 実効幅係数
+
+	const char* kSpaceTex[5] = {
+		"Resources/s.png",
+		"Resources/p.png",
+		"Resources/a.png",
+		"Resources/c.png",
+		"Resources/e.png"
+	};
+
+	std::vector<std::unique_ptr<Sprite>> temp2;
+	for (int i = 0; i < 5; i++) {
+		auto sp = std::make_unique<Sprite>();
+		sp->Initialize(kSpaceTex[i]);
+		sp->SetAnchorPoint({ 0.5f, 0.5f });
+		temp2.push_back(std::move(sp));
+	}
+
+	float totalW2 = 0.0f;
+	for (auto& s : temp2) totalW2 += s->GetSize().x * widthScaleSpace;
+	totalW2 += gap2 * 4.0f;  // 5文字→隙間4つ
+
+	float cursor2 = (screenW - totalW2) * 0.5f;
+	const int order[5] = { 4, 3, 2, 1, 0 }; // e→c→a→p→s の順で出す
+
+	for (int i = 0; i < 5; i++) {
+		LetterAnim L;
+		L.sp = std::move(temp2[i]);
+
+		float wEff = L.sp->GetSize().x * widthScaleSpace;
+		float x = cursor2 + wEff * 0.5f;
+		L.goal = { x, spaceY };
+		L.start = { x, screenH + L.sp->GetSize().y + 40.0f }; // 画面下から
+
+		int idx = int(std::find(std::begin(order), std::end(order), i) - std::begin(order));
+		L.delay = idx * 0.20f;
+		L.duration = 0.75f;
+		spaceLetters_.push_back(std::move(L));
+
+		cursor2 += wEff + gap2;
+	}
+
+
+
+	ModelManager::GetInstance()->LoadModel("skydome.obj");
+	sky = std::make_unique<Object3d>(this);
+	sky->Initialize();
+	sky->SetModel("skydome.obj");
+	sky->SetTranslate({ 0.0f,0.0f,0.0f });
+	sky->SetCamera(camera1.get());
 }
 
 void TitleScene::Finalize()
@@ -183,6 +294,7 @@ void TitleScene::Finalize()
 void TitleScene::Update()
 {
 	title->Update();
+	sky->Update();
 	//// アルファ値を減少させる
 	//Vector4 color = plane->GetMaterialColor();
 	////color.w = 0.5f;
@@ -204,6 +316,38 @@ void TitleScene::Update()
 	sneak->Update();
 	// カメラの更新
 	camera1->Update();
+
+	const float dt = 1.0f / 60.0f;
+	animClock_ += dt;
+
+	// タイトル各文字
+	for (auto& L : titleLetters_) {
+		if (animClock_ >= L.delay) {
+			L.t = std::min(1.0f, L.t + dt / L.duration);
+			float e = EaseOutBack(L.t);
+			Vector2 pos = LerpVec2(L.start, L.goal, e);
+			L.sp->SetPosition(pos);
+		}
+		else {
+			L.sp->SetPosition(L.start);
+		}
+		L.sp->Update();
+	}
+
+	// space 各文字
+	for (auto& L : spaceLetters_) {
+		if (animClock_ >= L.delay) {
+			L.t = std::min(1.0f, L.t + dt / L.duration);
+			float e = EaseOutBack(L.t);
+			Vector2 pos = LerpVec2(L.start, L.goal, e);
+			L.sp->SetPosition(pos);
+		}
+		else {
+			L.sp->SetPosition(L.start);
+		}
+		L.sp->Update();
+	}
+
 
 	for (auto& emitter : emitters)
 	{
@@ -235,6 +379,8 @@ void TitleScene::Update()
 	primitiveParticle->Update();
 	ringParticle->Update();
 	cyrinderParticle->Update();
+
+	PostEffectManager::GetInstance()->SetType(PostEffectType::Sepia);
 
 	if (Input::GetInstance()->TriggerKey(DIK_K)) {
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
@@ -391,7 +537,9 @@ void TitleScene::Draw()
 	// 各オブジェクトの描画
 	//plane->Draw();
 
-	sceneController_->Draw();
+	//sceneController_->Draw();
+
+	//sky->Draw();
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
@@ -449,7 +597,12 @@ void TitleScene::ForeGroundDraw()
 	// ここからSprite個々の前景描画(UIなど)
 	// ================================================
 
-	title->Draw();
+	//title->Draw();
+
+	// タイトル文字列
+	for (auto& L : titleLetters_) { L.sp->Draw(); }
+	for (auto& L : spaceLetters_) { L.sp->Draw(); }
+
 
 	if (fade_) {
 		fade_->Draw();

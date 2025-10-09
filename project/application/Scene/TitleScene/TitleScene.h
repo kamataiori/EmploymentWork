@@ -9,6 +9,19 @@
 #include "Fade.h"
 #include "SkyBox.h"
 
+// 簡単な補間とイージング
+static inline float Lerp(float a, float b, float t) { return a + (b - a) * t; }
+static inline Vector2 LerpVec2(const Vector2& a, const Vector2& b, float t) {
+	return { Lerp(a.x,b.x,t), Lerp(a.y,b.y,t) };
+}
+// ふわっと止まる EaseOutBack
+static inline float EaseOutBack(float t) {
+	const float c1 = 1.70158f;
+	const float c3 = c1 + 1.0f;
+	return 1.0f + c3 * std::pow(t - 1.0f, 3.0f) + c1 * std::pow(t - 1.0f, 2.0f);
+}
+
+
 // TitleScene.h の private より上などに（クラス外）
 inline constexpr const char* kWindowName_ParticleControl = "Particle Control";
 inline constexpr const char* kWindowName_AABBControl = "AABB Control";
@@ -106,4 +119,27 @@ private:
 	std::unique_ptr<SceneController> sceneController_;
 
 	std::unique_ptr<Sprite> title = std::make_unique<Sprite>();
+
+	struct LetterAnim {
+		std::unique_ptr<Sprite> sp;
+		Vector2 start;
+		Vector2 goal;
+		float   t = 0.0f;  // 進捗 0→1
+		float   delay = 0.0f;  // 開始遅延(秒)
+		float   duration = 16.75f; // 到達時間(秒)
+	};
+
+	std::vector<LetterAnim> titleLetters_;   // 「タ」「イ」「ト」「ル」
+	std::vector<LetterAnim> spaceLetters_;   // 「s」「p」「a」「c」「e」
+	float animClock_ = 0.0f;                 // アニメ用経過時間
+
+	// ---- タイトル用（タ・イ・ト・ル） ----
+	std::vector<std::unique_ptr<Sprite>> temp;
+	
+
+	// ---- space 用（s p a c e）----
+	std::vector<std::unique_ptr<Sprite>> temp2;
+
+	std::unique_ptr<Object3d> sky;
+	
 };
