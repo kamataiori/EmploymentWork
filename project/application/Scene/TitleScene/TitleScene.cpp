@@ -380,7 +380,7 @@ void TitleScene::Update()
 	ringParticle->Update();
 	cyrinderParticle->Update();
 
-	PostEffectManager::GetInstance()->SetType(PostEffectType::Sepia);
+	//PostEffectManager::GetInstance()->SetType(PostEffectType::Sepia);
 
 	if (Input::GetInstance()->TriggerKey(DIK_K)) {
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
@@ -393,6 +393,8 @@ void TitleScene::Update()
 	}
 	if (Input::GetInstance()->TriggerKey(DIK_O)) {
 		PostEffectManager::GetInstance()->SetVignetteColor({ 1.0f,0.85f,0.3f });
+		PostEffectManager::GetInstance()->SetVignettePower(1.0f);
+		PostEffectManager::GetInstance()->SetVignetteScale(1.0f);
 	}
 	if (Input::GetInstance()->TriggerKey(DIK_J)) {
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Sepia);
@@ -473,32 +475,82 @@ void TitleScene::Update()
 	//}
 
 	// フェード処理
-	if (fade_) {
-		fade_->Update();
+	//if (fade_) {
+	//	fade_->Update();
 
-		// フェードアウト完了後にシーン遷移
-		if (!nextSceneName_.empty() && !fade_->IsFinish()) {
-			SceneManager::GetInstance()->ChangeScene(nextSceneName_);
-			nextSceneName_.clear(); // 一度きりでリセット
+	//	// フェードアウト完了後にシーン遷移
+	//	if (!nextSceneName_.empty() && !fade_->IsFinish()) {
+	//		SceneManager::GetInstance()->ChangeScene(nextSceneName_);
+	//		nextSceneName_.clear(); // 一度きりでリセット
+	//	}
+	//}
+
+	//// キー入力でフェード開始（シーン遷移予約）
+	//if (!fade_->IsActive()) {
+	//	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+	//		PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
+	//		fade_->Start(Fade::Status::FadeOut, 2.0f);
+	//		nextSceneName_ = "GAMEPLAY";
+	//	}
+	//	if (Input::GetInstance()->TriggerKey(DIK_U)) {
+	//		fade_->Start(Fade::Status::FadeOut, 2.0f);
+	//		nextSceneName_ = "Unity";
+	//	}
+	//	if (Input::GetInstance()->TriggerKey(DIK_P)) {
+	//		fade_->Start(Fade::Status::FadeOut, 2.0f);
+	//		nextSceneName_ = "PARTICLE";
+	//	}
+	//}
+
+	// --- Vignette Exit 進行 ---
+	if (vignetteExit_.active) {
+		// 目標値へ近づける
+		vignetteExit_.scale = std::min(vignetteExit_.targetScale,
+			vignetteExit_.scale + vignetteExit_.speedScale * dt);
+		vignetteExit_.power = std::min(vignetteExit_.targetPower,
+			vignetteExit_.power + vignetteExit_.speedPower * dt);
+
+		PostEffectManager::GetInstance()->SetVignetteColor(vignetteExit_.color);
+		PostEffectManager::GetInstance()->SetVignetteScale(vignetteExit_.scale);
+		PostEffectManager::GetInstance()->SetVignettePower(vignetteExit_.power);
+
+		// 目標へ到達 → 真っ黒で少しホールド → 切替
+		const bool reached =
+			vignetteExit_.scale >= vignetteExit_.targetScale &&
+			vignetteExit_.power >= vignetteExit_.targetPower;
+
+		if (reached) {
+			vignetteExit_.holdTimer += dt;
+			if (vignetteExit_.holdTimer >= vignetteExit_.holdBlackSec) {
+				SceneManager::GetInstance()->ChangeScene(vignetteExit_.nextScene);
+				vignetteExit_ = {};
+			}
 		}
 	}
 
-	// キー入力でフェード開始（シーン遷移予約）
-	if (!fade_->IsActive()) {
+	if (Input::GetInstance()->TriggerKey(DIK_SPACE) && !vignetteExit_.active) {
+		// より濃い終端（targetScale/targetPower を上げる）＋ゆっくり速度
+		BeginVignetteExit("GAMEPLAY", { 0,0,0 },
+			0.0f, 0.0f,
+			0.3f,          // 速度（ゆっくり）
+			1.30f, 2.6f);  // 終端の濃さ（強くしたいほど上げる）
+	}
+
+
+
+	// --- Vignette 版シーン切替のトリガ ---
+	/*if (!vignetteExit_.active) {
 		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
-			fade_->Start(Fade::Status::FadeOut, 2.0f);
-			nextSceneName_ = "GAMEPLAY";
+			BeginVignetteExit("GAMEPLAY", { 0.0f,0.0f,0.0f }, 0.0f, 0.0f, 0.2f);
 		}
 		if (Input::GetInstance()->TriggerKey(DIK_U)) {
-			fade_->Start(Fade::Status::FadeOut, 2.0f);
-			nextSceneName_ = "Unity";
+			BeginVignetteExit("Unity", { 0.0f,0.0f,0.0f }, 0.0f, 0.0f, 1.6f);
 		}
 		if (Input::GetInstance()->TriggerKey(DIK_P)) {
-			fade_->Start(Fade::Status::FadeOut, 2.0f);
-			nextSceneName_ = "PARTICLE";
+			BeginVignetteExit("PARTICLE", { 0.0f,0.0f,0.0f }, 0.0f, 0.0f, 1.6f);
 		}
-	}
+	}*/
+
 
 	// TitleScene::Update() に強制起動テスト
 	if (Input::GetInstance()->TriggerKey(DIK_F)) {
@@ -705,4 +757,30 @@ void TitleScene::Debug()
 
 	//ImGui::End();
 #endif
+}
+
+void TitleScene::BeginVignetteExit(const std::string& next,
+	const Vector3& color = { 0,0,0 },
+	float startScale = 0.0f, float startPower = 0.0f,
+	float speed = 0.4f,
+	float targetScale = 1.25f, float targetPower = 2.2f)
+{
+	vignetteExit_.active = true;
+	vignetteExit_.nextScene = next;
+	vignetteExit_.color = color;
+
+	vignetteExit_.scale = startScale;
+	vignetteExit_.power = startPower;
+	vignetteExit_.speedScale = speed;
+	vignetteExit_.speedPower = speed;
+
+	vignetteExit_.targetScale = targetScale;
+	vignetteExit_.targetPower = targetPower;
+
+	vignetteExit_.holdTimer = 0.0f;
+
+	PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
+	PostEffectManager::GetInstance()->SetVignetteColor(vignetteExit_.color);
+	PostEffectManager::GetInstance()->SetVignetteScale(vignetteExit_.scale);
+	PostEffectManager::GetInstance()->SetVignettePower(vignetteExit_.power);
 }

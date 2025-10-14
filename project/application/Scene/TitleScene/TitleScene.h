@@ -141,5 +141,35 @@ private:
 	std::vector<std::unique_ptr<Sprite>> temp2;
 
 	std::unique_ptr<Object3d> sky;
+
+
+
+	struct VignetteExit {
+		bool active = false;
+		std::string nextScene;
+
+		float scale = 0.0f;
+		float power = 0.0f;
+
+		// 速度はそのままでもOK（ゆっくりなら 0.2〜0.4）
+		float speedScale = 0.6f;
+		float speedPower = 0.6f;
+
+		// 最後を「より黒く」するための到達目標値（1.0より上）
+		float targetScale = 1.25f; // 例: 1.2〜1.4
+		float targetPower = 2.2f;  // 例: 1.8〜3.0
+
+		// 真っ黒状態で少し止めたい場合のホールド時間
+		float holdBlackSec = 0.20f;
+		float holdTimer = 0.0f;
+
+		Vector3 color = { 0.0f, 0.0f, 0.0f };
+	} vignetteExit_;
+
+	void BeginVignetteExit(const std::string& next,
+		const Vector3& color,
+		float startScale, float startPower,
+		float speed,
+		float targetScale, float targetPower);
 	
 };
