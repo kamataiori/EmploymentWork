@@ -4,6 +4,7 @@
 #include "SphereCollider.h"
 #include "PlayerAnimation.h"
 #include "PlayerAnimKey.h"
+#include "PlayerIWeapon.h"
 
 class PlayerAnimation;
 enum class PlayerAnimKey : unsigned int;
@@ -62,6 +63,10 @@ public:
 	// 任意のタイミングでキー再生したいとき用（攻撃側から呼ぶ想定）
 	void PlayAnimKey(PlayerAnimKey key);
 
+	void RequestAnimKey(PlayerAnimKey key, int priority, float lockSec = 0.0f);
+
+	bool IsAnimLocked() const { return animLockTimer_ > 0.0f; }
+
 protected:
 
 	// 派生クラスで指定するモデル名
@@ -105,6 +110,11 @@ private:
 
 	// 1回目だけデフォルトTransformを入れる
 	bool isFirstInitialize_ = true;
+
+	std::unique_ptr<PlayerIWeapon> weapon_{};
+
+	int   currentAnimPriority_ = 0;  // 0=移動系, 10=攻撃, 20=スキル…など
+	float animLockTimer_ = 0.0f;
 
 };
 

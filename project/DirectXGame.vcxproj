@@ -183,6 +183,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Collision\SphereCollider.cpp" />
     <ClCompile Include="PlayerAnimation.cpp" />
     <ClCompile Include="PlayerAnimKey.cpp" />
+    <ClCompile Include="PlayerIWeapon.cpp" />
+    <ClCompile Include="PlayerWeaponOBB.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyAreaAttack.h" />
@@ -271,6 +273,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\math\Quaternion.h" />
     <ClInclude Include="PlayerAnimation.h" />
     <ClInclude Include="PlayerAnimKey.h" />
+    <ClInclude Include="PlayerIWeapon.h" />
+    <ClInclude Include="PlayerWeaponOBB.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
     <ClInclude Include="engine\Collision\SphereCollider.h" />
