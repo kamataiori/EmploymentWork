@@ -143,13 +143,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\logger\Logger.cpp" />
     <ClCompile Include="engine\FrameWork\Framework.cpp" />
     <ClCompile Include="engine\Scene\UnityScene.cpp" />
-    <ClCompile Include="externals\imgui\imgui.cpp" />
-    <ClCompile Include="externals\imgui\imgui_demo.cpp" />
-    <ClCompile Include="externals\imgui\imgui_draw.cpp" />
-    <ClCompile Include="externals\imgui\imgui_impl_dx12.cpp" />
-    <ClCompile Include="externals\imgui\imgui_impl_win32.cpp" />
-    <ClCompile Include="externals\imgui\imgui_tables.cpp" />
-    <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
     <ClCompile Include="application\Scene\GameScene\GamePlayScene.cpp" />
     <ClCompile Include="application\Camera\FollowCamera\FollowCamera.cpp" />
     <ClCompile Include="application\Camera\FPSCamera\FPSCamera.cpp" />
@@ -184,11 +177,14 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Scene\ParticleEditorScene.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerBase.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerBullet.cpp" />
-    <ClCompile Include="application\Character\CharacterBase\Player\PlayerChange.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerRogue.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerWarrior.cpp" />
     <ClCompile Include="engine\3d\Skinning.cpp" />
     <ClCompile Include="engine\Collision\SphereCollider.cpp" />
+    <ClCompile Include="PlayerAnimation.cpp" />
+    <ClCompile Include="PlayerAnimKey.cpp" />
+    <ClCompile Include="PlayerIWeapon.cpp" />
+    <ClCompile Include="PlayerWeaponOBB.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyAreaAttack.h" />
@@ -198,7 +194,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Attack2.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Dash.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyState_Idle.h" />
-    <ClInclude Include="application\Character\CharacterBase\Player\AnimationSet.h" />
     <ClInclude Include="engine\3d\JsonLevelLoader.h" />
     <ClInclude Include="engine\3d\SceneController.h" />
     <ClInclude Include="engine\3d\SkyBox.h" />
@@ -271,14 +266,16 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\Scene\ParticleEditorScene.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerBase.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerBullet.h" />
-    <ClInclude Include="application\Character\CharacterBase\Player\PlayerChange.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerRogue.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerType.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerWarrior.h" />
     <ClInclude Include="engine\Effects\PostEffect\PostEffectManager.h" />
     <ClInclude Include="engine\math\Quaternion.h" />
+    <ClInclude Include="PlayerAnimation.h" />
+    <ClInclude Include="PlayerAnimKey.h" />
+    <ClInclude Include="PlayerIWeapon.h" />
+    <ClInclude Include="PlayerWeaponOBB.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="application\Character\CharacterBase\Player\RogueAnimationSet.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
     <ClInclude Include="engine\Collision\SphereCollider.h" />
     <ClInclude Include="engine\3d\StructAnimation.h" />
@@ -293,6 +290,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
+    </ProjectReference>
+    <ProjectReference Include="externals\imgui\imgui.vcxproj">
+      <Project>{0281b0c5-86e2-434d-81f0-bd03bffc65a6}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

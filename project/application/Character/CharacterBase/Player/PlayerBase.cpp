@@ -1,37 +1,60 @@
 #include "PlayerBase.h"
+#include "PlayerWeaponOBB.h"
 
 void PlayerBase::Initialize()
 {
 	// object3dの初期化
-	/*object3d_.reset(new Object3d(scene_));*/
 	object3d_->Initialize();
 
-	// 読み込んだ物をsetする
 	const char* modelName = GetModelName();
 	ModelManager::GetInstance()->LoadModel(modelName);
 	object3d_->SetModel(modelName);
 
-	// 初期Transform設定
-	transform.translate = { 0.0f, 0.0f, -10.0f };
-	transform.rotate = { 0.0f, 0.0f, 0.0f };
-	transform.scale = { 1.0f, 1.0f, 1.0f };
+	// ここを毎回実行しない
+	if (isFirstInitialize_) {
+		transform.translate = { 0.0f, 0.0f, -10.0f };
+		transform.rotate = { 0.0f, 0.0f,  0.0f };
+		transform.scale = { 1.0f, 1.0f,  1.0f };
+		isFirstInitialize_ = false;
+	}
 
-	// object3dにtransformを反映
+	// ここは常に現在のtransformを反映
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
 
-	// コライダーの初期化
+	weapon_ = std::make_unique<PlayerWeaponOBB>();
+	weapon_->SetOwner(this);
+	weapon_->SetPlayerTransform(&transform);
+	weapon_->Initialize();
+
 	SetCollider(this);
-	SetPosition(object3d_->GetTranslate());  // 3Dモデルの位置にコライダーをセット
+	SetPosition(transform.translate);
 	sphere.radius = 2.0f;
 	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
 }
 
 void PlayerBase::Update()
 {
+	// ロックの減衰
+	if (animLockTimer_ > 0.0f) {
+		animLockTimer_ -= 1.0f / 60.0f;
+		if (animLockTimer_ <= 0.0f) {
+			animLockTimer_ = 0.0f;
+			currentAnimPriority_ = 0;
+			// 止まっている場合に備えて一度Idleを要求しておく
+			RequestAnimKey(PlayerAnimKey::Idle, 0);
+		}
+	}
+
 	// playerの基本となる動きの呼出し
 	Move();
+
+	if (weapon_) {
+		weapon_->Update();
+		weapon_->NormalAttack();
+		weapon_->Skill();
+	}
 
 	// ------------------------
 	// オブジェクト更新処理
@@ -50,7 +73,7 @@ void PlayerBase::Update()
 void PlayerBase::Draw()
 {
 	// SphereCollider の描画
-	SphereCollider::Draw();
+	//SphereCollider::Draw();
 }
 
 void PlayerBase::SkinningDraw()
@@ -142,13 +165,31 @@ void PlayerBase::Move()
 		transform.translate.z += rotatedDir.z * currentSpeed;
 	}
 
-	const auto& anim = GetAnimation();
+	/*const auto& anim = GetAnimation();
 
 	if (isMoving) {
 		SetAnimationIfChanged(anim.Run_Weapon);
 	}
 	else {
 		SetAnimationIfChanged(anim.Idle);
+	}*/
+
+	//if (animCtrl_) {
+	//	if (!IsAnimLocked()) { // ★攻撃などでロック中は移動アニメを出さない
+	//		if (isMoving) {
+	//			RequestAnimKey(PlayerAnimKey::RunWeapon, 0);   // 優先度0
+	//		}
+	//		else {
+	//			RequestAnimKey(PlayerAnimKey::Idle, 0);        // 優先度0
+	//		}
+	//	}
+	//}
+
+	if (animCtrl_) {
+		if (!IsAnimLocked()) {
+			if (isMoving)  RequestAnimKey(PlayerAnimKey::RunWeapon, 0);
+			else           RequestAnimKey(PlayerAnimKey::Idle, 0);
+		}
 	}
 
 
@@ -198,14 +239,34 @@ void PlayerBase::Move()
 
 void PlayerBase::ChangeModel(const char* modelName)
 {
-	ModelManager::GetInstance()->LoadModel(modelName);
+	//ModelManager::GetInstance()->LoadModel(modelName);
 	object3d_->SetModel(modelName);
+}
+
+void PlayerBase::PlayAnimKey(PlayerAnimKey key)
+{
+	if (!animCtrl_) return;
+	SetAnimationIfChanged(animCtrl_->Resolve(key));
+}
+
+void PlayerBase::RequestAnimKey(PlayerAnimKey key, int priority, float lockSec)
+{
+	// 低い優先度からの上書きは禁止（攻撃中に移動で潰さない）
+	if (priority < currentAnimPriority_) return;
+
+	PlayAnimKey(key);
+	currentAnimPriority_ = priority;
+
+	// ロックは長い方を採用で上書き
+	if (lockSec > 0.0f) {
+		if (animLockTimer_ < lockSec) animLockTimer_ = lockSec;
+	}
 }
 
 void PlayerBase::SetAnimationIfChanged(const std::string& name)
 {
-	if (currentAnimationName_ != name) {
-		object3d_->SetAnimation(name);
-		currentAnimationName_ = name;
-	}
+	if (name.empty()) return;              // 安全ガード
+	if (currentAnimationName_ == name) return;
+	object3d_->SetAnimation(name);
+	currentAnimationName_ = name;
 }
