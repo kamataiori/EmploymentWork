@@ -21,6 +21,10 @@ static inline float EaseOutBack(float t) {
 	return 1.0f + c3 * std::pow(t - 1.0f, 3.0f) + c1 * std::pow(t - 1.0f, 2.0f);
 }
 
+static inline float EaseInOutCubic(float t) {
+	t = std::clamp(t, 0.0f, 1.0f);
+	return (t < 0.5f) ? 4.0f * t * t * t : 1.0f - powf(-2.0f * t + 2.0f, 3.0f) * 0.5f;
+}
 
 // TitleScene.h の private より上などに（クラス外）
 inline constexpr const char* kWindowName_ParticleControl = "Particle Control";
@@ -172,4 +176,28 @@ private:
 		float speed,
 		float targetScale, float targetPower);
 	
+
+
+	std::unique_ptr<Sprite> shutterTop_;
+	std::unique_ptr<Sprite> shutterBottom_;
+
+	struct ShutterExit {
+		bool active = false;
+		std::string nextScene;
+
+		// 時間管理
+		float t = 0.0f;           // 0→1
+		float duration = 0.70f;   // 閉まるまでの秒数（ゆっくりにしたいなら大きく）
+
+		// 閉じ切り後に一瞬“間”を置く
+		float holdSec = 0.15f;
+		float holdTimer = 0.0f;
+
+		// 目標座標（ピクセル。Sprite は AnchorPoint を考慮して SetPosition）
+		Vector2 topStart, topEnd;   // 上パネル（Anchor 0.5, 1.0 = 下辺中央を基準）
+		Vector2 botStart, botEnd;   // 下パネル（Anchor 0.5, 0.0 = 上辺中央を基準）
+	} shutter_;
+
+	// 開始API
+	void BeginShutterExit(const std::string& next, float duration = 0.70f, float hold = 0.15f);
 };

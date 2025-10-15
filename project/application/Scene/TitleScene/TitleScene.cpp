@@ -8,7 +8,13 @@
 #include <cmath>
 #include <vector>
 #include <memory>
-
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
+#include <algorithm>
 
 
 void TitleScene::Initialize()
@@ -285,6 +291,32 @@ void TitleScene::Initialize()
 	sky->SetModel("skydome.obj");
 	sky->SetTranslate({ 0.0f,0.0f,0.0f });
 	sky->SetCamera(camera1.get());
+
+
+	// ===== シャッター用 Black.png を2枚作る =====
+	// 画面サイズ（固定ならその値、可変ならシステムから取得してください）
+	/*const float screenW = 1280.0f;
+	const float screenH = 720.0f;*/
+
+	shutterTop_ = std::make_unique<Sprite>();
+	shutterBottom_ = std::make_unique<Sprite>();
+
+	shutterTop_->Initialize("Resources/Black.png");
+	shutterBottom_->Initialize("Resources/Black.png");
+
+	shutterTop_->SetAnchorPoint({ 0.5f, 1.0f });
+	shutterBottom_->SetAnchorPoint({ 0.5f, 0.0f });
+
+	shutterTop_->SetSize({ screenW, screenH * 0.55f });
+	shutterBottom_->SetSize({ screenW, screenH * 0.55f });
+
+	shutter_.topStart = { screenW * 0.5f, 0.0f };
+	shutter_.botStart = { screenW * 0.5f, screenH };
+	shutter_.topEnd = { screenW * 0.5f, screenH * 0.5f };
+	shutter_.botEnd = { screenW * 0.5f, screenH * 0.5f };
+
+	shutterTop_->SetPosition(shutter_.topStart);
+	shutterBottom_->SetPosition(shutter_.botStart);
 }
 
 void TitleScene::Finalize()
@@ -304,6 +336,43 @@ void TitleScene::Update()
 	//}
 	//plane->SetMaterialColor(color);
 
+	const float dt = 1.0f / 60.0f;
+
+	// === SPACE押下でシャッター演出開始 ===
+	if (!shutter_.active && Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+		BeginShutterExit("GAMEPLAY", 1.2f /*ゆっくり*/, 0.5f /*真っ黒ホールド*/);
+	}
+
+	// === シャッター進行 ===
+	if (shutter_.active) {
+		if (shutter_.t < 1.0f) {
+			shutter_.t = std::min(1.0f, shutter_.t + dt / (std::max)(0.001f, shutter_.duration));
+			float e = EaseInOutCubic(shutter_.t);
+
+			// 上下を補間
+			Vector2 topPos = LerpVec2(shutter_.topStart, shutter_.topEnd, e);
+			Vector2 botPos = LerpVec2(shutter_.botStart, shutter_.botEnd, e);
+
+			shutterTop_->SetPosition(topPos);
+			shutterBottom_->SetPosition(botPos);
+		}
+		else {
+			// 完全に閉じた状態（真っ黒）
+			shutterTop_->SetPosition(shutter_.topEnd);
+			shutterBottom_->SetPosition(shutter_.botEnd);
+
+			// 閉じ切り後、ホールド時間を計測
+			shutter_.holdTimer += dt;
+			if (shutter_.holdTimer >= shutter_.holdSec) {
+				SceneManager::GetInstance()->ChangeScene(shutter_.nextScene);
+				shutter_ = {}; // リセット
+			}
+		}
+
+		shutterTop_->Update();
+		shutterBottom_->Update();
+	}
+
 	// 各3Dオブジェクトの更新
 	plane->Update();
 
@@ -317,7 +386,7 @@ void TitleScene::Update()
 	// カメラの更新
 	camera1->Update();
 
-	const float dt = 1.0f / 60.0f;
+	//const float dt = 1.0f / 60.0f;
 	animClock_ += dt;
 
 	// タイトル各文字
@@ -528,13 +597,13 @@ void TitleScene::Update()
 		}
 	}
 
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE) && !vignetteExit_.active) {
-		// より濃い終端（targetScale/targetPower を上げる）＋ゆっくり速度
-		BeginVignetteExit("GAMEPLAY", { 0,0,0 },
-			0.0f, 0.0f,
-			0.3f,          // 速度（ゆっくり）
-			1.30f, 2.6f);  // 終端の濃さ（強くしたいほど上げる）
-	}
+	//if (Input::GetInstance()->TriggerKey(DIK_SPACE) && !vignetteExit_.active) {
+	//	// より濃い終端（targetScale/targetPower を上げる）＋ゆっくり速度
+	//	BeginVignetteExit("GAMEPLAY", { 0,0,0 },
+	//		0.0f, 0.0f,
+	//		0.3f,          // 速度（ゆっくり）
+	//		1.30f, 2.6f);  // 終端の濃さ（強くしたいほど上げる）
+	//}
 
 
 
@@ -650,15 +719,21 @@ void TitleScene::ForeGroundDraw()
 	// ================================================
 
 	//title->Draw();
+	// ===== シャッターを最前面に描く =====
+	/*if (shutter_.active)*/ {
+		shutterTop_->Draw();
+		shutterBottom_->Draw();
+	}
 
 	// タイトル文字列
 	for (auto& L : titleLetters_) { L.sp->Draw(); }
 	for (auto& L : spaceLetters_) { L.sp->Draw(); }
 
 
-	if (fade_) {
+
+	/*if (fade_) {
 		fade_->Draw();
-	}
+	}*/
 
 
 	// ================================================
@@ -783,4 +858,17 @@ void TitleScene::BeginVignetteExit(const std::string& next,
 	PostEffectManager::GetInstance()->SetVignetteColor(vignetteExit_.color);
 	PostEffectManager::GetInstance()->SetVignetteScale(vignetteExit_.scale);
 	PostEffectManager::GetInstance()->SetVignettePower(vignetteExit_.power);
+}
+
+void TitleScene::BeginShutterExit(const std::string& next, float duration, float hold)
+{
+	shutter_.active = true;
+	shutter_.nextScene = next;
+	shutter_.duration = (std::max)(0.03f, duration);
+	shutter_.holdSec = (std::max)(0.0f, hold);
+	shutter_.holdTimer = 0.0f;
+	shutter_.t = 0.0f;
+
+	shutterTop_->SetPosition(shutter_.topStart);
+	shutterBottom_->SetPosition(shutter_.botStart);
 }

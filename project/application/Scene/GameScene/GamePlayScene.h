@@ -99,5 +99,26 @@ private:
 
 	std::unique_ptr<SceneController> stage_;
 
+	// ===== 逆シャッター用メンバ =====
+	std::unique_ptr<Sprite> shutterTop_;
+	std::unique_ptr<Sprite> shutterBottom_;
+
+	struct ShutterOpen {
+		bool   active = false; // 開演出が有効か
+		float  t = 0.0f;  // 0→1 の進捗
+		float  duration = 1.0f;  // 開き切るまでの秒数
+		float  holdSec = 0.20f; // 開き始める前、中央で一瞬止める（黒保持）
+		float  holdTimer = 0.0f;
+
+		// 位置（Title の閉じる時と対称）:
+		//   Start … 画面外（開いた最終位置）
+		//   End   … 画面中央（閉じている初期位置）
+		Vector2 topStart, topEnd; // 上パネル：アンカー(0.5, 1.0)
+		Vector2 botStart, botEnd; // 下パネル：アンカー(0.5, 0.0)
+	} shutterOpen_;
+
+	// 開演出の開始API
+	void BeginShutterOpen(float duration = 1.0f, float holdAtCenter = 0.20f);
+
 };
 
