@@ -16,6 +16,8 @@
 #include <FollowCamera.h>
 #include "SkyBox.h"
 
+inline float DegToRad(float d) { return d * 3.1415926535f / 180.0f; }
+
 //inline constexpr const char* kWindowName_PlayerControl = "Player Control";
 //inline constexpr const char* kWindowName_EnemyControl = "Enemy Control";
 inline constexpr const char* kWindowName_MonsterControl = "Monster Control";
@@ -78,25 +80,63 @@ public:
 	/// </summary>
 	void CheckAllColisions();
 
+	void ApplyCurrentCameraToAll();
 
 private:
+
+	// ====== フェーズ管理 ======
+	enum class Phase {
+		ShutterOpen,   // 1, シャッター演出で明ける（黒→開く）
+		EnemyIntro,    // 3, 敵が上から降ってくる／下から撮る
+		ReadyGo,       // 4, Ready→Go の表示
+		Battle         // 5, フォローカメラで戦闘開始
+	};
+	Phase phase_ = Phase::ShutterOpen;
+	float phaseTimer_ = 0.0f;
 
 	//3Dカメラの初期化
 	std::unique_ptr<Camera> camera1 = std::make_unique<Camera>();
 	std::unique_ptr<FollowCamera> followCamera;
+	std::unique_ptr<Camera> enemyIntroCam_;  // 敵登場を下から撮る
+	Camera* currentCamera_ = nullptr;  // 現在使っているカメラ
 
+	// 敵登場カメラ調整
+	struct EnemyIntroCamParams {
+		Vector3 pos{ 0.0f, 0.28f, -1.55f };   // かなり低く & 近距離
+		Vector3 rot{ DegToRad(-78.0f), 0.0f, 0.0f }; // 強い見上げ
+		float fovY = DegToRad(65.0f);         // 少し広角
+	} eicam_;
+
+
+	// --- EnemyIntroの踏みつぶし演出 ---
+	float stompShakeTime_ = 0.0f;   // 残りシェイク時間
+	float stompShakeDur_ = 0.60f;  // シェイク総時間
+	float stompShakeAmp_ = 0.82f;  // 位置シェイクの振幅（メートル想定）
+	float stompFovBase_ = DegToRad(68.0f); // 基本FOV（Intro用）
+	float stompFovKick_ = DegToRad(22.0f); // 着地瞬間のFOV上乗せ量
+
+
+	// ===== Ready / Go =====
+	std::unique_ptr<Sprite> ready_;
+	std::unique_ptr<Sprite> go_;
+	float readyAlpha_ = 0.0f;
+	float goAlpha_ = 0.0f;
+
+	// ===== ユーティリティ =====
+	void SwitchPhase(Phase next);
+
+	// ====== 環境 ======
 	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
 	std::unique_ptr<Object3d> ground;
-
 	std::unique_ptr<Object3d> sky;
 
+	// ====== 主要アクター ======
 	std::unique_ptr<Player> player_;
 	std::unique_ptr<Enemy> enemy_;
 
 	
 
 	std::unique_ptr<CollisionManager> collisionMAnager_;
-
 	std::unique_ptr<SceneController> stage_;
 
 	// ===== 逆シャッター用メンバ =====

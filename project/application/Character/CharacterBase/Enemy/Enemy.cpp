@@ -5,6 +5,12 @@
 #include "Player.h"
 #include <Enemy/EnemyState_Attack2.h>
 #include <Enemy/EnemyState_Attack1.h>
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
 
 void Enemy::Initialize()
 {
@@ -21,7 +27,7 @@ void Enemy::Initialize()
 
 	// 初期Transform設定
 	transform.translate = { 0.0f, 0.0f, 0.0f };
-	transform.rotate = { 0.0f, 0.0f, 0.0f };
+	transform.rotate = { 0.0f, 3.14f, 0.0f };
 	transform.scale = { 1.0f, 1.0f, 1.0f };
 
 	// object3dにtransformを反映
@@ -111,6 +117,7 @@ void Enemy::Update()
 
 	//ImGui::End();
 
+
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetScale(transform.scale);
 	object3d_->SetRotate(transform.rotate);
@@ -118,6 +125,79 @@ void Enemy::Update()
 
 	SetPosition(object3d_->GetTranslate());
 	sphere.color = static_cast<int>(Color::WHITE);
+}
+
+void Enemy::UpdateBefore()
+{
+	static float landedTimer = 0.0f;     // 着地後のポーズ用タイマー
+	const float dt = 1.0f / 60.0f;
+
+	if (!intro_.active) {
+		return; // 演出中でなければ何もしない
+	}
+
+	// X/Z は終点固定。Y だけを物理落下
+	transform.translate.x = intro_.end.x;
+	transform.translate.z = intro_.end.z;
+
+	if (transform.translate.y > intro_.end.y) {
+		// ===== まだ空中：重力でストーン落下 =====
+		intro_.vy += intro_.gravity * dt;       // vyに加速度を積む（gravityは負）
+		transform.translate.y += intro_.vy * dt;
+
+		if (transform.translate.y <= intro_.end.y) {
+			// 地面に到達（めり込み防止してピタッと止める）
+			transform.translate = intro_.end;
+			intro_.vy = 0.0f;
+			landedTimer = 0.0f; 
+			justLanded_ = true;
+			SetAnimationIfChanged(animation_.Idle);
+		}
+		else {
+			// 落下中のアニメ
+			SetAnimationIfChanged(animation_.Jump_Land);
+		}
+	}
+	else {
+		// ===== 着地後：一定時間ポーズ =====
+		const float pauseTime = 1.5f;           // ← ここを伸ばせば EnemyIntro を長くできる
+		if (landedTimer < pauseTime) {
+			landedTimer += dt;                  // ポーズ中は active を維持
+			// 何もしない（Idleのまま静止）
+		}
+		else {
+			// ポーズ終了 → 演出完了
+			intro_.active = false;              // ここで初めて false
+		}
+	}
+
+	// 反映
+	object3d_->SetTranslate(transform.translate);
+	object3d_->SetScale(transform.scale);
+	object3d_->SetRotate(transform.rotate);
+	object3d_->Update();
+}
+
+void Enemy::BeginIntroFall(const Vector3& start, const Vector3& end, float durationSec, float bounceRatio)
+{
+	intro_.active = true;
+	intro_.start = start;
+	intro_.end = end;
+
+	// 重力パラメータ（お好みで調整可）
+	intro_.vy = 0.0f;        // 初速0（真下へ落ちる）
+	intro_.gravity = -20.0f;      // 下向き加速度。速すぎ/遅すぎなら -20〜-60 で調整
+
+	// 互換用に残すが未使用
+	intro_.t = 0.0f;
+	intro_.duration = std::max(0.05f, durationSec);
+	intro_.bounce = 0.0f;
+
+	transform.translate = start;
+	transform.rotate = { 0,0,0 }; // 必要なら向きも初期化
+	SetAnimationIfChanged(animation_.Jump_Land);
+	object3d_->SetTranslate(transform.translate);
+	object3d_->Update();
 }
 
 void Enemy::Draw()
@@ -251,4 +331,11 @@ void Enemy::SetAnimationIfChanged(const std::string& name)
 		object3d_->SetAnimation(name);
 		currentAnimationName_ = name;
 	}
+}
+
+bool Enemy::ConsumeJustLanded()
+{
+	bool ret = justLanded_;
+	justLanded_ = false;
+	return ret;
 }

@@ -39,6 +39,12 @@ public:
 
 	void Update() override;
 
+	void UpdateBefore();
+
+	// ===== 登場落下演出 =====
+	void BeginIntroFall(const Vector3& start, const Vector3& end, float durationSec, float bounceRatio);
+	bool IsIntroFalling() const { return intro_.active; }
+
 	void Draw() override;
 
 	void DrawModel();
@@ -70,6 +76,8 @@ public:
 	// アニメーションを設定する関数
 	void SetAnimationIfChanged(const std::string& name);
 
+	bool ConsumeJustLanded();
+
 private:
 
 	std::unique_ptr<EnemyState> currentState_;
@@ -87,5 +95,23 @@ private:
 
 	SkeltonAnimationSet animation_; // アニメーション名セット
 	std::string currentAnimationName_;
+
+	// 登場演出データ
+	struct IntroFall {
+		bool active = false;
+		Vector3 start{};
+		Vector3 end{};
+
+		// 旧補間用の t/duration/bounce は使わないが、互換のため残してもOK
+		float t = 0.0f;
+		float duration = 1.0f;
+		float bounce = 0.0f;
+
+		// ★重力落下用
+		float vy = 0.0f;        // 現在の落下速度（-方向）
+		float gravity = -30.0f; // 重力加速度（-が下向き）
+	} intro_;
+
+	bool justLanded_ = false;
 };
 
