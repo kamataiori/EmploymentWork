@@ -183,6 +183,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Collision\SphereCollider.cpp" />
     <ClCompile Include="PlayerAnimation.cpp" />
     <ClCompile Include="PlayerAnimKey.cpp" />
+    <ClCompile Include="PlayerBulletBase.cpp" />
+    <ClCompile Include="PlayerBulletManager.cpp" />
+    <ClCompile Include="PlayerIBullet.cpp" />
     <ClCompile Include="PlayerIWeapon.cpp" />
     <ClCompile Include="PlayerWeaponOBB.cpp" />
   </ItemGroup>
@@ -273,6 +276,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\math\Quaternion.h" />
     <ClInclude Include="PlayerAnimation.h" />
     <ClInclude Include="PlayerAnimKey.h" />
+    <ClInclude Include="PlayerBulletBase.h" />
+    <ClInclude Include="PlayerBulletManager.h" />
+    <ClInclude Include="PlayerIBullet.h" />
     <ClInclude Include="PlayerIWeapon.h" />
     <ClInclude Include="PlayerWeaponOBB.h" />
     <ClInclude Include="resource.h" />
