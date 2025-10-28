@@ -44,7 +44,7 @@ void Enemy::Initialize()
 	SetPosition(object3d_->GetTranslate());  // 3Dモデルの位置にコライダーをセット
 	//SetRotation(object3d_->GetRotate());
 	//SetScale(object3d_->GetScale());
-	sphere.radius = 1.5f;
+	sphere.radius = 4.5f;
 
 	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
 }
@@ -212,7 +212,7 @@ void Enemy::Draw()
 	}
 
 	// SphereCollider の描画
-	//SphereCollider::Draw();
+	SphereCollider::Draw();
 }
 
 void Enemy::DrawModel()

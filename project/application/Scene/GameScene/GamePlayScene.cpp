@@ -321,7 +321,7 @@ void GamePlayScene::Update()
 
 
 	collisionMAnager_->RegisterCollider(player_->Get());
-	//collisionMAnager_->RegisterCollider(enemy_.get());
+	collisionMAnager_->RegisterCollider(enemy_.get());
 	/*if (player_->GetBullet()) {
 		auto bullet = player_->GetBullet();
 		collisionMAnager_->RegisterCollider(bullet);
