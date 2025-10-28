@@ -11,7 +11,7 @@ void PlayerBase::Initialize()
 
 	// ▼ここを毎回実行しない
 	if (isFirstInitialize_) {
-		transform.translate = { 0.0f, 0.0f, -10.0f };
+		transform.translate = { 0.0f, 0.0f, -20.0f };
 		transform.rotate = { 0.0f, 0.0f,  0.0f };
 		transform.scale = { 1.0f, 1.0f,  1.0f };
 		isFirstInitialize_ = false;
@@ -32,6 +32,8 @@ void PlayerBase::Update()
 {
 	// playerの基本となる動きの呼出し
 	Move();
+
+	GameOver();
 
 	// ------------------------
 	// オブジェクト更新処理
@@ -65,10 +67,22 @@ void PlayerBase::ParticleDraw()
 void PlayerBase::OnCollision()
 {
 	sphere.color = static_cast<int>(Color::RED);
+
+	isGameOver = true;
+	move_.isDashing = false;
+	move_.dashTimer = 0.0f;
+	jump_.isJumping = false;
+	jump_.velocity = 0.0f;
 }
 
 void PlayerBase::Move()
 {
+	// ゲームオーバー中は入力も移動も受け付けない＆アニメも変えない
+	if (isGameOver) {
+		move_.direction = { 0,0,0 };
+		return;
+	}
+
 	// -------------------------------
 	// ダッシュ制御：1回だけ発動可能
 	// -------------------------------
@@ -203,6 +217,21 @@ void PlayerBase::Move()
 		transform.translate.y += jump_.velocity;
 		jump_.velocity -= jump_.kGravity;
 	}
+}
+
+void PlayerBase::GameOver()
+{
+	if (isGameOver && !deathAnimLatched_) {
+		PlayAnimKey(PlayerAnimKey::Death);
+
+		// ここで1回だけ再生に切替
+		object3d_->SetAnimationLoop(false);   // ループOFF
+		object3d_->SetAnimationTime(0.0f);    // 先頭から
+		// object3d_->SetAnimationPlaybackRate(1.0f); // 必要なら
+
+		deathAnimLatched_ = true;
+	}
+
 }
 
 void PlayerBase::ChangeModel(const char* modelName)

@@ -209,6 +209,16 @@ public:
 
 	void SetEnableLighting(bool enable);
 
+	// アニメ再生制御
+	void SetAnimationLoop(bool enabled) { loop_ = enabled; }
+	bool GetAnimationLoop() const { return loop_; }
+	void SetAnimationPlaybackRate(float rate) { playbackRate_ = rate; } // 1.0=等速, 0.0=停止
+	float GetAnimationPlaybackRate() const { return playbackRate_; }
+	void SetAnimationTime(float t) { animationTime = std::clamp(t, 0.0f, CurrentDuration()); finished_ = (animationTime >= CurrentDuration() && !loop_); }
+	float GetAnimationTime() const { return animationTime; }
+	bool IsAnimationFinished() const { return finished_; }
+	float CurrentDuration() const { return (currentAnimation_ ? currentAnimation_->duration : 0.0f); }
+
 
 private:
 
@@ -279,6 +289,9 @@ private:
 	std::map<std::string, AnimationData> animationMap_;
 	AnimationData* currentAnimation_ = nullptr;
 
-
+	// ループ/再生速度/終了フラグ
+	bool  loop_ = true;
+	float playbackRate_ = 1.0f;
+	bool  finished_ = false;
 };
 

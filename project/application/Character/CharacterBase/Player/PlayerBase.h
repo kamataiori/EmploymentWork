@@ -54,6 +54,11 @@ public:
 	/// </summary>
 	void Move();
 
+	/// <summary>
+	/// ゲームオーバーの演出
+	/// </summary>
+	void GameOver();
+
 	// モデル変更（切り替え用）
 	void ChangeModel(const char* modelName);
 
@@ -106,6 +111,9 @@ private:
 
 	// 1回目だけデフォルトTransformを入れる
 	bool isFirstInitialize_ = true;
+
+	bool isGameOver = false;
+	bool deathAnimLatched_ = false;
 
 };
 

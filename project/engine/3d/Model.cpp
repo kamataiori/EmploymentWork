@@ -44,8 +44,30 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypat
 void Model::Update()
 {
 	if (currentAnimation_) {
-		animationTime += 1.0f / 60.0f;
-		animationTime = std::fmod(animationTime, currentAnimation_->duration);
+		// ★変更：再生速度・ループ・終了判定に対応
+		if (!finished_) {
+			animationTime += (1.0f / 60.0f) * playbackRate_;
+
+			const float dur = CurrentDuration();
+			if (dur > 0.0f) {
+				if (loop_) {
+					// ループ再生
+					// fmod は負になり得るので補正
+					animationTime = std::fmod(animationTime, dur);
+					if (animationTime < 0.0f) animationTime += dur;
+				}
+				else {
+					// 1回だけ
+					if (animationTime >= dur) {
+						animationTime = dur;     // 最終フレームに張り付く
+						finished_ = true;        // 再生終了
+					}
+					if (animationTime < 0.0f) animationTime = 0.0f;
+				}
+			}
+		}
+
+		// クランプした time で適用（終了後も最終フレームを維持したいので毎フレーム適用でOK）
 		AppAnimation(skeleton, *currentAnimation_, animationTime);
 		Update(skeleton);
 		for (auto& instance : meshInstances_) {
@@ -552,10 +574,14 @@ void Model::SetAnimation(const std::string& name)
 {
 	if (animationMap_.count(name)) {
 		if (currentAnimation_ != &animationMap_[name]) {
-			prevAnimation_ = currentAnimation_;  // 前回のアニメ
+			prevAnimation_ = currentAnimation_;  // 補間用
 			currentAnimation_ = &animationMap_[name];
 			animationTime = 0.0f;
-			blendTime_ = 0.0f; // 補間開始
+
+			// 新規再生開始時は終了フラグを下ろす
+			finished_ = false;
+
+			blendTime_ = 0.0f;              // 補間開始
 		}
 	}
 	else {

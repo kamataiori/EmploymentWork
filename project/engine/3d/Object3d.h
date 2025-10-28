@@ -87,6 +87,13 @@ public:
 
     void SetAnimation(const std::string& name);
 
+    void SetAnimationLoop(bool enabled) { if (model_) model_->SetAnimationLoop(enabled); }
+    bool IsAnimationFinished() const { return model_ ? model_->IsAnimationFinished() : true; }
+    void SetAnimationPlaybackRate(float rate) { if (model_) model_->SetAnimationPlaybackRate(rate); }
+    void SetAnimationTime(float t) { if (model_) model_->SetAnimationTime(t); }
+    float GetAnimationTime() const { return model_ ? model_->GetAnimationTime() : 0.0f; }
+    float GetAnimationDuration() const { return model_ ? model_->CurrentDuration() : 0.0f; }
+
     //--------getter--------//
     const Vector3& GetScale() const { return transform.scale; }
     const Vector3& GetRotate() const { return transform.rotate; }

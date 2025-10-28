@@ -67,7 +67,7 @@ void GamePlayScene::Initialize()
 	// ===== 主要アクター =====
 
 	player_ = std::make_unique<Player>(this);
-	followCamera = std::make_unique<FollowCamera>(nullptr, 30.0f, 7.0f);
+	followCamera = std::make_unique<FollowCamera>(nullptr, 35.0f, 7.0f);
 	followCamera->SetFarClip(2000.0f);
 
 	player_->Initialize(followCamera.get());
@@ -162,6 +162,19 @@ void GamePlayScene::Finalize()
 
 void GamePlayScene::Update()
 {
+	// 各3Dオブジェクトの更新
+	stage_->Update();
+	skybox->Update();
+	ground->Update();
+	sky->Update();
+	player_->Update();
+	enemy_->Update();
+
+	// カメラの更新
+	camera1->Update();
+	followCamera->Update();
+
+
 	// ===== 逆シャッター進行 =====
 	const float dt = 1.0f / 60.0f;
 	phaseTimer_ += dt;
@@ -307,44 +320,31 @@ void GamePlayScene::Update()
 	} break;
 
 	case Phase::Battle: {
+		collisionMAnager_->RegisterCollider(player_->Get());
+		collisionMAnager_->RegisterCollider(enemy_.get());
+		/*if (player_->GetBullet()) {
+			auto bullet = player_->GetBullet();
+			collisionMAnager_->RegisterCollider(bullet);
+		}*/
+		/*for (const auto& areaAttack : enemy_->GetAreaAttacks()) {
+			collisionMAnager_->RegisterCollider(areaAttack.get());
+		}*/
+		for (const auto& bulletAttack : enemy_->GetAttackBulets()) {
+			collisionMAnager_->RegisterCollider(bulletAttack.get());
+		}
+
+
+		// 衝突判定と応答
+		CheckAllColisions();
 		// 以降は通常更新
 	} break;
 	}
-
-
-	// 各3Dオブジェクトの更新
-	stage_->Update();
-	skybox->Update();
-	ground->Update();
-	sky->Update();
-	player_->Update();
-	enemy_->Update();
-
-	// カメラの更新
-	camera1->Update();
-	followCamera->Update();
 
 	if (Input::GetInstance()->TriggerKey(DIK_K)) {
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
 
-	collisionMAnager_->RegisterCollider(player_->Get());
-	collisionMAnager_->RegisterCollider(enemy_.get());
-	/*if (player_->GetBullet()) {
-		auto bullet = player_->GetBullet();
-		collisionMAnager_->RegisterCollider(bullet);
-	}*/
-	/*for (const auto& areaAttack : enemy_->GetAreaAttacks()) {
-		collisionMAnager_->RegisterCollider(areaAttack.get());
-	}*/
-	for (const auto& bulletAttack : enemy_->GetAttackBulets()) {
-		collisionMAnager_->RegisterCollider(bulletAttack.get());
-	}
-
-
-	// 衝突判定と応答
-	CheckAllColisions();
 
 	//Debug();
 

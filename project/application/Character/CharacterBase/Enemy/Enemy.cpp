@@ -268,9 +268,9 @@ void Enemy::ChangeToRandomState() {
 
 	// ステート候補を定義
 	std::vector<WeightedState> candidates = {
-		{"Dash", dashWeight_, []() { return std::make_unique<EnemyState_Dash>(); }},
+		//{"Dash", dashWeight_, []() { return std::make_unique<EnemyState_Dash>(); }},
 		{"Attack1", attack1Weight_, []() { return std::make_unique<EnemyState_Attack1>(); }},
-		{"Attack2", attack2Weight_, []() { return std::make_unique<EnemyState_Attack2>(); }}
+		//{"Attack2", attack2Weight_, []() { return std::make_unique<EnemyState_Attack2>(); }}
 	};
 
 	// 前回と同じステート名を除外（連続行動を避ける）
@@ -281,9 +281,9 @@ void Enemy::ChangeToRandomState() {
 	// すべて除外された場合は復元（行動できなくなるのを防ぐ）
 	if (candidates.empty()) {
 		candidates = {
-			{"Dash", dashWeight_, []() { return std::make_unique<EnemyState_Dash>(); }},
+			//{"Dash", dashWeight_, []() { return std::make_unique<EnemyState_Dash>(); }},
 			{"Attack1", attack1Weight_, []() { return std::make_unique<EnemyState_Attack1>(); }},
-			{"Attack2", attack2Weight_, []() { return std::make_unique<EnemyState_Attack2>(); }}
+			//{"Attack2", attack2Weight_, []() { return std::make_unique<EnemyState_Attack2>(); }}
 		};
 	}
 
