@@ -65,14 +65,22 @@ void GamePlayScene::Initialize()
 	camera1->SetTranslate({ 0.0f, 0.0f, -20.0f });
 
 	// ===== 主要アクター =====
-	player_ = std::make_unique<Player>(this);
-	enemy_ = std::make_unique<Enemy>(this);
 
-	followCamera = std::make_unique<FollowCamera>(player_->GetCurrentCharacter(), 30.0f, 7.0f);
+	player_ = std::make_unique<Player>(this);
+	followCamera = std::make_unique<FollowCamera>(nullptr, 30.0f, 7.0f);
 	followCamera->SetFarClip(2000.0f);
 
 	player_->Initialize(followCamera.get());
+	followCamera->SetTarget(player_->GetCurrentCharacter());
+
+	enemy_ = std::make_unique<Enemy>(this);
 	enemy_->Initialize();
+
+	// プレイヤー参照を敵へ“先に”渡す
+	enemy_->SetPlayer(player_.get());
+
+	// その後で弾専用に切替
+	enemy_->ChangeToBulletOnlyState();
 
 	// ===== 環境 =====
 	skybox = std::make_unique<SkyBox>();
@@ -268,6 +276,7 @@ void GamePlayScene::Update()
 			ApplyCurrentCameraToAll();
 			enemy_->SetScale({ 5.0f, 5.0f, 5.0f });
 			enemy_->SetRotate({ 0.0f, 3.14f, 0.0f });
+			enemy_->SetPlayer(player_.get());
 			enemy_->Update();
 			SwitchPhase(Phase::ReadyGo);
 		}
@@ -328,10 +337,10 @@ void GamePlayScene::Update()
 	}*/
 	/*for (const auto& areaAttack : enemy_->GetAreaAttacks()) {
 		collisionMAnager_->RegisterCollider(areaAttack.get());
-	}
+	}*/
 	for (const auto& bulletAttack : enemy_->GetAttackBulets()) {
 		collisionMAnager_->RegisterCollider(bulletAttack.get());
-	}*/
+	}
 
 
 	// 衝突判定と応答

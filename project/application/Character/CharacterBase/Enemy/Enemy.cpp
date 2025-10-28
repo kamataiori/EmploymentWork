@@ -26,7 +26,7 @@ void Enemy::Initialize()
 	object3d_->SetModel("Skeleton.gltf");
 
 	// 初期Transform設定
-	transform.translate = { 0.0f, 0.0f, 0.0f };
+	transform.translate = { 3.0f, 0.0f, 2.0f };
 	transform.rotate = { 0.0f, 3.14f, 0.0f };
 	transform.scale = { 1.0f, 1.0f, 1.0f };
 
@@ -38,6 +38,8 @@ void Enemy::Initialize()
 	object3d_->SetAnimation(animation_.Idle);
 
 	ChangeState(std::make_unique<EnemyState_Idle>());
+
+	//ChangeToBulletOnlyState();
 
 	// コライダーの初期化
 	SetCollider(this);
@@ -51,18 +53,18 @@ void Enemy::Initialize()
 
 void Enemy::Update()
 {
-	//// ImGuiデバッグ表示
-	//ImGui::Begin("Enemy Debug");
+	// ImGuiデバッグ表示
+	ImGui::Begin("Enemy Debug");
 
-	//if (currentState_) {
-	//	// 現在のステート名を表示
-	//	ImGui::Text("Current State: %s", currentState_->GetName());
-	//}
-	//else {
-	//	ImGui::Text("Current State: None");
-	//}
+	if (currentState_) {
+		// 現在のステート名を表示
+		ImGui::Text("Current State: %s", currentState_->GetName());
+	}
+	else {
+		ImGui::Text("Current State: None");
+	}
 
-	//ImGui::End();
+	ImGui::End();
 
 	// プレイヤーの方向を向く
 	//if (player_) {
@@ -305,7 +307,20 @@ void Enemy::ChangeToRandomState() {
 			return;
 		}
 	}
+
 }
+
+void Enemy::ChangeToBulletOnlyState() {
+	// すでにAttack1ステート中ならスキップ
+	if (currentState_ && std::string(currentState_->GetName()) == "Attack1") {
+		return;
+	}
+
+	// Attack1ステートへ強制切り替え
+	previousStateName_ = "Attack1";
+	ChangeState(std::make_unique<EnemyState_Attack1>());
+}
+
 
 void Enemy::AddAreaAttack(std::unique_ptr<EnemyAreaAttack> attack)
 {
@@ -319,10 +334,10 @@ void Enemy::AddBullet(std::unique_ptr<EnemyAttackBullet> bullet)
 
 Vector3 Enemy::GetPlayerPos() const
 {
-	/*if (player_) {
-		return player_->GetTransform().translate;
-	}*/
-	return { 0, 0, 0 }; // 参照が無ければ原点
+	if (player_) {
+		return player_->GetCurrentCharacter()->GetTransform().translate;
+	}
+	//return { 0, 0, 0 }; // 参照が無ければ原点
 }
 
 void Enemy::SetAnimationIfChanged(const std::string& name)

@@ -55,6 +55,7 @@ public:
 
 	void ChangeState(std::unique_ptr<EnemyState> State);
 	void ChangeToRandomState();
+	void ChangeToBulletOnlyState();
 
 	void AddAreaAttack(std::unique_ptr<EnemyAreaAttack> attack);
 
