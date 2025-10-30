@@ -56,7 +56,7 @@ public:
     /// <returns>PlayerBase*（主に外部からアクセス用）</returns>
     PlayerBase* Get() const { return currentPlayer_; }
 
-    CharacterBase* GetCurrentCharacter() const;
+    ObjectBase* GetCurrentCharacter() const;
 
 
 private:

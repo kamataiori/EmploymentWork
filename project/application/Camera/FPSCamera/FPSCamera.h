@@ -1,6 +1,6 @@
 #pragma once
 #include "Camera.h"
-#include "CharacterBase.h"
+#include "ObjectBase.h"
 
 class FPSCamera : public Camera
 {
@@ -13,7 +13,7 @@ public:
         Shaky,           // 手ぶれ効果付きカメラ更新
     };
 
-    FPSCamera(CharacterBase* target, float eyeHeight);
+    FPSCamera(ObjectBase* target, float eyeHeight);
 
     /// <summary>
     /// 更新処理
@@ -50,7 +50,7 @@ private:
 
 private: // メンバ変数
 
-    CharacterBase* target; // ターゲット（プレイヤー）
+    ObjectBase* target; // ターゲット（プレイヤー）
     float eyeHeight;       // プレイヤーの目線の高さ（カメラの高さ）
     UpdateMode updateMode;    // 現在の更新モード
 };

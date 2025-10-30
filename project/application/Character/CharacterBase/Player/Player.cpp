@@ -102,6 +102,6 @@ void Player::ChangePlayer(PlayerType type) {
 }
 
 
-CharacterBase* Player::GetCurrentCharacter() const {
+ObjectBase* Player::GetCurrentCharacter() const {
     return currentPlayer_;
 }

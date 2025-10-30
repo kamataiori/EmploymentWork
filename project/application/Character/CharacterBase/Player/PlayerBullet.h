@@ -1,8 +1,8 @@
 #pragma once
-#include "CharacterBase.h"
+#include "ObjectBase.h"
 #include "SphereCollider.h"
 
-class PlayerBullet : public CharacterBase, public SphereCollider
+class PlayerBullet : public ObjectBase, public SphereCollider
 {
 public:
 	// 明示的に CharacterBase を初期化するコンストラクタ

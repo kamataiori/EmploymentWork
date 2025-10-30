@@ -130,7 +130,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Debug\DrawTriangleCommon.cpp" />
     <ClCompile Include="engine\Effects\PostEffect\PostEffectManager.cpp" />
     <ClCompile Include="engine\FrameWork\Audio\Audio.cpp" />
-    <ClCompile Include="application\Character\CharacterBase\CharacterBase.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\ObjectBase.cpp" />
     <ClCompile Include="engine\FrameWork\ImGuiManager.cpp" />
     <ClCompile Include="engine\Scene\Fade.cpp" />
     <ClCompile Include="engine\Scene\SceneManager\AbstractSceneFactory\AbstractSceneFactory.cpp" />
@@ -211,7 +211,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\Debug\DrawTriangle.h" />
     <ClInclude Include="engine\Debug\DrawTriangleCommon.h" />
     <ClInclude Include="engine\FrameWork\Audio\Audio.h" />
-    <ClInclude Include="application\Character\CharacterBase\CharacterBase.h" />
+    <ClInclude Include="application\Character\CharacterBase\ObjectBase.h" />
     <ClInclude Include="engine\FrameWork\ImGuiManager.h" />
     <ClInclude Include="engine\math\Struct.h" />
     <ClInclude Include="engine\Scene\Fade.h" />

@@ -156,7 +156,7 @@
     <ClCompile Include="application\Camera\FollowCamera\FollowCamera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\CharacterBase.cpp">
+    <ClCompile Include="application\Character\CharacterBase\ObjectBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="application\Character\CharacterBase\Player\Player.cpp">
@@ -431,7 +431,7 @@
     <ClInclude Include="application\Camera\FollowCamera\FollowCamera.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\CharacterBase.h">
+    <ClInclude Include="application\Character\CharacterBase\ObjectBase.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Character\CharacterBase\Player\Player.h">

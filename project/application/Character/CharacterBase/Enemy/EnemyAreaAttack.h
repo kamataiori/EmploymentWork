@@ -1,8 +1,8 @@
 #pragma once
-#include "CharacterBase.h"
+#include "ObjectBase.h"
 #include "SphereCollider.h"
 
-class EnemyAreaAttack : public CharacterBase, public SphereCollider {
+class EnemyAreaAttack : public ObjectBase, public SphereCollider {
 public:
 	EnemyAreaAttack(BaseScene* scene);
 	void Initialize() override;
