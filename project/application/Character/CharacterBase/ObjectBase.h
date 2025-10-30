@@ -8,16 +8,16 @@
 #include "ParticleManager.h"
 #include "ParticleEmitter.h"
 
-class CharacterBase
+class ObjectBase
 {
 public:
     /// <summary>
     /// コンストラクタ
     /// </summary>
     /// <param name="baseScene"></param>
-    CharacterBase(BaseScene* baseScene) : baseScene_(baseScene), collider_(nullptr) { object3d_ = std::make_unique<Object3d>(baseScene_); }
+    ObjectBase(BaseScene* baseScene) : baseScene_(baseScene), collider_(nullptr) { object3d_ = std::make_unique<Object3d>(baseScene_); }
 
-    ~CharacterBase() = default;
+    ~ObjectBase() = default;
 
     /// <summary>
     /// 初期化処理

@@ -1,7 +1,7 @@
 #include "PlayerBullet.h"
 
 PlayerBullet::PlayerBullet(BaseScene* baseScene)
-	: CharacterBase(baseScene), SphereCollider(sphere) {
+	: ObjectBase(baseScene), SphereCollider(sphere) {
 }
 
 PlayerBullet::~PlayerBullet()

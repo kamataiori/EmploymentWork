@@ -1,11 +1,11 @@
 #pragma once
 #include "Camera.h"
-#include "CharacterBase.h"
+#include "ObjectBase.h"
 
 class FollowCamera : public Camera
 {
 public:
-	FollowCamera(CharacterBase* target, float followDistance, float heightOffset);
+	FollowCamera(ObjectBase* target, float followDistance, float heightOffset);
 
 	/// <summary>
 	/// 更新（追従処理）
@@ -27,12 +27,12 @@ public: // カメラとターゲットとの距離関係
 	/// <summary>
 	/// ターゲットを後から設定する
 	/// </summary>
-	void SetTarget(CharacterBase* newTarget) { target = newTarget; }
+	void SetTarget(ObjectBase* newTarget) { target = newTarget; }
 
 	/// <summary>
 	/// 現在のターゲットを取得する
 	/// </summary>
-	CharacterBase* GetTarget() const { return target; }
+	ObjectBase* GetTarget() const { return target; }
 
 public: // カメラの高さ関係
 
@@ -61,7 +61,7 @@ public: // カメラの高さ関係
 
 private: // メンバ変数
 
-	CharacterBase* target; // キャラクター（PlayerやEnemyなど）
+	ObjectBase* target; // キャラクター（PlayerやEnemyなど）
 	float followDistance;  // 対象との距離
 	float heightOffset;    // カメラの高さオフセット
 	float angle = 3.14f;    // カメラの回転角度（Y軸）
