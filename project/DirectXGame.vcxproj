@@ -64,6 +64,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\check;$(ProjectDir)engine\math;$(ProjectDir)vector;$(ProjectDir)matrix;$(ProjectDir)engine\directx;$(ProjectDir)engine\FrameWork\input;$(ProjectDir)\engine\logger;$(ProjectDir)engine\string;$(ProjectDir)engine\FrameWork\WinApp;$(ProjectDir)engine\FrameWork\MyGame;$(ProjectDir)engine\FrameWork;$(ProjectDir)engine\Scene;$(ProjectDir)engine\Scene\SceneManager;$(ProjectDir)engine\Scene\SceneManager\AbstractSceneFactory;$(ProjectDir)engine\Scene\SceneManager\BaseScene;$(ProjectDir)engine\Scene\SceneManager\AbstractSceneFactory\SceneFactory;$(ProjectDir)engine\SRVManager;$(ProjectDir)externals\assimp\include;$(ProjectDir)application\Scene\TitleScene;$(ProjectDir)application\Scene\GameScene;$(ProjectDir)application\Character\CharacterBase;$(ProjectDir)application\Character\CharacterBase\Player;$(ProjectDir)application\Camera\FollowCamera;$(ProjectDir)engine\Effects\Particle;$(ProjectDir)engine\Effects\PostEffect;$(ProjectDir)engine\Effects\Particle\ParticleManager;$(ProjectDir)engine\Effects\Particle\ParticleEmitter;$(ProjectDir)engine\Framework\Audio;$(ProjectDir)application\Camera\FPSCamera;$(ProjectDir)engine\Collision;$(ProjectDir)engine\Debug</AdditionalIncludeDirectories>
+      <Optimization>MinSpace</Optimization>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

@@ -6,6 +6,9 @@
 #include "PlayerAnimation.h"
 #include "PlayerAnimKey.h"
 
+#include <memory>
+#include <Sprite.h>
+
 class PlayerAnimation;
 enum class PlayerAnimKey : unsigned int;
 
@@ -28,6 +31,8 @@ public:
 	/// 更新処理
 	/// </summary>
 	void Update() override;
+
+	void ForeGroundDraw();
 
 	/// <summary>
 	/// 通常のObject専用の描画処理
@@ -114,6 +119,35 @@ private:
 
 	bool isGameOver = false;
 	bool deathAnimLatched_ = false;
+
+	// 死亡時ビネット演出の状態
+	struct DeathVignette {
+		bool   active = false;
+		Vector3 color = { 0.0f, 0.0f, 0.0f };
+
+		float  scale = 0.0f;         // 現在のスケール
+		float  power = 0.0f;         // 現在の濃さ
+		float  speedScale = 0.6f;    // 進行速度（Titleを参考）
+		float  speedPower = 0.6f;    // 進行速度
+		float  targetScale = 1.25f;  // 目標（濃くなるほど↑）
+		float  targetPower = 2.2f;   // 目標（濃くなるほど↑）
+	} deathVig_;
+
+	// 開始API（内部用）
+	void BeginDeathVignette(const Vector3& color = { 0,0,0 },
+		float startScale = 0.0f, float startPower = 0.0f,
+		float speed = 0.2f,
+		float targetScale = 1.25f, float targetPower = 2.2f);
+
+	struct DefeatOverlay {
+		bool active = false;       // 演出中
+		bool initialized = false;  // Sprite 初期化済みか
+		float alpha = 0.0f;        // 現在アルファ
+		float timer = 0.0f;        // 経過時間
+		float delay = 0.2f;       // 表示開始までの遅延秒
+		float fadeSec = 2.5f;      // フェードイン秒
+		std::unique_ptr<Sprite> sprite;
+	} defeat_;
 
 };
 

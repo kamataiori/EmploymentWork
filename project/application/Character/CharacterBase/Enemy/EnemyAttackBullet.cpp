@@ -39,7 +39,7 @@ void EnemyAttackBullet::Update() {
 
 void EnemyAttackBullet::Draw() {
     object3d_->Draw();
-    SphereCollider::Draw();
+    //SphereCollider::Draw();
 }
 
 void EnemyAttackBullet::SkinningDraw()

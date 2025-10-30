@@ -30,6 +30,8 @@ public:
     /// </summary>
     void Draw();
 
+    void ForeGroundDraw();
+
     /// <summary>
     /// スキニングモデル用の描画処理
     /// </summary>

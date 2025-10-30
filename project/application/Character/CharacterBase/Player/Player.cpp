@@ -57,6 +57,11 @@ void Player::Draw() {
     }
 }
 
+void Player::ForeGroundDraw()
+{
+    currentPlayer_->ForeGroundDraw();
+}
+
 void Player::SkinningDraw() {
     
     if (currentPlayer_) {

@@ -1,4 +1,11 @@
 #include "PlayerBase.h"
+#include <SceneManager.h>
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
 
 void PlayerBase::Initialize()
 {
@@ -35,6 +42,56 @@ void PlayerBase::Update()
 
 	GameOver();
 
+	// ---- 死亡ビネットの進行 ----
+	if (deathVig_.active) {
+		const float dt = 1.0f / 60.0f;
+		deathVig_.scale = std::min(deathVig_.targetScale, deathVig_.scale + deathVig_.speedScale * dt);
+		deathVig_.power = std::min(deathVig_.targetPower, deathVig_.power + deathVig_.speedPower * dt);
+
+		auto pe = PostEffectManager::GetInstance();
+		pe->SetType(PostEffectType::Vignette);
+		pe->SetVignetteColor(deathVig_.color);
+		pe->SetVignetteScale(deathVig_.scale);
+		pe->SetVignettePower(deathVig_.power);
+
+		// ---- defeat.png のフェードイン管理 ----
+		if (defeat_.active) {
+			// 初回初期化
+			if (!defeat_.initialized) {
+				defeat_.sprite = std::make_unique<Sprite>();
+				defeat_.sprite->Initialize("Resources/defeat.png");
+				defeat_.sprite->SetAnchorPoint({ 0.5f, 0.5f });
+				defeat_.sprite->SetPosition({ 1280.0f * 0.5f, 720.0f * 0.5f }); // 画面中央
+				// サイズ指定が必要なら（画像原寸で良ければ不要）
+				defeat_.sprite->SetSize({ 1280.0f * 0.9f, 720.0f * 0.9f });
+				defeat_.sprite->SetColor({ 1.0f,0.3f,0.3f,1.0f });
+				defeat_.initialized = true;
+			}
+
+			defeat_.timer += dt;
+			// 遅延後にフェードイン
+			float t = std::max(0.0f, (defeat_.timer - defeat_.delay) / std::max(0.001f, defeat_.fadeSec));
+			defeat_.alpha = std::clamp(t, 0.0f, 1.0f);
+
+			// アルファ適用（RGBはそのまま、Aだけ上げる）
+			defeat_.sprite->SetColor({ 1.0f, 1.0f, 1.0f, defeat_.alpha });
+			defeat_.sprite->Update();
+		}
+		// ---- 暗転完了 → TITLEへ ----
+		// ※ defeat.png が出きってから 2秒後に戻る
+		static float returnTimer = 0.0f;
+		if (deathVig_.scale >= deathVig_.targetScale &&
+			deathVig_.power >= deathVig_.targetPower &&
+			defeat_.alpha >= 1.0f) {
+
+			returnTimer += dt;
+			if (returnTimer > 2.0f) {
+				SceneManager::GetInstance()->ChangeScene("TITLE");
+				returnTimer = 0.0f; // 念のためリセット
+			}
+		}
+	}
+
 	// ------------------------
 	// オブジェクト更新処理
 	// ------------------------
@@ -49,10 +106,17 @@ void PlayerBase::Update()
 	sphere.color = static_cast<int>(Color::WHITE);
 }
 
+void PlayerBase::ForeGroundDraw()
+{
+	if (defeat_.active && defeat_.initialized && defeat_.alpha > 0.0f) {
+		defeat_.sprite->Draw();
+	}
+}
+
 void PlayerBase::Draw()
 {
 	// SphereCollider の描画
-	SphereCollider::Draw();
+	//SphereCollider::Draw();
 }
 
 void PlayerBase::SkinningDraw()
@@ -229,6 +293,16 @@ void PlayerBase::GameOver()
 		object3d_->SetAnimationTime(0.0f);    // 先頭から
 		// object3d_->SetAnimationPlaybackRate(1.0f); // 必要なら
 
+		//　ここでビネット開始
+		BeginDeathVignette(/*color=*/{ 0,0,0 }, /*startScale=*/0.0f, /*startPower=*/0.0f,
+			/*speed=*/0.6f, /*targetScale=*/1.25f, /*targetPower=*/2.2f);
+
+		// defeat.png 表示も開始（遅延付きでフェード）
+		defeat_.active = true;
+		defeat_.initialized = false;
+		defeat_.alpha = 0.0f;
+		defeat_.timer = 0.0f;
+
 		deathAnimLatched_ = true;
 	}
 
@@ -252,4 +326,23 @@ void PlayerBase::SetAnimationIfChanged(const std::string& name)
 	if (currentAnimationName_ == name) return;
 	object3d_->SetAnimation(name);
 	currentAnimationName_ = name;
+}
+
+void PlayerBase::BeginDeathVignette(const Vector3& color, float startScale, float startPower, float speed, float targetScale, float targetPower)
+{
+	deathVig_.active = true;
+	deathVig_.color = color;
+
+	deathVig_.scale = startScale;
+	deathVig_.power = startPower;
+	deathVig_.speedScale = speed;
+	deathVig_.speedPower = speed;
+	deathVig_.targetScale = targetScale;
+	deathVig_.targetPower = targetPower;
+
+	// 初期適用
+	PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
+	PostEffectManager::GetInstance()->SetVignetteColor(deathVig_.color);
+	PostEffectManager::GetInstance()->SetVignetteScale(deathVig_.scale);
+	PostEffectManager::GetInstance()->SetVignettePower(deathVig_.power);
 }
