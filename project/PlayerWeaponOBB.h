@@ -18,6 +18,7 @@ public:
 	void NormalAttack() override;
 
 	void Skill() override;
+
 	void Ultimate() override;
 
 private:
