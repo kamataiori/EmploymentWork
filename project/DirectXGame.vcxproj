@@ -184,8 +184,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerWarrior.cpp" />
     <ClCompile Include="engine\3d\Skinning.cpp" />
     <ClCompile Include="engine\Collision\SphereCollider.cpp" />
-    <ClCompile Include="PlayerAnimation.cpp" />
-    <ClCompile Include="PlayerAnimKey.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerAnimation.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerAnimKey.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyAreaAttack.h" />
@@ -274,8 +274,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerWarrior.h" />
     <ClInclude Include="engine\Effects\PostEffect\PostEffectManager.h" />
     <ClInclude Include="engine\math\Quaternion.h" />
-    <ClInclude Include="PlayerAnimation.h" />
-    <ClInclude Include="PlayerAnimKey.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerAnimation.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerAnimKey.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\RogueAnimationSet.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
