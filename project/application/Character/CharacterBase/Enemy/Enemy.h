@@ -49,10 +49,13 @@ private:
 	SkeltonAnimationSet animation_; // アニメーション名セット
 	std::string currentAnimationName_;
 
-	// 複合コライダー
-	//std::unique_ptr<MultiCollider> mc_;
-	float sphereRadius_ = 2.2f;
-	Vector3 colliderOffset_ = { 0.0f, 1.8f, 0.0f }; ; // 原点からのオフセット(上方向)
-	Vector3 colliderTranslate_ = {}; // 当たり判定中心座標
+	// コライダー
+	//float sphereRadius_ = 2.2f;
+	//Vector3 colliderOffset_ = { 0.0f, 1.8f, 0.0f }; ; // 原点からのオフセット(上方向)
+	//Vector3 colliderTranslate_ = {}; // 当たり判定中心座標
+
+	Vector3 obbSize_ = { 1.78f, 2.2f, 1.0f };
+	Vector3 colliderOffset_ = { 0.0f, 1.8f, 0.0f }; // 原点(足元)→胴体中心へのオフセット
+	Vector3 colliderCenter_ = {};                   // 実際のOBB中心
 };
 

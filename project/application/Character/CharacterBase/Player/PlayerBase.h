@@ -115,8 +115,7 @@ private:
 	int currentAnimPriority_ = 0;  // 0=移動系, 10=攻撃, 20=スキル…など
 	float animLockTimer_ = 0.0f;
 
-	// 複合コライダー
-	//std::unique_ptr<MultiCollider> mc_;
+	// コライダー
 	float sphereRadius_ = 1.0f;
 	Vector3 colliderOffset_ = {};   // 原点からのオフセット(上方向)
 	Vector3 colliderTranslate_ = {}; // 当たり判定中心座標

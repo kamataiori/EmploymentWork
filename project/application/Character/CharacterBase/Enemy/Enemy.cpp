@@ -2,6 +2,16 @@
 #include <CollisionTypeIdDef.h>
 #include "Player.h"
 
+// Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
+static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
+	const float c = std::cos(yaw);
+	const float s = std::sin(yaw);
+	// 右(X), 上(Y), 前(Z)
+	outAxes[0] = { c, 0.0f, -s };
+	outAxes[1] = { 0.0f, 1.0f,  0.0f };
+	outAxes[2] = { s, 0.0f,  c };
+}
+
 void Enemy::Initialize()
 {
 	object3d_->Initialize();
@@ -27,17 +37,39 @@ void Enemy::Initialize()
 	object3d_->SetAnimation(animation_.Idle);
 
 	// ---- Sphereコライダー設定 ----
-	colliderTranslate_ = transform.translate + colliderOffset_; // モデル原点からオフセット
-	Sphere enemySp{};
-	enemySp.center = colliderTranslate_;
-	enemySp.radius = sphereRadius_;
+	//colliderTranslate_ = transform.translate + colliderOffset_; // モデル原点からオフセット
+	//Sphere enemySp{};
+	//enemySp.center = colliderTranslate_;
+	//enemySp.radius = sphereRadius_;
+
+	//Shape first{};
+	//first.kind = ShapeKind::Sphere;
+	//first.sphere = enemySp;
+
+	//*multiCollider_ = MultiCollider(first);
+	//multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
+	//multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
+
+	// ---- OBB コライダー初期化 ----
+	colliderCenter_ = transform.translate + colliderOffset_;
+
+	OBB obb{};
+	obb.center = colliderCenter_;
+	Vector3 axes[3];
+	BuildYawAxes(transform.rotate.y, axes);
+	obb.orientations[0] = axes[0];
+	obb.orientations[1] = axes[1];
+	obb.orientations[2] = axes[2];
+	obb.size = obbSize_;  // 半径
 
 	Shape first{};
-	first.kind = ShapeKind::Sphere;
-	first.sphere = enemySp;
+	first.kind = ShapeKind::OBB;
+	first.obb = obb;
 
 	*multiCollider_ = MultiCollider(first);
 	multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
+
+	// ヒットを Enemy::OnCollision に橋渡し
 	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
 
 }
@@ -70,16 +102,33 @@ void Enemy::Update()
 	ImGui::Begin("Enemy");
 	ImGui::DragFloat3("Translate", &transform.translate.x, 0.01f);
 	ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
-	ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 50.0f);
+	//ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 50.0f);
+	ImGui::DragFloat3("OBB Size (half)", &obbSize_.x, 0.01f, 0.0f, 50.0f);
+	ImGui::DragFloat("Yaw (rad)", &transform.rotate.y, 0.01f);
 	ImGui::End();
 
 	// 当たり判定中心を更新
-	colliderTranslate_ = transform.translate + colliderOffset_;
+	//colliderTranslate_ = transform.translate + colliderOffset_;
+	colliderCenter_ = transform.translate + colliderOffset_;
 
 	// コライダー更新
-	Sphere& sp = multiCollider_->MutableSphere(0);
+	/*Sphere& sp = multiCollider_->MutableSphere(0);
 	sp.center = colliderTranslate_;
-	sp.radius = sphereRadius_;
+	sp.radius = sphereRadius_;*/
+
+	OBB& obb = multiCollider_->MutableOBB(0);
+	obb.center = colliderCenter_;
+
+	Vector3 axes[3];
+	BuildYawAxes(transform.rotate.y, axes);
+	obb.orientations[0] = axes[0];
+	obb.orientations[1] = axes[1];
+	obb.orientations[2] = axes[2];
+
+	// スケールを当たりにも反映したい場合はここで掛ける
+	obb.size = { obbSize_.x /** transform.scale.x*/,
+				 obbSize_.y /** transform.scale.y*/,
+				 obbSize_.z /** transform.scale.z*/ };
 
 	// ------------------------
 	// オブジェクト更新処理
