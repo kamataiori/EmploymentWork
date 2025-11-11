@@ -1,7 +1,7 @@
 #include "EnemyAttackBullet.h"
 
 EnemyAttackBullet::EnemyAttackBullet(BaseScene* scene)
-    : CharacterBase(scene), SphereCollider(sphere) {
+    : ObjectBase(scene), SphereCollider(sphere) {
     SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::EnemyBullet));
 }
 

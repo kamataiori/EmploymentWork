@@ -1,6 +1,6 @@
 #include "FPSCamera.h"
 
-FPSCamera::FPSCamera(CharacterBase* target, float eyeHeight)
+FPSCamera::FPSCamera(ObjectBase* target, float eyeHeight)
 	: target(target), eyeHeight(eyeHeight), updateMode(UpdateMode::Normal)
 {
 }

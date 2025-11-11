@@ -1,5 +1,5 @@
 #pragma once
-#include "CharacterBase.h"
+#include "ObjectBase.h"
 #include "Collider.h"
 #include "SphereCollider.h"
 #include "PlayerAnimation.h"
@@ -9,7 +9,7 @@
 class PlayerAnimation;
 enum class PlayerAnimKey : unsigned int;
 
-class PlayerBase : public CharacterBase, public SphereCollider
+class PlayerBase : public ObjectBase, public SphereCollider
 {
 public:
 
@@ -17,7 +17,7 @@ public:
 	/// コンストラクタ
 	/// </summary>
 	/// <param name="baseScene_"></param>
-	PlayerBase(BaseScene* baseScene_) : CharacterBase(baseScene_), SphereCollider(sphere) {}
+	PlayerBase(BaseScene* baseScene_) : ObjectBase(baseScene_), SphereCollider(sphere) {}
 
 	/// <summary>
 	/// 初期化処理

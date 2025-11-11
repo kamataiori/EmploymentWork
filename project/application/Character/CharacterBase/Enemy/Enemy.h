@@ -1,5 +1,5 @@
 #pragma once
-#include "CharacterBase.h"
+#include "ObjectBase.h"
 #include "Collider.h"
 #include "SphereCollider.h"
 #include "OBBCollider.h"
@@ -29,11 +29,11 @@ struct SkeltonAnimationSet {
 };
 
 
-class Enemy : public CharacterBase, public SphereCollider
+class Enemy : public ObjectBase, public SphereCollider
 {
 public:
 
-	Enemy(BaseScene* baseScene_) : CharacterBase(baseScene_), SphereCollider(sphere) {}
+	Enemy(BaseScene* baseScene_) : ObjectBase(baseScene_), SphereCollider(sphere) {}
 
 	void Initialize() override;
 

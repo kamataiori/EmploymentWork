@@ -1,7 +1,7 @@
 #include "EnemyAreaAttack.h"
 
 EnemyAreaAttack::EnemyAreaAttack(BaseScene* scene)
-    : CharacterBase(scene), SphereCollider(sphere){
+    : ObjectBase(scene), SphereCollider(sphere){
     SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::EnemyAreaAttack));
 }
 

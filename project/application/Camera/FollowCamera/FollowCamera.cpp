@@ -1,7 +1,7 @@
 #include "FollowCamera.h"
 #include <Input.h>
 
-FollowCamera::FollowCamera(CharacterBase* target, float followDistance, float heightOffset)
+FollowCamera::FollowCamera(ObjectBase* target, float followDistance, float heightOffset)
     : target(target), followDistance(followDistance), heightOffset(heightOffset)
 {
 }
