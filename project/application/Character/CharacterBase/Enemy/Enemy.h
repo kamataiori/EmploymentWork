@@ -1,14 +1,7 @@
 #pragma once
 #include "ObjectBase.h"
-#include "Collider.h"
-#include "SphereCollider.h"
-#include "OBBCollider.h"
-#include "EnemyState.h"
+#include "MultiCollider.h"
 #include <memory>
-#include <Enemy/EnemyAreaAttack.h>
-#include <Enemy/EnemyAttackBullet.h>
-
-class Player; // 前方宣言
 
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
@@ -28,12 +21,11 @@ struct SkeltonAnimationSet {
 	std::string Yes = "Yes";
 };
 
-
-class Enemy : public ObjectBase, public SphereCollider
+class Enemy : public ObjectBase
 {
 public:
 
-	Enemy(BaseScene* baseScene_) : ObjectBase(baseScene_), SphereCollider(sphere) {}
+	Enemy(BaseScene* baseScene_) : ObjectBase(baseScene_) {}
 
 	void Initialize() override;
 
@@ -47,24 +39,6 @@ public:
 
 	void OnCollision() override;
 
-	void ChangeState(std::unique_ptr<EnemyState> State);
-	void ChangeToRandomState();
-
-	void AddAreaAttack(std::unique_ptr<EnemyAreaAttack> attack);
-
-	void AddBullet(std::unique_ptr<EnemyAttackBullet> bullet);
-
-	const std::list<std::unique_ptr<EnemyAreaAttack>>& GetAreaAttacks() const {
-		return areaAttacks_;
-	}
-
-	const std::list<std::unique_ptr<EnemyAttackBullet>>& GetAttackBulets() const {
-		return bullets_;
-	}
-
-	void SetPlayer(Player* player) { player_ = player; }
-	Vector3 GetPlayerPos() const;
-
 	Camera* GetCamera() const { return camera_; }
 
 	// アニメーションを設定する関数
@@ -72,20 +46,16 @@ public:
 
 private:
 
-	std::unique_ptr<EnemyState> currentState_;
-	std::string previousStateName_ = "";
-
-	std::list<std::unique_ptr<EnemyAttackBullet>> bullets_;
-	std::list<std::unique_ptr<EnemyAreaAttack>> areaAttacks_;
-
-	Player* player_ = nullptr;
-
-	// 行動が何%で起こるのか
-	float dashWeight_ = 50.0f;
-	float attack1Weight_ = 30.0f;
-	float attack2Weight_ = 20.0f;
-
 	SkeltonAnimationSet animation_; // アニメーション名セット
 	std::string currentAnimationName_;
+
+	// コライダー
+	//float sphereRadius_ = 2.2f;
+	//Vector3 colliderOffset_ = { 0.0f, 1.8f, 0.0f }; ; // 原点からのオフセット(上方向)
+	//Vector3 colliderTranslate_ = {}; // 当たり判定中心座標
+
+	Vector3 obbSize_ = { 1.78f, 2.2f, 1.0f };
+	Vector3 colliderOffset_ = { 0.0f, 1.8f, 0.0f }; // 原点(足元)→胴体中心へのオフセット
+	Vector3 colliderCenter_ = {};                   // 実際のOBB中心
 };
 

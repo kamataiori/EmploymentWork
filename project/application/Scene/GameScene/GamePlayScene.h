@@ -95,7 +95,7 @@ private:
 
 	
 
-	std::unique_ptr<CollisionManager> collisionMAnager_;
+	std::unique_ptr<CollisionManager> collisionManager_;
 
 	std::unique_ptr<SceneController> stage_;
 

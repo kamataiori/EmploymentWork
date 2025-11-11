@@ -1,34 +1,38 @@
 #pragma once
-#include "CollisionFunctions.h"
+#include <cstdint>
+#include <vector>
+#include "Struct.h"
 #include "DrawLine.h"
+#include "CollisionTypeIdDef.h"
 
-class SphereCollider;
-class AABBCollider;
-class OBBCollider;
-class CapsuleCollider;
+enum class ShapeKind : uint8_t { Sphere, AABB, OBB, Capsule };
+
+struct Shape {
+    ShapeKind kind;
+    // 値保持（簡単・局所的メモリのための by-value）
+    Sphere  sphere{};
+    AABB    aabb{};
+    OBB     obb{};
+    Capsule capsule{};
+};
 
 class Collider {
 public:
-    
-    virtual bool Dispatch(Collider* other) = 0;
+    virtual ~Collider() = default;
 
+    // 形状リスト公開（読み取り）
+    virtual const std::vector<Shape>& GetShapes() const = 0;
+
+    // デバッグ描画（任意）
     virtual void Draw() = 0;
 
-    virtual void OnCollision();
+    // 接触コールバック
+    virtual void OnCollision() {}
 
-public:
-    virtual bool Action(SphereCollider* other) = 0;
-    virtual bool Action(AABBCollider* other) = 0;
-    virtual bool Action(OBBCollider* other) = 0;
-    virtual bool Action(CapsuleCollider* other) = 0;
-
-    // 種別IDを取得
+    // 種別ID
     uint32_t GetTypeID() const { return typeID_; }
-    // 種別IDを設定
     void SetTypeID(uint32_t typeID) { typeID_ = typeID; }
 
 private:
-
-    // 種別ID
     uint32_t typeID_ = 0u;
 };

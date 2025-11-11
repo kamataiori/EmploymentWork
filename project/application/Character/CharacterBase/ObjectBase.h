@@ -1,7 +1,7 @@
 #pragma once
 #include "Transform.h"
 #include "Object3d.h"
-#include "Collider.h"
+#include "MultiCollider.h"
 #include "Input.h"
 #include <PostEffectManager.h>
 #include <CollisionTypeIdDef.h>
@@ -15,7 +15,11 @@ public:
     /// コンストラクタ
     /// </summary>
     /// <param name="baseScene"></param>
-    ObjectBase(BaseScene* baseScene) : baseScene_(baseScene), collider_(nullptr) { object3d_ = std::make_unique<Object3d>(baseScene_); }
+    ObjectBase(BaseScene* baseScene) : baseScene_(baseScene)
+    {
+        object3d_ = std::make_unique<Object3d>(baseScene_);
+        multiCollider_ = std::make_unique<MultiCollider>();
+    }
 
     ~ObjectBase() = default;
 
@@ -44,6 +48,11 @@ public:
     /// </summary>
     virtual void ParticleDraw() = 0;
 
+    /// <summary>
+    /// 当たり判定の呼出し
+    /// </summary>
+    virtual void OnCollision() = 0;
+
     // Sceneを取得
     BaseScene* GetBaseScene() const { return baseScene_; }
 
@@ -64,10 +73,10 @@ public:
     }
 
     // SetColliderをセット
-    void SetCollider(Collider* collider) { collider_ = collider; }
+    //void SetCollider(MultiCollider* collider) { multiCollider_.get() = collider; }
 
-    // GetColliderをセット
-    Collider* GetCollider() const { return collider_; }
+    // GetColliderをゲット
+    MultiCollider* GetMultiCollider() const { return multiCollider_.get(); }
 
 protected:
     // カメラを共通保持
@@ -83,6 +92,6 @@ protected:
     std::unique_ptr<Object3d> object3d_;
 
     // コライダーを管理
-    Collider* collider_;
+    std::unique_ptr<MultiCollider> multiCollider_;
 
 };

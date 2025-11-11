@@ -1,5 +1,6 @@
 #include "CollisionManager.h"
 #include "Collider.h"
+#include "ShapeIntersect.h"
 #include <unordered_set>
 
 // コライダーを登録
@@ -19,26 +20,31 @@ void CollisionManager::Reset() {
 
 // 登録された全てのコライダーの組み合わせで衝突チェック
 void CollisionManager::CheckAllCollisions() {
-	for (auto it1 = colliders.begin(); it1 != colliders.end(); ++it1) {
-		auto it2 = it1;
-		++it2;
-		for (; it2 != colliders.end(); ++it2) {
-			CollisionTypeIdDef id1 = static_cast<CollisionTypeIdDef>((*it1)->GetTypeID());
-			CollisionTypeIdDef id2 = static_cast<CollisionTypeIdDef>((*it2)->GetTypeID());
+    for (auto it1 = colliders.begin(); it1 != colliders.end(); ++it1) {
+        auto it2 = it1; ++it2;
+        for (; it2 != colliders.end(); ++it2) {
+            CollisionTypeIdDef id1 = static_cast<CollisionTypeIdDef>((*it1)->GetTypeID());
+            CollisionTypeIdDef id2 = static_cast<CollisionTypeIdDef>((*it2)->GetTypeID());
 
-			// 特定の組み合わせは衝突チェックをスキップ
-			if (ShouldIgnoreCollision(id1, id2)) {
-				continue;
-			}
+            if (ShouldIgnoreCollision(id1, id2)) { continue; } // 既存の無視表を活用
 
-			// 衝突判定
-			if ((*it1)->Dispatch(*it2)) {
-				(*it1)->OnCollision();
-				(*it2)->OnCollision();
-			}
-		}
-	}
-	Reset();
+            const auto& s1 = (*it1)->GetShapes();
+            const auto& s2 = (*it2)->GetShapes();
+
+            bool hit = false;
+            for (const auto& a : s1) {
+                for (const auto& b : s2) {
+                    if (Intersects(a, b)) { hit = true; break; }
+                }
+                if (hit) break;
+            }
+            if (hit) {
+                (*it1)->OnCollision();
+                (*it2)->OnCollision();
+            }
+        }
+    }
+    Reset();
 }
 
 // 衝突を無視するペアをチェック

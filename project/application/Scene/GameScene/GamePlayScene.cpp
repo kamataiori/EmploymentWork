@@ -41,7 +41,7 @@ void GamePlayScene::Initialize()
 	ground = std::make_unique<Object3d>(this);
 	ground->Initialize();
 	ground->SetModel("ground.obj");
-	ground->SetTranslate({ 0.0f,-1.0f,0.0f });
+	ground->SetTranslate({ 0.0f,0.0f,0.0f });
 
 	sky = std::make_unique<Object3d>(this);
 	sky->Initialize();
@@ -59,7 +59,7 @@ void GamePlayScene::Initialize()
 
 
 
-	collisionMAnager_ = std::make_unique<CollisionManager>();
+	collisionManager_ = std::make_unique<CollisionManager>();
 
 	AddRightDockWindow(kWindowName_MonsterControl);
 
@@ -88,8 +88,9 @@ void GamePlayScene::Update()
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
-
-	collisionMAnager_->RegisterCollider(player_->Get());
+	collisionManager_->RegisterCollider(player_->Get()->GetMultiCollider());
+	collisionManager_->RegisterCollider(enemy_->GetMultiCollider());
+	//collisionMAnager_->RegisterCollider(player_->Get()->GetCollider());
 	//collisionMAnager_->RegisterCollider(enemy_.get());
 	/*if (player_->GetBullet()) {
 		auto bullet = player_->GetBullet();
@@ -226,6 +227,6 @@ void GamePlayScene::Debug()
 
 void GamePlayScene::CheckAllColisions()
 {
-	collisionMAnager_->CheckAllCollisions();
+	collisionManager_->CheckAllCollisions();
 }
 
