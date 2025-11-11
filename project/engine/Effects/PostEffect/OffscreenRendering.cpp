@@ -610,6 +610,15 @@ void OffscreenRendering::CreateAllRootSignatures()
 		std::vector<CD3DX12_ROOT_PARAMETER> params{};
 		CD3DX12_ROOT_SIGNATURE_DESC desc{};
 
+		D3D12_STATIC_SAMPLER_DESC sampler = {
+			sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+			sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+			sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+			sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+			sampler.ShaderRegister = 0,
+			sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
+		};
+
 		if (type == PostEffectType::Dissolve) {
 			// SRV2つ: gTexture (t0), gMaskTexture (t1)
 			CD3DX12_DESCRIPTOR_RANGE range0 = {};
@@ -629,14 +638,6 @@ void OffscreenRendering::CreateAllRootSignatures()
 			cbvParam.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 			params.push_back(cbvParam);
 
-			D3D12_STATIC_SAMPLER_DESC sampler = {};
-			sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-			sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			sampler.ShaderRegister = 0;
-			sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
 			desc.Init((UINT)params.size(), params.data(), 1, &sampler,
 				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 		}
@@ -648,15 +649,6 @@ void OffscreenRendering::CreateAllRootSignatures()
 			srvParam.InitAsDescriptorTable(1, &range, D3D12_SHADER_VISIBILITY_PIXEL);
 			params.push_back(srvParam);
 
-
-			D3D12_STATIC_SAMPLER_DESC sampler = {};
-			sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-			sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			sampler.ShaderRegister = 0;
-			sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
 			if (type == PostEffectType::Vignette || type == PostEffectType::Grayscale ||
 				type == PostEffectType::Sepia || type == PostEffectType::RadialBlur ||
 				type == PostEffectType::Random) {
@@ -665,6 +657,8 @@ void OffscreenRendering::CreateAllRootSignatures()
 				cbvParam.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 				params.push_back(cbvParam);
 			}
+
+			//desc = {};
 
 			desc.Init((UINT)params.size(), params.data(), 1, &sampler,
 				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
