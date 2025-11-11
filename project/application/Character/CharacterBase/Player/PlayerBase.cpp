@@ -4,9 +4,16 @@
 #ifdef max
 #undef max
 #endif
+#include <FollowCamera.h>
 #ifdef min
 #undef min
 #endif
+
+static float WrapPi(float a) {
+	while (a > std::numbers::pi_v<float>) a -= 2.0f * std::numbers::pi_v<float>;
+	while (a < -std::numbers::pi_v<float>) a += 2.0f * std::numbers::pi_v<float>;
+	return a;
+}
 
 void PlayerBase::Initialize()
 {
@@ -178,63 +185,117 @@ void PlayerBase::Move()
 	// -------------------------------
 	// WASD入力による方向ベクトル計算
 	// -------------------------------
-	move_.direction = { 0.0f, 0.0f, 0.0f };
+	//move_.direction = { 0.0f, 0.0f, 0.0f };
 
-	bool isMoving = false;
+	//bool isMoving = false;
 
-	if (Input::GetInstance()->PushKey(DIK_W)) {
-		move_.direction.z += 1.0f;
-		isMoving = true;
-	}
-	if (Input::GetInstance()->PushKey(DIK_S)) {
-		move_.direction.z -= 1.0f;
-		isMoving = true;
-	}
-	if (Input::GetInstance()->PushKey(DIK_A)) {
-		move_.direction.x -= 1.0f;
-		isMoving = true;
-	}
-	if (Input::GetInstance()->PushKey(DIK_D)) {
-		move_.direction.x += 1.0f;
-		isMoving = true;
-	}
+	//if (Input::GetInstance()->PushKey(DIK_W)) {
+	//	move_.direction.z += 1.0f;
+	//	isMoving = true;
+	//}
+	//if (Input::GetInstance()->PushKey(DIK_S)) {
+	//	move_.direction.z -= 1.0f;
+	//	isMoving = true;
+	//}
+	//if (Input::GetInstance()->PushKey(DIK_A)) {
+	//	move_.direction.x -= 1.0f;
+	//	isMoving = true;
+	//}
+	//if (Input::GetInstance()->PushKey(DIK_D)) {
+	//	move_.direction.x += 1.0f;
+	//	isMoving = true;
+	//}
 
-	// 正規化してプレイヤーの向きに合わせた移動に変換
-	if (Length(move_.direction) > 0.0f) {
-		move_.direction = Normalize(move_.direction);
-		float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
+	//// 正規化してプレイヤーの向きに合わせた移動に変換
+	//if (Length(move_.direction) > 0.0f) {
+	//	move_.direction = Normalize(move_.direction);
+	//	float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
 
-		// Y軸の回転行列を生成（プレイヤーの向きに応じた回転）
-		Matrix4x4 rotY = MakeRotateYMatrix(transform.rotate.y);
+	//	// Y軸の回転行列を生成（プレイヤーの向きに応じた回転）
+	//	Matrix4x4 rotY = MakeRotateYMatrix(transform.rotate.y);
 
-		// 入力方向ベクトルをプレイヤーの向きに回転
-		Vector3 rotatedDir = TransformVector(move_.direction, rotY);
+	//	// 入力方向ベクトルをプレイヤーの向きに回転
+	//	Vector3 rotatedDir = TransformVector(move_.direction, rotY);
 
-		// 回転後の方向に沿って移動
-		transform.translate.x += rotatedDir.x * currentSpeed;
-		transform.translate.z += rotatedDir.z * currentSpeed;
-	}
+	//	// 回転後の方向に沿って移動
+	//	transform.translate.x += rotatedDir.x * currentSpeed;
+	//	transform.translate.z += rotatedDir.z * currentSpeed;
+	//}
 
-	/*const auto& anim = GetAnimation();
+	///*const auto& anim = GetAnimation();
 
-	if (isMoving) {
-		SetAnimationIfChanged(anim.Run_Weapon);
-	}
-	else {
-		SetAnimationIfChanged(anim.Idle);
-	}*/
+	//if (isMoving) {
+	//	SetAnimationIfChanged(anim.Run_Weapon);
+	//}
+	//else {
+	//	SetAnimationIfChanged(anim.Idle);
+	//}*/
+
+	////if (animCtrl_) {
+	////	if (!IsAnimLocked()) { // ★攻撃などでロック中は移動アニメを出さない
+	////		if (isMoving) {
+	////			RequestAnimKey(PlayerAnimKey::RunWeapon, 0);   // 優先度0
+	////		}
+	////		else {
+	////			RequestAnimKey(PlayerAnimKey::Idle, 0);        // 優先度0
+	////		}
+	////	}
+	////}
 
 	//if (animCtrl_) {
-	//	if (!IsAnimLocked()) { // ★攻撃などでロック中は移動アニメを出さない
-	//		if (isMoving) {
-	//			RequestAnimKey(PlayerAnimKey::RunWeapon, 0);   // 優先度0
-	//		}
-	//		else {
-	//			RequestAnimKey(PlayerAnimKey::Idle, 0);        // 優先度0
-	//		}
+	//	if (!IsAnimLocked()) {
+	//		if (isMoving)  RequestAnimKey(PlayerAnimKey::RunWeapon, 0);
+	//		else           RequestAnimKey(PlayerAnimKey::Idle, 0);
 	//	}
 	//}
 
+	// 1) カメラのヨー角（FollowCamera想定）
+	float camYaw = 0.0f;
+	if (auto fc = dynamic_cast<FollowCamera*>(camera_)) {
+		camYaw = fc->GetAngle(); // カメラの“後ろ向き”角
+	}
+	// カメラ正面（プレイヤーが向くべき前）は angle + π
+	const float playerFaceYaw = camYaw + std::numbers::pi_v<float>;
+
+	// 2) カメラ基底ベクトル（XZ）
+	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
+	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f, std::sin(camYaw) };
+
+	// 3) WASDをカメラ相対で合成（D=+Right / A=-Right）
+	Vector3 wishDir = { 0,0,0 };
+	if (Input::GetInstance()->PushKey(DIK_W)) wishDir += cameraForwardXZ;
+	if (Input::GetInstance()->PushKey(DIK_S)) wishDir -= cameraForwardXZ;
+	if (Input::GetInstance()->PushKey(DIK_D)) wishDir += cameraRightXZ;
+	if (Input::GetInstance()->PushKey(DIK_A)) wishDir -= cameraRightXZ;
+
+	bool isMoving = (Length(wishDir) > 0.0001f);
+	if (isMoving) wishDir = Normalize(wishDir);
+
+	// 4) 移動
+	const float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
+	if (isMoving) {
+		transform.translate.x += wishDir.x * currentSpeed;
+		transform.translate.z += wishDir.z * currentSpeed;
+	}
+
+	// 5) 目標ヨー角：移動中は移動方向、停止中はカメラ正面
+	const float targetYaw = isMoving
+		? std::atan2(wishDir.x, wishDir.z)
+		: playerFaceYaw;
+
+	// 6) スムーズ回転（最短角＆角速度クランプ）
+	const float curYaw = transform.rotate.y;
+	float deltaYaw = WrapPi(targetYaw - curYaw);
+	const float turnSpeed = 2.5f;
+	const float turnRate = std::numbers::pi_v<float> * turnSpeed; // 180deg/s（好みで調整可）
+	const float dt = 1.0f / 60.0f;              // 可変フレームなら実Δtを使う
+	const float maxStep = turnRate * dt;
+
+	if (deltaYaw > maxStep) deltaYaw = maxStep;
+	if (deltaYaw < -maxStep) deltaYaw = -maxStep;
+	transform.rotate.y = curYaw + deltaYaw;
+
+	// 7) アニメ（ロック中は移動アニメ出さない）
 	if (animCtrl_) {
 		if (!IsAnimLocked()) {
 			if (isMoving)  RequestAnimKey(PlayerAnimKey::RunWeapon, 0);
