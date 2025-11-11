@@ -37,8 +37,7 @@ void PlayerBase::Initialize()
 	weapon_->Initialize();
 
 	// コライダーを生成
-
-	 // --- 原点が足元 → 股下(例: 上方向0.9f) にオフセット ---
+	// --- 原点が足元 → 股下(例: 上方向0.9f) にオフセット ---
 	colliderOffset_ = { 0.0f, 1.0f, 0.0f };
 	colliderTranslate_ = transform.translate + colliderOffset_;
 
@@ -50,9 +49,11 @@ void PlayerBase::Initialize()
 	first.kind = ShapeKind::Sphere;
 	first.sphere = playerSp;
 
-	mc_ = std::make_unique<MultiCollider>(first);
-	mc_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer)); // 種別は従来と同じ扱い
-	SetCollider(mc_.get()); // ObjectBase 側に差す（従来の this ではなく mc_ を渡す）
+	*multiCollider_ = MultiCollider(first);
+	// 種別登録
+	multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
+	// コールバック登録
+	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
 }
 
 void PlayerBase::Update()
@@ -81,6 +82,14 @@ void PlayerBase::Update()
 	ImGui::DragFloat3("translate", &transform.translate.x);
 	ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
 	ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 10.0f);
+
+	// 当たり判定の可視化
+	if (isCollided_) {
+		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Hit! (Collision Detected)");
+	}
+	else {
+		ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No Collision");
+	}
 	ImGui::End();
 
 	// --- 当たり判定の中心を更新 ---
@@ -97,7 +106,8 @@ void PlayerBase::Update()
 	// コライダー位置を更新
 	// OBB をプレイヤーTransformに追従させる
 	// 今回は最初の形状(0)を更新する想定
-	Sphere& sp = mc_->MutableSphere(0); // MultiCollider 側に MutableSphere(index) がある前提
+	isCollided_ = false;
+	Sphere& sp = multiCollider_->MutableSphere(0); // MultiCollider 側に MutableSphere(index) がある前提
 	sp.center = colliderTranslate_;
 	sp.radius = sphereRadius_;
 }
@@ -107,7 +117,7 @@ void PlayerBase::Draw()
 	// SphereCollider の描画
 	//SphereCollider::Draw();
 
-	mc_->Draw();
+	multiCollider_->Draw();
 }
 
 void PlayerBase::SkinningDraw()
@@ -117,6 +127,12 @@ void PlayerBase::SkinningDraw()
 
 void PlayerBase::ParticleDraw()
 {
+}
+
+void PlayerBase::OnCollision()
+{
+	// 当たった時にフラグON
+	isCollided_ = true;
 }
 
 //void PlayerBase::OnCollision()

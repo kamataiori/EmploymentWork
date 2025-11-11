@@ -1,9 +1,7 @@
 #pragma once
 #include "ObjectBase.h"
-#include "Collider.h"
+#include "MultiCollider.h"
 #include <memory>
-
-class Player; // 前方宣言
 
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
@@ -39,9 +37,7 @@ public:
 	void SkinningDraw() override;
 	void ParticleDraw() override;
 
-
-	void SetPlayer(Player* player) { player_ = player; }
-	Vector3 GetPlayerPos() const;
+	void OnCollision() override;
 
 	Camera* GetCamera() const { return camera_; }
 
@@ -50,14 +46,13 @@ public:
 
 private:
 
-	Player* player_ = nullptr;
-
-	// 行動が何%で起こるのか
-	float dashWeight_ = 50.0f;
-	float attack1Weight_ = 30.0f;
-	float attack2Weight_ = 20.0f;
-
 	SkeltonAnimationSet animation_; // アニメーション名セット
 	std::string currentAnimationName_;
+
+	// 複合コライダー
+	//std::unique_ptr<MultiCollider> mc_;
+	float sphereRadius_ = 2.2f;
+	Vector3 colliderOffset_ = { 0.0f, 1.8f, 0.0f }; ; // 原点からのオフセット(上方向)
+	Vector3 colliderTranslate_ = {}; // 当たり判定中心座標
 };
 

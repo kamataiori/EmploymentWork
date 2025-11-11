@@ -47,7 +47,7 @@ public:
 	/// <summary>
 	/// 当たり判定の呼出し
 	/// </summary>
-	//void OnCollision() override;
+	void OnCollision() override;
 
 	/// <summary>
 	/// 全player共通の動き
@@ -116,11 +116,11 @@ private:
 	float animLockTimer_ = 0.0f;
 
 	// 複合コライダー
-	std::unique_ptr<MultiCollider> mc_;
+	//std::unique_ptr<MultiCollider> mc_;
 	float sphereRadius_ = 1.0f;
 	Vector3 colliderOffset_ = {};   // 原点からのオフセット(上方向)
 	Vector3 colliderTranslate_ = {}; // 当たり判定中心座標
 
-
+	bool isCollided_ = false;  // 当たり判定フラグ
 };
 

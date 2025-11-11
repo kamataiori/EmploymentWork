@@ -71,7 +71,7 @@ void Player::ParticlDraw()
 
 void Player::OnCollision() {
 
-    
+    currentPlayer_->OnCollision();
 }
 
 void Player::ChangePlayer(PlayerType type) {

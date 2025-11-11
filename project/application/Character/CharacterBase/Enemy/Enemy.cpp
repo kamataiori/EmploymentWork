@@ -17,46 +17,33 @@ void Enemy::Initialize()
 
 	// 初期Transform設定
 	transform.translate = { 0.0f, 0.0f, 0.0f };
-	transform.rotate = { 0.0f, 0.0f, 0.0f };
-	transform.scale = { 1.0f, 1.0f, 1.0f };
+	transform.rotate = { 0.0f, 3.14f, 0.0f };
+	transform.scale = { 3.0f, 3.0f, 3.0f };
 
 	// object3dにtransformを反映
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
-
 	object3d_->SetAnimation(animation_.Idle);
+
+	// ---- Sphereコライダー設定 ----
+	colliderTranslate_ = transform.translate + colliderOffset_; // モデル原点からオフセット
+	Sphere enemySp{};
+	enemySp.center = colliderTranslate_;
+	enemySp.radius = sphereRadius_;
+
+	Shape first{};
+	first.kind = ShapeKind::Sphere;
+	first.sphere = enemySp;
+
+	*multiCollider_ = MultiCollider(first);
+	multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
+	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
 
 }
 
 void Enemy::Update()
 {
-	//// ImGuiデバッグ表示
-	//ImGui::Begin("Enemy Debug");
-
-	//if (currentState_) {
-	//	// 現在のステート名を表示
-	//	ImGui::Text("Current State: %s", currentState_->GetName());
-	//}
-	//else {
-	//	ImGui::Text("Current State: None");
-	//}
-
-	//ImGui::End();
-
-	// プレイヤーの方向を向く
-	//if (player_) {
-	//	Vector3 toPlayer = player_->GetTransform().translate - this->GetTransform().translate;
-
-	//	// Y軸方向だけで角度を計算（上下方向は無視）
-	//	float angleY = std::atan2(toPlayer.x, toPlayer.z);
-
-	//	transform.rotate.y = angleY;
-	//}
-
-
-	
-
 
 	//ImGui::Begin("Enemy Transform");
 
@@ -80,6 +67,23 @@ void Enemy::Update()
 
 	//ImGui::End();
 
+	ImGui::Begin("Enemy");
+	ImGui::DragFloat3("Translate", &transform.translate.x, 0.01f);
+	ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
+	ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 50.0f);
+	ImGui::End();
+
+	// 当たり判定中心を更新
+	colliderTranslate_ = transform.translate + colliderOffset_;
+
+	// コライダー更新
+	Sphere& sp = multiCollider_->MutableSphere(0);
+	sp.center = colliderTranslate_;
+	sp.radius = sphereRadius_;
+
+	// ------------------------
+	// オブジェクト更新処理
+	// ------------------------
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetScale(transform.scale);
 	object3d_->SetRotate(transform.rotate);
@@ -89,11 +93,8 @@ void Enemy::Update()
 
 void Enemy::Draw()
 {
-
-
-
-	// SphereCollider の描画
-	//SphereCollider::Draw();
+	// コライダーの描画
+	multiCollider_->Draw();
 }
 
 void Enemy::DrawModel()
@@ -109,12 +110,8 @@ void Enemy::ParticleDraw()
 {
 }
 
-Vector3 Enemy::GetPlayerPos() const
+void Enemy::OnCollision()
 {
-	/*if (player_) {
-		return player_->GetTransform().translate;
-	}*/
-	return { 0, 0, 0 }; // 参照が無ければ原点
 }
 
 void Enemy::SetAnimationIfChanged(const std::string& name)

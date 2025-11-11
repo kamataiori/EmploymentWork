@@ -1,11 +1,21 @@
-// 形状コライダー
 #pragma once
 #include "Collider.h"
+#include <functional>
 
+// 形状コライダー
 class MultiCollider final : public Collider {
 public:
+
+    MultiCollider() = default;
+
     // コンストラクタで最初の形状を一つ追加
     explicit MultiCollider(const Shape& first) { shapes_.push_back(first); }
+
+    // ヒット時に呼ぶコールバックを登録
+    void SetHitCallback(std::function<void()> cb) { onHit_ = std::move(cb); }
+
+    // 橋渡し
+    void OnCollision() override { if (onHit_) onHit_(); }
 
     // 追加API（任意タイミングで形状を足せる）
     void Add(const Shape& s) { shapes_.push_back(s); }
@@ -35,5 +45,6 @@ public:
 
 private:
     std::vector<Shape> shapes_;
+    std::function<void()> onHit_;
 };
 
