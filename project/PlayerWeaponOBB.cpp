@@ -5,25 +5,25 @@
 
 void PlayerWeaponOBB::Initialize()
 {
-	OBBCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayerAttack));
+	
 
 }
 
 void PlayerWeaponOBB::Update()
 {
 	// コライダー位置を更新
-	SetPosition(playerTransform_->translate);
+	//SetPosition(playerTransform_->translate);
 
-	if (playerTransform_) {
+	/*if (playerTransform_) {
 		SetPosition(playerTransform_->translate);
-	}
+	}*/
 
-	obb.color = static_cast<int>(Color::WHITE);
+	//obb.color = static_cast<int>(Color::WHITE);
 }
 
 void PlayerWeaponOBB::Draw()
 {
-	OBBCollider::Draw();
+	//OBBCollider::Draw();
 }
 
 void PlayerWeaponOBB::NormalAttack()

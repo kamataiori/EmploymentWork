@@ -1,6 +1,13 @@
 #include "PlayerBase.h"
 #include "PlayerWeaponOBB.h"
 
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
+
 void PlayerBase::Initialize()
 {
 	// object3dの初期化
@@ -12,7 +19,8 @@ void PlayerBase::Initialize()
 
 	// ここを毎回実行しない
 	if (isFirstInitialize_) {
-		transform.translate = { 0.0f, 0.0f, -10.0f };
+		//const float halfH = 1.0f; // = playerOBB.size.y と同じ値
+		transform.translate = { 0.0f, 0.0f, -10.0f }; // 底がちょうどy=0に来る
 		transform.rotate = { 0.0f, 0.0f,  0.0f };
 		transform.scale = { 1.0f, 1.0f,  1.0f };
 		isFirstInitialize_ = false;
@@ -28,10 +36,23 @@ void PlayerBase::Initialize()
 	weapon_->SetPlayerTransform(&transform);
 	weapon_->Initialize();
 
-	SetCollider(this);
-	SetPosition(transform.translate);
-	sphere.radius = 2.0f;
-	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
+	// コライダーを生成
+
+	 // --- 原点が足元 → 股下(例: 上方向0.9f) にオフセット ---
+	colliderOffset_ = { 0.0f, 1.0f, 0.0f };
+	colliderTranslate_ = transform.translate + colliderOffset_;
+
+	Sphere playerSp{};
+	playerSp.center = colliderTranslate_;
+	playerSp.radius = sphereRadius_;
+
+	Shape first{};
+	first.kind = ShapeKind::Sphere;
+	first.sphere = playerSp;
+
+	mc_ = std::make_unique<MultiCollider>(first);
+	mc_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer)); // 種別は従来と同じ扱い
+	SetCollider(mc_.get()); // ObjectBase 側に差す（従来の this ではなく mc_ を渡す）
 }
 
 void PlayerBase::Update()
@@ -56,6 +77,15 @@ void PlayerBase::Update()
 		weapon_->Skill();
 	}
 
+	ImGui::Begin("player");
+	ImGui::DragFloat3("translate", &transform.translate.x);
+	ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
+	ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 10.0f);
+	ImGui::End();
+
+	// --- 当たり判定の中心を更新 ---
+	colliderTranslate_ = transform.translate + colliderOffset_;
+
 	// ------------------------
 	// オブジェクト更新処理
 	// ------------------------
@@ -65,15 +95,19 @@ void PlayerBase::Update()
 	object3d_->Update();
 
 	// コライダー位置を更新
-	SetPosition(transform.translate);
-
-	sphere.color = static_cast<int>(Color::WHITE);
+	// OBB をプレイヤーTransformに追従させる
+	// 今回は最初の形状(0)を更新する想定
+	Sphere& sp = mc_->MutableSphere(0); // MultiCollider 側に MutableSphere(index) がある前提
+	sp.center = colliderTranslate_;
+	sp.radius = sphereRadius_;
 }
 
 void PlayerBase::Draw()
 {
 	// SphereCollider の描画
 	//SphereCollider::Draw();
+
+	mc_->Draw();
 }
 
 void PlayerBase::SkinningDraw()
@@ -85,10 +119,10 @@ void PlayerBase::ParticleDraw()
 {
 }
 
-void PlayerBase::OnCollision()
-{
-	sphere.color = static_cast<int>(Color::RED);
-}
+//void PlayerBase::OnCollision()
+//{
+//	//sphere.color = static_cast<int>(Color::RED);
+//}
 
 void PlayerBase::Move()
 {
@@ -197,43 +231,67 @@ void PlayerBase::Move()
 	// 二段ジャンプ処理
 	// ----------------
 	// -------------------------------
-	// 地面に接地していたらリセット
-	// -------------------------------
-	if (transform.translate.y <= jump_.kGroundHeight) {
-		transform.translate.y = jump_.kGroundHeight;
+	// 有効半径（スケール対応：最大軸で拡大）
+	const float effectiveRadius =
+		sphereRadius_ * std::max({ transform.scale.x, transform.scale.y, transform.scale.z });
+
+	// 現在の当たり中心Y（足元原点 + オフセット）
+	const float colliderCenterY = transform.translate.y + colliderOffset_.y;
+
+	// 現在の足底Y
+	const float bottomNow = colliderCenterY - effectiveRadius;
+
+	// 1 接地クランプ（非ジャンプ時の保険）
+	if (!jump_.isJumping && bottomNow < jump_.kGroundHeight) {
+		const float targetCenterY = jump_.kGroundHeight + effectiveRadius;    // 当たり中心Y
+		transform.translate.y = targetCenterY - colliderOffset_.y;            // モデル原点Yに戻す
+		// リセット
 		jump_.isJumping = false;
 		jump_.velocity = 0.0f;
 		jump_.jumpCount = 0;
-		jump_.canJump_ = true;  // 接地時に再ジャンプを許可
-		move_.hasDashed_ = false; // 接地時にダッシュ再許可
+		jump_.canJump_ = true;
+		move_.hasDashed_ = false;
 	}
 
-	// -------------------------------
-	// Spaceキーを押した → ジャンプ条件確認
-	// -------------------------------
+	// 2 ジャンプ入力（2段まで）
 	if (jump_.canJump_ && Input::GetInstance()->PushKey(DIK_SPACE) &&
 		jump_.jumpCount < jump_.kMaxJumpCount) {
 
-		// ジャンプ開始
 		jump_.velocity = jump_.kInitialVelocity;
 		jump_.isJumping = true;
 		jump_.jumpCount++;
-
-		// 今はジャンプ許可しない（離されるまで）
-		jump_.canJump_ = false;
+		jump_.canJump_ = false; // 離すまで再ジャンプ禁止
 	}
-
-	// Spaceキーが離されたらジャンプを再許可
 	if (!Input::GetInstance()->PushKey(DIK_SPACE)) {
 		jump_.canJump_ = true;
 	}
 
-	// -------------------------------
-	// ジャンプ中のY移動＆重力
-	// -------------------------------
+	// 3 速度反映（予測→着地判定→クランプ）
 	if (jump_.isJumping) {
-		transform.translate.y += jump_.velocity;
-		jump_.velocity -= jump_.kGravity;
+		// 次フレームの原点Yを予測
+		const float nextY = transform.translate.y + jump_.velocity;
+
+		// 次フレームの当たり中心と足底
+		const float nextCenterY = nextY + colliderOffset_.y;
+		const float bottomNext = nextCenterY - effectiveRadius;
+
+		if (jump_.velocity <= 0.0f && bottomNext < jump_.kGroundHeight) {
+			// 下向き移動中に地面をまたぐ → ちょうど着地位置へクランプ
+			const float targetCenterY = jump_.kGroundHeight + effectiveRadius;
+			transform.translate.y = targetCenterY - colliderOffset_.y;
+
+			// 着地リセット
+			jump_.isJumping = false;
+			jump_.velocity = 0.0f;
+			jump_.jumpCount = 0;
+			jump_.canJump_ = true;
+			move_.hasDashed_ = false;
+		}
+		else {
+			// まだ空中：位置更新＆重力
+			transform.translate.y = nextY;
+			jump_.velocity -= jump_.kGravity;
+		}
 	}
 }
 

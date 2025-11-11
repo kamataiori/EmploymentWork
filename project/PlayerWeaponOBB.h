@@ -1,13 +1,12 @@
 #pragma once
 #include "PlayerIWeapon.h"
-#include "OBBCollider.h"
 #include "CollisionTypeIdDef.h"
 #include <unordered_set>
 
-class PlayerWeaponOBB : public PlayerIWeapon, public OBBCollider {
+class PlayerWeaponOBB : public PlayerIWeapon{
 public:
 
-	PlayerWeaponOBB() : OBBCollider(obb) {}
+	PlayerWeaponOBB() {}
 
 	void Initialize() override;
 

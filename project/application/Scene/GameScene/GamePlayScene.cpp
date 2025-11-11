@@ -41,7 +41,7 @@ void GamePlayScene::Initialize()
 	ground = std::make_unique<Object3d>(this);
 	ground->Initialize();
 	ground->SetModel("ground.obj");
-	ground->SetTranslate({ 0.0f,-1.0f,0.0f });
+	ground->SetTranslate({ 0.0f,0.0f,0.0f });
 
 	sky = std::make_unique<Object3d>(this);
 	sky->Initialize();
@@ -89,7 +89,7 @@ void GamePlayScene::Update()
 	}
 
 
-	collisionMAnager_->RegisterCollider(player_->Get());
+	//collisionMAnager_->RegisterCollider(player_->Get());
 	//collisionMAnager_->RegisterCollider(enemy_.get());
 	/*if (player_->GetBullet()) {
 		auto bullet = player_->GetBullet();

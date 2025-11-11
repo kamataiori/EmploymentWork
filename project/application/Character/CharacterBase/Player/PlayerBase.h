@@ -1,7 +1,7 @@
 #pragma once
 #include "ObjectBase.h"
 #include "Collider.h"
-#include "SphereCollider.h"
+#include "MultiCollider.h"
 #include "PlayerAnimation.h"
 #include "PlayerAnimKey.h"
 #include "PlayerIWeapon.h"
@@ -9,7 +9,7 @@
 class PlayerAnimation;
 enum class PlayerAnimKey : unsigned int;
 
-class PlayerBase : public ObjectBase, public SphereCollider
+class PlayerBase : public ObjectBase
 {
 public:
 
@@ -17,7 +17,7 @@ public:
 	/// コンストラクタ
 	/// </summary>
 	/// <param name="baseScene_"></param>
-	PlayerBase(BaseScene* baseScene_) : ObjectBase(baseScene_), SphereCollider(sphere) {}
+	PlayerBase(BaseScene* baseScene_) : ObjectBase(baseScene_) {}
 
 	/// <summary>
 	/// 初期化処理
@@ -47,7 +47,7 @@ public:
 	/// <summary>
 	/// 当たり判定の呼出し
 	/// </summary>
-	void OnCollision() override;
+	//void OnCollision() override;
 
 	/// <summary>
 	/// 全player共通の動き
@@ -112,9 +112,15 @@ private:
 	bool isFirstInitialize_ = true;
 
 	std::unique_ptr<PlayerIWeapon> weapon_{};
-
-	int   currentAnimPriority_ = 0;  // 0=移動系, 10=攻撃, 20=スキル…など
+	int currentAnimPriority_ = 0;  // 0=移動系, 10=攻撃, 20=スキル…など
 	float animLockTimer_ = 0.0f;
+
+	// 複合コライダー
+	std::unique_ptr<MultiCollider> mc_;
+	float sphereRadius_ = 1.0f;
+	Vector3 colliderOffset_ = {};   // 原点からのオフセット(上方向)
+	Vector3 colliderTranslate_ = {}; // 当たり判定中心座標
+
 
 };
 

@@ -1,12 +1,7 @@
 #pragma once
 #include "ObjectBase.h"
 #include "Collider.h"
-#include "SphereCollider.h"
-#include "OBBCollider.h"
-#include "EnemyState.h"
 #include <memory>
-#include <Enemy/EnemyAreaAttack.h>
-#include <Enemy/EnemyAttackBullet.h>
 
 class Player; // 前方宣言
 
@@ -28,12 +23,11 @@ struct SkeltonAnimationSet {
 	std::string Yes = "Yes";
 };
 
-
-class Enemy : public ObjectBase, public SphereCollider
+class Enemy : public ObjectBase
 {
 public:
 
-	Enemy(BaseScene* baseScene_) : ObjectBase(baseScene_), SphereCollider(sphere) {}
+	Enemy(BaseScene* baseScene_) : ObjectBase(baseScene_) {}
 
 	void Initialize() override;
 
@@ -45,22 +39,6 @@ public:
 	void SkinningDraw() override;
 	void ParticleDraw() override;
 
-	void OnCollision() override;
-
-	void ChangeState(std::unique_ptr<EnemyState> State);
-	void ChangeToRandomState();
-
-	void AddAreaAttack(std::unique_ptr<EnemyAreaAttack> attack);
-
-	void AddBullet(std::unique_ptr<EnemyAttackBullet> bullet);
-
-	const std::list<std::unique_ptr<EnemyAreaAttack>>& GetAreaAttacks() const {
-		return areaAttacks_;
-	}
-
-	const std::list<std::unique_ptr<EnemyAttackBullet>>& GetAttackBulets() const {
-		return bullets_;
-	}
 
 	void SetPlayer(Player* player) { player_ = player; }
 	Vector3 GetPlayerPos() const;
@@ -71,12 +49,6 @@ public:
 	void SetAnimationIfChanged(const std::string& name);
 
 private:
-
-	std::unique_ptr<EnemyState> currentState_;
-	std::string previousStateName_ = "";
-
-	std::list<std::unique_ptr<EnemyAttackBullet>> bullets_;
-	std::list<std::unique_ptr<EnemyAreaAttack>> areaAttacks_;
 
 	Player* player_ = nullptr;
 
