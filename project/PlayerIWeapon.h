@@ -1,5 +1,6 @@
 #pragma once
 #include "Transform.h"
+#include "MultiCollider.h"
 
 class PlayerBase;
 
@@ -42,6 +43,7 @@ protected:
 	Transform* playerTransform_ = {};
 
 	PlayerBase* owner_ = nullptr;
+
 
 };
 

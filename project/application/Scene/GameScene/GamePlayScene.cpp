@@ -35,6 +35,7 @@ void GamePlayScene::Initialize()
 
 	enemy_->Initialize();
 	enemy_->SetCamera(followCamera.get());
+	enemy_->SetTargetTransform(&player_->Get()->GetTransform());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 
@@ -89,6 +90,9 @@ void GamePlayScene::Update()
 	}
 
 	collisionManager_->RegisterCollider(player_->Get()->GetMultiCollider());
+	if (auto* wcol = player_->Get()->GetWeaponCollider()) {
+		collisionManager_->RegisterCollider(wcol);
+	}
 	collisionManager_->RegisterCollider(enemy_->GetMultiCollider());
 	//collisionMAnager_->RegisterCollider(player_->Get()->GetCollider());
 	//collisionMAnager_->RegisterCollider(enemy_.get());

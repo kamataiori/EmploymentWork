@@ -45,13 +45,34 @@ void Model::Update()
 {
 	if (currentAnimation_) {
 		animationTime += 1.0f / 60.0f;
-		animationTime = std::fmod(animationTime, currentAnimation_->duration);
+
+		if (isOneShot_) {
+			// ★ 一回だけ：duration でクランプして止める（最後のポーズ保持）
+			if (animationTime >= currentAnimation_->duration) {
+				animationTime = currentAnimation_->duration; // クランプ
+			}
+		}
+		else {
+			// ループ再生
+			animationTime = std::fmod(animationTime, currentAnimation_->duration);
+		}
+
 		AppAnimation(skeleton, *currentAnimation_, animationTime);
 		Update(skeleton);
 		for (auto& instance : meshInstances_) {
 			Update(instance.skinCluster, skeleton);
 		}
 	}
+
+	/*if (currentAnimation_) {
+		animationTime += 1.0f / 60.0f;
+		animationTime = std::fmod(animationTime, currentAnimation_->duration);
+		AppAnimation(skeleton, *currentAnimation_, animationTime);
+		Update(skeleton);
+		for (auto& instance : meshInstances_) {
+			Update(instance.skinCluster, skeleton);
+		}
+	}*/
 
 	//animationTime += 1.0f / 60.0f;  // 時間を進める
 	//animationTime = std::fmod(animationTime, animation.duration);  // 繰り返し再生
@@ -561,6 +582,12 @@ void Model::SetAnimation(const std::string& name)
 	else {
 		OutputDebugStringA(("Animation not found: " + name + "\n").c_str());
 	}
+}
+
+void Model::SetAnimationOneShot(const std::string& name)
+{
+	SetAnimation(name);   // 既存の切替を使う
+	isOneShot_ = true;    // 1回のみ再生に切替
 }
 
 int32_t Model::CreateJoint(const Node& node, const std::optional<int32_t>& parent, std::vector<Joint>& joints)

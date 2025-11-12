@@ -172,6 +172,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="MultiCollider.cpp" />
     <ClCompile Include="PlayerAnimation.cpp" />
     <ClCompile Include="PlayerAnimKey.cpp" />
+    <ClCompile Include="PlayerBullet.cpp" />
     <ClCompile Include="PlayerIWeapon.cpp" />
     <ClCompile Include="PlayerWeaponOBB.cpp" />
     <ClCompile Include="ShapeIntersect.cpp" />
@@ -253,6 +254,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="MultiCollider.h" />
     <ClInclude Include="PlayerAnimation.h" />
     <ClInclude Include="PlayerAnimKey.h" />
+    <ClInclude Include="PlayerBullet.h" />
     <ClInclude Include="PlayerIWeapon.h" />
     <ClInclude Include="PlayerWeaponOBB.h" />
     <ClInclude Include="resource.h" />

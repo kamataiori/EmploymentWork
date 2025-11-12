@@ -83,21 +83,22 @@ void PlayerBase::Update()
 		weapon_->Update();
 		weapon_->NormalAttack();
 		weapon_->Skill();
+		weapon_->Ultimate();
 	}
 
-	ImGui::Begin("player");
-	ImGui::DragFloat3("translate", &transform.translate.x);
-	ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
-	ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 10.0f);
+	//ImGui::Begin("player");
+	//ImGui::DragFloat3("translate", &transform.translate.x);
+	//ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
+	//ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 10.0f);
 
-	// 当たり判定の可視化
-	if (isCollided_) {
-		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Hit! (Collision Detected)");
-	}
-	else {
-		ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No Collision");
-	}
-	ImGui::End();
+	//// 当たり判定の可視化
+	//if (isCollided_) {
+	//	ImGui::TextColored(ImVec4(1, 0, 0, 1), "Hit! (Collision Detected)");
+	//}
+	//else {
+	//	ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No Collision");
+	//}
+	//ImGui::End();
 
 	// --- 当たり判定の中心を更新 ---
 	colliderTranslate_ = transform.translate + colliderOffset_;
@@ -124,7 +125,8 @@ void PlayerBase::Draw()
 	// SphereCollider の描画
 	//SphereCollider::Draw();
 
-	multiCollider_->Draw();
+	//multiCollider_->Draw();
+	weapon_->Draw();
 }
 
 void PlayerBase::SkinningDraw()
@@ -138,6 +140,28 @@ void PlayerBase::ParticleDraw()
 
 void PlayerBase::OnCollision()
 {
+	// ====== HP減少処理 ======
+	hp_ -= kDamagePerHit_;
+	if (hp_ < 0) hp_ = 0;
+
+	// ====== HPチェック ======
+	if (hp_ <= 0) {
+		// 死亡アニメーション
+		//PlayAnimKey(PlayerAnimKey::Death);
+
+		object3d_->SetAnimationOneShot("Death");
+
+		//// デバッグ出力
+		//ImGui::Begin("Player HP");
+		//ImGui::TextColored(ImVec4(1, 0, 0, 1), "Player Died! HP = 0");
+		//ImGui::End();
+
+		return; // 死亡時はここで抜けて以降の処理を止める
+	}
+
+	// ====== 被弾時アニメーション（生存時のみ） ======
+	PlayAnimKey(PlayerAnimKey::Hit2);
+
 	// 当たった時にフラグON
 	isCollided_ = true;
 }
@@ -152,31 +176,55 @@ void PlayerBase::Move()
 	// -------------------------------
 	// ダッシュ制御：1回だけ発動可能
 	// -------------------------------
-	// Bキーを初めて押した瞬間だけダッシュ許可（空中でも可）
-	if (!move_.isDashKeyHeld_ && Input::GetInstance()->PushKey(DIK_B) && !move_.hasDashed_) {
+	// クールダウンを減算
+	if (move_.dashCooldown > 0.0f) {
+		move_.dashCooldown -= 1.0f / 60.0f;
+		if (move_.dashCooldown < 0.0f) move_.dashCooldown = 0.0f;
+	}
+
+	// 押下・解放状態
+	const bool dashHeld = Input::GetInstance()->PushMouseButton(1);
+
+	// 接地判定（あなたの地面判定に合わせて微調整OK）
+	const float groundEps = 0.001f;
+	const bool isGrounded = (!jump_.isJumping) && (transform.translate.y <= jump_.kGroundHeight + groundEps);
+
+	// ---- 起動条件：押した・ダッシュ中でない・クールダウン終わり ----
+	if (!move_.isDashing && dashHeld && !move_.isDashKeyHeld_ && move_.dashCooldown <= 0.0f) {
 		move_.isDashing = true;
 		move_.dashTimer = move_.kDashDuration;
 		move_.hasDashed_ = true;
 		move_.isDashKeyHeld_ = true;
+
+		const float yaw = transform.rotate.y;
+		move_.dashDir = Normalize(Vector3{ std::sin(yaw), 0.0f, std::cos(yaw) });
+
+		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
 	}
 
-	// Bキーを離したら、次の押下を受付可能にする
-	if (!Input::GetInstance()->PushKey(DIK_B)) {
+	// 右クリック解放を検出（次の押下のためのエッジ作り）
+	if (!dashHeld) {
 		move_.isDashKeyHeld_ = false;
 	}
 
-	// ダッシュ中タイマー処理
+	// ---- ダッシュ中の処理 ----
 	if (move_.isDashing) {
-		//SetAnimationIfChanged(animation_.Roll);
-		move_.dashTimer -= 1.0f / 60.0f; // フレーム単位で減算（60FPS想定）
+		move_.dashTimer -= 1.0f / 60.0f;
+		transform.translate.x += move_.dashDir.x * move_.dashSpeed;
+		transform.translate.z += move_.dashDir.z * move_.dashSpeed;
+
 		if (move_.dashTimer <= 0.0f) {
 			move_.isDashing = false;
 			move_.dashTimer = 0.0f;
+			move_.dashCooldown = move_.kDashCooldown;      // ★ 終了後にクールダウン開始
+			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
 		}
-		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
 	}
 	else {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
+		// ---- 再装填条件：クールダウン終了 ＆ 右クリック離している ＆（できれば接地）----
+		if (move_.dashCooldown <= 0.0f && !dashHeld && isGrounded) {
+			move_.hasDashed_ = false;  // ★ これで2回目以降も使える
+		}
 	}
 
 	// -------------------------------
@@ -185,70 +233,7 @@ void PlayerBase::Move()
 	// -------------------------------
 	// WASD入力による方向ベクトル計算
 	// -------------------------------
-	//move_.direction = { 0.0f, 0.0f, 0.0f };
-
-	//bool isMoving = false;
-
-	//if (Input::GetInstance()->PushKey(DIK_W)) {
-	//	move_.direction.z += 1.0f;
-	//	isMoving = true;
-	//}
-	//if (Input::GetInstance()->PushKey(DIK_S)) {
-	//	move_.direction.z -= 1.0f;
-	//	isMoving = true;
-	//}
-	//if (Input::GetInstance()->PushKey(DIK_A)) {
-	//	move_.direction.x -= 1.0f;
-	//	isMoving = true;
-	//}
-	//if (Input::GetInstance()->PushKey(DIK_D)) {
-	//	move_.direction.x += 1.0f;
-	//	isMoving = true;
-	//}
-
-	//// 正規化してプレイヤーの向きに合わせた移動に変換
-	//if (Length(move_.direction) > 0.0f) {
-	//	move_.direction = Normalize(move_.direction);
-	//	float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
-
-	//	// Y軸の回転行列を生成（プレイヤーの向きに応じた回転）
-	//	Matrix4x4 rotY = MakeRotateYMatrix(transform.rotate.y);
-
-	//	// 入力方向ベクトルをプレイヤーの向きに回転
-	//	Vector3 rotatedDir = TransformVector(move_.direction, rotY);
-
-	//	// 回転後の方向に沿って移動
-	//	transform.translate.x += rotatedDir.x * currentSpeed;
-	//	transform.translate.z += rotatedDir.z * currentSpeed;
-	//}
-
-	///*const auto& anim = GetAnimation();
-
-	//if (isMoving) {
-	//	SetAnimationIfChanged(anim.Run_Weapon);
-	//}
-	//else {
-	//	SetAnimationIfChanged(anim.Idle);
-	//}*/
-
-	////if (animCtrl_) {
-	////	if (!IsAnimLocked()) { // ★攻撃などでロック中は移動アニメを出さない
-	////		if (isMoving) {
-	////			RequestAnimKey(PlayerAnimKey::RunWeapon, 0);   // 優先度0
-	////		}
-	////		else {
-	////			RequestAnimKey(PlayerAnimKey::Idle, 0);        // 優先度0
-	////		}
-	////	}
-	////}
-
-	//if (animCtrl_) {
-	//	if (!IsAnimLocked()) {
-	//		if (isMoving)  RequestAnimKey(PlayerAnimKey::RunWeapon, 0);
-	//		else           RequestAnimKey(PlayerAnimKey::Idle, 0);
-	//	}
-	//}
-
+	
 	// 1) カメラのヨー角（FollowCamera想定）
 	float camYaw = 0.0f;
 	if (auto fc = dynamic_cast<FollowCamera*>(camera_)) {

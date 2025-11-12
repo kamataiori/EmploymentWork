@@ -12,6 +12,19 @@ static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
 	outAxes[2] = { s, 0.0f,  c };
 }
 
+// 角度差分を [-π, π] に折りたたむ
+static float WrapDeltaRad(float a) {
+	while (a > 3.1415926535f) a -= 6.283185307f;
+	while (a < -3.1415926535f) a += 6.283185307f;
+	return a;
+}
+
+// 角度の線形補間（ラップ考慮）
+static float LerpAngleRad(float from, float to, float t) {
+	const float d = WrapDeltaRad(to - from);
+	return from + d * t;
+}
+
 void Enemy::Initialize()
 {
 	object3d_->Initialize();
@@ -26,7 +39,7 @@ void Enemy::Initialize()
 	object3d_->SetModel("Skeleton.gltf");
 
 	// 初期Transform設定
-	transform.translate = { 0.0f, 0.0f, 0.0f };
+	transform.translate = { 0.0f, 0.0f,30.0f };
 	transform.rotate = { 0.0f, 3.14f, 0.0f };
 	transform.scale = { 3.0f, 3.0f, 3.0f };
 
@@ -35,20 +48,6 @@ void Enemy::Initialize()
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
 	object3d_->SetAnimation(animation_.Idle);
-
-	// ---- Sphereコライダー設定 ----
-	//colliderTranslate_ = transform.translate + colliderOffset_; // モデル原点からオフセット
-	//Sphere enemySp{};
-	//enemySp.center = colliderTranslate_;
-	//enemySp.radius = sphereRadius_;
-
-	//Shape first{};
-	//first.kind = ShapeKind::Sphere;
-	//first.sphere = enemySp;
-
-	//*multiCollider_ = MultiCollider(first);
-	//multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
-	//multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
 
 	// ---- OBB コライダー初期化 ----
 	colliderCenter_ = transform.translate + colliderOffset_;
@@ -72,40 +71,75 @@ void Enemy::Initialize()
 	// ヒットを Enemy::OnCollision に橋渡し
 	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
 
+	// AI初期
+	state_ = RushState::Idle;
+	stateTimer_ = idleTime_;
+
 }
 
 void Enemy::Update()
 {
+	// ====== 簡易AI：Idle → Dash → Cooldown ループ ======
+   // ターゲットがいれば計算
+	Vector3 toTargetXZ{ 0,0,0 };
+	float desiredYaw = transform.rotate.y;
 
-	//ImGui::Begin("Enemy Transform");
+	if (target_) {
+		Vector3 to = target_->translate - transform.translate;
+		to.y = 0.0f;
+		if (Length(to) > 1e-6f) {
+			toTargetXZ = Normalize(to);
+			// forward = (sinYaw, 0, cosYaw) の想定
+			desiredYaw = std::atan2(toTargetXZ.x, toTargetXZ.z);
+		}
+	}
 
-	//// Translate (位置)
-	//Vector3 position = object3d_->GetTranslate();
-	//if (ImGui::DragFloat3("Position", &position.x, 0.1f)) {
-	//	object3d_->SetTranslate(position);
-	//}
+	switch (state_) {
+	case RushState::Idle:
+		// 常にプレイヤーへ向く（スムーズ）
+		transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_);
+		stateTimer_ -= 1.0f / 60.0f;
+		if (stateTimer_ <= 0.0f) {
+			// ダッシュへ移行：向いている方向を固定
+			if (target_) {
+				dashDir_ = toTargetXZ;                 // 方向確定（XZ）
+				transform.rotate.y = desiredYaw;       // 顔をピタッと正面へ
+			}
+			else {
+				// ターゲットが無い場合は今の向きで前進
+				dashDir_ = { std::sin(transform.rotate.y), 0.0f, std::cos(transform.rotate.y) };
+			}
+			state_ = RushState::Dash;
+			stateTimer_ = dashTime_;
+			SetAnimationIfChanged(animation_.Run);
+		}
+		break;
 
-	//// Rotate (回転)
-	//Vector3 rotation = object3d_->GetRotate();
-	//if (ImGui::DragFloat3("Rotation", &rotation.x, 0.1f)) {
-	//	object3d_->SetRotate(rotation);
-	//}
+	case RushState::Dash:
+		// 突進（※ 突進中はプレイヤーへ向き直ししない）
+		transform.translate.x += dashDir_.x * dashSpeed_;
+		transform.translate.z += dashDir_.z * dashSpeed_;
 
-	//// Scale (スケール)
-	//Vector3 scale = object3d_->GetScale();
-	//if (ImGui::DragFloat3("Scale", &scale.x, 0.1f, 0.1f, 10.0f)) {
-	//	object3d_->SetScale(scale);
-	//}
+		stateTimer_ -= 1.0f / 60.0f;
+		if (stateTimer_ <= 0.0f) {
+			state_ = RushState::Cooldown;
+			stateTimer_ = cooldownTime_;
+			SetAnimationIfChanged(animation_.Idle);
+		}
+		break;
 
-	//ImGui::End();
-
-	ImGui::Begin("Enemy");
-	ImGui::DragFloat3("Translate", &transform.translate.x, 0.01f);
-	ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
-	//ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 50.0f);
-	ImGui::DragFloat3("OBB Size (half)", &obbSize_.x, 0.01f, 0.0f, 50.0f);
-	ImGui::DragFloat("Yaw (rad)", &transform.rotate.y, 0.01f);
-	ImGui::End();
+	case RushState::Cooldown:
+		// 向きだけは緩やかにターゲットへ（次のダッシュ準備）
+		transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_ * 0.6f);
+		stateTimer_ -= 1.0f / 60.0f;
+		if (stateTimer_ <= 0.0f) {
+			state_ = RushState::Idle;
+			stateTimer_ = idleTime_;
+			SetAnimationIfChanged(animation_.Idle);
+		}
+		break;
+	}
+	
 
 	// 当たり判定中心を更新
 	//colliderTranslate_ = transform.translate + colliderOffset_;
@@ -130,6 +164,16 @@ void Enemy::Update()
 				 obbSize_.y /** transform.scale.y*/,
 				 obbSize_.z /** transform.scale.z*/ };
 
+
+	// HitReact の終了管理：一定時間で Idle に戻す
+	if (hitReactTimer_ > 0.0f) {
+		hitReactTimer_ -= 1.0f / 60.0f; // 固定60FPS前提。可変ならΔtを使う
+		if (hitReactTimer_ <= 0.0f) {
+			SetAnimationIfChanged(animation_.Idle);
+			hitReactTimer_ = 0.0f;
+		}
+	}
+
 	// ------------------------
 	// オブジェクト更新処理
 	// ------------------------
@@ -143,7 +187,7 @@ void Enemy::Update()
 void Enemy::Draw()
 {
 	// コライダーの描画
-	multiCollider_->Draw();
+	//multiCollider_->Draw();
 }
 
 void Enemy::DrawModel()
@@ -161,6 +205,32 @@ void Enemy::ParticleDraw()
 
 void Enemy::OnCollision()
 {
+	// ===== HP減少 =====
+	hp_ -= kDamagePerHit_;
+	if (hp_ < 0) hp_ = 0;
+
+	// ===== HPチェック =====
+	if (hp_ <= 0) {
+		// 死亡アニメーション再生
+		//SetAnimationIfChanged(animation_.Death);
+		object3d_->SetAnimationOneShot(animation_.Death);
+		hitReactTimer_ = 0.0f; // もうHitReactしない
+
+		// デバッグ出力
+		ImGui::Begin("Enemy HP");
+		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Enemy Died! HP = 0");
+		ImGui::End();
+
+		return; // 以降の処理はスキップ
+	}
+
+	// ===== 被弾時アニメーション =====
+	SetAnimationIfChanged(animation_.HitReact);
+	hitReactTimer_ = kHitReactDuration_;
+
+	/*ImGui::Begin("enemy");
+	ImGui::Text("On!!!!!!!!!!");
+	ImGui::End();*/
 }
 
 void Enemy::SetAnimationIfChanged(const std::string& name)

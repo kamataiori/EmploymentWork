@@ -5,6 +5,7 @@
 #include "PlayerAnimation.h"
 #include "PlayerAnimKey.h"
 #include "PlayerIWeapon.h"
+#include <PlayerWeaponOBB.h>
 
 class PlayerAnimation;
 enum class PlayerAnimKey : unsigned int;
@@ -67,6 +68,16 @@ public:
 
 	bool IsAnimLocked() const { return animLockTimer_ > 0.0f; }
 
+	PlayerIWeapon* GetWeapon() { return weapon_.get(); }
+
+	MultiCollider* GetWeaponCollider() {
+		if (!weapon_) return nullptr;
+		if (auto* w = dynamic_cast<PlayerWeaponOBB*>(weapon_.get())) {
+			return w->GetMultiCollider();    // ← 既に実装済みのはず
+		}
+		return nullptr;
+	}
+
 protected:
 
 	// 派生クラスで指定するモデル名
@@ -83,14 +94,17 @@ private:
 
 	// 移動制御に関する構造体
 	struct MoveControl {
-		float speed = 0.2f;                    // 移動速度
+		float speed = 0.25f;                    // 移動速度
 		Vector3 direction{};                   // 入力から得た移動方向
 		float dashSpeed = 1.0f;                // ダッシュ時の速度
 		bool isDashing = false;                // ダッシュ中かどうか
 		bool hasDashed_ = false;               // 1回だけダッシュ許可
-		bool isDashKeyHeld_ = false;           // Bキーがまだ押されているかどうか
-		const float kDashDuration = 0.5f;      // ダッシュ継続時間
+		bool isDashKeyHeld_ = false;           // キーがまだ押されているかどうか
+		const float kDashDuration = 0.2f;      // ダッシュ継続時間
 		float dashTimer = 0.0f;                // 残りダッシュ時間
+		Vector3 dashDir = { 0.0f, 0.0f, 0.0f };// ダッシュ開始時の向き
+		const float kDashCooldown = 0.25f; // 連打防止の再装填時間
+		float dashCooldown = 0.0f;
 	};
 	MoveControl move_;  // 移動制御
 
@@ -121,5 +135,10 @@ private:
 	Vector3 colliderTranslate_ = {}; // 当たり判定中心座標
 
 	bool isCollided_ = false;  // 当たり判定フラグ
+
+	// HP関連
+	int hp_ = 10000;                     // 現在HP
+	const int kMaxHP_ = 10000;           // 最大HP
+	const int kDamagePerHit_ = 1;     // 1回の衝突ダメージ
 };
 

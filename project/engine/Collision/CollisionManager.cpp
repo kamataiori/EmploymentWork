@@ -50,10 +50,14 @@ void CollisionManager::CheckAllCollisions() {
 // 衝突を無視するペアをチェック
 bool CollisionManager::ShouldIgnoreCollision(CollisionTypeIdDef type1, CollisionTypeIdDef type2) {
 	static const std::unordered_set<std::pair<CollisionTypeIdDef, CollisionTypeIdDef>, pair_hash> ignoredPairs = {
-		/*{CollisionTypeIdDef::kPlayer, CollisionTypeIdDef::kEnemy},
-		{CollisionTypeIdDef::kEnemy, CollisionTypeIdDef::kPlayer},*/
+		{CollisionTypeIdDef::kPlayer, CollisionTypeIdDef::kEnemy},
+		{CollisionTypeIdDef::kEnemy, CollisionTypeIdDef::kPlayer},
+
 		{CollisionTypeIdDef::PlayerBullet, CollisionTypeIdDef::kPlayer},
 		{ CollisionTypeIdDef::kPlayer, CollisionTypeIdDef::PlayerBullet},
+
+        {CollisionTypeIdDef::kPlayerWeapon, CollisionTypeIdDef::kPlayer},
+        { CollisionTypeIdDef::kPlayer, CollisionTypeIdDef::kPlayerWeapon},
 
 		{ CollisionTypeIdDef::kEnemy, CollisionTypeIdDef::EnemyAreaAttack },
 	    { CollisionTypeIdDef::EnemyAreaAttack, CollisionTypeIdDef::kEnemy },

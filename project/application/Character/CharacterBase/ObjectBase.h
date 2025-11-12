@@ -72,6 +72,8 @@ public:
         object3d_->SetCamera(camera);
     }
 
+    Camera* GetCamera() const { return camera_; }
+
     // SetColliderをセット
     //void SetCollider(MultiCollider* collider) { multiCollider_.get() = collider; }
 

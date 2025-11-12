@@ -104,7 +104,7 @@ public:
     /// <returns>ワールド座標（取得できなければ std::nullopt）</returns>
     std::optional<Vector3> GetJointWorldPosition(const std::string& jointName) const;
 
-
+    void SetAnimationOneShot(const std::string& name) { if (model_) model_->SetAnimationOneShot(name); }
 
 private:
 
