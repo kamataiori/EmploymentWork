@@ -1,6 +1,11 @@
 #include "MyGame.h"
 #include <UnityScene.h>
+
+#ifdef DEBUG
+
 #include <externals/imgui/imgui_internal.h>
+
+#endif // DEBUG
 
 void MyGame::Initialize()
 {
@@ -13,9 +18,13 @@ void MyGame::Initialize()
 
 	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 
+#ifdef DEBUG
+
 	// ImGuiManagerの初期化
 	imGuiManager_ = std::make_unique<ImGuiManager>();
 	imGuiManager_->Initialize(winApp.get(), DirectXCommon::GetInstance());
+
+#endif // DEBUG
 
 	//offscreenRendering->Initialize(PostEffectType::Normal);
 	//postEffect->Initialize(PostEffectType::Normal);
@@ -27,8 +36,12 @@ void MyGame::Initialize()
 
 void MyGame::Finalize()
 {
+#ifdef DEBUG
+
 	// ImGuiの終了処理
 	imGuiManager_->Finalize();
+
+#endif // DEBUG
 
 	// 基底クラスの終了処理
 	Framework::Finalize();
@@ -36,11 +49,17 @@ void MyGame::Finalize()
 
 void MyGame::Update()
 {
+#ifdef DEBUG
+
 	// ImGuiのフレーム開始を宣言
 	imGuiManager_->Update();
 
-	ApplyImGuiStyle();
+#endif // DEBUG
+
 #ifdef _DEBUG
+
+	//ApplyImGuiStyle();
+
 	//// Unity風レイアウトの表示
 	//if (useUnityLayout_) {
 	//	DrawUnityLayout();
@@ -89,8 +108,12 @@ void MyGame::Update()
 
 	//GlobalVariables::GetInstance()->Update();
 
+#ifdef DEBUG
+
 	// ImGuiの内部コマンドを生成する
 	ImGui::Render();
+
+#endif // DEBUG
 
 	auto now = std::chrono::steady_clock::now();
 	std::chrono::duration<float> delta = now - lastFrameTime_;
@@ -159,12 +182,18 @@ void MyGame::Draw()
 	//postEffect->Draw();
 	PostEffectManager::GetInstance()->Draw();
 
+#ifdef DEBUG
+
 	// ImGuiの描画 (スワップチェーンに対して)
 	imGuiManager_->Draw();
+
+#endif // DEBUG
 
 	// スワップチェーンの描画後処理
 	dxCommon->PostDraw();
 }
+
+#ifdef DEBUG
 
 void MyGame::ApplyImGuiStyle() {
 	ImGuiStyle& style = ImGui::GetStyle();
@@ -349,12 +378,4 @@ void MyGame::DrawBottomPanel()
 	ImGui::End();
 }
 
-
-
-
-
-
-
-
-
-
+#endif // DEBUG

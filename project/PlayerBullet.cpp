@@ -50,12 +50,16 @@ void PlayerBullet::Update()
     s.center = transform.translate;
     s.radius = colliderRadius_;
 
+#ifdef DEBUG
+
     // ==== ImGuiデバッグ ====
     ImGui::Begin("PlayerBullet");
     ImGui::Text("Pos: (%.2f, %.2f, %.2f)", transform.translate.x, transform.translate.y, transform.translate.z);
     ImGui::Text("Life: %.2f", life_);
     ImGui::Text("Collided: %s", isCollided_ ? "TRUE" : "FALSE");
     ImGui::End();
+
+#endif // DEBUG
 
     // 当たり後リセット
     isCollided_ = false;
