@@ -2,6 +2,7 @@
 
 void MultiCollider::Draw()
 {
+#ifdef _DEBUG
     for (const auto& s : shapes_) {
         switch (s.kind) {
         case ShapeKind::Sphere:  DrawLine::GetInstance()->DrawSphere(s.sphere); break;
@@ -10,6 +11,7 @@ void MultiCollider::Draw()
         case ShapeKind::Capsule: DrawLine::GetInstance()->DrawCapsule(s.capsule); break;
         }
     }
+#endif
 }
 
 const OBB& MultiCollider::GetOBB(size_t index) const

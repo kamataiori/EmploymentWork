@@ -53,21 +53,9 @@ void ParticleManager::Update()
 	// カメラ目線の設定
 	Matrix4x4 backToFrontMatrix = MakeRotateYMatrix(std::numbers::pi_v<float>);
 	Matrix4x4 billboardMatrix{};
-	//if (usebillboardMatrix)
-	//{
-	//	billboardMatrix = Multiply(backToFrontMatrix, cameraMatrix);
-	//	billboardMatrix.m[3][0] = 0.0f; // 平行移動成分は無視
-	//	billboardMatrix.m[3][1] = 0.0f;
-	//	billboardMatrix.m[3][2] = 0.0f;
-	//}
-	//else
-	//{
-	//	billboardMatrix = MakeIdentity4x4();
-	//}
 	if (usebillboardMatrix)
 	{
-		// カメラの Y 回転だけをビルボードに適用（Z軸回転は除外）
-		billboardMatrix = MakeRotateYMatrix(camera_->GetRotate().y);
+		billboardMatrix = Multiply(backToFrontMatrix, cameraMatrix);
 		billboardMatrix.m[3][0] = 0.0f; // 平行移動成分は無視
 		billboardMatrix.m[3][1] = 0.0f;
 		billboardMatrix.m[3][2] = 0.0f;
@@ -76,6 +64,18 @@ void ParticleManager::Update()
 	{
 		billboardMatrix = MakeIdentity4x4();
 	}
+	//if (usebillboardMatrix)
+	//{
+	//	// カメラの Y 回転だけをビルボードに適用（Z軸回転は除外）
+	//	billboardMatrix = MakeRotateYMatrix(camera_->GetRotate().y);
+	//	billboardMatrix.m[3][0] = 0.0f; // 平行移動成分は無視
+	//	billboardMatrix.m[3][1] = 0.0f;
+	//	billboardMatrix.m[3][2] = 0.0f;
+	//}
+	//else
+	//{
+	//	billboardMatrix = MakeIdentity4x4();
+	//}
 
 	// スケール調整用の倍率を設定
 	constexpr float scaleMultiplier = 0.01f; // 必要に応じて調整
@@ -105,12 +105,18 @@ void ParticleManager::Update()
 			// 経過時間を更新
 			particle.currentTime += kDeltaTime;
 
-			// ワールド行列の計算
-			Matrix4x4 worldMatrix = Multiply(
-				billboardMatrix,
-				MakeAffineMatrix(particle.transform.scale, particle.transform.rotate, particle.transform.translate));
+			// Scale 行列
+			Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);
 
-			// ビュー・プロジェクションを掛け合わせて最終行列を計算
+			// Translate 行列
+			Matrix4x4 translateMatrix = MakeTranslateMatrix(particle.transform.translate);
+
+			// 回転はビルボードに任せるので、particle.transform.rotate は使わない
+			// world = S * Billboard * T
+			Matrix4x4 worldMatrix =
+				Multiply(Multiply(scaleMatrix, billboardMatrix), translateMatrix);
+
+			// VP を掛ける
 			Matrix4x4 worldviewProjectionMatrix = Multiply(worldMatrix, viewProjectionMatrix);
 
 			// インスタンシングデータの設定

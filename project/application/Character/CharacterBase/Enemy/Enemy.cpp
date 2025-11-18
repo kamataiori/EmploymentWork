@@ -1,6 +1,7 @@
 #include "Enemy.h"
 #include <CollisionTypeIdDef.h>
 #include "Player.h"
+#include <SceneManager.h>
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
@@ -74,6 +75,35 @@ void Enemy::Initialize()
 	// AI初期
 	state_ = RushState::Idle;
 	stateTimer_ = idleTime_;
+
+
+	// === HPバー初期化 ===
+	hpBarBG_ = std::make_unique<Sprite>();
+	hpBarFill_ = std::make_unique<Sprite>();
+
+	// テクスチャは 2x2 の "hp"
+	hpBarBG_->Initialize("Resources/hp.png");
+	hpBarFill_->Initialize("Resources/hp.png");
+
+	// 背景は少し暗め
+	hpBarBG_->SetColor({ 0.2f, 0.2f, 0.2f, 0.8f });
+	// 本体は赤系
+	hpBarFill_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+
+	// 初期サイズと位置（中央上）を一旦設定
+	const float winW = 1280.0f;
+	const float centerX = winW * 0.5f;
+	const float left = centerX - hpBarMaxWidth_ * 0.5f;
+
+	hpBarBG_->SetSize({ hpBarMaxWidth_, hpBarHeight_ });
+	hpBarBG_->SetPosition({ left, hpBarTop_ });
+
+	// fill は後で Update で現在HPに合わせて幅を更新
+	hpBarFill_->SetSize({ hpBarMaxWidth_, hpBarHeight_ });
+	hpBarFill_->SetPosition({ left, hpBarTop_ });
+
+	hpBarBG_->SetAnchorPoint({ 0.0f, 0.5f });
+	hpBarFill_->SetAnchorPoint({ 0.0f, 0.5f });
 
 }
 
@@ -182,21 +212,69 @@ void Enemy::Update()
 	object3d_->SetRotate(transform.rotate);
 	object3d_->Update();
 
+	// 死亡ロック：AI/挙動を完全停止
+	if (isDead_) {
+		deathTimer_ += 1.0f / 60.0f; // Δt があるならそれを使う
+
+		// 位置/回転/スケールは保持（変えない）
+		object3d_->SetTranslate(transform.translate);
+		object3d_->SetRotate(transform.rotate);
+		object3d_->SetScale(transform.scale);
+
+		// 一定時間後にタイトルへ
+		if (deathTimer_ >= kDeathToTitleDelay_) {
+			SceneManager::GetInstance()->ChangeScene("TITLE");
+		}
+		return; // ここで抜けるので Idle/Dash 等は一切走らない
+	}
+
+
+	const float ratio = (kMaxHP_ > 0) ? std::clamp(hp_ / float(kMaxHP_), 0.0f, 1.0f) : 0.0f;
+
+	const float winW = 1280.0f;
+	const float centerX = winW * 0.5f;
+	const float maxW = hpBarMaxWidth_;
+	const float curW = maxW * ratio;
+	const float leftBG = centerX - maxW * 0.5f;
+	const float leftFill = leftBG;
+
+	// 背景は常に最大幅
+	hpBarBG_->SetSize({ maxW, hpBarHeight_ });
+	hpBarBG_->SetPosition({ leftBG, hpBarTop_ });
+	hpBarBG_->Update();
+
+	// 本体は現在幅
+	hpBarFill_->SetSize({ curW, hpBarHeight_ });
+	hpBarFill_->SetPosition({ leftFill, hpBarTop_ });
+	hpBarFill_->Update();
+}
+
+void Enemy::BackGroundDraw()
+{
 }
 
 void Enemy::Draw()
 {
 	// コライダーの描画
-	//multiCollider_->Draw();
+	multiCollider_->Draw();
+
+
 }
 
-void Enemy::DrawModel()
+void Enemy::ForeGroundDraw()
+{
+	// === HPバー描画 ===
+	if (hpBarBG_ && hpBarFill_) {
+	
+		// 背景 → 本体の順で描画
+		hpBarBG_->Draw();
+		hpBarFill_->Draw();
+	}
+}
+
+void Enemy::AnimationDraw()
 {
 	object3d_->Draw();
-}
-
-void Enemy::SkinningDraw()
-{
 }
 
 void Enemy::ParticleDraw()
@@ -205,32 +283,45 @@ void Enemy::ParticleDraw()
 
 void Enemy::OnCollision()
 {
+	//if (isDead_) return;
+
 	// ===== HP減少 =====
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
 
 	// ===== HPチェック =====
-	if (hp_ <= 0) {
-		// 死亡アニメーション再生
-		//SetAnimationIfChanged(animation_.Death);
+	if (hp_ <= 0 && !isDead_) {
+		// 死亡アニメーション（1回再生）
 		object3d_->SetAnimationOneShot(animation_.Death);
-		hitReactTimer_ = 0.0f; // もうHitReactしない
-
-		// デバッグ出力
-		ImGui::Begin("Enemy HP");
-		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Enemy Died! HP = 0");
-		ImGui::End();
-
-		return; // 以降の処理はスキップ
+		hitReactTimer_ = 0.0f;
+		isDead_ = true;          // 死亡状態に
+		deathTimer_ = 0.0f;      // カウント開始
+		return;
 	}
 
 	// ===== 被弾時アニメーション =====
-	SetAnimationIfChanged(animation_.HitReact);
-	hitReactTimer_ = kHitReactDuration_;
+	if (!isDead_) {
+		SetAnimationIfChanged(animation_.HitReact);
+		hitReactTimer_ = kHitReactDuration_;
+	}
 
 	/*ImGui::Begin("enemy");
 	ImGui::Text("On!!!!!!!!!!");
 	ImGui::End();*/
+}
+
+void Enemy::SetCamera(Camera* camera)
+{
+	// まずは ObjectBase 側の処理（camera_ と object3d_ にセット）
+	ObjectBase::SetCamera(camera);
+
+	// パーティクル側にも同じカメラを渡す
+	/*if (particle) {
+		particle->SetCamera(camera);
+	}*/
+
+	// 必要なら武器や他のオブジェクトにもここで渡せる
+	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能
 }
 
 void Enemy::SetAnimationIfChanged(const std::string& name)

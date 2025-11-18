@@ -21,10 +21,16 @@ public:
     /// <param name=\"camera\">FollowCamera（Scene側で生成）</param>
     void Initialize(FollowCamera* camera);
 
+
     /// <summary>
     /// プレイヤーの更新処理
     /// </summary>
     void Update();
+
+    /// <summary>
+    /// 背景スプライト処理
+    /// </summary>
+    void BackGroundDraw();
 
     /// <summary>
     /// 通常描画処理
@@ -32,11 +38,18 @@ public:
     void Draw();
 
     /// <summary>
-    /// スキニングモデル用の描画処理
+    /// 前景スプライト処理
     /// </summary>
-    void SkinningDraw();
+    void ForeGroundDraw();
 
+    /// <summary>
+    /// アニメーションモデル用の描画処理
+    /// </summary>
+    void AnimationDraw();
 
+    /// <summary>
+    /// パーティクル専用の描画処理
+    /// </summary>
     void ParticlDraw();
 
     /// <summary>

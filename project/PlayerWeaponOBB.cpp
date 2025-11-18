@@ -28,7 +28,7 @@ static Vector3 YawOffset(const Vector3& base, float yaw, const Vector3& localOff
 static Vector3 MakeFrontCenter(const Vector3& base, float yaw, float frontDist, float height) {
 	const float c = std::cos(yaw);
 	const float s = std::sin(yaw);
-	const Vector3 forward = { s, 0.0f, c }; // あなたの座標系に合わせてOK
+	const Vector3 forward = { s, 0.0f, c }; //座標系に合わせ
 	return base + forward * frontDist + Vector3{ 0.0f, height, 0.0f };
 }
 
@@ -113,7 +113,7 @@ void PlayerWeaponOBB::Update()
 
 void PlayerWeaponOBB::Draw()
 {
-	//mc_->Draw();
+	mc_->Draw();
 
 	// 弾描画
 	/*for (auto& b : bullets_) {

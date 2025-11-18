@@ -2,6 +2,7 @@
 #include "ObjectBase.h"
 #include "MultiCollider.h"
 #include <memory>
+#include <Sprite.h>
 
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
@@ -31,13 +32,28 @@ public:
 
 	void Update() override;
 
+	/// <summary>
+	/// 背景スプライト処理
+	/// </summary>
+	void BackGroundDraw() override;
+
 	void Draw() override;
 
-	void DrawModel();
-	void SkinningDraw() override;
+	/// <summary>
+	/// 前景スプライト処理
+	/// </summary>
+	void ForeGroundDraw() override;
+
+	void AnimationDraw() override;
+
 	void ParticleDraw() override;
 
 	void OnCollision() override;
+
+	/// <summary>
+	/// カメラをセット
+	/// </summary>
+	void SetCamera(Camera* camera) override;
 
 	Camera* GetCamera() const { return camera_; }
 
@@ -80,5 +96,17 @@ private:
 	int hp_ = 1000;                   // 現在HP
 	const int kMaxHP_ = 1000;         // 最大HP
 	const int kDamagePerHit_ = 10;   // 被弾時のダメージ量
+
+	// === HPバー表示用 ===
+	std::unique_ptr<Sprite> hpBarBG_;    // 背景（薄い色）
+	std::unique_ptr<Sprite> hpBarFill_;  // 本体（現在HPに応じて伸縮）
+	// 配置とサイズ（1280x720想定）
+	float hpBarMaxWidth_ = 420.0f;       // 最大幅
+	float hpBarHeight_ = 20.0f;        // 高さ
+	float hpBarTop_ = 20.0f;        // 画面上端からのオフセット
+
+	bool isDead_ = false;        // 死亡状態かどうか
+	float deathTimer_ = 0.0f;    // 死亡経過時間
+	const float kDeathToTitleDelay_ = 1.5f; // タイトルへ戻るまでの秒数
 };
 

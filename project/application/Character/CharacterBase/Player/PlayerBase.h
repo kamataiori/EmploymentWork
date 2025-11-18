@@ -31,14 +31,24 @@ public:
 	void Update() override;
 
 	/// <summary>
+	/// 背景スプライト処理
+	/// </summary>
+	void BackGroundDraw() override;
+
+	/// <summary>
 	/// 通常のObject専用の描画処理
 	/// </summary>
 	void Draw() override;
 
 	/// <summary>
+	/// 前景スプライト処理
+	/// </summary>
+	void ForeGroundDraw() override;
+
+	/// <summary>
 	/// Skiningのモデル専用の描画処理
 	/// </summary>
-	void SkinningDraw() override;
+	void AnimationDraw() override;
 
 	/// <summary>
 	/// パーティクル専用の描画処理
@@ -51,9 +61,9 @@ public:
 	void OnCollision() override;
 
 	/// <summary>
-	/// 全player共通の動き
+	/// カメラをセット
 	/// </summary>
-	void Move();
+	void SetCamera(Camera* camera) override;
 
 	// モデル変更（切り替え用）
 	void ChangeModel(const char* modelName);
@@ -73,10 +83,28 @@ public:
 	MultiCollider* GetWeaponCollider() {
 		if (!weapon_) return nullptr;
 		if (auto* w = dynamic_cast<PlayerWeaponOBB*>(weapon_.get())) {
-			return w->GetMultiCollider();    // ← 既に実装済みのはず
+			return w->GetMultiCollider();
 		}
 		return nullptr;
 	}
+
+private:
+
+	/// <summary>
+	/// 全player共通の動き
+	/// </summary>
+	void Move();
+
+	/// <summary>
+	/// playerのジャンプ処理
+	/// </summary>
+	void Jump();
+
+	/// <summary>
+	/// playerのブリンク(ダッシュ)処理
+	/// </summary>
+	void Blink();
+
 
 protected:
 
@@ -140,5 +168,10 @@ private:
 	int hp_ = 10000;                     // 現在HP
 	const int kMaxHP_ = 10000;           // 最大HP
 	const int kDamagePerHit_ = 1;     // 1回の衝突ダメージ
+
+
+
+	std::unique_ptr<ParticleManager> particle = std::make_unique<ParticleManager>();
+	std::vector<std::unique_ptr<ParticleEmitter>> emitters;
 };
 

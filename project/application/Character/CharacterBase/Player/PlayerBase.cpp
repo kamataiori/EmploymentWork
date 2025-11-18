@@ -1,10 +1,10 @@
 #include "PlayerBase.h"
 #include "PlayerWeaponOBB.h"
+#include <FollowCamera.h>
 
 #ifdef max
 #undef max
 #endif
-#include <FollowCamera.h>
 #ifdef min
 #undef min
 #endif
@@ -61,6 +61,18 @@ void PlayerBase::Initialize()
 	multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
 	// コールバック登録
 	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
+
+
+	particle->Initialize(ParticleManager::VertexDataType::Plane);
+	particle->CreateParticleGroup("particle", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd);
+	auto emitter = std::make_unique<ParticleEmitter>();
+	emitter->Initialize(
+		particle.get(),
+		"particle",
+		Transform{ {1.0f, 1.0f, 0.0f}, {0.0f,0.0f,0.0f}, {1.0f,4.0f,1.0f} },
+		EmitterConfig{ ShapeType::Plane, 100, 0.5f, true }
+	);
+	emitters.push_back(std::move(emitter));
 }
 
 void PlayerBase::Update()
@@ -118,24 +130,38 @@ void PlayerBase::Update()
 	Sphere& sp = multiCollider_->MutableSphere(0); // MultiCollider 側に MutableSphere(index) がある前提
 	sp.center = colliderTranslate_;
 	sp.radius = sphereRadius_;
+
+
+
+	for (auto& emitter : emitters)
+	{
+		emitter->Update();
+	}
+	particle->Update();
+}
+
+void PlayerBase::BackGroundDraw()
+{
 }
 
 void PlayerBase::Draw()
 {
-	// SphereCollider の描画
-	//SphereCollider::Draw();
-
-	//multiCollider_->Draw();
+	multiCollider_->Draw();
 	weapon_->Draw();
 }
 
-void PlayerBase::SkinningDraw()
+void PlayerBase::ForeGroundDraw()
+{
+}
+
+void PlayerBase::AnimationDraw()
 {
 	object3d_->Draw();
 }
 
 void PlayerBase::ParticleDraw()
 {
+	particle->Draw();
 }
 
 void PlayerBase::OnCollision()
@@ -166,67 +192,8 @@ void PlayerBase::OnCollision()
 	isCollided_ = true;
 }
 
-//void PlayerBase::OnCollision()
-//{
-//	//sphere.color = static_cast<int>(Color::RED);
-//}
-
 void PlayerBase::Move()
 {
-	// -------------------------------
-	// ダッシュ制御：1回だけ発動可能
-	// -------------------------------
-	// クールダウンを減算
-	if (move_.dashCooldown > 0.0f) {
-		move_.dashCooldown -= 1.0f / 60.0f;
-		if (move_.dashCooldown < 0.0f) move_.dashCooldown = 0.0f;
-	}
-
-	// 押下・解放状態
-	const bool dashHeld = Input::GetInstance()->PushMouseButton(1);
-
-	// 接地判定（あなたの地面判定に合わせて微調整OK）
-	const float groundEps = 0.001f;
-	const bool isGrounded = (!jump_.isJumping) && (transform.translate.y <= jump_.kGroundHeight + groundEps);
-
-	// ---- 起動条件：押した・ダッシュ中でない・クールダウン終わり ----
-	if (!move_.isDashing && dashHeld && !move_.isDashKeyHeld_ && move_.dashCooldown <= 0.0f) {
-		move_.isDashing = true;
-		move_.dashTimer = move_.kDashDuration;
-		move_.hasDashed_ = true;
-		move_.isDashKeyHeld_ = true;
-
-		const float yaw = transform.rotate.y;
-		move_.dashDir = Normalize(Vector3{ std::sin(yaw), 0.0f, std::cos(yaw) });
-
-		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
-	}
-
-	// 右クリック解放を検出（次の押下のためのエッジ作り）
-	if (!dashHeld) {
-		move_.isDashKeyHeld_ = false;
-	}
-
-	// ---- ダッシュ中の処理 ----
-	if (move_.isDashing) {
-		move_.dashTimer -= 1.0f / 60.0f;
-		transform.translate.x += move_.dashDir.x * move_.dashSpeed;
-		transform.translate.z += move_.dashDir.z * move_.dashSpeed;
-
-		if (move_.dashTimer <= 0.0f) {
-			move_.isDashing = false;
-			move_.dashTimer = 0.0f;
-			move_.dashCooldown = move_.kDashCooldown;      // ★ 終了後にクールダウン開始
-			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
-		}
-	}
-	else {
-		// ---- 再装填条件：クールダウン終了 ＆ 右クリック離している ＆（できれば接地）----
-		if (move_.dashCooldown <= 0.0f && !dashHeld && isGrounded) {
-			move_.hasDashed_ = false;  // ★ これで2回目以降も使える
-		}
-	}
-
 	// -------------------------------
 	// 入力による左右・前後移動処理
 	// -------------------------------
@@ -288,7 +255,23 @@ void PlayerBase::Move()
 		}
 	}
 
+	// -------------------------------
+	// ジャンプ処理呼出し
+	// -------------------------------
 
+	Jump();
+
+	// -------------------------------
+	// ブリンク(ダッシュ)処理呼出し
+	// -------------------------------
+
+	Blink();
+
+
+}
+
+void PlayerBase::Jump()
+{
 	// ----------------
 	// 二段ジャンプ処理
 	// ----------------
@@ -357,9 +340,79 @@ void PlayerBase::Move()
 	}
 }
 
+void PlayerBase::Blink()
+{
+	// -------------------------------
+	// ダッシュ制御：1回だけ発動可能
+	// -------------------------------
+	// クールダウンを減算
+	if (move_.dashCooldown > 0.0f) {
+		move_.dashCooldown -= 1.0f / 60.0f;
+		if (move_.dashCooldown < 0.0f) move_.dashCooldown = 0.0f;
+	}
+
+	// 押下・解放状態
+	const bool dashHeld = Input::GetInstance()->PushMouseButton(1);
+
+	// 接地判定
+	const float groundEps = 0.001f;
+	const bool isGrounded = (!jump_.isJumping) && (transform.translate.y <= jump_.kGroundHeight + groundEps);
+
+	// ---- 起動条件：押した・ダッシュ中でない・クールダウン終わり ----
+	if (!move_.isDashing && dashHeld && !move_.isDashKeyHeld_ && move_.dashCooldown <= 0.0f) {
+		move_.isDashing = true;
+		move_.dashTimer = move_.kDashDuration;
+		move_.hasDashed_ = true;
+		move_.isDashKeyHeld_ = true;
+
+		const float yaw = transform.rotate.y;
+		move_.dashDir = Normalize(Vector3{ std::sin(yaw), 0.0f, std::cos(yaw) });
+
+		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
+	}
+
+	// 右クリック解放を検出（次の押下のためのエッジ作り）
+	if (!dashHeld) {
+		move_.isDashKeyHeld_ = false;
+	}
+
+	// ---- ダッシュ中の処理 ----
+	if (move_.isDashing) {
+		move_.dashTimer -= 1.0f / 60.0f;
+		transform.translate.x += move_.dashDir.x * move_.dashSpeed;
+		transform.translate.z += move_.dashDir.z * move_.dashSpeed;
+
+		if (move_.dashTimer <= 0.0f) {
+			move_.isDashing = false;
+			move_.dashTimer = 0.0f;
+			move_.dashCooldown = move_.kDashCooldown;      // 終了後にクールダウン開始
+			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
+		}
+	}
+	else {
+		// ---- 再装填条件：クールダウン終了 ＆ 右クリック離している ＆（できれば接地）----
+		if (move_.dashCooldown <= 0.0f && !dashHeld && isGrounded) {
+			move_.hasDashed_ = false;  // これで2回目以降も使える
+		}
+	}
+}
+
+void PlayerBase::SetCamera(Camera* camera)
+{
+	// まずは ObjectBase 側の処理（camera_ と object3d_ にセット）
+	ObjectBase::SetCamera(camera);
+
+	// パーティクル側にも同じカメラを渡す
+	if (particle) {
+		particle->SetCamera(camera);
+	}
+
+	// 必要なら武器や他のオブジェクトにもここで渡せる
+	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能
+}
+
 void PlayerBase::ChangeModel(const char* modelName)
 {
-	//ModelManager::GetInstance()->LoadModel(modelName);
 	object3d_->SetModel(modelName);
 }
 

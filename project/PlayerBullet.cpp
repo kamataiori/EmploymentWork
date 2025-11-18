@@ -61,6 +61,10 @@ void PlayerBullet::Update()
     isCollided_ = false;
 }
 
+void PlayerBullet::BackGroundDraw()
+{
+}
+
 void PlayerBullet::Draw()
 {
     if (IsDead()) return;
@@ -69,7 +73,11 @@ void PlayerBullet::Draw()
     multiCollider_->Draw();
 }
 
-void PlayerBullet::SkinningDraw()
+void PlayerBullet::ForeGroundDraw()
+{
+}
+
+void PlayerBullet::AnimationDraw()
 {
 }
 

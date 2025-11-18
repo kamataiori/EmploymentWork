@@ -99,5 +99,7 @@ private:
 
 	std::unique_ptr<SceneController> stage_;
 
+	std::unique_ptr<Sprite> ex;
+
 };
 

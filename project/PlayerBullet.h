@@ -9,8 +9,16 @@ public:
     // ====== ObjectBase override ======
     void Initialize() override;
     void Update() override;
+    /// <summary>
+    /// 背景スプライト処理
+    /// </summary>
+    void BackGroundDraw() override;
     void Draw() override;
-    void SkinningDraw() override;
+    /// <summary>
+    /// 前景スプライト処理
+    /// </summary>
+    void ForeGroundDraw() override;
+    void AnimationDraw() override;
     void ParticleDraw() override;
     void OnCollision() override;
 
