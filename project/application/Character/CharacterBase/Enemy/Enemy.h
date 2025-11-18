@@ -28,8 +28,14 @@ public:
 
 	Enemy(BaseScene* baseScene_) : ObjectBase(baseScene_) {}
 
+	/// <summary>
+	/// 初期化処理
+	/// </summary>
 	void Initialize() override;
 
+	/// <summary>
+	/// 更新処理
+	/// </summary>
 	void Update() override;
 
 	/// <summary>
@@ -37,6 +43,9 @@ public:
 	/// </summary>
 	void BackGroundDraw() override;
 
+	/// <summary>
+	/// 通常のObject専用の描画処理
+	/// </summary>
 	void Draw() override;
 
 	/// <summary>
@@ -44,10 +53,19 @@ public:
 	/// </summary>
 	void ForeGroundDraw() override;
 
+	/// <summary>
+	/// Skiningのモデル専用の描画処理
+	/// </summary>
 	void AnimationDraw() override;
 
+	/// <summary>
+	/// パーティクル専用の描画処理
+	/// </summary>
 	void ParticleDraw() override;
 
+	/// <summary>
+	/// 当たり判定の呼出し
+	/// </summary>
 	void OnCollision() override;
 
 	/// <summary>
