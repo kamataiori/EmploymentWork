@@ -31,10 +31,12 @@ void GamePlayScene::Initialize()
 	followCamera->SetFarClip(2000.0f);
 
 	player_->Initialize(followCamera.get());
+	player_->Get()->SetCamera(followCamera.get());
 	/*followCamera->SetTarget(player_->Get());*/
 
 	enemy_->Initialize();
 	enemy_->SetCamera(followCamera.get());
+	enemy_->SetTargetTransform(&player_->Get()->GetTransform());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 
@@ -63,6 +65,9 @@ void GamePlayScene::Initialize()
 
 	AddRightDockWindow(kWindowName_MonsterControl);
 
+	ex = std::make_unique<Sprite>();
+	ex->Initialize("Resources/exp.png");
+	ex->SetPosition({ 0.0f,100.0f });
 }
 
 void GamePlayScene::Finalize()
@@ -80,6 +85,8 @@ void GamePlayScene::Update()
 	player_->Update();
 	enemy_->Update();
 
+	ex->Update();
+
 	// カメラの更新
 	camera1->Update();
 	followCamera->Update();
@@ -89,6 +96,9 @@ void GamePlayScene::Update()
 	}
 
 	collisionManager_->RegisterCollider(player_->Get()->GetMultiCollider());
+	if (auto* wcol = player_->Get()->GetWeaponCollider()) {
+		collisionManager_->RegisterCollider(wcol);
+	}
 	collisionManager_->RegisterCollider(enemy_->GetMultiCollider());
 	//collisionMAnager_->RegisterCollider(player_->Get()->GetCollider());
 	//collisionMAnager_->RegisterCollider(enemy_.get());
@@ -130,7 +140,8 @@ void GamePlayScene::BackGroundDraw()
 	// ここからSprite個々の背景描画
 	// ================================================
 
-	
+	player_->BackGroundDraw();
+	enemy_->BackGroundDraw();
 
 	// ================================================
 	// ここまでSprite個々の背景描画
@@ -150,10 +161,11 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	sky->Draw();
+	//sky->Draw();
 	ground->Draw();
 	player_->Draw();
 	enemy_->Draw();
+	
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
@@ -167,8 +179,8 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	player_->SkinningDraw();
-	enemy_->DrawModel();
+	player_->AnimationDraw();
+	enemy_->AnimationDraw();
 	
 
 	// ================================================
@@ -195,7 +207,9 @@ void GamePlayScene::ForeGroundDraw()
 	// ここからSprite個々の前景描画(UIなど)
 	// ================================================
 
-	
+	ex->Draw();
+	player_->ForeGroundDraw();
+	enemy_->ForeGroundDraw();
 
 	// ================================================
 	// ここまでSprite個々の前景描画(UIなど)
@@ -206,6 +220,7 @@ void GamePlayScene::ForeGroundDraw()
 	// ================================================
 
 	player_->ParticlDraw();
+	enemy_->ParticleDraw();
 
 	// ================================================
 	// ここまでparticle個々の描画

@@ -1,5 +1,6 @@
 #include "PlayerBase.h"
 #include "PlayerWeaponOBB.h"
+#include <FollowCamera.h>
 
 #ifdef max
 #undef max
@@ -7,6 +8,12 @@
 #ifdef min
 #undef min
 #endif
+
+static float WrapPi(float a) {
+	while (a > std::numbers::pi_v<float>) a -= 2.0f * std::numbers::pi_v<float>;
+	while (a < -std::numbers::pi_v<float>) a += 2.0f * std::numbers::pi_v<float>;
+	return a;
+}
 
 void PlayerBase::Initialize()
 {
@@ -54,6 +61,18 @@ void PlayerBase::Initialize()
 	multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
 	// コールバック登録
 	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
+
+
+	particle->Initialize(ParticleManager::VertexDataType::Plane);
+	particle->CreateParticleGroup("particle", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd);
+	auto emitter = std::make_unique<ParticleEmitter>();
+	emitter->Initialize(
+		particle.get(),
+		"particle",
+		Transform{ {1.0f, 1.0f, 0.0f}, {0.0f,0.0f,0.0f}, {1.0f,4.0f,1.0f} },
+		EmitterConfig{ ShapeType::Plane, 100, 0.5f, true }
+	);
+	emitters.push_back(std::move(emitter));
 }
 
 void PlayerBase::Update()
@@ -76,21 +95,22 @@ void PlayerBase::Update()
 		weapon_->Update();
 		weapon_->NormalAttack();
 		weapon_->Skill();
+		weapon_->Ultimate();
 	}
 
-	ImGui::Begin("player");
-	ImGui::DragFloat3("translate", &transform.translate.x);
-	ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
-	ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 10.0f);
+	//ImGui::Begin("player");
+	//ImGui::DragFloat3("translate", &transform.translate.x);
+	//ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
+	//ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 10.0f);
 
-	// 当たり判定の可視化
-	if (isCollided_) {
-		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Hit! (Collision Detected)");
-	}
-	else {
-		ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No Collision");
-	}
-	ImGui::End();
+	//// 当たり判定の可視化
+	//if (isCollided_) {
+	//	ImGui::TextColored(ImVec4(1, 0, 0, 1), "Hit! (Collision Detected)");
+	//}
+	//else {
+	//	ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No Collision");
+	//}
+	//ImGui::End();
 
 	// --- 当たり判定の中心を更新 ---
 	colliderTranslate_ = transform.translate + colliderOffset_;
@@ -110,131 +130,124 @@ void PlayerBase::Update()
 	Sphere& sp = multiCollider_->MutableSphere(0); // MultiCollider 側に MutableSphere(index) がある前提
 	sp.center = colliderTranslate_;
 	sp.radius = sphereRadius_;
+
+
+
+	for (auto& emitter : emitters)
+	{
+		emitter->Update();
+	}
+	particle->Update();
+}
+
+void PlayerBase::BackGroundDraw()
+{
 }
 
 void PlayerBase::Draw()
 {
-	// SphereCollider の描画
-	//SphereCollider::Draw();
-
 	multiCollider_->Draw();
+	weapon_->Draw();
 }
 
-void PlayerBase::SkinningDraw()
+void PlayerBase::ForeGroundDraw()
+{
+}
+
+void PlayerBase::AnimationDraw()
 {
 	object3d_->Draw();
 }
 
 void PlayerBase::ParticleDraw()
 {
+	particle->Draw();
 }
 
 void PlayerBase::OnCollision()
 {
+	// ====== HP減少処理 ======
+	hp_ -= kDamagePerHit_;
+	if (hp_ < 0) hp_ = 0;
+
+	// ====== HPチェック ======
+	if (hp_ <= 0) {
+		// 死亡アニメーション
+		//PlayAnimKey(PlayerAnimKey::Death);
+
+		object3d_->SetAnimationOneShot("Death");
+
+		//// デバッグ出力
+		//ImGui::Begin("Player HP");
+		//ImGui::TextColored(ImVec4(1, 0, 0, 1), "Player Died! HP = 0");
+		//ImGui::End();
+
+		return; // 死亡時はここで抜けて以降の処理を止める
+	}
+
+	// ====== 被弾時アニメーション（生存時のみ） ======
+	PlayAnimKey(PlayerAnimKey::Hit2);
+
 	// 当たった時にフラグON
 	isCollided_ = true;
 }
 
-//void PlayerBase::OnCollision()
-//{
-//	//sphere.color = static_cast<int>(Color::RED);
-//}
-
 void PlayerBase::Move()
 {
-	// -------------------------------
-	// ダッシュ制御：1回だけ発動可能
-	// -------------------------------
-	// Bキーを初めて押した瞬間だけダッシュ許可（空中でも可）
-	if (!move_.isDashKeyHeld_ && Input::GetInstance()->PushKey(DIK_B) && !move_.hasDashed_) {
-		move_.isDashing = true;
-		move_.dashTimer = move_.kDashDuration;
-		move_.hasDashed_ = true;
-		move_.isDashKeyHeld_ = true;
-	}
-
-	// Bキーを離したら、次の押下を受付可能にする
-	if (!Input::GetInstance()->PushKey(DIK_B)) {
-		move_.isDashKeyHeld_ = false;
-	}
-
-	// ダッシュ中タイマー処理
-	if (move_.isDashing) {
-		//SetAnimationIfChanged(animation_.Roll);
-		move_.dashTimer -= 1.0f / 60.0f; // フレーム単位で減算（60FPS想定）
-		if (move_.dashTimer <= 0.0f) {
-			move_.isDashing = false;
-			move_.dashTimer = 0.0f;
-		}
-		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
-	}
-	else {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
-	}
-
 	// -------------------------------
 	// 入力による左右・前後移動処理
 	// -------------------------------
 	// -------------------------------
 	// WASD入力による方向ベクトル計算
 	// -------------------------------
-	move_.direction = { 0.0f, 0.0f, 0.0f };
-
-	bool isMoving = false;
-
-	if (Input::GetInstance()->PushKey(DIK_W)) {
-		move_.direction.z += 1.0f;
-		isMoving = true;
+	
+	// 1) カメラのヨー角（FollowCamera想定）
+	float camYaw = 0.0f;
+	if (auto fc = dynamic_cast<FollowCamera*>(camera_)) {
+		camYaw = fc->GetAngle(); // カメラの“後ろ向き”角
 	}
-	if (Input::GetInstance()->PushKey(DIK_S)) {
-		move_.direction.z -= 1.0f;
-		isMoving = true;
-	}
-	if (Input::GetInstance()->PushKey(DIK_A)) {
-		move_.direction.x -= 1.0f;
-		isMoving = true;
-	}
-	if (Input::GetInstance()->PushKey(DIK_D)) {
-		move_.direction.x += 1.0f;
-		isMoving = true;
-	}
+	// カメラ正面（プレイヤーが向くべき前）は angle + π
+	const float playerFaceYaw = camYaw + std::numbers::pi_v<float>;
 
-	// 正規化してプレイヤーの向きに合わせた移動に変換
-	if (Length(move_.direction) > 0.0f) {
-		move_.direction = Normalize(move_.direction);
-		float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
+	// 2) カメラ基底ベクトル（XZ）
+	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
+	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f, std::sin(camYaw) };
 
-		// Y軸の回転行列を生成（プレイヤーの向きに応じた回転）
-		Matrix4x4 rotY = MakeRotateYMatrix(transform.rotate.y);
+	// 3) WASDをカメラ相対で合成（D=+Right / A=-Right）
+	Vector3 wishDir = { 0,0,0 };
+	if (Input::GetInstance()->PushKey(DIK_W)) wishDir += cameraForwardXZ;
+	if (Input::GetInstance()->PushKey(DIK_S)) wishDir -= cameraForwardXZ;
+	if (Input::GetInstance()->PushKey(DIK_D)) wishDir += cameraRightXZ;
+	if (Input::GetInstance()->PushKey(DIK_A)) wishDir -= cameraRightXZ;
 
-		// 入力方向ベクトルをプレイヤーの向きに回転
-		Vector3 rotatedDir = TransformVector(move_.direction, rotY);
+	bool isMoving = (Length(wishDir) > 0.0001f);
+	if (isMoving) wishDir = Normalize(wishDir);
 
-		// 回転後の方向に沿って移動
-		transform.translate.x += rotatedDir.x * currentSpeed;
-		transform.translate.z += rotatedDir.z * currentSpeed;
-	}
-
-	/*const auto& anim = GetAnimation();
-
+	// 4) 移動
+	const float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
 	if (isMoving) {
-		SetAnimationIfChanged(anim.Run_Weapon);
+		transform.translate.x += wishDir.x * currentSpeed;
+		transform.translate.z += wishDir.z * currentSpeed;
 	}
-	else {
-		SetAnimationIfChanged(anim.Idle);
-	}*/
 
-	//if (animCtrl_) {
-	//	if (!IsAnimLocked()) { // ★攻撃などでロック中は移動アニメを出さない
-	//		if (isMoving) {
-	//			RequestAnimKey(PlayerAnimKey::RunWeapon, 0);   // 優先度0
-	//		}
-	//		else {
-	//			RequestAnimKey(PlayerAnimKey::Idle, 0);        // 優先度0
-	//		}
-	//	}
-	//}
+	// 5) 目標ヨー角：移動中は移動方向、停止中はカメラ正面
+	const float targetYaw = isMoving
+		? std::atan2(wishDir.x, wishDir.z)
+		: playerFaceYaw;
 
+	// 6) スムーズ回転（最短角＆角速度クランプ）
+	const float curYaw = transform.rotate.y;
+	float deltaYaw = WrapPi(targetYaw - curYaw);
+	const float turnSpeed = 2.5f;
+	const float turnRate = std::numbers::pi_v<float> * turnSpeed; // 180deg/s（好みで調整可）
+	const float dt = 1.0f / 60.0f;              // 可変フレームなら実Δtを使う
+	const float maxStep = turnRate * dt;
+
+	if (deltaYaw > maxStep) deltaYaw = maxStep;
+	if (deltaYaw < -maxStep) deltaYaw = -maxStep;
+	transform.rotate.y = curYaw + deltaYaw;
+
+	// 7) アニメ（ロック中は移動アニメ出さない）
 	if (animCtrl_) {
 		if (!IsAnimLocked()) {
 			if (isMoving)  RequestAnimKey(PlayerAnimKey::RunWeapon, 0);
@@ -242,7 +255,23 @@ void PlayerBase::Move()
 		}
 	}
 
+	// -------------------------------
+	// ジャンプ処理呼出し
+	// -------------------------------
 
+	Jump();
+
+	// -------------------------------
+	// ブリンク(ダッシュ)処理呼出し
+	// -------------------------------
+
+	Blink();
+
+
+}
+
+void PlayerBase::Jump()
+{
 	// ----------------
 	// 二段ジャンプ処理
 	// ----------------
@@ -311,9 +340,79 @@ void PlayerBase::Move()
 	}
 }
 
+void PlayerBase::Blink()
+{
+	// -------------------------------
+	// ダッシュ制御：1回だけ発動可能
+	// -------------------------------
+	// クールダウンを減算
+	if (move_.dashCooldown > 0.0f) {
+		move_.dashCooldown -= 1.0f / 60.0f;
+		if (move_.dashCooldown < 0.0f) move_.dashCooldown = 0.0f;
+	}
+
+	// 押下・解放状態
+	const bool dashHeld = Input::GetInstance()->PushMouseButton(1);
+
+	// 接地判定
+	const float groundEps = 0.001f;
+	const bool isGrounded = (!jump_.isJumping) && (transform.translate.y <= jump_.kGroundHeight + groundEps);
+
+	// ---- 起動条件：押した・ダッシュ中でない・クールダウン終わり ----
+	if (!move_.isDashing && dashHeld && !move_.isDashKeyHeld_ && move_.dashCooldown <= 0.0f) {
+		move_.isDashing = true;
+		move_.dashTimer = move_.kDashDuration;
+		move_.hasDashed_ = true;
+		move_.isDashKeyHeld_ = true;
+
+		const float yaw = transform.rotate.y;
+		move_.dashDir = Normalize(Vector3{ std::sin(yaw), 0.0f, std::cos(yaw) });
+
+		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
+	}
+
+	// 右クリック解放を検出（次の押下のためのエッジ作り）
+	if (!dashHeld) {
+		move_.isDashKeyHeld_ = false;
+	}
+
+	// ---- ダッシュ中の処理 ----
+	if (move_.isDashing) {
+		move_.dashTimer -= 1.0f / 60.0f;
+		transform.translate.x += move_.dashDir.x * move_.dashSpeed;
+		transform.translate.z += move_.dashDir.z * move_.dashSpeed;
+
+		if (move_.dashTimer <= 0.0f) {
+			move_.isDashing = false;
+			move_.dashTimer = 0.0f;
+			move_.dashCooldown = move_.kDashCooldown;      // 終了後にクールダウン開始
+			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
+		}
+	}
+	else {
+		// ---- 再装填条件：クールダウン終了 ＆ 右クリック離している ＆（できれば接地）----
+		if (move_.dashCooldown <= 0.0f && !dashHeld && isGrounded) {
+			move_.hasDashed_ = false;  // これで2回目以降も使える
+		}
+	}
+}
+
+void PlayerBase::SetCamera(Camera* camera)
+{
+	// まずは ObjectBase 側の処理（camera_ と object3d_ にセット）
+	ObjectBase::SetCamera(camera);
+
+	// パーティクル側にも同じカメラを渡す
+	if (particle) {
+		particle->SetCamera(camera);
+	}
+
+	// 必要なら武器や他のオブジェクトにもここで渡せる
+	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能
+}
+
 void PlayerBase::ChangeModel(const char* modelName)
 {
-	//ModelManager::GetInstance()->LoadModel(modelName);
 	object3d_->SetModel(modelName);
 }
 

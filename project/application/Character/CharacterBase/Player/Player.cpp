@@ -50,6 +50,11 @@ void Player::Update() {
     }
 }
 
+void Player::BackGroundDraw()
+{
+    currentPlayer_->BackGroundDraw();
+}
+
 void Player::Draw() {
     
     if (currentPlayer_) {
@@ -57,10 +62,15 @@ void Player::Draw() {
     }
 }
 
-void Player::SkinningDraw() {
+void Player::ForeGroundDraw()
+{
+    currentPlayer_->ForeGroundDraw();
+}
+
+void Player::AnimationDraw() {
     
     if (currentPlayer_) {
-        currentPlayer_->SkinningDraw();
+        currentPlayer_->AnimationDraw();
     }
 }
 

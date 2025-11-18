@@ -88,7 +88,7 @@ void Object3d::Draw()
     }
 
     // 骨（スケルトン）を描画
-    DrawSkeleton();
+    //DrawSkeleton();
 }
 
 void Object3d::DrawSkeleton()

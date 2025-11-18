@@ -34,19 +34,29 @@ public:
     virtual void Update() = 0;
 
     /// <summary>
+    /// 背景スプライト描画処理
+    /// </summary>
+    virtual void BackGroundDraw() = 0;
+
+    /// <summary>
     /// 通常のObject専用の描画処理
     /// </summary>
     virtual void Draw() = 0;
 
     /// <summary>
-    /// Skiningのモデル専用の描画処理
+    /// 前景スプライト描画
     /// </summary>
-    virtual void SkinningDraw() = 0;
+    virtual void ForeGroundDraw() = 0;
 
     /// <summary>
     /// パーティクル専用の描画処理
     /// </summary>
     virtual void ParticleDraw() = 0;
+
+    /// <summary>
+    /// Skiningのモデル専用の描画処理
+    /// </summary>
+    virtual void AnimationDraw() = 0;
 
     /// <summary>
     /// 当たり判定の呼出し
@@ -67,10 +77,12 @@ public:
     void SetScale(const Vector3& t) { transform.scale = t; }
 
     // Cameraをセット
-    void SetCamera(Camera* camera) {
+    virtual void SetCamera(Camera* camera) {
         camera_ = camera;
         object3d_->SetCamera(camera);
     }
+
+    Camera* GetCamera() const { return camera_; }
 
     // SetColliderをセット
     //void SetCollider(MultiCollider* collider) { multiCollider_.get() = collider; }
