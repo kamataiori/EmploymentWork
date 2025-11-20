@@ -1,5 +1,8 @@
 #include "WinApp.h"
+
+#ifdef USE_IMGUI
 #include <externals/imgui/imgui_impl_win32.cpp>
+#endif // USE_IMGUI
 
 #pragma comment(lib,"winmm.lib")
 
