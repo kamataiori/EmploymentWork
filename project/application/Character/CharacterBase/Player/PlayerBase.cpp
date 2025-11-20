@@ -62,6 +62,22 @@ void PlayerBase::Initialize()
 	// コールバック登録
 	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
 
+	// === HPバー初期化（Player 左下） ===
+	hpBarBG_ = std::make_unique<Sprite>();
+	hpBarFill_ = std::make_unique<Sprite>();
+
+	hpBarBG_->Initialize("Resources/hp.png");
+	hpBarFill_->Initialize("Resources/hp.png");
+
+	// 背景は少し暗め
+	hpBarBG_->SetColor({ 0.2f, 0.2f, 0.2f, 0.8f });
+	// 本体は白（テクスチャ色そのまま）
+	hpBarFill_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+
+	// 左下に固定したいのでアンカーポイントを「左下 (0,1)」にしておく
+	hpBarBG_->SetAnchorPoint({ 0.0f, 1.0f });
+	hpBarFill_->SetAnchorPoint({ 0.0f, 1.0f });
+
 
 	particle->Initialize(ParticleManager::VertexDataType::Plane);
 	particle->CreateParticleGroup("particle", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd);
@@ -132,6 +148,30 @@ void PlayerBase::Update()
 	sp.radius = sphereRadius_;
 
 
+	// === HPバー更新 ===
+	if (hpBarBG_ && hpBarFill_) {
+		const float ratio =
+			(kMaxHP_ > 0) ? std::clamp(hp_ / float(kMaxHP_), 0.0f, 1.0f) : 0.0f;
+
+		const float winW = 1280.0f;
+		const float winH = 720.0f;
+
+		const float maxW = hpBarMaxWidth_;
+		const float curW = maxW * ratio;
+		const float left = hpBarMarginLeft_;
+		const float bottom = winH - hpBarMarginBottom_;
+
+		// 背景は常に最大幅
+		hpBarBG_->SetSize({ maxW, hpBarHeight_ });
+		hpBarBG_->SetPosition({ left, bottom });
+		hpBarBG_->Update();
+
+		// 本体は現在HPに応じた幅
+		hpBarFill_->SetSize({ curW, hpBarHeight_ });
+		hpBarFill_->SetPosition({ left, bottom });
+		hpBarFill_->Update();
+	}
+
 
 	for (auto& emitter : emitters)
 	{
@@ -152,6 +192,11 @@ void PlayerBase::Draw()
 
 void PlayerBase::ForeGroundDraw()
 {
+	// === HPバー描画（左下） ===
+	if (hpBarBG_ && hpBarFill_) {
+		hpBarBG_->Draw();
+		hpBarFill_->Draw();
+	}
 }
 
 void PlayerBase::AnimationDraw()
@@ -161,11 +206,16 @@ void PlayerBase::AnimationDraw()
 
 void PlayerBase::ParticleDraw()
 {
-	particle->Draw();
+	//particle->Draw();
 }
 
 void PlayerBase::OnCollision()
 {
+	// 相手が敵でなければ何もしない（武器や弾との衝突を無視）
+	/*if (other->GetTypeID() != (uint32_t)CollisionTypeIdDef::kEnemy) {
+		return;
+	}*/
+
 	// ====== HP減少処理 ======
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;

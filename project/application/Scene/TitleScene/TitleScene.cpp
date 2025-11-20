@@ -476,7 +476,7 @@ void TitleScene::ForeGroundDraw()
 
 void TitleScene::Debug()
 {
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 
 	if (!IsDockedImGuiEnabled()) return;
 

@@ -280,7 +280,7 @@ void ParticleEditorScene::ForeGroundDraw()
 
 void ParticleEditorScene::Debug()
 {
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 	if (!IsDockedImGuiEnabled()) return;
 
 	ImGui::Begin(kWindowName_Particle);

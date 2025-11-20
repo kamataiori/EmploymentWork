@@ -22,6 +22,8 @@ void UnityScene::Initialize()
 	/*offscreenRendering_ = std::make_unique<OffscreenRendering>();
 	offscreenRendering_->Initialize(PostEffectType::Vignette);*/
 
+#ifdef USE_IMGUI
+
 	// ImGuiスタイルの設定
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImVec4* colors = style.Colors;
@@ -38,6 +40,8 @@ void UnityScene::Initialize()
 	colors[ImGuiCol_Button] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
 	colors[ImGuiCol_ButtonHovered] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
 	colors[ImGuiCol_ButtonActive] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+
+#endif // USE_IMGUI
 
 
 	// 3Dカメラの初期化
@@ -218,7 +222,7 @@ void UnityScene::ForeGroundDraw()
 
 void UnityScene::Debug()
 {
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 
 	if (!IsDockedImGuiEnabled()) return;
 

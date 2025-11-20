@@ -2,7 +2,6 @@
 #include "ObjectBase.h"
 #include "MultiCollider.h"
 #include <memory>
-#include <Sprite.h>
 
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
@@ -125,6 +124,20 @@ private:
 
 	bool isDead_ = false;        // 死亡状態かどうか
 	float deathTimer_ = 0.0f;    // 死亡経過時間
-	const float kDeathToTitleDelay_ = 1.5f; // タイトルへ戻るまでの秒数
+	const float kDeathToTitleDelay_ = 5.5f; // タイトルへ戻るまでの秒数
+
+	// 死亡時のスケール（ここから 0 まで縮小していく）
+	Vector3 deathStartScale_{ 1.0f, 1.0f, 1.0f };
+	// 爆破エフェクトをすでに出したかどうか
+	bool hasSpawnedExplosion_ = false;
+
+	Vector3 explosionPos = {};
+
+	// 死亡エフェクト用パーティクル
+	std::unique_ptr<ParticleManager> particle = std::make_unique<ParticleManager>();
+	std::vector<std::unique_ptr<ParticleEmitter>> emitters;
+
+	std::unique_ptr<ParticleManager> particle2 = std::make_unique<ParticleManager>();
+	std::vector<std::unique_ptr<ParticleEmitter>> emitters2;
 };
 

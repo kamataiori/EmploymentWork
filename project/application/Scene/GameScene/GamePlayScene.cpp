@@ -37,6 +37,7 @@ void GamePlayScene::Initialize()
 	enemy_->Initialize();
 	enemy_->SetCamera(followCamera.get());
 	enemy_->SetTargetTransform(&player_->Get()->GetTransform());
+	enemy_->SetCamera(followCamera.get());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 

@@ -1,4 +1,6 @@
 #pragma once
+#ifdef USE_IMGUI
+
 #include "WinApp.h"
 #include <memory>
 #include "DirectXCommon.h"
@@ -37,3 +39,4 @@ private:
 	uint32_t srvIndex;
 };
 
+#endif // USE_IMGUI

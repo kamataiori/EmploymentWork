@@ -1,7 +1,13 @@
 #include "Framework.h"
 #include "SceneFactory.h"
-#include "ImGuiManager.h"
 #include "GlobalVariables.h"
+
+#ifdef USE_IMGUI
+
+#include "ImGuiManager.h"
+
+#endif // USE_IMGUI
+
 #include <deque>
 
 class MyGame : public Framework
@@ -43,7 +49,11 @@ public:
 
 private:
 
+#ifdef USE_IMGUI
+
 	std::unique_ptr<ImGuiManager> imGuiManager_ = nullptr;
+
+#endif // USE_IMGUI
 
 	//std::unique_ptr<OffscreenRendering> offscreenRendering = std::make_unique<OffscreenRendering>();
 	//std::unique_ptr<PostEffect> postEffect = std::make_unique<PostEffect>();
