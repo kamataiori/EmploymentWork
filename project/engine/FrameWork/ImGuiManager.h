@@ -1,5 +1,5 @@
 #pragma once
-#ifdef DEBUG
+#ifdef USE_IMGUI
 
 #include "WinApp.h"
 #include <memory>
@@ -39,4 +39,4 @@ private:
 	uint32_t srvIndex;
 };
 
-#endif // DEBUG
+#endif // USE_IMGUI

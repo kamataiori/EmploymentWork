@@ -1,11 +1,11 @@
 #include "MyGame.h"
 #include <UnityScene.h>
 
-#ifdef DEBUG
+#ifdef USE_IMGUI
 
 #include <externals/imgui/imgui_internal.h>
 
-#endif // DEBUG
+#endif // USE_IMGUI
 
 void MyGame::Initialize()
 {
@@ -18,13 +18,13 @@ void MyGame::Initialize()
 
 	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 
-#ifdef DEBUG
+#ifdef USE_IMGUI
 
 	// ImGuiManagerの初期化
 	imGuiManager_ = std::make_unique<ImGuiManager>();
 	imGuiManager_->Initialize(winApp.get(), DirectXCommon::GetInstance());
 
-#endif // DEBUG
+#endif // USE_IMGUI
 
 	//offscreenRendering->Initialize(PostEffectType::Normal);
 	//postEffect->Initialize(PostEffectType::Normal);
@@ -36,12 +36,12 @@ void MyGame::Initialize()
 
 void MyGame::Finalize()
 {
-#ifdef DEBUG
+#ifdef USE_IMGUI
 
 	// ImGuiの終了処理
 	imGuiManager_->Finalize();
 
-#endif // DEBUG
+#endif // USE_IMGUI
 
 	// 基底クラスの終了処理
 	Framework::Finalize();
@@ -49,14 +49,14 @@ void MyGame::Finalize()
 
 void MyGame::Update()
 {
-#ifdef DEBUG
+#ifdef USE_IMGUI
 
 	// ImGuiのフレーム開始を宣言
 	imGuiManager_->Update();
 
-#endif // DEBUG
+#endif // USE_IMGUI
 
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 
 	//ApplyImGuiStyle();
 
@@ -108,12 +108,12 @@ void MyGame::Update()
 
 	//GlobalVariables::GetInstance()->Update();
 
-#ifdef DEBUG
+#ifdef USE_IMGUI
 
 	// ImGuiの内部コマンドを生成する
 	ImGui::Render();
 
-#endif // DEBUG
+#endif // USE_IMGUI
 
 	auto now = std::chrono::steady_clock::now();
 	std::chrono::duration<float> delta = now - lastFrameTime_;
@@ -182,20 +182,23 @@ void MyGame::Draw()
 	//postEffect->Draw();
 	PostEffectManager::GetInstance()->Draw();
 
-#ifdef DEBUG
+#ifdef USE_IMGUI
 
 	// ImGuiの描画 (スワップチェーンに対して)
 	imGuiManager_->Draw();
 
-#endif // DEBUG
+#endif // USE_IMGUI
 
 	// スワップチェーンの描画後処理
 	dxCommon->PostDraw();
 }
 
-#ifdef DEBUG
-
 void MyGame::ApplyImGuiStyle() {
+
+#ifdef USE_IMGUI
+
+
+
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImVec4* colors = style.Colors;
 
@@ -211,10 +214,15 @@ void MyGame::ApplyImGuiStyle() {
 	colors[ImGuiCol_Button] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
 	colors[ImGuiCol_ButtonHovered] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
 	colors[ImGuiCol_ButtonActive] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+#endif // USE_IMGUI
 }
 
 void MyGame::DrawUnityLayout()
 {
+#ifdef USE_IMGUI
+
+
+
 	ImGuiWindowFlags windowFlags =
 		ImGuiWindowFlags_MenuBar |
 		ImGuiWindowFlags_NoTitleBar |
@@ -325,19 +333,25 @@ void MyGame::DrawUnityLayout()
 	DrawLeftPanels();
 	DrawRightPanels();
 	DrawBottomPanel();
+#endif // USE_IMGUI
 }
 
 void MyGame::DrawCenterPanel()
 {
+#ifdef USE_IMGUI
+
 	ImGui::Begin("SceneView");
 	ImTextureID textureID = (ImTextureID)SrvManager::GetInstance()
 		->GetGPUDescriptorHandle(PostEffectManager::GetInstance()->GetSrvIndex()).ptr;
 	ImGui::Image(textureID, ImGui::GetContentRegionAvail());
 	ImGui::End();
+
+#endif // USE_IMGUI
 }
 
 void MyGame::DrawLeftPanels()
 {
+#ifdef USE_IMGUI
 
 	if (!useUnityLayout_) return;
 
@@ -354,10 +368,14 @@ void MyGame::DrawLeftPanels()
 	//ImGui::Begin("Hierarchy");
 	//ImGui::Text("Hierarchy内容");
 	//ImGui::End();
+
+#endif // USE_IMGUI
 }
 
 void MyGame::DrawRightPanels()
 {
+#ifdef USE_IMGUI
+
 	if (!useUnityLayout_) return;
 
 	/*ImGui::Begin("Inspector");
@@ -367,15 +385,18 @@ void MyGame::DrawRightPanels()
 	/*ImGui::Begin("Debug Info");
 	ImGui::Text("デバッグ情報やFPS");
 	ImGui::End();*/
+
+#endif // USE_IMGUI
 }
 
 void MyGame::DrawBottomPanel()
 {
+#ifdef USE_IMGUI
+
 	if (!useUnityLayout_) return;
 
 	ImGui::Begin("Project / Console");
 	ImGui::Text("プロジェクト・コンソール表示");
 	ImGui::End();
+#endif // USE_IMGUI
 }
-
-#endif // DEBUG

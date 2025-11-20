@@ -105,6 +105,42 @@ void Enemy::Initialize()
 	hpBarBG_->SetAnchorPoint({ 0.0f, 0.5f });
 	hpBarFill_->SetAnchorPoint({ 0.0f, 0.5f });
 
+	// コア爆発（明るい塊）
+	particle->Initialize(ParticleManager::VertexDataType::Plane);
+	particle->CreateParticleGroup(
+		"particle",
+		"Resources/circle.png",
+		ParticleManager::BlendMode::kBlendModeAdd
+	);
+
+	auto emitter = std::make_unique<ParticleEmitter>();
+	emitter->Initialize(
+		particle.get(),
+		"particle",
+		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
+		EmitterConfig{ ShapeType::Plane, 1000, 1.0f, true } // repeat=false
+	);
+	emitters.push_back(std::move(emitter));
+
+
+	// 火花っぽいストリーク
+	particle2->Initialize(ParticleManager::VertexDataType::Plane);
+	particle2->CreateParticleGroup(
+		"particle2",
+		"Resources/gradationLine.png",
+		ParticleManager::BlendMode::kBlendModeAdd
+	);
+
+	auto emitter2 = std::make_unique<ParticleEmitter>();
+	emitter2->Initialize(
+		particle2.get(),
+		"particle2",
+		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
+		EmitterConfig{ ShapeType::Primitive, 100, 1.0f, false } // repeat=false
+	);
+	emitters2.push_back(std::move(emitter2));
+
+
 }
 
 void Enemy::Update()
@@ -124,52 +160,55 @@ void Enemy::Update()
 		}
 	}
 
-	switch (state_) {
-	case RushState::Idle:
-		// 常にプレイヤーへ向く（スムーズ）
-		transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_);
-		stateTimer_ -= 1.0f / 60.0f;
-		if (stateTimer_ <= 0.0f) {
-			// ダッシュへ移行：向いている方向を固定
-			if (target_) {
-				dashDir_ = toTargetXZ;                 // 方向確定（XZ）
-				transform.rotate.y = desiredYaw;       // 顔をピタッと正面へ
+	if (!isDead_) {
+
+		switch (state_) {
+		case RushState::Idle:
+			// 常にプレイヤーへ向く（スムーズ）
+			transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_);
+			stateTimer_ -= 1.0f / 60.0f;
+			if (stateTimer_ <= 0.0f) {
+				// ダッシュへ移行：向いている方向を固定
+				if (target_) {
+					dashDir_ = toTargetXZ;                 // 方向確定（XZ）
+					transform.rotate.y = desiredYaw;       // 顔をピタッと正面へ
+				}
+				else {
+					// ターゲットが無い場合は今の向きで前進
+					dashDir_ = { std::sin(transform.rotate.y), 0.0f, std::cos(transform.rotate.y) };
+				}
+				state_ = RushState::Dash;
+				stateTimer_ = dashTime_;
+				SetAnimationIfChanged(animation_.Run);
 			}
-			else {
-				// ターゲットが無い場合は今の向きで前進
-				dashDir_ = { std::sin(transform.rotate.y), 0.0f, std::cos(transform.rotate.y) };
+			break;
+
+		case RushState::Dash:
+			// 突進（※ 突進中はプレイヤーへ向き直ししない）
+			transform.translate.x += dashDir_.x * dashSpeed_;
+			transform.translate.z += dashDir_.z * dashSpeed_;
+
+			stateTimer_ -= 1.0f / 60.0f;
+			if (stateTimer_ <= 0.0f) {
+				state_ = RushState::Cooldown;
+				stateTimer_ = cooldownTime_;
+				SetAnimationIfChanged(animation_.Idle);
 			}
-			state_ = RushState::Dash;
-			stateTimer_ = dashTime_;
-			SetAnimationIfChanged(animation_.Run);
-		}
-		break;
+			break;
 
-	case RushState::Dash:
-		// 突進（※ 突進中はプレイヤーへ向き直ししない）
-		transform.translate.x += dashDir_.x * dashSpeed_;
-		transform.translate.z += dashDir_.z * dashSpeed_;
-
-		stateTimer_ -= 1.0f / 60.0f;
-		if (stateTimer_ <= 0.0f) {
-			state_ = RushState::Cooldown;
-			stateTimer_ = cooldownTime_;
-			SetAnimationIfChanged(animation_.Idle);
+		case RushState::Cooldown:
+			// 向きだけは緩やかにターゲットへ（次のダッシュ準備）
+			transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_ * 0.6f);
+			stateTimer_ -= 1.0f / 60.0f;
+			if (stateTimer_ <= 0.0f) {
+				state_ = RushState::Idle;
+				stateTimer_ = idleTime_;
+				SetAnimationIfChanged(animation_.Idle);
+			}
+			break;
 		}
-		break;
 
-	case RushState::Cooldown:
-		// 向きだけは緩やかにターゲットへ（次のダッシュ準備）
-		transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_ * 0.6f);
-		stateTimer_ -= 1.0f / 60.0f;
-		if (stateTimer_ <= 0.0f) {
-			state_ = RushState::Idle;
-			stateTimer_ = idleTime_;
-			SetAnimationIfChanged(animation_.Idle);
-		}
-		break;
 	}
-	
 
 	// 当たり判定中心を更新
 	//colliderTranslate_ = transform.translate + colliderOffset_;
@@ -212,20 +251,97 @@ void Enemy::Update()
 	object3d_->SetRotate(transform.rotate);
 	object3d_->Update();
 
-	// 死亡ロック：AI/挙動を完全停止
+#ifdef USE_IMGUI
+
+	ImGui::Begin("Enemy");
+	ImGui::DragFloat3("translate", &transform.translate.x, 0.01f);
+	ImGui::End();
+#endif // USE_IMGUI
+
+
+	// ======== 死亡演出（縮小＋爆破＋タイトル遷移） ========
 	if (isDead_) {
-		deathTimer_ += 1.0f / 60.0f; // Δt があるならそれを使う
+		// 経過時間（固定 60fps 前提）
+		deathTimer_ += 1.0f / 60.0f;
 
-		// 位置/回転/スケールは保持（変えない）
-		object3d_->SetTranslate(transform.translate);
-		object3d_->SetRotate(transform.rotate);
-		object3d_->SetScale(transform.scale);
+		// Death アニメーションを少し見せてから縮小開始
+		const float kShrinkDelay = 0.8f;  // これだけ待ってから縮小
+		const float kShrinkDuration = 1.0f;  // 縮小しきるまでの時間
 
-		// 一定時間後にタイトルへ
+		if (deathTimer_ >= kShrinkDelay) {
+			// 0.0 ～ 1.0 の縮小進行度
+			float t = (deathTimer_ - kShrinkDelay) / kShrinkDuration;
+			if (t < 0.0f) t = 0.0f;
+			if (t > 1.0f) t = 1.0f;
+
+			// deathStartScale_ → 0 へ線形に縮小
+			transform.scale.x = deathStartScale_.x * (1.0f - t);
+			transform.scale.y = deathStartScale_.y * (1.0f - t);
+			transform.scale.z = deathStartScale_.z * (1.0f - t);
+
+			// スケールが 0 になったタイミングで一度だけ爆破
+			if (!hasSpawnedExplosion_ && t >= 1.0f) {
+
+				// 爆発の中心（少し上にオフセットして胸あたり）
+				explosionPos = transform.translate;
+				//explosionPos.y += 1.0f;
+
+				// ---------- コアの爆発（Plane） ----------
+				for (auto& emitter : emitters) {
+					emitter->SetPosition({ explosionPos.x ,explosionPos.y /*+ 3.0f*/,explosionPos.z });
+					emitter->Emit(); // EmitterConfig の count 分だけ一気に出る
+				}
+				// Emit 後に、ParticleManager の setter で見た目を一括調整
+				// グループ名は Initialize で作った "particle"
+				//particle->SetScaleToGroup("particle", { 2.5f, 2.5f, 2.5f });                  // 大きく
+				particle->SetColorToGroup("particle", { 1.0f, 1.0f, 1.0f, 1.0f });           // オレンジ寄り
+				particle->SetLifeTimeToGroup("particle", 1.0f);                               // パッと消える
+
+				// ---------- 線の爆発（Primitive：火花みたいなやつ） ----------
+				for (auto& emitter2 : emitters2) {
+					emitter2->SetPosition(explosionPos);
+					emitter2->Emit();
+				}
+				particle2->SetScaleToGroup("particle2", { 0.2f, 3.0f, 1.0f });                 // 細くて長い線
+				particle2->SetColorToGroup("particle2", { 1.0f, 0.95f, 0.7f, 1.0f });          // 明るい黄色
+				particle2->SetLifeTimeToGroup("particle2", 0.8f);
+				// こっちは勢いを出したいので、上方向に吹き上げる
+				particle2->SetVelocityToGroup("particle2", { 0.0f, 6.0f, 0.0f });
+
+				hasSpawnedExplosion_ = true;
+
+
+			}
+		}
+
+#ifdef USE_IMGUI
+
+				ImGui::Begin("explosionPos");
+				ImGui::DragFloat3("translate", &explosionPos.x, 0.01f);
+				ImGui::End();
+#endif // USE_IMGUI
+
+		// マイナススケールに落ち込まないようにクランプ
+		if (transform.scale.x < 0.0f) transform.scale.x = 0.0f;
+		if (transform.scale.y < 0.0f) transform.scale.y = 0.0f;
+		if (transform.scale.z < 0.0f) transform.scale.z = 0.0f;
+
+		// 毎フレームパーティクルを更新（Emitter は今のまま Update() 引数なし）
+		for (auto& emitter : emitters) {
+			emitter->Update();
+		}
+		particle->Update();
+
+		for (auto& emitter2 : emitters2) {
+			emitter2->Update();
+		}
+		particle2->Update();
+
+		// 一定時間経ったら TITLE へ戻る
 		if (deathTimer_ >= kDeathToTitleDelay_) {
 			SceneManager::GetInstance()->ChangeScene("TITLE");
 		}
-		return; // ここで抜けるので Idle/Dash 等は一切走らない
+		return;
 	}
 
 
@@ -265,7 +381,7 @@ void Enemy::ForeGroundDraw()
 {
 	// === HPバー描画 ===
 	if (hpBarBG_ && hpBarFill_) {
-	
+
 		// 背景 → 本体の順で描画
 		hpBarBG_->Draw();
 		hpBarFill_->Draw();
@@ -279,12 +395,15 @@ void Enemy::AnimationDraw()
 
 void Enemy::ParticleDraw()
 {
+	if (isDead_) {
+
+		particle->Draw();
+		particle2->Draw();
+	}
 }
 
 void Enemy::OnCollision()
 {
-	//if (isDead_) return;
-
 	// ===== HP減少 =====
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
@@ -294,8 +413,16 @@ void Enemy::OnCollision()
 		// 死亡アニメーション（1回再生）
 		object3d_->SetAnimationOneShot(animation_.Death);
 		hitReactTimer_ = 0.0f;
-		isDead_ = true;          // 死亡状態に
-		deathTimer_ = 0.0f;      // カウント開始
+
+		// 死亡ステートに入る
+		isDead_ = true;
+		deathTimer_ = 0.0f;
+
+		// 縮小開始時のスケールを保存しておく
+		deathStartScale_ = transform.scale;
+		// 爆破はまだ
+		hasSpawnedExplosion_ = false;
+
 		return;
 	}
 
@@ -304,10 +431,6 @@ void Enemy::OnCollision()
 		SetAnimationIfChanged(animation_.HitReact);
 		hitReactTimer_ = kHitReactDuration_;
 	}
-
-	/*ImGui::Begin("enemy");
-	ImGui::Text("On!!!!!!!!!!");
-	ImGui::End();*/
 }
 
 void Enemy::SetCamera(Camera* camera)
@@ -316,9 +439,9 @@ void Enemy::SetCamera(Camera* camera)
 	ObjectBase::SetCamera(camera);
 
 	// パーティクル側にも同じカメラを渡す
-	/*if (particle) {
-		particle->SetCamera(camera);
-	}*/
+	particle->SetCamera(camera);
+	particle2->SetCamera(camera);
+
 
 	// 必要なら武器や他のオブジェクトにもここで渡せる
 	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能

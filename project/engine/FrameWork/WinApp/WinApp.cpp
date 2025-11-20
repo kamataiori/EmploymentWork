@@ -1,17 +1,18 @@
 #include "WinApp.h"
+#include <externals/imgui/imgui_impl_win32.cpp>
 
 #pragma comment(lib,"winmm.lib")
 
 LRESULT WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-#ifdef DEBUG
+#ifdef USE_IMGUI
 
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam))
 	{
 		return true;
 	}
 
-#endif // DEBUG
+#endif // USE_IMGUI
 
 	//メッセージに応じてゲーム固有の処理を行う
 	switch (msg)

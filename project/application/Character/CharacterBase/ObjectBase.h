@@ -1,6 +1,7 @@
 #pragma once
 #include "Transform.h"
 #include "Object3d.h"
+#include "Sprite.h"
 #include "MultiCollider.h"
 #include "Input.h"
 #include <PostEffectManager.h>

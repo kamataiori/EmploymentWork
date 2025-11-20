@@ -2,12 +2,11 @@
 #include "SceneFactory.h"
 #include "GlobalVariables.h"
 
-#ifdef DEBUG
+#ifdef USE_IMGUI
 
 #include "ImGuiManager.h"
 
-#endif // DEBUG
-
+#endif // USE_IMGUI
 
 #include <deque>
 
@@ -50,11 +49,11 @@ public:
 
 private:
 
-#ifdef DEBUG
+#ifdef USE_IMGUI
 
 	std::unique_ptr<ImGuiManager> imGuiManager_ = nullptr;
 
-#endif // DEBUG
+#endif // USE_IMGUI
 
 	//std::unique_ptr<OffscreenRendering> offscreenRendering = std::make_unique<OffscreenRendering>();
 	//std::unique_ptr<PostEffect> postEffect = std::make_unique<PostEffect>();

@@ -1,7 +1,6 @@
 #include "ImGuiManager.h"
 
-#ifdef DEBUG
-
+#ifdef USE_IMGUI
 
 #include <externals/imgui/imgui_impl_win32.h>
 #include <SrvManager.h>
@@ -98,4 +97,4 @@ void ImGuiManager::Draw()
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon_->GetCommandList().Get());
 }
 
-#endif // DEBUG
+#endif // USE_IMGUI
