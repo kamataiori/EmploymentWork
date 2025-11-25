@@ -505,7 +505,6 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 #endif // USE_IMGUI
 }
 
-
 bool ParticleManager::SavePresetToJson(const ParticlePreset& preset,
 	const std::string& directory)
 {

@@ -198,19 +198,38 @@ void ParticleEditorScene::Debug()
 			emitPresetName = buf;
 		}
 
+		// === Emit Now ===
 		if (ImGui::Button("Emit Now")) {
 			if (particle) {
 				particle->EmitByPresetName(emitPresetName, emitterTransform);
 			}
 		}
-		ImGui::SameLine();
+
+		// ボタンの説明（少し左に余白を入れて読みやすく）
+		ImGui::Indent(10.0f);
+		ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f),
+			"・現在編集中のプリセットを画面に1回だけ再生します\n"
+			"・保存しなくても見た目をすぐ確認できます");
+		ImGui::Unindent(10.0f);
+
+		// ボタンを同じ行に並べる
+		//ImGui::SameLine();
+
+		// === Reload All Presets ===
 		if (ImGui::Button("Reload All Presets")) {
 			if (particle) {
 				particle->LoadAllPresets();
 			}
 		}
 
-		ImGui::Text("SPACE キーでも現在のプリセットを一度だけ Emit します。");
+		// Reload 説明
+		ImGui::Indent(10.0f);
+		ImGui::TextColored(ImVec4(0.7f, 1.0f, 0.7f, 1.0f),
+			"・Resources/Particle/*.json をすべて読み込み直します\n"
+			"・外部ツールで編集した JSON も反映されます\n"
+			"・プリセット一覧を最新状態に更新します");
+		ImGui::Unindent(10.0f);
+
 	}
 	ImGui::End();
 
