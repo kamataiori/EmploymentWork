@@ -1,6 +1,7 @@
 #include "ParticleEditorScene.h"
 #include <GlobalVariables.h>
 #include <Input.h>
+#include "SceneManager.h"
 
 void ParticleEditorScene::Initialize()
 {
@@ -58,6 +59,11 @@ void ParticleEditorScene::Update()
 	if (particle) {
 		particle->EmitByPresetName(emitPresetName, emitterTransform);
 		particle->Update();
+	}
+
+	if (Input::GetInstance()->TriggerKey(DIK_G)) {
+		// シーン切り替え
+		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 	}
 
 	// デバッグ

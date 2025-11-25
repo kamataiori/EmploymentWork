@@ -105,41 +105,20 @@ void Enemy::Initialize()
 	hpBarBG_->SetAnchorPoint({ 0.0f, 0.5f });
 	hpBarFill_->SetAnchorPoint({ 0.0f, 0.5f });
 
-	// コア爆発（明るい塊）
-	particle->Initialize(ParticleManager::VertexDataType::Plane);
-	particle->CreateParticleGroup(
-		"particle",
-		"Resources/circle.png",
-		ParticleManager::BlendMode::kBlendModeAdd
-	);
+	// -------------------------
+	// 死亡エフェクト用パーティクル（プリセット "fire" を使用）
+	// -------------------------
+	deathParticle_ = std::make_unique<ParticleManager>();
+	deathParticle_->Initialize(ParticleManager::VertexDataType::Plane);
 
-	auto emitter = std::make_unique<ParticleEmitter>();
-	emitter->Initialize(
-		particle.get(),
-		"particle",
-		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
-		EmitterConfig{ ShapeType::Plane, 1000, 1.0f, true } // repeat=false
-	);
-	emitters.push_back(std::move(emitter));
+	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
+	deathParticle_->LoadAllPresets();
 
-
-	// 火花っぽいストリーク
-	particle2->Initialize(ParticleManager::VertexDataType::Plane);
-	particle2->CreateParticleGroup(
-		"particle2",
-		"Resources/gradationLine.png",
-		ParticleManager::BlendMode::kBlendModeAdd
-	);
-
-	auto emitter2 = std::make_unique<ParticleEmitter>();
-	emitter2->Initialize(
-		particle2.get(),
-		"particle2",
-		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
-		EmitterConfig{ ShapeType::Primitive, 100, 1.0f, false } // repeat=false
-	);
-	emitters2.push_back(std::move(emitter2));
-
+	// Emit 時に使う Transform の初期値
+	deathParticleTransform_ = transform;
+	/*deathParticleTransform_.scale = { 1.0f, 1.0f, 1.0f };
+	deathParticleTransform_.rotate = { 0.0f, 0.0f, 0.0f };
+	deathParticleTransform_.translate = { 0.0f, 0.0f, 0.0f };*/
 
 }
 
@@ -286,27 +265,11 @@ void Enemy::Update()
 				explosionPos = transform.translate;
 				//explosionPos.y += 1.0f;
 
-				// ---------- コアの爆発（Plane） ----------
-				for (auto& emitter : emitters) {
-					emitter->SetPosition({ explosionPos.x ,explosionPos.y /*+ 3.0f*/,explosionPos.z });
-					emitter->Emit(); // EmitterConfig の count 分だけ一気に出る
+				 // fire プリセットをこの位置で Emit
+				if (deathParticle_) {
+					deathParticleTransform_.translate = explosionPos;
+					deathParticle_->EmitByPresetName("fire", deathParticleTransform_);
 				}
-				// Emit 後に、ParticleManager の setter で見た目を一括調整
-				// グループ名は Initialize で作った "particle"
-				//particle->SetScaleToGroup("particle", { 2.5f, 2.5f, 2.5f });                  // 大きく
-				particle->SetColorToGroup("particle", { 1.0f, 1.0f, 1.0f, 1.0f });           // オレンジ寄り
-				particle->SetLifeTimeToGroup("particle", 1.0f);                               // パッと消える
-
-				// ---------- 線の爆発（Primitive：火花みたいなやつ） ----------
-				for (auto& emitter2 : emitters2) {
-					emitter2->SetPosition(explosionPos);
-					emitter2->Emit();
-				}
-				particle2->SetScaleToGroup("particle2", { 0.2f, 3.0f, 1.0f });                 // 細くて長い線
-				particle2->SetColorToGroup("particle2", { 1.0f, 0.95f, 0.7f, 1.0f });          // 明るい黄色
-				particle2->SetLifeTimeToGroup("particle2", 0.8f);
-				// こっちは勢いを出したいので、上方向に吹き上げる
-				particle2->SetVelocityToGroup("particle2", { 0.0f, 6.0f, 0.0f });
 
 				hasSpawnedExplosion_ = true;
 
@@ -327,15 +290,10 @@ void Enemy::Update()
 		if (transform.scale.z < 0.0f) transform.scale.z = 0.0f;
 
 		// 毎フレームパーティクルを更新（Emitter は今のまま Update() 引数なし）
-		for (auto& emitter : emitters) {
-			emitter->Update();
+		if (deathParticle_) {
+			deathParticle_->Update();
 		}
-		particle->Update();
 
-		for (auto& emitter2 : emitters2) {
-			emitter2->Update();
-		}
-		particle2->Update();
 
 		// 一定時間経ったら TITLE へ戻る
 		if (deathTimer_ >= kDeathToTitleDelay_) {
@@ -395,10 +353,8 @@ void Enemy::AnimationDraw()
 
 void Enemy::ParticleDraw()
 {
-	if (isDead_) {
-
-		particle->Draw();
-		particle2->Draw();
+	if (isDead_ && deathParticle_) {
+		deathParticle_->Draw();
 	}
 }
 
@@ -439,8 +395,7 @@ void Enemy::SetCamera(Camera* camera)
 	ObjectBase::SetCamera(camera);
 
 	// パーティクル側にも同じカメラを渡す
-	particle->SetCamera(camera);
-	particle2->SetCamera(camera);
+	deathParticle_->SetCamera(camera);
 
 
 	// 必要なら武器や他のオブジェクトにもここで渡せる

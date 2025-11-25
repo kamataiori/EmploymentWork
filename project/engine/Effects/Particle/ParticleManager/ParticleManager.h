@@ -106,6 +106,8 @@ public:
 		Vector4 color = { 1.0f, 1.0f, 1.0f, 1.0f };                         // RGBA
 		bool useBillboard = true;                                           // trueなら常にカメラ目線
 		Vector3 velocity = { 0.0f, 0.0f, 0.0f };                            // velocity
+		Vector3 rotationSpeed = { 0.0f, 0.0f, 0.0f };                       // 回転速度(rad/sec)
+		Vector3 scaleSpeed = { 0.0f, 0.0f, 0.0f };                          // スケール変化速度(/sec)
 	};
 
 #ifdef USE_IMGUI
@@ -216,7 +218,9 @@ private:
 	struct Particle {
 		Transform transform;
 		Vector3 velocity;
-		Vector4 color;
+		Vector3   rotationSpeed{ 0.0f, 0.0f, 0.0f };   // 回転速度(rad/秒)
+		Vector3   scaleSpeed{ 0.0f, 0.0f, 0.0f };      // スケール変化速度(/秒)
+		Vector4   color{ 1.0f, 1.0f, 1.0f, 1.0f };
 		float lifeTime;
 		float currentTime;
 	};
@@ -316,6 +320,12 @@ public:
 
 	// 速度
 	void SetVelocityToGroup(const std::string& groupName, const Vector3& velocity);
+
+	// 回転速度
+	void SetRotationSpeedToGroup(const std::string& groupName, const Vector3& rotationSpeed);
+
+	// スケール速度
+	void SetScaleSpeedToGroup(const std::string& groupName, const Vector3& scaleSpeed);
 
 	// 色
 	void SetColorToGroup(const std::string& groupName, const Vector4& color);

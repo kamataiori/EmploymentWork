@@ -1,12 +1,12 @@
 {
     "blendMode": 2,
     "color": [
-        0.9575289487838745,
-        0.2883678078651428,
+        0.9768339991569519,
+        0.13577614724636078,
         0.0,
         1.0
     ],
-    "count": 90,
+    "count": 97,
     "flipY": false,
     "frequency": 1.0,
     "initialOffset": [
@@ -24,25 +24,25 @@
         1.0,
         1.0
     ],
-    "lifeTime": 2.1600000858306885,
-    "name": "NewParticle",
+    "lifeTime": 2.0999999046325684,
+    "name": "fire",
     "repeat": false,
     "rotationSpeed": [
-        0.6800000071525574,
-        0.7300000190734863,
+        0.0,
+        0.0,
         0.0
     ],
     "scaleSpeed": [
-        -0.14000000059604645,
-        -0.25999999046325684,
-        -0.33000001311302185
+        0.0,
+        0.0,
+        0.0
     ],
-    "textureFilePath": "Resources/ParticleTexture/fire.png",
+    "textureFilePath": "Resources/ParticleTexture/circle.png",
     "useBillboard": true,
     "useRandomPosition": true,
     "velocity": [
         0.0,
-        0.6299999952316284,
+        3.4700000286102295,
         0.0
     ],
     "vertexType": 0

@@ -23,7 +23,10 @@ void to_json(json& j, const ParticleManager::ParticlePreset& p)
 		{"initialOffset", {p.initialOffset.x, p.initialOffset.y, p.initialOffset.z}},
 		{"color",         {p.color.x, p.color.y, p.color.z, p.color.w}},
 		{"useBillboard",  p.useBillboard},
-		{"velocity",      {p.velocity.x, p.velocity.y, p.velocity.z}}
+		{"velocity",      {p.velocity.x,      p.velocity.y,      p.velocity.z}},
+		{"rotationSpeed", {p.rotationSpeed.x, p.rotationSpeed.y, p.rotationSpeed.z}},
+		{"scaleSpeed",    {p.scaleSpeed.x,    p.scaleSpeed.y,    p.scaleSpeed.z}},
+
 	};
 }
 
@@ -72,7 +75,11 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 	// 色とビルボード
 	p.color = readVec4("color", { 1.0f, 1.0f, 1.0f, 1.0f });
 	p.useBillboard = j.value("useBillboard", true);
+	// particle発生後のSRT
 	p.velocity = readVec3("velocity", { 0.0f, 0.0f, 0.0f });
+	p.rotationSpeed = readVec3("rotationSpeed", { 0.0f, 0.0f, 0.0f });
+	p.scaleSpeed = readVec3("scaleSpeed", { 0.0f, 0.0f, 0.0f });
+
 }
 
 
@@ -177,19 +184,49 @@ void ParticleManager::Update()
 			// 位置の更新
 			particle.transform.translate = Add(particle.transform.translate, Multiply(kDeltaTime, particle.velocity));
 
+			// 回転の更新（rad/秒）
+			particle.transform.rotate.x += particle.rotationSpeed.x * kDeltaTime;
+			particle.transform.rotate.y += particle.rotationSpeed.y * kDeltaTime;
+			particle.transform.rotate.z += particle.rotationSpeed.z * kDeltaTime;
+
+			// スケールの更新（/秒）
+			particle.transform.scale.x += particle.scaleSpeed.x * kDeltaTime;
+			particle.transform.scale.y += particle.scaleSpeed.y * kDeltaTime;
+			particle.transform.scale.z += particle.scaleSpeed.z * kDeltaTime;
+
 			// 経過時間を更新
 			particle.currentTime += kDeltaTime;
 
 			// Scale 行列
 			Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);
 
+			// 回転行列
+			Matrix4x4 rotateMatrix = MakeIdentity4x4();
+			if (usebillboardMatrix)
+			{
+				// ビルボード時はZ回転だけを反映（画面上でクルクル回るイメージ）
+				rotateMatrix = MakeRotateZMatrix(particle.transform.rotate.z);
+			}
+			else
+			{
+				// ビルボードを使わない場合はXYZ回転をフルに反映
+				Matrix4x4 rotX = MakeRotateXMatrix(particle.transform.rotate.x);
+				Matrix4x4 rotY = MakeRotateYMatrix(particle.transform.rotate.y);
+				Matrix4x4 rotZ = MakeRotateZMatrix(particle.transform.rotate.z);
+				rotateMatrix = Multiply(rotZ, Multiply(rotY, rotX));
+			}
+
 			// Translate 行列
 			Matrix4x4 translateMatrix = MakeTranslateMatrix(particle.transform.translate);
 
 			// 回転はビルボードに任せるので、particle.transform.rotate は使わない
 			// world = S * Billboard * T
+			/*Matrix4x4 worldMatrix =
+				Multiply(Multiply(scaleMatrix, billboardMatrix), translateMatrix);*/
+
+				// 回転も反映してるorldMatrix
 			Matrix4x4 worldMatrix =
-				Multiply(Multiply(scaleMatrix, billboardMatrix), translateMatrix);
+				Multiply(Multiply(Multiply(scaleMatrix, billboardMatrix), rotateMatrix), translateMatrix);
 
 			// VP を掛ける
 			Matrix4x4 worldviewProjectionMatrix = Multiply(worldMatrix, viewProjectionMatrix);
@@ -316,21 +353,25 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 
 		// Resources 以下からテクスチャ候補を列挙
 		textureList.clear();
-		if (fs::exists("Resources")) {
-			for (auto& entry : fs::recursive_directory_iterator("Resources")) {
+		const std::string textureDir = "Resources/ParticleTexture";
+
+		if (fs::exists(textureDir)) {
+			for (auto& entry : fs::directory_iterator(textureDir)) {
 				if (!entry.is_regular_file()) { continue; }
 				auto ext = entry.path().extension().string();
 				std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 				if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".dds") {
-					// 相対パスにして保存
-					textureList.push_back(entry.path().string());
+					// ファイル名だけを保持する
+					textureList.push_back(entry.path().filename().string());
 				}
 			}
 		}
 		if (!textureList.empty()) {
 			currentTextureIndex = 0;
-			preset.textureFilePath = textureList[0];
+			// JSON に保存するパスは必ず Resources/ParticleTexture/ から始める
+			preset.textureFilePath = "Resources/ParticleTexture/" + textureList[0];
 		}
+
 
 		initialized = true;
 	}
@@ -389,10 +430,34 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 			return true;
 			};
 
-		if (Combo("テクスチャファイル", &currentTextureIndex, getter,
-			(void*)&textureList, (int)textureList.size())) {
-			preset.textureFilePath = textureList[currentTextureIndex];
+		if (!textureList.empty()) {
+			if (currentTextureIndex < 0 || currentTextureIndex >= (int)textureList.size()) {
+				currentTextureIndex = 0;
+			}
+
+			auto getter = [](void* data, int idx, const char** out_text) -> bool {
+				auto* vec = reinterpret_cast<std::vector<std::string>*>(data);
+				if (idx < 0 || idx >= (int)vec->size()) return false;
+				*out_text = (*vec)[idx].c_str();  // filename だけ
+				return true;
+				};
+
+			// Combo を呼ぶ
+			if (ImGui::Combo("テクスチャファイル", &currentTextureIndex, getter,
+				(void*)&textureList, (int)textureList.size())) {
+
+				const std::string fileName = textureList[currentTextureIndex];
+
+				// JSON 用のパスは必ずここにそろえる
+				preset.textureFilePath = "Resources/ParticleTexture/" + fileName;
+			}
 		}
+		else {
+			ImGui::TextColored(ImVec4(1, 0, 0, 1),
+				"Resources/ParticleTexture 以下にテクスチャが見つかりません");
+		}
+
+
 	}
 	else {
 		TextColored(ImVec4(1, 0, 0, 1), "Resources 以下にテクスチャが見つかりません");
@@ -413,6 +478,8 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 	DragFloat3("初期回転(rotate)", &preset.initialRotate.x, 0.01f, -6.28f, 6.28f);
 	DragFloat3("初期場所(translate)", &preset.initialOffset.x, 0.01f, -1000.0f, 1000.0f);
 	DragFloat3("初期速度 (Velocity)", &preset.velocity.x, 0.01f, -1000.0f, 1000.0f);
+	DragFloat3("回転速度(rad/秒)", &preset.rotationSpeed.x, 0.01f, -10.0f, 10.0f);
+	DragFloat3("スケール速度(/秒)", &preset.scaleSpeed.x, 0.01f, -10.0f, 10.0f);
 
 	// 色(RGBA)
 	ColorEdit4("カラー (RGBA)", &preset.color.x);
@@ -489,6 +556,8 @@ bool ParticleManager::SavePresetToJson(const ParticlePreset& preset,
 			SetUseBillboard(preset.useBillboard);
 
 			SetVelocityToGroup(preset.name, preset.velocity);
+			SetRotationSpeedToGroup(preset.name, preset.rotationSpeed);
+			SetScaleSpeedToGroup(preset.name, preset.scaleSpeed);
 		}
 
 		return true;
@@ -600,6 +669,8 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		SetUseBillboard(preset.useBillboard);
 
 		SetVelocityToGroup(groupName, preset.velocity);
+		SetRotationSpeedToGroup(groupName, preset.rotationSpeed);
+		SetScaleSpeedToGroup(groupName, preset.scaleSpeed);
 	}
 	else {
 		// 既にあるグループにも、最新プリセットの値を反映しておく
@@ -608,6 +679,8 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		SetColorToGroup(groupName, preset.color);
 		SetUseBillboard(preset.useBillboard);
 		SetVelocityToGroup(groupName, preset.velocity);
+		SetRotationSpeedToGroup(groupName, preset.rotationSpeed);
+		SetScaleSpeedToGroup(groupName, preset.scaleSpeed);
 	}
 
 	// ---- 呼び出し元の Transform とプリセット値を合成 ----
@@ -649,6 +722,14 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		Logger::Log("ParticleManager::EmitByPresetName : unsupported vertexType in preset -> " + presetName);
 		break;
 	}
+
+	// ここが重要：Emit した「あと」で、プリセット値をグループに反映する
+	SetFlipYToGroup(groupName, preset.flipY);
+	SetLifeTimeToGroup(groupName, preset.lifeTime);
+	SetColorToGroup(groupName, preset.color);
+	SetVelocityToGroup(groupName, preset.velocity);
+	SetRotationSpeedToGroup(groupName, preset.rotationSpeed);
+	SetScaleSpeedToGroup(groupName, preset.scaleSpeed);
 }
 
 
@@ -855,22 +936,30 @@ void ParticleManager::InstancingMaxResource()
 
 ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate)
 {
-	//一様分布生成器を使って乱数を生成
+	// 位置だけランダムにばら撒く
 	std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
-	std::uniform_real_distribution<float> distColor(0.0f, 1.0f);
-	std::uniform_real_distribution<float> distTime(1.0f, 3.0f);
 
-	Particle particle;
+	Particle particle{}; // ゼロ初期化
 
-	particle.transform.scale = { 1.0f,1.0f,1.0f };
-	particle.transform.rotate = { 0.0f,0.0f,0.0f };
-	Vector3 randomTranslate{ distribution(randomEngine),distribution(randomEngine) ,distribution(randomEngine) };
+	particle.transform.scale = { 1.0f, 1.0f, 1.0f };
+	particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
+
+	Vector3 randomTranslate{
+		distribution(randomEngine),
+		distribution(randomEngine),
+		distribution(randomEngine)
+	};
 	particle.transform.translate = Add(translate, randomTranslate);
-	//	particle.transform.translate = { /*index * 0.1f*/distribution(randomEngine),distribution(randomEngine), distribution(randomEngine) };
-	particle.velocity = { distribution(randomEngine),distribution(randomEngine),distribution(randomEngine) };
-	particle.color = { distColor(randomEngine),distColor(randomEngine) ,distColor(randomEngine) ,1.0f };
-	particle.lifeTime = distTime(randomEngine);
-	particle.currentTime = 0;
+
+	// 速度・色・寿命はプリセット側(Set系)で一括設定するので、
+	// ここではデフォルト値だけ入れておく
+	particle.velocity = { 0.0f, 0.0f, 0.0f };
+	particle.rotationSpeed = { 0.0f, 0.0f, 0.0f };
+	particle.scaleSpeed = { 0.0f, 0.0f, 0.0f };
+	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	particle.lifeTime = 1.0f;
+	particle.currentTime = 0.0f;
+
 	return particle;
 }
 
@@ -939,17 +1028,27 @@ void ParticleManager::Emit(const std::string& name, const Transform& transform, 
 	}
 
 	for (uint32_t i = 0; i < count; ++i) {
-		Particle particle;
+		Particle particle{};
+
 		if (useRandomPosition) {
+			// 位置だけランダム
 			particle = MakeNewParticle(randomEngine, transform.translate);
 		}
 		else {
+			// 完全に固定位置で出す
 			particle.transform.translate = transform.translate;
+			particle.transform.scale = { 1.0f, 1.0f, 1.0f };
+			particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
+
 			particle.velocity = { 0.0f, 0.0f, 0.0f };
+			particle.rotationSpeed = { 0.0f, 0.0f, 0.0f };
+			particle.scaleSpeed = { 0.0f, 0.0f, 0.0f };
 			particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 			particle.lifeTime = 1.0f;
-			particle.currentTime = 0;
+			particle.currentTime = 0.0f;
 		}
+
+		// Emit 引数側のスケール／回転を上書き
 		particle.transform.scale = transform.scale;
 		particle.transform.rotate = transform.rotate;
 
@@ -1052,6 +1151,26 @@ void ParticleManager::SetVelocityToGroup(const std::string& groupName, const Vec
 
 	for (auto& particle : it->second.particleList) {
 		particle.velocity = velocity;
+	}
+}
+
+void ParticleManager::SetRotationSpeedToGroup(const std::string& groupName, const Vector3& rotationSpeed)
+{
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+
+	for (auto& particle : it->second.particleList) {
+		particle.rotationSpeed = rotationSpeed;
+	}
+}
+
+void ParticleManager::SetScaleSpeedToGroup(const std::string& groupName, const Vector3& scaleSpeed)
+{
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+
+	for (auto& particle : it->second.particleList) {
+		particle.scaleSpeed = scaleSpeed;
 	}
 }
 
