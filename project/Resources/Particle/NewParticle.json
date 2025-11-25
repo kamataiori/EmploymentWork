@@ -1,0 +1,39 @@
+{
+    "blendMode": 2,
+    "color": [
+        1.0,
+        0.09266406297683716,
+        0.0,
+        1.0
+    ],
+    "count": 106,
+    "flipY": false,
+    "frequency": 2.049999952316284,
+    "initialOffset": [
+        0.0,
+        0.0,
+        0.0
+    ],
+    "initialRotate": [
+        0.5199999809265137,
+        0.46000000834465027,
+        0.7200000286102295
+    ],
+    "initialScale": [
+        1.0,
+        1.0,
+        1.0
+    ],
+    "lifeTime": 2.7899999618530273,
+    "name": "NewParticle",
+    "repeat": false,
+    "textureFilePath": "Resources\\fire.png",
+    "useBillboard": true,
+    "useRandomPosition": true,
+    "velocity": [
+        0.0,
+        0.25,
+        0.0
+    ],
+    "vertexType": 0
+}

@@ -11,6 +11,10 @@
 #include <CameraManager.h>
 #include "MathFunctions.h"
 #include <algorithm>
+#include <unordered_map>
+#include <vector>
+#include <filesystem>
+#include <json.hpp>
 
 class ParticleManager
 {
@@ -75,6 +79,62 @@ public:
 
 	// cylinderの反転
 	void SetFlipYToGroup(const std::string& groupName, bool flip);
+
+
+	// JSON に保存するパーティクルプリセット
+	struct ParticlePreset {
+		std::string name;                     // プリセット名（= JSON ファイル名のベース）
+		VertexDataType vertexType = VertexDataType::Plane; // 使用するメッシュ形状（Plane/Ring/Cylinder）
+
+		std::string textureFilePath;         // テクスチャパス (Resources/ からの相対パスを想定)
+		BlendMode blendMode = kBlendModeNormal;
+
+		// エミッター系の設定（今はとりあえずここに持たせる）
+		uint32_t count = 10;                                                // 発生数
+		float frequency = 1.0f;                                             // 発生間隔(秒)
+		bool repeat = false;                                                // 繰り返し
+		bool useRandomPosition = false;                                     // ランダム発生
+
+		// パーティクル共通パラメータ
+		bool flipY = false;                                                 // Cylinder の上下反転など
+		float lifeTime = 1.0f;                                              // 基本寿命
+
+		Vector3 initialScale = { 1.0f, 1.0f, 1.0f };
+		Vector3 initialRotate = { 0.0f, 0.0f, 0.0f };
+		Vector3 initialOffset = { 0.0f, 0.0f, 0.0f };                       // エミッター位置からの相対オフセット
+
+		Vector4 color = { 1.0f, 1.0f, 1.0f, 1.0f };                         // RGBA
+		bool useBillboard = true;                                           // trueなら常にカメラ目線
+		Vector3 velocity = { 0.0f, 0.0f, 0.0f };                            // velocity
+	};
+
+#ifdef USE_IMGUI
+	/// ImGui 上でプリセットを編集＆保存するエディタ
+	void DrawImGuiParticlePresetEditor();
+#endif
+
+	/// プリセットを JSON に保存する（直接呼んでもOK）
+	bool SavePresetToJson(const ParticlePreset& preset,
+		const std::string& directory = "Resources/Particle");
+
+	/// JSON からプリセットを読み込む（name.json を読む）
+	bool LoadPresetFromJson(const std::string& presetName,
+		ParticlePreset& outPreset,
+		const std::string& directory = "Resources/Particle");
+
+	/// ディレクトリ内のすべてのプリセットを読み込む（今後のため）
+	void LoadAllPresets(const std::string& directory = "Resources/Particle");
+
+	/// <summary>
+	/// JSON プリセット名からパーティクルを発生させる
+	/// </summary>
+	/// <param name="presetName">JSON ファイル名と同じプリセット名</param>
+	/// <param name="emitterTransform">発生元の Transform（位置/回転/スケール）</param>
+	void EmitByPresetName(const std::string& presetName, const Transform& emitterTransform);
+
+private:
+
+	std::unordered_map<std::string, ParticlePreset> presets_;  // name -> プリセット
 
 private:
 

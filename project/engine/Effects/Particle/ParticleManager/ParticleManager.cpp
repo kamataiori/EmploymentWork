@@ -2,6 +2,81 @@
 #include <Logger.h>
 #include <numbers>
 
+using json = nlohmann::json;
+
+// VertexDataType, BlendMode を int で保存するシンプル版
+void to_json(json& j, const ParticleManager::ParticlePreset& p)
+{
+	j = json{
+		{"name", p.name},
+		{"vertexType", static_cast<int>(p.vertexType)},
+		{"textureFilePath", p.textureFilePath},
+		{"blendMode", static_cast<int>(p.blendMode)},
+		{"count", p.count},
+		{"frequency", p.frequency},
+		{"repeat", p.repeat},
+		{"useRandomPosition", p.useRandomPosition},
+		{"flipY", p.flipY},
+		{"lifeTime", p.lifeTime},
+		{"initialScale",  {p.initialScale.x,  p.initialScale.y,  p.initialScale.z}},
+		{"initialRotate", {p.initialRotate.x, p.initialRotate.y, p.initialRotate.z}},
+		{"initialOffset", {p.initialOffset.x, p.initialOffset.y, p.initialOffset.z}},
+		{"color",         {p.color.x, p.color.y, p.color.z, p.color.w}},
+		{"useBillboard",  p.useBillboard},
+		{"velocity",      {p.velocity.x, p.velocity.y, p.velocity.z}}
+	};
+}
+
+
+
+void from_json(const json& j, ParticleManager::ParticlePreset& p)
+{
+	p.name = j.value("name", "");
+	p.vertexType = static_cast<ParticleManager::VertexDataType>(
+		j.value("vertexType", 0));
+	p.textureFilePath = j.value("textureFilePath", "");
+	p.blendMode = static_cast<ParticleManager::BlendMode>(
+		j.value("blendMode", (int)ParticleManager::kBlendModeNormal));
+	p.count = j.value("count", 10u);
+	p.frequency = j.value("frequency", 1.0f);
+	p.repeat = j.value("repeat", false);
+	p.useRandomPosition = j.value("useRandomPosition", false);
+	p.flipY = j.value("flipY", false);
+	p.lifeTime = j.value("lifeTime", 1.0f);
+
+	auto readVec3 = [&j](const char* key, Vector3 defaultValue) {
+		Vector3 v = defaultValue;
+		if (j.contains(key) && j[key].is_array() && j[key].size() == 3) {
+			v.x = j[key][0].get<float>();
+			v.y = j[key][1].get<float>();
+			v.z = j[key][2].get<float>();
+		}
+		return v;
+		};
+
+	auto readVec4 = [&j](const char* key, Vector4 defaultValue) {
+		Vector4 v = defaultValue;
+		if (j.contains(key) && j[key].is_array() && j[key].size() == 4) {
+			v.x = j[key][0].get<float>();
+			v.y = j[key][1].get<float>();
+			v.z = j[key][2].get<float>();
+			v.w = j[key][3].get<float>();
+		}
+		return v;
+		};
+
+	p.initialScale = readVec3("initialScale", { 1.0f, 1.0f, 1.0f });
+	p.initialRotate = readVec3("initialRotate", { 0.0f, 0.0f, 0.0f });
+	p.initialOffset = readVec3("initialOffset", { 0.0f, 0.0f, 0.0f });
+
+	// 色とビルボード
+	p.color = readVec4("color", { 1.0f, 1.0f, 1.0f, 1.0f });
+	p.useBillboard = j.value("useBillboard", true);
+	p.velocity = readVec3("velocity", { 0.0f, 0.0f, 0.0f });
+}
+
+
+
 void ParticleManager::Initialize(VertexDataType type)
 {
 	dxCommon_ = DirectXCommon::GetInstance();
@@ -206,6 +281,373 @@ void ParticleManager::Draw()
 
 		// インスタンスカウントをリセット
 		group.second.instanceCount = 0;
+	}
+}
+
+void ParticleManager::DrawImGuiParticlePresetEditor()
+{
+#ifdef USE_IMGUI
+
+	using namespace ImGui;
+	namespace fs = std::filesystem;
+
+	static ParticlePreset preset;          // 現在編集中のプリセット
+	static bool initialized = false;
+
+	// テクスチャ候補（Resources 以下のみ）
+	static std::vector<std::string> textureList;
+	static int currentTextureIndex = -1;
+
+	if (!initialized) {
+		// 初期値
+		preset.name = "NewParticle";
+		preset.vertexType = VertexDataType::Plane;
+		preset.textureFilePath = "";
+		preset.blendMode = kBlendModeNormal;
+		preset.count = 10;
+		preset.frequency = 1.0f;
+		preset.repeat = false;
+		preset.useRandomPosition = true;
+		preset.flipY = false;
+		preset.lifeTime = 1.0f;
+		preset.initialScale = { 1.0f, 1.0f, 1.0f };
+		preset.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+		preset.useBillboard = true;
+
+		// Resources 以下からテクスチャ候補を列挙
+		textureList.clear();
+		if (fs::exists("Resources")) {
+			for (auto& entry : fs::recursive_directory_iterator("Resources")) {
+				if (!entry.is_regular_file()) { continue; }
+				auto ext = entry.path().extension().string();
+				std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+				if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".dds") {
+					// 相対パスにして保存
+					textureList.push_back(entry.path().string());
+				}
+			}
+		}
+		if (!textureList.empty()) {
+			currentTextureIndex = 0;
+			preset.textureFilePath = textureList[0];
+		}
+
+		initialized = true;
+	}
+
+	// ウィンドウタイトル
+	if (!Begin("パーティクルプリセットエディタ")) {
+		End();
+		return;
+	}
+
+	// --- プリセット名 ---
+	{
+		char buf[64];
+		// 安全な strncpy_s を使用
+		strncpy_s(buf, sizeof(buf), preset.name.c_str(), _TRUNCATE);
+		if (InputText("プリセット名", buf, sizeof(buf))) {
+			preset.name = buf;
+		}
+	}
+
+	// --- 形状（メッシュ）選択 ---
+	{
+		const char* items[] = { "板(Plane)", "リング(Ring)", "円柱(Cylinder)" };
+		int current = static_cast<int>(preset.vertexType);
+		if (Combo("形状タイプ", &current, items, IM_ARRAYSIZE(items))) {
+			preset.vertexType = static_cast<VertexDataType>(current);
+		}
+	}
+
+	// --- ブレンドモード選択 ---
+	{
+		const char* blendItems[] = {
+			"なし(None)",
+			"通常(Normal)",
+			"加算(Add)",
+			"減算(Subtract)",
+			"乗算(Multiply)",
+			"スクリーン(Screen)"
+		};
+		int current = static_cast<int>(preset.blendMode);
+		if (Combo("ブレンドモード", &current, blendItems, IM_ARRAYSIZE(blendItems))) {
+			preset.blendMode = static_cast<BlendMode>(current);
+		}
+	}
+
+	// --- テクスチャ選択（Resources 以下のファイルのみ） ---
+	if (!textureList.empty()) {
+		if (currentTextureIndex < 0 || currentTextureIndex >= (int)textureList.size()) {
+			currentTextureIndex = 0;
+		}
+
+		auto getter = [](void* data, int idx, const char** out_text) -> bool {
+			auto* vec = reinterpret_cast<std::vector<std::string>*>(data);
+			if (idx < 0 || idx >= (int)vec->size()) return false;
+			*out_text = (*vec)[idx].c_str();
+			return true;
+			};
+
+		if (Combo("テクスチャファイル", &currentTextureIndex, getter,
+			(void*)&textureList, (int)textureList.size())) {
+			preset.textureFilePath = textureList[currentTextureIndex];
+		}
+	}
+	else {
+		TextColored(ImVec4(1, 0, 0, 1), "Resources 以下にテクスチャが見つかりません");
+	}
+
+	// --- エミッター設定 ---
+	Separator();
+	Text("エミッタ設定");
+	DragInt("発生数", (int*)&preset.count, 1, 1, 1000);
+	DragFloat("発生間隔(秒)", &preset.frequency, 0.01f, 0.0f, 60.0f);
+	Checkbox("繰り返し再生", &preset.repeat);
+	Checkbox("ランダム位置を使用", &preset.useRandomPosition);
+
+	// --- パーティクル共通 ---
+	Separator();
+	Text("パーティクル共通設定");
+	DragFloat3("初期スケール(scale)", &preset.initialScale.x, 0.01f, 0.0f, 100.0f);
+	DragFloat3("初期回転(rotate)", &preset.initialRotate.x, 0.01f, -6.28f, 6.28f);
+	DragFloat3("初期場所(translate)", &preset.initialOffset.x, 0.01f, -1000.0f, 1000.0f);
+	DragFloat3("初期速度 (Velocity)", &preset.velocity.x, 0.01f, -1000.0f, 1000.0f);
+
+	// 色(RGBA)
+	ColorEdit4("カラー (RGBA)", &preset.color.x);
+	// ビルボードON/OFF
+	Checkbox("常にカメラ目線(ビルボード)", &preset.useBillboard);
+	Checkbox("上下反転(Flip Y)", &preset.flipY);
+	DragFloat("寿命(秒)", &preset.lifeTime, 0.01f, 0.0f, 100.0f);
+
+
+	// --- 保存ボタン ---
+	Separator();
+	if (Button("JSON を保存")) {
+		if (SavePresetToJson(preset)) {
+			TextColored(ImVec4(0, 1, 0, 1), "保存しました");
+		}
+		else {
+			TextColored(ImVec4(1, 0, 0, 1), "保存に失敗しました");
+		}
+	}
+
+	End();
+
+#endif // USE_IMGUI
+}
+
+
+bool ParticleManager::SavePresetToJson(const ParticlePreset& preset,
+	const std::string& directory)
+{
+	namespace fs = std::filesystem;
+
+	try {
+		// ディレクトリが無ければ作る
+		if (!fs::exists(directory)) {
+			fs::create_directories(directory);
+		}
+
+		std::string fileName = preset.name;
+		if (fileName.empty()) {
+			fileName = "UnnamedParticle";
+		}
+
+		fs::path path = fs::path(directory) / (fileName + ".json");
+
+		// JSON にシリアライズ（to_json が呼ばれる）
+		json j = preset;
+
+		std::ofstream ofs(path);
+		if (!ofs) {
+			Logger::Log("Failed to open particle preset json: " + path.string());
+			return false;
+		}
+		ofs << j.dump(4); // インデント付きで保存
+		ofs.close();
+
+		// メモリ側のプリセットも更新
+		presets_[preset.name] = preset;
+
+		// すでに同名のパーティクルグループが存在していれば、テクスチャ等を作り直す
+		auto itGroup = particleGroups.find(preset.name);
+		if (itGroup != particleGroups.end()) {
+			// いったん削除
+			DeleteParticleGroup(preset.name);
+
+			// 新しいテクスチャ&ブレンドモードで作成し直し
+			CreateParticleGroup(preset.name, preset.textureFilePath, preset.blendMode);
+
+			// プリセットの共通設定も反映
+			SetFlipYToGroup(preset.name, preset.flipY);
+			SetLifeTimeToGroup(preset.name, preset.lifeTime);
+			SetColorToGroup(preset.name, preset.color);
+
+			// ビルボードは現在マネージャ全体設定
+			SetUseBillboard(preset.useBillboard);
+
+			SetVelocityToGroup(preset.name, preset.velocity);
+		}
+
+		return true;
+	}
+	catch (const std::exception& e) {
+		Logger::Log(std::string("Exception in SavePresetToJson: ") + e.what());
+		return false;
+	}
+}
+
+
+bool ParticleManager::LoadPresetFromJson(const std::string& presetName, ParticlePreset& outPreset, const std::string& directory)
+{
+	namespace fs = std::filesystem;
+
+	fs::path path = fs::path(directory) / (presetName + ".json");
+	if (!fs::exists(path)) {
+		return false;
+	}
+
+	try {
+		std::ifstream ifs(path);
+		if (!ifs) {
+			return false;
+		}
+		json j;
+		ifs >> j;
+		outPreset = j.get<ParticlePreset>();
+
+		presets_[outPreset.name] = outPreset;
+		return true;
+	}
+	catch (const std::exception& e) {
+		Logger::Log(std::string("Exception in LoadPresetFromJson: ") + e.what());
+		return false;
+	}
+}
+
+void ParticleManager::LoadAllPresets(const std::string& directory)
+{
+	namespace fs = std::filesystem;
+
+	presets_.clear();
+
+	if (!fs::exists(directory)) {
+		return;
+	}
+
+	for (auto& entry : fs::directory_iterator(directory)) {
+		if (!entry.is_regular_file()) { continue; }
+		if (entry.path().extension() != ".json") { continue; }
+
+		try {
+			std::ifstream ifs(entry.path());
+			if (!ifs) { continue; }
+
+			json j;
+			ifs >> j;
+
+			ParticlePreset preset = j.get<ParticlePreset>();
+			if (!preset.name.empty()) {
+				presets_[preset.name] = preset;
+			}
+		}
+		catch (...) {
+			// 壊れているファイルは無視
+		}
+	}
+}
+
+void ParticleManager::EmitByPresetName(const std::string& presetName,
+	const Transform& emitterTransform)
+{
+	// ---- プリセット検索 or 読み込み ----
+	ParticlePreset preset;
+	{
+		auto it = presets_.find(presetName);
+		if (it != presets_.end()) {
+			preset = it->second;
+		}
+		else {
+			// まだメモリに無ければ JSON から読み込みを試す
+			if (!LoadPresetFromJson(presetName, preset)) {
+				Logger::Log("ParticleManager::EmitByPresetName : preset not found -> " + presetName);
+				return;
+			}
+		}
+	}
+
+	// JSON 側の name が空なら、presetName を使う
+	if (preset.name.empty()) {
+		preset.name = presetName;
+	}
+
+	const std::string groupName = preset.name;
+
+	// ---- パーティクルグループが無ければ作成 ----
+	auto itGroup = particleGroups.find(groupName);
+	if (itGroup == particleGroups.end()) {
+		// テクスチャとブレンドモードはプリセットから
+		CreateParticleGroup(groupName, preset.textureFilePath, preset.blendMode);
+
+		// 新規作成したグループに対して プリセットの設定を反映
+		SetFlipYToGroup(groupName, preset.flipY);
+		SetLifeTimeToGroup(groupName, preset.lifeTime);
+		SetColorToGroup(groupName, preset.color);
+
+		// ビルボードは現在マネージャ全体設定
+		SetUseBillboard(preset.useBillboard);
+
+		SetVelocityToGroup(groupName, preset.velocity);
+	}
+	else {
+		// 既にあるグループにも、最新プリセットの値を反映しておく
+		SetFlipYToGroup(groupName, preset.flipY);
+		SetLifeTimeToGroup(groupName, preset.lifeTime);
+		SetColorToGroup(groupName, preset.color);
+		SetUseBillboard(preset.useBillboard);
+		SetVelocityToGroup(groupName, preset.velocity);
+	}
+
+	// ---- 呼び出し元の Transform とプリセット値を合成 ----
+	Transform t = emitterTransform;
+
+	// スケールは乗算（呼び出し元の大きさに対して相対的に）
+	t.scale.x *= preset.initialScale.x;
+	t.scale.y *= preset.initialScale.y;
+	t.scale.z *= preset.initialScale.z;
+
+	// 回転は加算
+	t.rotate.x += preset.initialRotate.x;
+	t.rotate.y += preset.initialRotate.y;
+	t.rotate.z += preset.initialRotate.z;
+
+	// 位置はオフセット分だけ足す
+	t.translate.x += preset.initialOffset.x;
+	t.translate.y += preset.initialOffset.y;
+	t.translate.z += preset.initialOffset.z;
+
+	// ---- 形状に応じて既存の Emit 系を呼ぶ ----
+	switch (preset.vertexType) {
+	case VertexDataType::Plane:
+		// Plane は通常の Emit。count と useRandomPosition をプリセットから。
+		Emit(groupName, t, preset.count, preset.useRandomPosition);
+		break;
+
+	case VertexDataType::Ring:
+		// Ring は 1 個だけの扱いなので count は無視
+		RingEmit(groupName, t);
+		break;
+
+	case VertexDataType::Cylinder:
+		// Cylinder も 1 個だけ
+		CylinderEmit(groupName, t);
+		break;
+
+	default:
+		Logger::Log("ParticleManager::EmitByPresetName : unsupported vertexType in preset -> " + presetName);
+		break;
 	}
 }
 
