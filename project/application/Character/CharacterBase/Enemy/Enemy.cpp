@@ -1,6 +1,5 @@
 #include "Enemy.h"
 #include <CollisionTypeIdDef.h>
-#include "Player.h"
 #include <SceneManager.h>
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
@@ -113,6 +112,24 @@ void Enemy::Initialize()
 
 	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
 	deathParticle_->LoadAllPresets();
+
+	smokeParticle_ = std::make_unique<ParticleManager>();
+	smokeParticle_->Initialize(ParticleManager::VertexDataType::Plane);
+
+	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
+	smokeParticle_->LoadAllPresets();
+
+	ex1Particle_ = std::make_unique<ParticleManager>();
+	ex1Particle_->Initialize(ParticleManager::VertexDataType::Plane);
+
+	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
+	ex1Particle_->LoadAllPresets();
+
+	poweder = std::make_unique<ParticleManager>();
+	poweder->Initialize(ParticleManager::VertexDataType::Plane);
+
+	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
+	poweder->LoadAllPresets();
 
 	// Emit 時に使う Transform の初期値
 	deathParticleTransform_ = transform;
@@ -268,7 +285,23 @@ void Enemy::Update()
 				 // fire プリセットをこの位置で Emit
 				if (deathParticle_) {
 					deathParticleTransform_.translate = explosionPos;
+					deathParticleTransform_.translate.y += 3.5f;
 					deathParticle_->EmitByPresetName("fire", deathParticleTransform_);
+				}
+				if (smokeParticle_) {
+					deathParticleTransform_.translate = explosionPos;
+					deathParticleTransform_.translate.y += 2.5f;
+					smokeParticle_->EmitByPresetName("smoke", deathParticleTransform_);
+				}
+				if (ex1Particle_) {
+					deathParticleTransform_.translate = explosionPos;
+					deathParticleTransform_.translate.y += 3.5f;
+					ex1Particle_->EmitByPresetName("ex1", deathParticleTransform_);
+				}
+				if (poweder) {
+					deathParticleTransform_.translate = explosionPos;
+					deathParticleTransform_.translate.y += 2.5f;
+					poweder->EmitByPresetName("powder", deathParticleTransform_);
 				}
 
 				hasSpawnedExplosion_ = true;
@@ -292,6 +325,18 @@ void Enemy::Update()
 		// 毎フレームパーティクルを更新（Emitter は今のまま Update() 引数なし）
 		if (deathParticle_) {
 			deathParticle_->Update();
+		}
+
+		if (smokeParticle_) {
+			smokeParticle_->Update();
+		}
+
+		if (ex1Particle_) {
+			ex1Particle_->Update();
+		}
+
+		if (poweder) {
+			poweder->Update();
 		}
 
 
@@ -356,6 +401,18 @@ void Enemy::ParticleDraw()
 	if (isDead_ && deathParticle_) {
 		deathParticle_->Draw();
 	}
+
+	if (isDead_ && smokeParticle_) {
+		smokeParticle_->Draw();
+	}
+
+	if (isDead_ && ex1Particle_) {
+		ex1Particle_->Draw();
+	}
+
+	if (isDead_ && poweder) {
+		poweder->Draw();
+	}
 }
 
 void Enemy::OnCollision()
@@ -363,6 +420,12 @@ void Enemy::OnCollision()
 	// ===== HP減少 =====
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
+
+	/*if (poweder) {
+		deathParticleTransform_.translate = explosionPos;
+		deathParticleTransform_.translate.y += 2.5f;
+		poweder->EmitByPresetName("powder", deathParticleTransform_);
+	}*/
 
 	// ===== HPチェック =====
 	if (hp_ <= 0 && !isDead_) {
@@ -396,6 +459,9 @@ void Enemy::SetCamera(Camera* camera)
 
 	// パーティクル側にも同じカメラを渡す
 	deathParticle_->SetCamera(camera);
+	smokeParticle_->SetCamera(camera);
+	ex1Particle_->SetCamera(camera);
+	poweder->SetCamera(camera);
 
 
 	// 必要なら武器や他のオブジェクトにもここで渡せる

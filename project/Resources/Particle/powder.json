@@ -1,12 +1,12 @@
 {
-    "blendMode": 1,
+    "blendMode": 2,
     "color": [
         1.0,
         1.0,
         1.0,
         1.0
     ],
-    "count": 10,
+    "count": 1,
     "flipY": false,
     "frequency": 1.0,
     "initialOffset": [
@@ -24,25 +24,24 @@
         1.0,
         1.0
     ],
-    "lifeTime": 1.0,
-    "name": "NewParticle",
+    "lifeTime": 1.5399999618530273,
+    "name": "powder",
     "repeat": false,
     "rotationSpeed": [
-        0.0,
-        0.0,
-        0.0
+        0.6700000166893005,
+        0.8700000047683716,
+        0.9200000166893005
     ],
     "scaleSpeed": [
-        0.0,
-        0.0,
-        0.0
+        -0.1899999976158142,
+        -0.28999999165534973,
+        -0.38999998569488525
     ],
-    "textureFilePath": "Resources/ParticleTexture/circle.png",
+    "textureFilePath": "Resources/ParticleTexture/powder.png",
     "useBillboard": true,
-    "useGravity": false,
     "useRandomPosition": true,
     "velocity": [
-        0.0,
+        2.359999895095825,
         0.0,
         0.0
     ],

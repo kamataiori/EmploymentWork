@@ -26,6 +26,7 @@ void to_json(json& j, const ParticleManager::ParticlePreset& p)
 		{"velocity",      {p.velocity.x,      p.velocity.y,      p.velocity.z}},
 		{"rotationSpeed", {p.rotationSpeed.x, p.rotationSpeed.y, p.rotationSpeed.z}},
 		{"scaleSpeed",    {p.scaleSpeed.x,    p.scaleSpeed.y,    p.scaleSpeed.z}},
+		{"useGravity", p.useGravity},
 
 	};
 }
@@ -79,6 +80,9 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 	p.velocity = readVec3("velocity", { 0.0f, 0.0f, 0.0f });
 	p.rotationSpeed = readVec3("rotationSpeed", { 0.0f, 0.0f, 0.0f });
 	p.scaleSpeed = readVec3("scaleSpeed", { 0.0f, 0.0f, 0.0f });
+	// 重力
+	p.useGravity = j.value("useGravity", false);
+
 
 }
 
@@ -181,8 +185,14 @@ void ParticleManager::Update()
 			/*particle.transform.scale.x = textureSize.x * scaleMultiplier;
 			particle.transform.scale.y = textureSize.y * scaleMultiplier;*/
 
+			// 重力適用
+			if (group.second.useGravity) {
+				particle.velocity.y -= 0.98f * kDeltaTime;
+			}
+			
 			// 位置の更新
 			particle.transform.translate = Add(particle.transform.translate, Multiply(kDeltaTime, particle.velocity));
+
 
 			// 回転の更新（rad/秒）
 			particle.transform.rotate.x += particle.rotationSpeed.x * kDeltaTime;
@@ -487,6 +497,9 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 	Checkbox("常にカメラ目線(ビルボード)", &preset.useBillboard);
 	Checkbox("上下反転(Flip Y)", &preset.flipY);
 	DragFloat("寿命(秒)", &preset.lifeTime, 0.01f, 0.0f, 100.0f);
+	// 重力
+	Checkbox("重力を使用する", &preset.useGravity);
+
 
 
 	// --- 保存ボタン ---
@@ -670,6 +683,8 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		SetVelocityToGroup(groupName, preset.velocity);
 		SetRotationSpeedToGroup(groupName, preset.rotationSpeed);
 		SetScaleSpeedToGroup(groupName, preset.scaleSpeed);
+		SetGravityToGroup(groupName, preset.useGravity);
+
 	}
 	else {
 		// 既にあるグループにも、最新プリセットの値を反映しておく
@@ -680,6 +695,8 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		SetVelocityToGroup(groupName, preset.velocity);
 		SetRotationSpeedToGroup(groupName, preset.rotationSpeed);
 		SetScaleSpeedToGroup(groupName, preset.scaleSpeed);
+		SetGravityToGroup(groupName, preset.useGravity);
+
 	}
 
 	// ---- 呼び出し元の Transform とプリセット値を合成 ----
@@ -709,12 +726,12 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 
 	case VertexDataType::Ring:
 		// Ring は 1 個だけの扱いなので count は無視
-		RingEmit(groupName, t);
+		RingEmit(groupName, t, preset.count);
 		break;
 
 	case VertexDataType::Cylinder:
 		// Cylinder も 1 個だけ
-		CylinderEmit(groupName, t);
+		CylinderEmit(groupName, t, preset.count);
 		break;
 
 	default:
@@ -990,28 +1007,40 @@ ParticleManager::Particle ParticleManager::PrimitiveMakeNewParticle(std::mt19937
 
 ParticleManager::Particle ParticleManager::RingMakeNewParticle(const Vector3& translate)
 {
-	Particle particle;
-	particle.transform.scale = { 1.0f, 1.0f, 1.0f };
-	particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
-	particle.transform.translate = translate;
-	particle.velocity = { 0.0f, 0.0f, 0.0f };
-	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	particle.lifeTime = 999999.0f; // 永続表示
-	particle.currentTime = 0.0f;
-	return particle;
+	Particle p{};
+
+	p.transform.scale = { 1,1,1 };
+	p.transform.rotate = { 0,0,0 };
+	p.transform.translate = translate;
+
+	// パラメータは後でプリセットから Set～ で当てる
+	p.velocity = { 0,0,0 };
+	p.rotationSpeed = { 0,0,0 };
+	p.scaleSpeed = { 0,0,0 };
+	p.color = { 1,1,1,1 };
+	p.lifeTime = 1.0f;
+	p.currentTime = 0;
+
+	return p;
 }
 
 ParticleManager::Particle ParticleManager::CylinderMakeNewParticle(const Vector3& translate)
 {
-	Particle particle;
-	particle.transform.scale = { 1.0f, 1.0f, 1.0f };
-	particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
-	particle.transform.translate = translate;
-	particle.velocity = { 0.0f, 0.0f, 0.0f };
-	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	particle.lifeTime = 999999.0f;
-	particle.currentTime = 0.0f;
-	return particle;
+	Particle p{};
+
+	p.transform.scale = { 1,1,1 };
+	p.transform.rotate = { 0,0,0 };
+	p.transform.translate = translate;
+
+	// パラメータは後でプリセットから Set～ で当てる
+	p.velocity = { 0,0,0 };
+	p.rotationSpeed = { 0,0,0 };
+	p.scaleSpeed = { 0,0,0 };
+	p.color = { 1,1,1,1 };
+	p.lifeTime = 1.0f;
+	p.currentTime = 0;
+
+	return p;
 }
 
 void ParticleManager::Emit(const std::string& name, const Transform& transform, uint32_t count, bool useRandomPosition) {
@@ -1080,42 +1109,50 @@ void ParticleManager::PrimitiveEmit(const std::string name, const Transform& tra
 	}
 }
 
-void ParticleManager::RingEmit(const std::string name, const Transform& transform)
+void ParticleManager::RingEmit(const std::string& name, const Transform& transform, uint32_t count)
 {
 	if (particleGroups.find(name) == particleGroups.end()) {
 		assert("Specified particle group does not exist!");
+		return;
 	}
 
 	ParticleGroup& group = particleGroups[name];
 
-	// すでにリングが存在するなら追加しない（常に1つだけとする）
-	if (!group.particleList.empty()) {
+	// Plane と同じように、既に count 個以上あるなら追加しない
+	if (group.particleList.size() >= count) {
 		return;
 	}
 
-	Particle particle = RingMakeNewParticle(transform.translate);
-	particle.transform.rotate = transform.rotate;
-	particle.transform.scale = transform.scale;
-	group.particleList.push_back(particle);
+	for (uint32_t i = 0; i < count; ++i) {
+		Particle particle = RingMakeNewParticle(transform.translate);
+		particle.transform.rotate = transform.rotate;
+		particle.transform.scale = transform.scale;
+		group.particleList.push_back(particle);
+	}
 }
 
-void ParticleManager::CylinderEmit(const std::string& name, const Transform& transform)
+void ParticleManager::CylinderEmit(const std::string& name,
+	const Transform& transform,uint32_t count)
 {
 	if (particleGroups.find(name) == particleGroups.end()) {
 		assert("Specified particle group does not exist!");
+		return;
 	}
 
 	ParticleGroup& group = particleGroups[name];
 
-	if (!group.particleList.empty()) {
+	if (group.particleList.size() >= count) {
 		return;
 	}
 
-	Particle particle = CylinderMakeNewParticle(transform.translate);
-	particle.transform.rotate = transform.rotate;
-	particle.transform.scale = transform.scale;
-	group.particleList.push_back(particle);
+	for (uint32_t i = 0; i < count; ++i) {
+		Particle particle = CylinderMakeNewParticle(transform.translate);
+		particle.transform.rotate = transform.rotate;
+		particle.transform.scale = transform.scale;
+		group.particleList.push_back(particle);
+	}
 }
+
 
 void ParticleManager::SetScaleToGroup(const std::string& groupName, const Vector3& scale) {
 	auto it = particleGroups.find(groupName);
@@ -1191,6 +1228,14 @@ void ParticleManager::SetLifeTimeToGroup(const std::string& groupName, float lif
 		particle.lifeTime = lifeTime;
 	}
 }
+
+void ParticleManager::SetGravityToGroup(const std::string& groupName, bool useGravity)
+{
+	auto it = particleGroups.find(groupName);
+	if (it == particleGroups.end()) return;
+	it->second.useGravity = useGravity;
+}
+
 
 void ParticleManager::SetCurrentTimeToGroup(const std::string& groupName, float currentTime)
 {

@@ -108,12 +108,12 @@ public:
 		Vector3 velocity = { 0.0f, 0.0f, 0.0f };                            // velocity
 		Vector3 rotationSpeed = { 0.0f, 0.0f, 0.0f };                       // 回転速度(rad/sec)
 		Vector3 scaleSpeed = { 0.0f, 0.0f, 0.0f };                          // スケール変化速度(/sec)
+		bool useGravity = false;                                            // 重力を使うかどうか
+
 	};
 
-#ifdef USE_IMGUI
 	/// ImGui 上でプリセットを編集＆保存するエディタ
 	void DrawImGuiParticlePresetEditor();
-#endif
 
 	/// プリセットを JSON に保存する（直接呼んでもOK）
 	bool SavePresetToJson(const ParticlePreset& preset,
@@ -261,6 +261,9 @@ private:
 		Vector2 textureSize = { 0.0f, 0.0f }; // テクスチャサイズを追加
 
 		bool flipY = false; // デフォルトは反転しない
+
+		bool useGravity = false;
+
 	};
 
 	/// <summary>
@@ -305,9 +308,9 @@ public:
 
 	void PrimitiveEmit(const std::string name, const Transform& transform, uint32_t count);
 
-	void RingEmit(const std::string name, const Transform& transform);
+	void RingEmit(const std::string& name, const Transform& transform, uint32_t count);
 
-	void CylinderEmit(const std::string& name, const Transform& transform);
+	void CylinderEmit(const std::string& name, const Transform& transform, uint32_t count);
 
 	// スケール
 	void SetScaleToGroup(const std::string& groupName, const Vector3& scale);
@@ -332,6 +335,9 @@ public:
 
 	// 寿命（LifeTime）を一括設定
 	void SetLifeTimeToGroup(const std::string& groupName, float lifeTime);
+
+	// 重力
+	void SetGravityToGroup(const std::string& groupName, bool useGravity);
 
 	// 初期時間（CurrentTime）を一括設定
 	void SetCurrentTimeToGroup(const std::string& groupName, float currentTime);

@@ -1,12 +1,12 @@
 {
-    "blendMode": 1,
+    "blendMode": 2,
     "color": [
         1.0,
         1.0,
         1.0,
         1.0
     ],
-    "count": 10,
+    "count": 100,
     "flipY": false,
     "frequency": 1.0,
     "initialOffset": [
@@ -20,30 +20,29 @@
         0.0
     ],
     "initialScale": [
-        1.0,
-        1.0,
-        1.0
+        0.6000000238418579,
+        0.6000000238418579,
+        0.6000000238418579
     ],
-    "lifeTime": 1.0,
-    "name": "NewParticle",
+    "lifeTime": 0.7200000286102295,
+    "name": "ex1",
     "repeat": false,
     "rotationSpeed": [
-        0.0,
-        0.0,
-        0.0
+        2.130000114440918,
+        0.38999998569488525,
+        0.23999999463558197
     ],
     "scaleSpeed": [
         0.0,
         0.0,
         0.0
     ],
-    "textureFilePath": "Resources/ParticleTexture/circle.png",
+    "textureFilePath": "Resources/ParticleTexture/image.png",
     "useBillboard": true,
-    "useGravity": false,
     "useRandomPosition": true,
     "velocity": [
         0.0,
-        0.0,
+        2.9000000953674316,
         0.0
     ],
     "vertexType": 0
