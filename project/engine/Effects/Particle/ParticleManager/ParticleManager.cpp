@@ -31,8 +31,6 @@ void to_json(json& j, const ParticleManager::ParticlePreset& p)
 	};
 }
 
-
-
 void from_json(const json& j, ParticleManager::ParticlePreset& p)
 {
 	p.name = j.value("name", "");
@@ -85,8 +83,6 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 
 
 }
-
-
 
 void ParticleManager::Initialize(VertexDataType type)
 {
@@ -185,13 +181,32 @@ void ParticleManager::Update()
 			/*particle.transform.scale.x = textureSize.x * scaleMultiplier;
 			particle.transform.scale.y = textureSize.y * scaleMultiplier;*/
 
-			// 重力適用
+			//// 重力適用
+			//if (group.second.useGravity) {
+			//	particle.velocity.y += -9.81f * kDeltaTime;
+			//}
+
+			//// 位置の更新
+			//particle.transform.translate = particle.transform.translate + particle.velocity * kDeltaTime;
+
+			// ==== Velocity Verlet Integration ====
+
+            //重力加速度
+			Vector3 accel = { 0.0f, 0.0f, 0.0f };
 			if (group.second.useGravity) {
-				particle.velocity.y -= 0.98f * kDeltaTime;
+				accel.y = -9.81f;
 			}
-			
-			// 位置の更新
-			particle.transform.translate = Add(particle.transform.translate, Multiply(kDeltaTime, particle.velocity));
+
+			// 1. 位置更新：x += v * dt + 0.5 * a * dt^2
+			particle.transform.translate.x += particle.velocity.x * kDeltaTime + 0.5f * accel.x * kDeltaTime * kDeltaTime;
+			particle.transform.translate.y += particle.velocity.y * kDeltaTime + 0.5f * accel.y * kDeltaTime * kDeltaTime;
+			particle.transform.translate.z += particle.velocity.z * kDeltaTime + 0.5f * accel.z * kDeltaTime * kDeltaTime;
+
+			// 2. 速度更新：v += a * dt
+			particle.velocity.x += accel.x * kDeltaTime;
+			particle.velocity.y += accel.y * kDeltaTime;
+			particle.velocity.z += accel.z * kDeltaTime;
+
 
 
 			// 回転の更新（rad/秒）
@@ -643,6 +658,7 @@ void ParticleManager::LoadAllPresets(const std::string& directory)
 void ParticleManager::EmitByPresetName(const std::string& presetName,
 	const Transform& emitterTransform)
 {
+
 	// ---- プリセット検索 or 読み込み ----
 	ParticlePreset preset;
 	{
@@ -680,11 +696,8 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		// ビルボードは現在マネージャ全体設定
 		SetUseBillboard(preset.useBillboard);
 
-		SetVelocityToGroup(groupName, preset.velocity);
-		SetRotationSpeedToGroup(groupName, preset.rotationSpeed);
-		SetScaleSpeedToGroup(groupName, preset.scaleSpeed);
+		// 重力フラグだけグループに反映
 		SetGravityToGroup(groupName, preset.useGravity);
-
 	}
 	else {
 		// 既にあるグループにも、最新プリセットの値を反映しておく
@@ -692,12 +705,12 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		SetLifeTimeToGroup(groupName, preset.lifeTime);
 		SetColorToGroup(groupName, preset.color);
 		SetUseBillboard(preset.useBillboard);
-		SetVelocityToGroup(groupName, preset.velocity);
-		SetRotationSpeedToGroup(groupName, preset.rotationSpeed);
-		SetScaleSpeedToGroup(groupName, preset.scaleSpeed);
 		SetGravityToGroup(groupName, preset.useGravity);
-
 	}
+
+	// グループ参照を取得（ここまでで必ず存在している）
+	ParticleGroup& group = particleGroups[groupName];
+	const size_t beforeCount = group.particleList.size();
 
 	// ---- 呼び出し元の Transform とプリセット値を合成 ----
 	Transform t = emitterTransform;
@@ -739,13 +752,20 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		break;
 	}
 
-	// ここが重要：Emit した「あと」で、プリセット値をグループに反映する
-	SetFlipYToGroup(groupName, preset.flipY);
-	SetLifeTimeToGroup(groupName, preset.lifeTime);
-	SetColorToGroup(groupName, preset.color);
-	SetVelocityToGroup(groupName, preset.velocity);
-	SetRotationSpeedToGroup(groupName, preset.rotationSpeed);
-	SetScaleSpeedToGroup(groupName, preset.scaleSpeed);
+	// === ここからがポイント ===
+	// Emit によって新しく追加されたパーティクルだけに
+	// preset の velocity / rotationSpeed / scaleSpeed を適用する。
+	const size_t afterCount = group.particleList.size();
+	if (afterCount > beforeCount) {
+		auto it = group.particleList.begin();
+		std::advance(it, static_cast<std::ptrdiff_t>(beforeCount));
+		for (; it != group.particleList.end(); ++it) {
+			Particle& p = *it;
+			p.velocity = preset.velocity;
+			p.rotationSpeed = preset.rotationSpeed;
+			p.scaleSpeed = preset.scaleSpeed;
+		}
+	}
 }
 
 
@@ -1132,7 +1152,7 @@ void ParticleManager::RingEmit(const std::string& name, const Transform& transfo
 }
 
 void ParticleManager::CylinderEmit(const std::string& name,
-	const Transform& transform,uint32_t count)
+	const Transform& transform, uint32_t count)
 {
 	if (particleGroups.find(name) == particleGroups.end()) {
 		assert("Specified particle group does not exist!");

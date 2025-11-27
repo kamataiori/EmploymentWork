@@ -1,17 +1,17 @@
 {
-    "blendMode": 1,
+    "blendMode": 2,
     "color": [
+        0.03474903106689453,
         1.0,
-        1.0,
-        1.0,
+        0.3850717544555664,
         1.0
     ],
-    "count": 10,
+    "count": 90,
     "flipY": false,
     "frequency": 1.0,
     "initialOffset": [
         0.0,
-        0.0,
+        2.7200000286102295,
         0.0
     ],
     "initialRotate": [
@@ -24,9 +24,9 @@
         1.0,
         1.0
     ],
-    "lifeTime": 1.0,
+    "lifeTime": 5.21999979019165,
     "name": "NewParticle",
-    "repeat": false,
+    "repeat": true,
     "rotationSpeed": [
         0.0,
         0.0,
@@ -37,9 +37,9 @@
         0.0,
         0.0
     ],
-    "textureFilePath": "Resources/ParticleTexture/circle.png",
+    "textureFilePath": "Resources/ParticleTexture/smoke.png",
     "useBillboard": true,
-    "useGravity": false,
+    "useGravity": true,
     "useRandomPosition": true,
     "velocity": [
         0.0,
