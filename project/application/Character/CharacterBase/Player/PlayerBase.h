@@ -181,7 +181,6 @@ private:
 
 
 
-	std::unique_ptr<ParticleManager> particle = std::make_unique<ParticleManager>();
-	std::vector<std::unique_ptr<ParticleEmitter>> emitters;
+	/*std::unique_ptr<ParticleManager> poweder = std::make_unique<ParticleManager>();*/
 };
 

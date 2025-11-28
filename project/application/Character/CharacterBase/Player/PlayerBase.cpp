@@ -79,16 +79,11 @@ void PlayerBase::Initialize()
 	hpBarFill_->SetAnchorPoint({ 0.0f, 1.0f });
 
 
-	particle->Initialize(ParticleManager::VertexDataType::Plane);
-	particle->CreateParticleGroup("particle", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd);
-	auto emitter = std::make_unique<ParticleEmitter>();
-	emitter->Initialize(
-		particle.get(),
-		"particle",
-		Transform{ {1.0f, 1.0f, 0.0f}, {0.0f,0.0f,0.0f}, {1.0f,4.0f,1.0f} },
-		EmitterConfig{ ShapeType::Plane, 100, 0.5f, true }
-	);
-	emitters.push_back(std::move(emitter));
+	//poweder = std::make_unique<ParticleManager>();
+	//poweder->Initialize(ParticleManager::VertexDataType::Plane);
+
+	//// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
+	//poweder->LoadAllPresets();
 }
 
 void PlayerBase::Update()
@@ -173,11 +168,7 @@ void PlayerBase::Update()
 	}
 
 
-	for (auto& emitter : emitters)
-	{
-		emitter->Update();
-	}
-	particle->Update();
+	/*poweder->Update();*/
 }
 
 void PlayerBase::BackGroundDraw()
@@ -206,7 +197,7 @@ void PlayerBase::AnimationDraw()
 
 void PlayerBase::ParticleDraw()
 {
-	//particle->Draw();
+	/*poweder->Draw();*/
 }
 
 void PlayerBase::OnCollision()
@@ -219,6 +210,9 @@ void PlayerBase::OnCollision()
 	// ====== HP減少処理 ======
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
+
+	/*poweder->EmitByPresetName("powder", transform);
+	poweder->Update();*/
 
 	// ====== HPチェック ======
 	if (hp_ <= 0) {
@@ -453,9 +447,9 @@ void PlayerBase::SetCamera(Camera* camera)
 	ObjectBase::SetCamera(camera);
 
 	// パーティクル側にも同じカメラを渡す
-	if (particle) {
-		particle->SetCamera(camera);
-	}
+	/*if (poweder) {
+		poweder->SetCamera(camera);
+	}*/
 
 	// 必要なら武器や他のオブジェクトにもここで渡せる
 	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能

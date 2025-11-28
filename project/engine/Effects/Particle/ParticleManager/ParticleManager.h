@@ -11,6 +11,10 @@
 #include <CameraManager.h>
 #include "MathFunctions.h"
 #include <algorithm>
+#include <unordered_map>
+#include <vector>
+#include <filesystem>
+#include <json.hpp>
 
 class ParticleManager
 {
@@ -75,6 +79,72 @@ public:
 
 	// cylinderの反転
 	void SetFlipYToGroup(const std::string& groupName, bool flip);
+
+
+	// JSON に保存するパーティクルプリセット
+	struct ParticlePreset {
+		std::string name;                     // プリセット名（= JSON ファイル名のベース）
+		VertexDataType vertexType = VertexDataType::Plane; // 使用するメッシュ形状（Plane/Ring/Cylinder）
+
+		std::string textureFilePath;         // テクスチャパス (Resources/ からの相対パスを想定)
+		BlendMode blendMode = kBlendModeNormal;
+
+		// エミッター系の設定（今はとりあえずここに持たせる）
+		uint32_t count = 10;                                                // 発生数
+		float frequency = 1.0f;                                             // 発生間隔(秒)
+		bool repeat = false;                                                // 繰り返し
+		bool useRandomPosition = false;                                     // ランダム発生
+
+		// パーティクル共通パラメータ
+		bool flipY = false;                                                 // Cylinder の上下反転など
+		float lifeTime = 1.0f;                                              // 基本寿命
+
+		Vector3 initialScale = { 1.0f, 1.0f, 1.0f };
+		Vector3 initialRotate = { 0.0f, 0.0f, 0.0f };
+		Vector3 initialOffset = { 0.0f, 0.0f, 0.0f };                       // エミッター位置からの相対オフセット
+
+		Vector4 color = { 1.0f, 1.0f, 1.0f, 1.0f };                         // RGBA
+		bool useBillboard = true;                                           // trueなら常にカメラ目線
+		Vector3 velocity = { 0.0f, 0.0f, 0.0f };                            // velocity
+		Vector3 rotationSpeed = { 0.0f, 0.0f, 0.0f };                       // 回転速度(rad/sec)
+		Vector3 scaleSpeed = { 0.0f, 0.0f, 0.0f };                          // スケール変化速度(/sec)
+		bool useGravity = false;                                            // 重力を使うかどうか
+
+	};
+
+	/// ImGui 上でプリセットを編集＆保存するエディタ
+	void DrawImGuiParticlePresetEditor();
+
+	/// プリセットを JSON に保存する（直接呼んでもOK）
+	bool SavePresetToJson(const ParticlePreset& preset,
+		const std::string& directory = "Resources/Particle");
+
+	/// JSON からプリセットを読み込む（name.json を読む）
+	bool LoadPresetFromJson(const std::string& presetName,
+		ParticlePreset& outPreset,
+		const std::string& directory = "Resources/Particle");
+
+	/// ディレクトリ内のすべてのプリセットを読み込む（今後のため）
+	void LoadAllPresets(const std::string& directory = "Resources/Particle");
+
+	/// <summary>
+	/// JSON プリセット名からパーティクルを発生させる
+	/// </summary>
+	/// <param name="presetName">JSON ファイル名と同じプリセット名</param>
+	/// <param name="emitterTransform">発生元の Transform（位置/回転/スケール）</param>
+	void EmitByPresetName(const std::string& presetName, const Transform& emitterTransform);
+
+	const std::string& GetCurrentEditingPresetName() const { return currentEditingPresetName_; }
+
+	// setter
+	void SetCurrentEditingPresetName(const std::string& name) { currentEditingPresetName_ = name; }
+
+private:
+
+	std::unordered_map<std::string, ParticlePreset> presets_;  // name -> プリセット
+
+	// プリセットエディタで最後に触っていたプリセット名
+	std::string currentEditingPresetName_;
 
 private:
 
@@ -156,7 +226,9 @@ private:
 	struct Particle {
 		Transform transform;
 		Vector3 velocity;
-		Vector4 color;
+		Vector3   rotationSpeed{ 0.0f, 0.0f, 0.0f };   // 回転速度(rad/秒)
+		Vector3   scaleSpeed{ 0.0f, 0.0f, 0.0f };      // スケール変化速度(/秒)
+		Vector4   color{ 1.0f, 1.0f, 1.0f, 1.0f };
 		float lifeTime;
 		float currentTime;
 	};
@@ -197,6 +269,9 @@ private:
 		Vector2 textureSize = { 0.0f, 0.0f }; // テクスチャサイズを追加
 
 		bool flipY = false; // デフォルトは反転しない
+
+		bool useGravity = false;
+
 	};
 
 	/// <summary>
@@ -241,9 +316,9 @@ public:
 
 	void PrimitiveEmit(const std::string name, const Transform& transform, uint32_t count);
 
-	void RingEmit(const std::string name, const Transform& transform);
+	void RingEmit(const std::string& name, const Transform& transform, uint32_t count);
 
-	void CylinderEmit(const std::string& name, const Transform& transform);
+	void CylinderEmit(const std::string& name, const Transform& transform, uint32_t count);
 
 	// スケール
 	void SetScaleToGroup(const std::string& groupName, const Vector3& scale);
@@ -257,11 +332,20 @@ public:
 	// 速度
 	void SetVelocityToGroup(const std::string& groupName, const Vector3& velocity);
 
+	// 回転速度
+	void SetRotationSpeedToGroup(const std::string& groupName, const Vector3& rotationSpeed);
+
+	// スケール速度
+	void SetScaleSpeedToGroup(const std::string& groupName, const Vector3& scaleSpeed);
+
 	// 色
 	void SetColorToGroup(const std::string& groupName, const Vector4& color);
 
 	// 寿命（LifeTime）を一括設定
 	void SetLifeTimeToGroup(const std::string& groupName, float lifeTime);
+
+	// 重力
+	void SetGravityToGroup(const std::string& groupName, bool useGravity);
 
 	// 初期時間（CurrentTime）を一括設定
 	void SetCurrentTimeToGroup(const std::string& groupName, float currentTime);

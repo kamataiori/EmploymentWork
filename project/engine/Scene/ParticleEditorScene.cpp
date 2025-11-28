@@ -1,6 +1,10 @@
 #include "ParticleEditorScene.h"
 #include <GlobalVariables.h>
 #include <Input.h>
+#include "SceneManager.h"
+
+#include <SrvManager.h>
+#include "PostEffectManager.h"
 
 void ParticleEditorScene::Initialize()
 {
@@ -16,113 +20,38 @@ void ParticleEditorScene::Initialize()
 	camera->SetTranslate({ 0.0f, 0.0f, -20.0f });  // 少し離した位置に設定
 	camera->SetRotate({ 0.0f, 0.0f, 0.0f });
 
+	// ===== グリッド初期化 =====
+	DrawLine::GetInstance()->SetCamera(camera.get());
+	ground.normal = { 0.0f, 5.0f, 0.0f }; // Y軸方向を法線とする平面
+	ground.distance = -0.5f;             // 原点を通る平面
+	ground.size = 100.0f;        // 平面のサイズ
+	ground.divisions = 36;     // グリッドの分割数
+
+	// ===== スカイボックス初期化 =====
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 	skybox->SetCamera(camera.get());
 
 	// ===== パーティクル初期化 =====
+	particle = std::make_unique<ParticleManager>();
+	// デフォルトはPlaneとして初期化（Ring/CylinderプリセットもEmitByPresetNameから使える想定）
 	particle->Initialize(ParticleManager::VertexDataType::Plane);
-	particle->CreateParticleGroup(groupName, "Resources/smoke.png", ParticleManager::BlendMode::kBlendModeAdd);
 	particle->SetCamera(camera.get());
 
-	emitter = std::make_unique<ParticleEmitter>();
-	emitter->Initialize(particle.get(), groupName, emitterTransform, config);
-	emitter->SetTransform(emitterTransform);
-	emitter->SetUseRandom(useRandomPosition);  // ランダム位置設定を反映
+	// 起動時に一括プリセット読み込み（Resources/Particle/*.json）
+	particle->LoadAllPresets();
 
-	particle->SetColorToGroup(groupName, particleColor);
-	particle->SetVelocityToGroup(groupName, particleVelocity);
-	particle->SetLifeTimeToGroup(groupName, particleLifeTime);
-	particle->SetCurrentTimeToGroup(groupName, particleStartTime);
+	// エミッターのデフォルト値（原点、スケール1）
+	emitterTransform.scale = { 1.0f, 1.0f, 1.0f };
+	emitterTransform.rotate = { 0.0f, 0.0f, 0.0f };
+	emitterTransform.translate = { 0.0f, 0.0f, 1.0f };
 
-	// ===== Planeのコピー：もう一つのパーティクル初期化 =====
-	planeParticle2->Initialize(ParticleManager::VertexDataType::Plane);
-	planeParticle2->CreateParticleGroup(groupName2, "Resources/smoke.png", ParticleManager::BlendMode::kBlendModeNormal);
-	planeParticle2->SetCamera(camera.get());
+	emitPresetName = "NewParticle"; // プリセットエディタのデフォルト名と合わせておく想定
 
-	emitter2 = std::make_unique<ParticleEmitter>();
-	emitter2->Initialize(planeParticle2.get(), groupName2, emitterTransform,
-		EmitterConfig{ ShapeType::Plane, 20, 1.0f, false });
-	emitter2->SetTransform(emitterTransform);
-	emitter2->SetUseRandom(useRandomPosition);
-
-	planeParticle2->SetColorToGroup(groupName2, { 0.0f, 0.0f, 0.0f, 0.2f });
-	planeParticle2->SetVelocityToGroup(groupName2, particleVelocity);
-	planeParticle2->SetLifeTimeToGroup(groupName2, 2.2f);
-	planeParticle2->SetCurrentTimeToGroup(groupName2, particleStartTime);
-
-
-
-	// ===== UI配置 =====
+#ifdef USE_IMGUI
+	// 右側ドックにウィンドウを出す（レイアウト用）
 	AddRightDockWindow(kWindowName_Particle);
-
-
-	// ===== リング用パーティクルマネージャ初期化 =====
-	ringParticle->Initialize(ParticleManager::VertexDataType::Ring);
-	ringParticle->SetCamera(camera.get());
-
-	// 1枚目: ビルボードON
-	ringParticle->SetUseBillboard(true);
-	ringParticle->CreateParticleGroup("ring_billboard", "Resources/gradationLine.png", ParticleManager::BlendMode::kBlendModeAdd);
-	Transform t0;
-	t0.translate = { 0.0f, 0.0f, 0.0f };
-	t0.scale = { 2.0f, 2.0f, 2.0f };
-	t0.rotate = { 0.0f, 0.0f, 0.0f };
-	auto ring0 = std::make_unique<ParticleEmitter>();
-	ring0->Initialize(ringParticle.get(), "ring_billboard", t0, EmitterConfig{ ShapeType::Ring, 1, 1.0f, false });
-	ring0->SetTransform(t0);
-	ring0->SetUseRandom(false);
-	ringExplosions.push_back(std::move(ring0));
-
-	// 2枚目: ビルボードOFF
-	ringParticle->SetUseBillboard(false);
-	ringParticle->CreateParticleGroup("ring_static", "Resources/gradationLine.png", ParticleManager::BlendMode::kBlendModeAdd);
-
-	Transform t1;
-	t1.translate = { 0.0f, 0.0f, 0.0f };
-	t1.scale = { 2.0f, 2.0f, 2.0f };
-	t1.rotate = { 3.1415f / 3.0f, 0.0f, 0.0f };
-	auto ring1 = std::make_unique<ParticleEmitter>();
-	ring1->Initialize(ringParticle.get(), "ring_static", t1, EmitterConfig{ ShapeType::Ring, 1, 1.0f, false });
-	ring1->SetTransform(t1);
-	ring1->SetUseRandom(false);
-	ringExplosions.push_back(std::move(ring1));
-
-	// ===== Primitive パーティクル初期化（閃光エフェクト） =====
-	primitiveParticle->Initialize(ParticleManager::VertexDataType::Plane);
-	primitiveParticle->SetCamera(camera.get());
-
-	for (int i = 0; i < 4; ++i) {
-		std::string groupName = "burst_line_" + std::to_string(i);
-		primitiveParticle->CreateParticleGroup(groupName, "Resources/circle2.png", ParticleManager::BlendMode::kBlendModeAdd);
-
-		auto emitter = std::make_unique<ParticleEmitter>();
-
-		// time を仮に初期0とする（初期時点では sin の引数 = i）
-		float time = 0.0f;
-		float scaleY = 4.5f + 4.5f * std::sin(time + i);  // 初期スケール
-		float rotationZ = 3.1415f * 0.25f * std::sin(time + i * 0.5f);  // 初期回転Z
-
-		Transform t;
-		t.translate = { 0.0f, 0.0f, 0.0f };
-		t.scale = { 1.1f, scaleY, 1.0f };  // 細く縦長
-		t.rotate = {
-			0.0f,
-			3.1415f * 2.0f * i / 8.0f,
-			rotationZ
-		};
-
-		emitter->Initialize(primitiveParticle.get(), groupName, t, EmitterConfig{
-			ShapeType::Primitive,
-			1,
-			1.0f,
-			false
-			});
-		emitter->SetTransform(t);
-		emitter->SetUseRandom(false);
-
-		primitiveEmitters.push_back(std::move(emitter));
-	}
-
+	AddRightDockWindow(kWindowName_Preset);
+#endif
 }
 
 
@@ -135,44 +64,25 @@ void ParticleEditorScene::Update()
 	// カメラ更新
 	if (camera) camera->Update();
 
+	// デバッグカメラ更新
+	UpdateDebugCamera();
+
+	// スカイボックス更新
 	skybox->Update();
 
-	// 毎フレーム、現在の透明度をパーティクルグループに反映
-	// パーティクルの色（含むアルファ）を反映
-	particle->SetColorToGroup(groupName, particleColor);
-	particle->SetVelocityToGroup(groupName, particleVelocity);
-
-
-	// 通常パーティクル更新
-	particle->SetColorToGroup(groupName, particleColor);
-	particle->SetVelocityToGroup(groupName, particleVelocity);
-
-	/*planeParticle2->SetColorToGroup(groupName, { 0.0f, 0.0f, 0.0f, 1.0f });
-	planeParticle2->SetVelocityToGroup(groupName, particleVelocity);*/
-
-
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-		explosionEffectStart = true;
+	// パーティクル更新
+	if (particle) {
+		particle->EmitByPresetName(emitPresetName, emitterTransform);
+		particle->Update();
 	}
 
-	// 爆破エフェクト
-	Explosion();
+	if (Input::GetInstance()->TriggerKey(DIK_G)) {
+		// シーン切り替え
+		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+	}
 
 	// デバッグ
 	Debug();
-
-	//emitterTransform.translate = GlobalVariables::GetInstance()->GetValue<Vector3>("Particle", "position");
-	//emitterTransform.rotate = GlobalVariables::GetInstance()->GetValue<Vector3>("Particle", "rotation");
-	//emitterTransform.scale = GlobalVariables::GetInstance()->GetValue<Vector3>("Particle", "scale");
-	//particleVelocity = GlobalVariables::GetInstance()->GetValue<Vector3>("Particle", "velocity");
-	////particleColor = GlobalVariables::GetInstance()->GetValue<Vector4>("Particle", "color");
-	//particleLifeTime = GlobalVariables::GetInstance()->GetValue<float>("Particle", "lifetime");
-	//particleStartTime = GlobalVariables::GetInstance()->GetValue<float>("Particle", "startTime");
-	//config.count = GlobalVariables::GetInstance()->GetValue<int32_t>("Particle", "count");
-	//config.frequency = GlobalVariables::GetInstance()->GetValue<float>("Particle", "frequency");
-	//config.repeat = GlobalVariables::GetInstance()->GetValue<bool>("Particle", "repeat");
-	//useRandomPosition = GlobalVariables::GetInstance()->GetValue<bool>("Particle", "useRandom");
-
 
 }
 
@@ -194,7 +104,7 @@ void ParticleEditorScene::BackGroundDraw()
 void ParticleEditorScene::Draw()
 {
 
-	skybox->Draw();
+	//skybox->Draw();
 
 	// ================================================
 	// ここからSkyBoxの描画
@@ -237,8 +147,8 @@ void ParticleEditorScene::Draw()
 	// ここからDrawLine個々の描画
 	// ================================================
 
-
-
+	// グリッド描画
+	DrawLine::GetInstance()->DrawPlane(ground);
 
 	// ================================================
 	// ここまでDrawLine個々の描画
@@ -264,14 +174,9 @@ void ParticleEditorScene::ForeGroundDraw()
 	// ================================================
 
 	// パーティクル描画
-	planeParticle2->Draw();
-	particle->Draw();
-
-
-	// パーティクル描画（リング爆発）
-	ringParticle->Draw();
-
-	primitiveParticle->Draw();
+	if (particle) {
+		particle->Draw();
+	}
 
 	// ================================================
 	// ここまでparticle個々の描画
@@ -281,242 +186,243 @@ void ParticleEditorScene::ForeGroundDraw()
 void ParticleEditorScene::Debug()
 {
 #ifdef USE_IMGUI
-	if (!IsDockedImGuiEnabled()) return;
 
-	ImGui::Begin(kWindowName_Particle);
+	ImGuiViewport* viewport = ImGui::GetMainViewport();
+	ImVec2 workPos = viewport->WorkPos;
+	ImVec2 workSize = viewport->WorkSize;
 
+	// レイアウト比率
+	const float leftRatio = 0.25f;     // 左カラムの幅
+	const float rightRatio = 0.30f;    // 右カラムの幅
+	const float cameraRatio = 0.30f;   // 左カラムの下段が占める高さ割合
 
-	// --- Transform 編集 ---
-	ImGui::Text("エミッターの位置・回転・拡大率を調整");
-	ImGui::DragFloat3("位置(Position)", &emitterTransform.translate.x, 0.1f);
-	ImGui::DragFloat3("回転(Rotation)", &emitterTransform.rotate.x, 0.1f);
-	ImGui::DragFloat3("スケール(Scale)", &emitterTransform.scale.x, 0.1f);
+	float leftWidth = workSize.x * leftRatio;
+	float rightWidth = workSize.x * rightRatio;
 
-	// --- ランダム発生制御 ---
-	ImGui::Separator();
-	ImGui::Text("発生位置の設定");
-	ImGui::Checkbox("ランダムな位置に発生", &useRandomPosition);
-	ImGui::Text("オフにするとエミッター位置から固定で発生");
+	// 左カラム（上：Particle、下：Camera）
+	float cameraHeight = workSize.y * cameraRatio;
+	float particleCtrlHeight = workSize.y - cameraHeight;
 
-	// --- 速度ベクトル調整 ---
-	ImGui::Separator();
-	ImGui::Text("パーティクルの速度（発生時に反映）");
-	ImGui::DragFloat3("速度(Velocity)", &particleVelocity.x, 0.05f, -10.0f, 10.0f);
+	// 左上
+	ImVec2 leftTopPos = workPos;
+	ImVec2 leftTopSize = ImVec2(leftWidth, particleCtrlHeight);
 
-	// --- テクスチャ切り替え ---
-	ImGui::Separator();
-	ImGui::Text("パーティクルに使用するテクスチャ");
+	// 左下（Camera）
+	ImVec2 leftBottomPos = ImVec2(workPos.x, workPos.y + particleCtrlHeight);
+	ImVec2 leftBottomSize = ImVec2(leftWidth, cameraHeight);
 
-	if (ImGui::BeginCombo("テクスチャ(Texture)", textureFiles[selectedTextureIndex].c_str())) {
-		for (int i = 0; i < textureFiles.size(); ++i) {
-			bool isSelected = (selectedTextureIndex == i);
-			if (ImGui::Selectable(textureFiles[i].c_str(), isSelected)) {
-				selectedTextureIndex = i;
-			}
-			if (isSelected) {
-				ImGui::SetItemDefaultFocus();
+	// 右
+	ImVec2 rightPos = ImVec2(workPos.x + workSize.x - rightWidth, workPos.y);
+	ImVec2 rightSize = ImVec2(rightWidth, workSize.y);
+
+	ImGuiWindowFlags panelFlags =
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoCollapse |
+		ImGuiWindowFlags_NoDocking;
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+
+	//===========================================
+	// ① 右：Particle Preset Editor（先に描く）
+	//===========================================
+	ImGui::SetNextWindowPos(rightPos);
+	ImGui::SetNextWindowSize(rightSize);
+
+	if (particle) {
+
+		// DrawImGuiParticlePresetEditor 内部で Begin()/End() が呼ばれる
+		particle->DrawImGuiParticlePresetEditor();
+
+		// 編集中のプリセット名を Emit 側に反映
+		const std::string& editingName = particle->GetCurrentEditingPresetName();
+		if (!editingName.empty()) {
+			emitPresetName = editingName;
+		}
+	}
+
+	//===========================================
+	// ② 左上：Particle Control（Emit 操作）
+	//===========================================
+	ImGui::SetNextWindowPos(leftTopPos);
+	ImGui::SetNextWindowSize(leftTopSize);
+
+	if (ImGui::Begin(kWindowName_Particle, nullptr, panelFlags))
+	{
+		ImGui::Text("このシーンはパーティクルプリセットの編集＆プレビュー用です。");
+		ImGui::Separator();
+
+		ImGui::Text("Emit Transform");
+		ImGui::DragFloat3("Position", &emitterTransform.translate.x, 0.1f);
+		ImGui::DragFloat3("Rotation", &emitterTransform.rotate.x, 0.1f);
+		ImGui::DragFloat3("Scale", &emitterTransform.scale.x, 0.1f, 0.0f, 100.0f);
+
+		ImGui::Separator();
+
+		// Emit に使うプリセット名（右パネルの内容が反映される）
+		ImGui::Text("Emit Preset Name");
+		char buf[64]{};
+		strncpy_s(buf, sizeof(buf), emitPresetName.c_str(), _TRUNCATE);
+		if (ImGui::InputText("Preset Name", buf, sizeof(buf))) {
+			emitPresetName = buf;
+		}
+
+		if (ImGui::Button("Emit Now")) {
+			if (particle) {
+				particle->EmitByPresetName(emitPresetName, emitterTransform);
 			}
 		}
-		ImGui::EndCombo();
+
+		ImGui::Indent(10.0f);
+		ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f),
+			"・現在編集中のプリセットを1回だけ再生します\n"
+			"・保存しなくても見た目をすぐ確認できます");
+		ImGui::Unindent(10.0f);
+
+		ImGui::Separator();
+
+		if (ImGui::Button("Reload All Presets")) {
+			if (particle) {
+				particle->LoadAllPresets();
+			}
+		}
+
+		ImGui::Indent(10.0f);
+		ImGui::TextColored(ImVec4(0.7f, 1.0f, 0.7f, 1.0f),
+			"・Resources/Particle/*.json をすべて読み込み直します\n"
+			"・外部ツールで編集した JSON も反映されます\n"
+			"・プリセット一覧を最新状態に更新します");
+		ImGui::Unindent(10.0f);
 	}
-
-
-	// --- 色（RGBA）調整 ---
-	ImGui::Separator();
-	ImGui::Text("パーティクルの色（RGBA）を調整します");
-
-	ImGui::ColorEdit4("色 (Color RGBA)", &particleColor.x);
-
-	// --- パーティクルの寿命と初期時間設定 ---
-	ImGui::Separator();
-	ImGui::Text("パーティクルの寿命と開始時間を調整");
-
-	// 寿命（lifeTime）
-	ImGui::DragFloat("寿命 (LifeTime)", &particleLifeTime, 0.1f, 0.1f, 100.0f);
-	ImGui::Text("パーティクルが消えるまでの時間（秒）");
-
-	// 開始時間（currentTime）
-	ImGui::DragFloat("開始時間 (CurrentTime)", &particleStartTime, 0.1f, 0.0f, particleLifeTime);
-	ImGui::Text("生成時の経過時間。0.0から始まるのが通常");
-
-
-
-	// --- パラメータ編集 ---
-	ImGui::Separator();
-	ImGui::Text("パーティクルの生成設定を調整");
-
-	ImGui::DragInt("発生数(Count)", (int*)&config.count, 1, 1, 10000);
-	ImGui::Text("1回の発生で何個パーティクルを出すか");
-
-	ImGui::DragFloat("発生間隔(Frequency)", &config.frequency, 0.01f, 0.01f, 10.0f);
-	ImGui::Text("何秒ごとに発生するか（秒）");
-
-	ImGui::Checkbox("繰り返し(Repeat)", &config.repeat);
-	ImGui::Text("オンにすると一定間隔で繰り返し発生");
-
-	// --- 形状タイプ選択 ---
-	ImGui::Separator();
-	ImGui::Text("パーティクルの形状タイプ");
-
-	const char* shapeItems[] = { "Plane（通常）", "Primitive（線状）", "Ring（リング状）", "Cylinder（円柱状）" };
-	int shapeIndex = static_cast<int>(config.shapeType);
-	if (ImGui::Combo("形状タイプ", &shapeIndex, shapeItems, IM_ARRAYSIZE(shapeItems))) {
-		config.shapeType = static_cast<ShapeType>(shapeIndex);
-	}
-
-	ImGui::Checkbox("カメラ目線 (ビルボード)", &useBillboard);
-	particle->SetUseBillboard(useBillboard);
-
-
-	// --- ブレンドモード選択 ---
-	ImGui::Separator();
-	ImGui::Text("描画時のブレンド方法");
-
-	const char* blendItems[] = {
-		"None（ブレンドなし）",      // kBlendModeNone
-		"Normal（通常α）",          // kBlendModeNormal
-		"Add（加算）",              // kBlendModeAdd
-		"Subtract（減算）",         // kBlendModeSubtract
-		"Multiply（乗算）",         // kBlendModeMultiply
-		"Screen（スクリーン）"      // kBlendModeScreen
-	};
-	ImGui::Combo("ブレンドモード(Blend Mode)", &blendModeIndex, blendItems, IM_ARRAYSIZE(blendItems));
-
-	// --- 再初期化ボタン ---
-	ImGui::Separator();
-	ImGui::Text("設定を反映してエミッターを再作成");
-
-	if (ImGui::Button("エミッター再初期化(Re-Initialize)")) {
-		// 既存のパーティクルグループを削除してから再作成（重要）
-		particle->DeleteParticleGroup(groupName);
-
-		// 新しいテクスチャでグループ再作成
-		particle->CreateParticleGroup(
-			groupName,
-			textureFiles[selectedTextureIndex],
-			static_cast<ParticleManager::BlendMode>(blendModeIndex)
-		);
-
-		// パラメータを再適用
-		particle->SetColorToGroup(groupName, particleColor);
-		particle->SetVelocityToGroup(groupName, particleVelocity);
-		particle->SetLifeTimeToGroup(groupName, particleLifeTime);
-		particle->SetCurrentTimeToGroup(groupName, particleStartTime);
-
-		emitter->Initialize(particle.get(), groupName, emitterTransform, config);
-		emitter->SetTransform(emitterTransform);
-		emitter->SetUseRandom(useRandomPosition);  // ランダム設定反映
-	}
-
-	//emitterTransform.translate = GlobalVariables::GetInstance()->GetValue<Vector3>("Particle", "position");
-	//emitterTransform.rotate = GlobalVariables::GetInstance()->GetValue<Vector3>("Particle", "rotation");
-	//emitterTransform.scale = GlobalVariables::GetInstance()->GetValue<Vector3>("Particle", "scale");
-	//particleVelocity = GlobalVariables::GetInstance()->GetValue<Vector3>("Particle", "velocity");
-	////particleColor = GlobalVariables::GetInstance()->GetValue<Vector4>("Particle", "color");
-	//particleLifeTime = GlobalVariables::GetInstance()->GetValue<float>("Particle", "lifetime");
-	//particleStartTime = GlobalVariables::GetInstance()->GetValue<float>("Particle", "startTime");
-	//config.count = GlobalVariables::GetInstance()->GetValue<int32_t>("Particle", "count");
-	//config.frequency = GlobalVariables::GetInstance()->GetValue<float>("Particle", "frequency");
-	//config.repeat = GlobalVariables::GetInstance()->GetValue<bool>("Particle", "repeat");
-	//useRandomPosition = GlobalVariables::GetInstance()->GetValue<bool>("Particle", "useRandom");
-
-
 	ImGui::End();
+
+	//===========================================
+	// ③ 左下：Camera Control
+	//===========================================
+	ImGui::SetNextWindowPos(leftBottomPos);
+	ImGui::SetNextWindowSize(leftBottomSize);
+
+	if (ImGui::Begin(kWindowName_Camera, nullptr, panelFlags))
+	{
+		if (camera) {
+
+			ImGui::Text("Camera Control");
+			ImGui::Separator();
+
+			// デバッグカメラON/OFF
+			ImGui::Checkbox("Enable Debug Camera", &debugCameraEnabled_);
+
+			if (debugCameraEnabled_) {
+				ImGui::TextUnformatted(
+					"操作方法:\n"
+					"  左クリック中      : マウスで視点回転\n"
+					"  右クリック中 + W  : 上に移動\n"
+					"  右クリック中 + S  : 下に移動\n"
+					"  W / S             : 前進 / 後退\n"
+					"  A / D             : 左 / 右 移動"
+				);
+				ImGui::Separator();
+			}
+
+			// カメラ手動設定
+			Vector3 camPos = camera->GetTranslate();
+			if (ImGui::DragFloat3("Position", &camPos.x, 0.1f)) {
+				camera->SetTranslate(camPos);
+			}
+
+			Vector3 camRot = camera->GetRotate();
+			if (ImGui::DragFloat3("Rotation", &camRot.x, 0.01f)) {
+				camera->SetRotate(camRot);
+			}
+		}
+		else {
+			ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
+				"Camera が nullptr です。");
+		}
+	}
+	ImGui::End();
+
+	ImGui::PopStyleVar(); // WindowRounding 戻す
 #endif
 }
 
-void ParticleEditorScene::Explosion()
+
+void ParticleEditorScene::UpdateDebugCamera()
 {
-	if (explosionEffectStart == true)
-	{
-		// 全体の時間を記録（毎フレーム加算）
-		static float totalTime = 0.0f;
-		totalTime += 0.1f; //
-
-		if (totalTime >= 0.6f)
-		{
-			static float emitterScale = 0.0f;
-			emitterScale += 0.1f;
-			if (emitterScale > 1.0f) emitterScale = 1.0f;
-			emitterTransform.scale = { emitterScale, emitterScale, emitterScale };
-			particle->SetScaleToGroup(groupName, emitterTransform.scale);
-
-			if (emitter) {
-				emitter->SetPosition(emitterTransform.translate);
-				emitter->SetRotation(emitterTransform.rotate);
-				emitter->SetScale(emitterTransform.scale);
-				emitter->Update();
-			}
-			particle->Update();
-		}
-
-		if (totalTime >= 0.8f)
-		{
-			if (emitter2) {
-				emitter2->SetPosition(emitterTransform.translate);
-				emitter2->SetRotation(emitterTransform.rotate);
-				emitter2->SetScale(emitterTransform.scale);
-				emitter2->Update();
-			}
-			planeParticle2->SetColorToGroup(groupName2, { 0.0f, 0.0f, 0.0f, 0.2f });
-			planeParticle2->SetVelocityToGroup(groupName2, particleVelocity);
-			planeParticle2->SetScaleToGroup(groupName2, emitterTransform.scale);
-			planeParticle2->Update();
-		}
-
-
-		// ===== リングスケールと透明度を時間で変化させ再Emit =====
-
-		if (totalTime >= 0.3f) {
-
-			static float ringScale = 0.0f;
-			static float ringAlpha = 1.0f;
-
-			ringScale += 0.5f;
-			ringAlpha -= 0.02f;
-			if (ringAlpha < 0.0f) ringAlpha = 0.0f;
-
-			ringParticle->SetScaleToGroup("ring_billboard", { ringScale, ringScale, ringScale });
-			ringParticle->SetScaleToGroup("ring_static", { ringScale, ringScale, ringScale });
-			ringParticle->SetColorToGroup("ring_billboard", { 1.0f, 1.0f, 1.0f, ringAlpha });
-			ringParticle->SetColorToGroup("ring_static", { 1.0f, 1.0f, 1.0f, ringAlpha });
-
-			for (auto& ring : ringExplosions) {
-				if (ring) {
-					ring->Update();
-				}
-			}
-			ringParticle->Update();
-		}
-
-
-
-		// ===== 放射線状のエフェクト（Primitive）をUpdateで閃光風に伸ばす =====
-		// ===== Primitive パーティクルの毎フレームEmit + 更新（動的スケール＆回転） =====
-
-		static float time = 0.0f;
-		time += 0.1f;
-
-		for (int i = 0; i < primitiveEmitters.size(); ++i) {
-			float emitDelay = (static_cast<float>(i) / 2.0f) * 0.2f;
-
-			if (totalTime >= emitDelay) {
-				float scaleY = 4.5f + 4.5f * std::sin(time + i);
-				float rotationZ = 3.1415f * 0.25f * std::sin(time + i * 0.5f);
-
-				Transform t;
-				t.translate = { 0.0f, 0.0f, 0.0f };
-				t.scale = { 0.1f, scaleY, 1.0f };
-				t.rotate = {
-					0.0f,
-					3.1415f * 2.0f * i / static_cast<float>(primitiveEmitters.size()),
-					rotationZ
-				};
-
-				primitiveEmitters[i]->SetTransform(t);
-				primitiveEmitters[i]->Update();
-			}
-		}
-		primitiveParticle->Update();
+	if (!debugCameraEnabled_ || !camera) {
+		return;
 	}
+
+	Input* input = Input::GetInstance();
+
+	constexpr float kDeltaTime = 1.0f / 60.0f;
+	constexpr float kMoveSpeed = 0.5f;    // WASD移動速度（必要なら調整）
+	constexpr float kRotateSpeed = 0.0003f;  // マウス回転速度（感度）
+
+	Vector3 pos = camera->GetTranslate();
+	Vector3 rot = camera->GetRotate();
+
+	//=========================================================
+	// 1. WASD 移動
+	//=========================================================
+	Vector3 move{};
+	bool rightPressed = input->PushMouseButton(1);  // 1=右クリック
+
+	// --- 右クリック押し中：W/S = 上下移動 ---
+	if (rightPressed) {
+		if (input->PushKey(DIK_W)) move.y += 1.0f;  // 上昇
+		if (input->PushKey(DIK_S)) move.y -= 1.0f;  // 下降
+	}
+	// --- 通常：W/S = 前後移動 ---
+	else {
+		if (input->PushKey(DIK_W)) move.z += 1.0f;  // 前進
+		if (input->PushKey(DIK_S)) move.z -= 1.0f;  // 後退
+	}
+
+	// A / D はどちらの場合も左右移動
+	if (input->PushKey(DIK_D)) move.x += 1.0f;
+	if (input->PushKey(DIK_A)) move.x -= 1.0f;
+
+	//// E / Q で上下移動
+	//if (input->PushKey(DIK_E)) move.y += 1.0f;
+	//if (input->PushKey(DIK_Q)) move.y -= 1.0f;
+
+	//=========================================================
+	// 2. マウス視点回転
+	//=========================================================
+	if (input->PushMouseButton(0)) {     // 0 = 左ボタン
+		POINT m = input->GetMouseDelta();
+		rot.y += -m.x * kRotateSpeed;    // 左右
+		rot.x += -m.y * kRotateSpeed;    // 上下
+
+		const float kPitchLimit = 1.5f;
+		rot.x = std::clamp(rot.x, -kPitchLimit, kPitchLimit);
+	}
+
+
+	//=========================================================
+	// 3. ローカル移動 → ワールド座標へ変換
+	//=========================================================
+	if (move.x != 0.0f || move.y != 0.0f || move.z != 0.0f)
+	{
+		float cy = std::cos(rot.y);
+		float sy = std::sin(rot.y);
+
+		Vector3 forward{ sy, 0.0f, cy };
+		Vector3 right{ cy, 0.0f, -sy };
+
+		Vector3 worldMove{};
+		worldMove = worldMove + forward * move.z;
+		worldMove = worldMove + right * move.x;
+		worldMove = worldMove + Vector3{ 0,1,0 } *move.y;
+
+		pos = pos + worldMove * (kMoveSpeed);
+	}
+
+	//=========================================================
+	// 4. カメラへ適用
+	//=========================================================
+	camera->SetTranslate(pos);
+	camera->SetRotate(rot);
 }
+

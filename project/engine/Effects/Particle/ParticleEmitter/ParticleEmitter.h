@@ -19,6 +19,7 @@ struct EmitterConfig {
     uint32_t count = 10;                     // 発生数（Ring, Cylinder は未使用）
     float frequency = 1.0f;                  // 発生間隔（秒）
     bool repeat = false;                     // 繰り返し発生させるか
+    //float lifeTime = 0.3f;                   // 寿命（デフォルトは 0.3秒）
 };
 
 class ParticleEmitter {

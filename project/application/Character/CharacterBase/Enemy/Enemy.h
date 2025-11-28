@@ -124,7 +124,7 @@ private:
 
 	bool isDead_ = false;        // 死亡状態かどうか
 	float deathTimer_ = 0.0f;    // 死亡経過時間
-	const float kDeathToTitleDelay_ = 5.5f; // タイトルへ戻るまでの秒数
+	const float kDeathToTitleDelay_ = 8.5f; // タイトルへ戻るまでの秒数
 
 	// 死亡時のスケール（ここから 0 まで縮小していく）
 	Vector3 deathStartScale_{ 1.0f, 1.0f, 1.0f };
@@ -134,10 +134,11 @@ private:
 	Vector3 explosionPos = {};
 
 	// 死亡エフェクト用パーティクル
-	std::unique_ptr<ParticleManager> particle = std::make_unique<ParticleManager>();
-	std::vector<std::unique_ptr<ParticleEmitter>> emitters;
-
-	std::unique_ptr<ParticleManager> particle2 = std::make_unique<ParticleManager>();
-	std::vector<std::unique_ptr<ParticleEmitter>> emitters2;
+	std::unique_ptr<ParticleManager> deathParticle_ = std::make_unique<ParticleManager>();
+	std::unique_ptr<ParticleManager> smokeParticle_ = std::make_unique<ParticleManager>();
+	std::unique_ptr<ParticleManager> ex1Particle_ = std::make_unique<ParticleManager>();
+	std::unique_ptr<ParticleManager> poweder = std::make_unique<ParticleManager>();
+	std::unique_ptr<ParticleManager> test = std::make_unique<ParticleManager>();
+	Transform deathParticleTransform_{}; // Emit位置用
 };
 

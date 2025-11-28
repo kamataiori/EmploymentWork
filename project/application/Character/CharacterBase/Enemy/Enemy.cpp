@@ -1,6 +1,5 @@
 #include "Enemy.h"
 #include <CollisionTypeIdDef.h>
-#include "Player.h"
 #include <SceneManager.h>
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
@@ -105,41 +104,41 @@ void Enemy::Initialize()
 	hpBarBG_->SetAnchorPoint({ 0.0f, 0.5f });
 	hpBarFill_->SetAnchorPoint({ 0.0f, 0.5f });
 
-	// コア爆発（明るい塊）
-	particle->Initialize(ParticleManager::VertexDataType::Plane);
-	particle->CreateParticleGroup(
-		"particle",
-		"Resources/circle.png",
-		ParticleManager::BlendMode::kBlendModeAdd
-	);
+	// -------------------------
+	// 死亡エフェクト用パーティクル（プリセット "fire" を使用）
+	// -------------------------
+	deathParticle_ = std::make_unique<ParticleManager>();
+	deathParticle_->Initialize(ParticleManager::VertexDataType::Plane);
 
-	auto emitter = std::make_unique<ParticleEmitter>();
-	emitter->Initialize(
-		particle.get(),
-		"particle",
-		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
-		EmitterConfig{ ShapeType::Plane, 1000, 1.0f, true } // repeat=false
-	);
-	emitters.push_back(std::move(emitter));
+	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
+	deathParticle_->LoadAllPresets();
 
+	smokeParticle_ = std::make_unique<ParticleManager>();
+	smokeParticle_->Initialize(ParticleManager::VertexDataType::Plane);
 
-	// 火花っぽいストリーク
-	particle2->Initialize(ParticleManager::VertexDataType::Plane);
-	particle2->CreateParticleGroup(
-		"particle2",
-		"Resources/gradationLine.png",
-		ParticleManager::BlendMode::kBlendModeAdd
-	);
+	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
+	smokeParticle_->LoadAllPresets();
 
-	auto emitter2 = std::make_unique<ParticleEmitter>();
-	emitter2->Initialize(
-		particle2.get(),
-		"particle2",
-		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
-		EmitterConfig{ ShapeType::Primitive, 100, 1.0f, false } // repeat=false
-	);
-	emitters2.push_back(std::move(emitter2));
+	ex1Particle_ = std::make_unique<ParticleManager>();
+	ex1Particle_->Initialize(ParticleManager::VertexDataType::Plane);
 
+	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
+	ex1Particle_->LoadAllPresets();
+
+	poweder = std::make_unique<ParticleManager>();
+	poweder->Initialize(ParticleManager::VertexDataType::Plane);
+
+	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
+	poweder->LoadAllPresets();
+
+	test->Initialize(ParticleManager::VertexDataType::Plane);
+	test->LoadAllPresets();
+
+	// Emit 時に使う Transform の初期値
+	deathParticleTransform_ = transform;
+	/*deathParticleTransform_.scale = { 1.0f, 1.0f, 1.0f };
+	deathParticleTransform_.rotate = { 0.0f, 0.0f, 0.0f };
+	deathParticleTransform_.translate = { 0.0f, 0.0f, 0.0f };*/
 
 }
 
@@ -286,27 +285,32 @@ void Enemy::Update()
 				explosionPos = transform.translate;
 				//explosionPos.y += 1.0f;
 
-				// ---------- コアの爆発（Plane） ----------
-				for (auto& emitter : emitters) {
-					emitter->SetPosition({ explosionPos.x ,explosionPos.y /*+ 3.0f*/,explosionPos.z });
-					emitter->Emit(); // EmitterConfig の count 分だけ一気に出る
+				 // fire プリセットをこの位置で Emit
+				if (deathParticle_) {
+					deathParticleTransform_.translate = explosionPos;
+					deathParticleTransform_.translate.y += 3.5f;
+					deathParticle_->EmitByPresetName("fire", deathParticleTransform_);
 				}
-				// Emit 後に、ParticleManager の setter で見た目を一括調整
-				// グループ名は Initialize で作った "particle"
-				//particle->SetScaleToGroup("particle", { 2.5f, 2.5f, 2.5f });                  // 大きく
-				particle->SetColorToGroup("particle", { 1.0f, 1.0f, 1.0f, 1.0f });           // オレンジ寄り
-				particle->SetLifeTimeToGroup("particle", 1.0f);                               // パッと消える
-
-				// ---------- 線の爆発（Primitive：火花みたいなやつ） ----------
-				for (auto& emitter2 : emitters2) {
-					emitter2->SetPosition(explosionPos);
-					emitter2->Emit();
+				if (smokeParticle_) {
+					deathParticleTransform_.translate = explosionPos;
+					deathParticleTransform_.translate.y += 2.5f;
+					smokeParticle_->EmitByPresetName("smoke", deathParticleTransform_);
 				}
-				particle2->SetScaleToGroup("particle2", { 0.2f, 3.0f, 1.0f });                 // 細くて長い線
-				particle2->SetColorToGroup("particle2", { 1.0f, 0.95f, 0.7f, 1.0f });          // 明るい黄色
-				particle2->SetLifeTimeToGroup("particle2", 0.8f);
-				// こっちは勢いを出したいので、上方向に吹き上げる
-				particle2->SetVelocityToGroup("particle2", { 0.0f, 6.0f, 0.0f });
+				if (ex1Particle_) {
+					deathParticleTransform_.translate = explosionPos;
+					deathParticleTransform_.translate.y += 3.5f;
+					ex1Particle_->EmitByPresetName("ex1", deathParticleTransform_);
+				}
+				if (poweder) {
+					deathParticleTransform_.translate = explosionPos;
+					deathParticleTransform_.translate.y += 2.5f;
+					poweder->EmitByPresetName("powder", deathParticleTransform_);
+				}
+				if (test) {
+					deathParticleTransform_.translate = explosionPos;
+					deathParticleTransform_.translate.y += 2.5f;
+					test->EmitByPresetName("NewParticle", deathParticleTransform_);
+				}
 
 				hasSpawnedExplosion_ = true;
 
@@ -327,15 +331,26 @@ void Enemy::Update()
 		if (transform.scale.z < 0.0f) transform.scale.z = 0.0f;
 
 		// 毎フレームパーティクルを更新（Emitter は今のまま Update() 引数なし）
-		for (auto& emitter : emitters) {
-			emitter->Update();
+		if (deathParticle_) {
+			deathParticle_->Update();
 		}
-		particle->Update();
 
-		for (auto& emitter2 : emitters2) {
-			emitter2->Update();
+		if (smokeParticle_) {
+			smokeParticle_->Update();
 		}
-		particle2->Update();
+
+		if (ex1Particle_) {
+			ex1Particle_->Update();
+		}
+
+		if (poweder) {
+			poweder->Update();
+		}
+
+		if (test) {
+			test->Update();
+		}
+
 
 		// 一定時間経ったら TITLE へ戻る
 		if (deathTimer_ >= kDeathToTitleDelay_) {
@@ -395,11 +410,18 @@ void Enemy::AnimationDraw()
 
 void Enemy::ParticleDraw()
 {
-	if (isDead_) {
-
-		particle->Draw();
-		particle2->Draw();
+	if (isDead_ && deathParticle_) {
+		deathParticle_->Draw();
 	}
+
+	/*if (isDead_ && smokeParticle_) {
+		smokeParticle_->Draw();
+	}*/
+
+	if (isDead_ && test) {
+		test->Draw();
+	}
+
 }
 
 void Enemy::OnCollision()
@@ -407,6 +429,12 @@ void Enemy::OnCollision()
 	// ===== HP減少 =====
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
+
+	/*if (poweder) {
+		deathParticleTransform_.translate = explosionPos;
+		deathParticleTransform_.translate.y += 2.5f;
+		poweder->EmitByPresetName("powder", deathParticleTransform_);
+	}*/
 
 	// ===== HPチェック =====
 	if (hp_ <= 0 && !isDead_) {
@@ -439,8 +467,11 @@ void Enemy::SetCamera(Camera* camera)
 	ObjectBase::SetCamera(camera);
 
 	// パーティクル側にも同じカメラを渡す
-	particle->SetCamera(camera);
-	particle2->SetCamera(camera);
+	deathParticle_->SetCamera(camera);
+	smokeParticle_->SetCamera(camera);
+	ex1Particle_->SetCamera(camera);
+	poweder->SetCamera(camera);
+	test->SetCamera(camera);
 
 
 	// 必要なら武器や他のオブジェクトにもここで渡せる

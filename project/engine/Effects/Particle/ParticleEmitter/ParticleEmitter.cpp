@@ -50,10 +50,10 @@ void ParticleEmitter::EmitByShape()
         particleManager_->PrimitiveEmit(name_, transform_, config_.count);
         break;
     case ShapeType::Ring:
-        particleManager_->RingEmit(name_, transform_);
+        particleManager_->RingEmit(name_, transform_, config_.count);
         break;
     case ShapeType::Cylinder:
-        particleManager_->CylinderEmit(name_, transform_);
+        particleManager_->CylinderEmit(name_, transform_, config_.count);
         break;
     default:
         break;
