@@ -134,9 +134,17 @@ public:
 	/// <param name="emitterTransform">発生元の Transform（位置/回転/スケール）</param>
 	void EmitByPresetName(const std::string& presetName, const Transform& emitterTransform);
 
+	const std::string& GetCurrentEditingPresetName() const { return currentEditingPresetName_; }
+
+	// setter
+	void SetCurrentEditingPresetName(const std::string& name) { currentEditingPresetName_ = name; }
+
 private:
 
 	std::unordered_map<std::string, ParticlePreset> presets_;  // name -> プリセット
+
+	// プリセットエディタで最後に触っていたプリセット名
+	std::string currentEditingPresetName_;
 
 private:
 

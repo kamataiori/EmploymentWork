@@ -6,7 +6,7 @@
         0.0,
         1.0
     ],
-    "count": 83,
+    "count": 40,
     "flipY": false,
     "frequency": 1.0,
     "initialOffset": [
@@ -24,7 +24,7 @@
         1.0,
         1.0
     ],
-    "lifeTime": 1.3700000047683716,
+    "lifeTime": 0.8899999856948853,
     "name": "fire",
     "repeat": false,
     "rotationSpeed": [
@@ -39,10 +39,11 @@
     ],
     "textureFilePath": "Resources/ParticleTexture/fire.png",
     "useBillboard": true,
+    "useGravity": false,
     "useRandomPosition": true,
     "velocity": [
         0.0,
-        1.649999976158142,
+        3.380000114440918,
         0.0
     ],
     "vertexType": 0

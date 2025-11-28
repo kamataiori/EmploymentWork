@@ -373,8 +373,14 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 		preset.flipY = false;
 		preset.lifeTime = 1.0f;
 		preset.initialScale = { 1.0f, 1.0f, 1.0f };
+		preset.initialRotate = { 0.0f, 0.0f, 0.0f };
+		preset.initialOffset = { 0.0f, 0.0f, 0.0f };
 		preset.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 		preset.useBillboard = true;
+		preset.velocity = { 0.0f, 0.0f, 0.0f };
+		preset.rotationSpeed = { 0.0f, 0.0f, 0.0f };
+		preset.scaleSpeed = { 0.0f, 0.0f, 0.0f };
+		preset.useGravity = false;
 
 		// Resources 以下からテクスチャ候補を列挙
 		textureList.clear();
@@ -397,7 +403,6 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 			preset.textureFilePath = "Resources/ParticleTexture/" + textureList[0];
 		}
 
-
 		initialized = true;
 	}
 
@@ -406,6 +411,81 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 		End();
 		return;
 	}
+
+	//==========================
+	// プリセット作成/読み込みボタン
+	//==========================
+	if (ImGui::Button("新しいParticleの作成")) {
+		// デフォルト値でリセット
+		preset = ParticlePreset{};
+		preset.name = "NewParticle";
+		preset.vertexType = VertexDataType::Plane;
+		preset.blendMode = kBlendModeNormal;
+		preset.count = 10;
+		preset.frequency = 1.0f;
+		preset.repeat = false;
+		preset.useRandomPosition = true;
+		preset.flipY = false;
+		preset.lifeTime = 1.0f;
+		preset.initialScale = { 1.0f, 1.0f, 1.0f };
+		preset.initialRotate = { 0.0f, 0.0f, 0.0f };
+		preset.initialOffset = { 0.0f, 0.0f, 0.0f };
+		preset.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+		preset.useBillboard = true;
+		preset.velocity = { 0.0f, 0.0f, 0.0f };
+		preset.rotationSpeed = { 0.0f, 0.0f, 0.0f };
+		preset.scaleSpeed = { 0.0f, 0.0f, 0.0f };
+		preset.useGravity = false;
+
+		if (!textureList.empty()) {
+			currentTextureIndex = 0;
+			preset.textureFilePath = "Resources/ParticleTexture/" + textureList[0];
+		}
+		else {
+			currentTextureIndex = -1;
+			preset.textureFilePath.clear();
+		}
+	}
+	SameLine();
+	if (ImGui::Button("既存のParticleを編集")) {
+		ImGui::OpenPopup("既存プリセット選択");
+	}
+
+	// ポップアップ：既存プリセット一覧
+	if (ImGui::BeginPopup("既存プリセット選択")) {
+		if (presets_.empty()) {
+			ImGui::TextColored(ImVec4(1, 0.5f, 0.5f, 1), "読み込まれているプリセットがありません");
+		}
+		else {
+			ImGui::Text("編集するプリセットを選択してください");
+			ImGui::Separator();
+
+			for (auto& kv : presets_) {
+				const std::string& presetName = kv.first;
+				if (ImGui::Selectable(presetName.c_str())) {
+					// 選択したプリセットの内容を現在の編集プリセットにコピー
+					preset = kv.second;
+
+					// テクスチャ名から currentTextureIndex を合わせる
+					currentTextureIndex = -1;
+					if (!preset.textureFilePath.empty()) {
+						std::string fileName = fs::path(preset.textureFilePath).filename().string();
+						for (int i = 0; i < (int)textureList.size(); ++i) {
+							if (textureList[i] == fileName) {
+								currentTextureIndex = i;
+								break;
+							}
+						}
+					}
+
+					ImGui::CloseCurrentPopup();
+				}
+			}
+		}
+		ImGui::EndPopup();
+	}
+
+	ImGui::Separator();
 
 	// --- プリセット名 ---
 	{
@@ -470,23 +550,21 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 					ImGui::SetItemDefaultFocus();
 				}
 
-				// ここがポイント：マウスが乗ったらプレビュ画像を表示
+				// マウスが乗ったらプレビュー画像を表示
 				if (ImGui::IsItemHovered()) {
 					ImGui::BeginTooltip();
 					{
-						// 1) テクスチャをロード（既にロード済みなら内部でキャッシュされている）
+						// テクスチャをロード（既にロード済みなら内部でキャッシュされている）
 						std::string fullPath = "Resources/ParticleTexture/" + fileName;
 						TextureManager::GetInstance()->LoadTexture(fullPath);
 						uint32_t texIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(fullPath);
 
-						// 2) SRV の GPU ハンドルを取得
+						// SRV の GPU ハンドルを取得
 						D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = srvManager->GetGPUDescriptorHandle(texIndex);
 
-						// 3) ImGui::Image に渡す ID を作成
-						//    ImGui-DX12 実装に合わせてキャスト方法は合わせる
+						// ImGui::Image に渡す ID を作成（DX12 実装に合わせてキャスト）
 						ImTextureID imguiTexId = (ImTextureID)gpuHandle.ptr;
 
-						// 4) プレビュー画像のサイズ
 						ImVec2 previewSize(256.0f, 256.0f);
 						ImGui::Image(imguiTexId, previewSize);
 					}
@@ -501,7 +579,6 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 		ImGui::TextColored(ImVec4(1, 0, 0, 1),
 			"Resources/ParticleTexture 以下にテクスチャが見つかりません");
 	}
-
 
 	// --- エミッター設定 ---
 	Separator();
@@ -530,8 +607,6 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 	// 重力
 	Checkbox("重力を使用する", &preset.useGravity);
 
-
-
 	// --- 保存ボタン ---
 	Separator();
 	if (Button("JSON を保存")) {
@@ -543,10 +618,14 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 		}
 	}
 
+	// 常に「今編集中の名前」を覚えておく
+	currentEditingPresetName_ = preset.name;
+
 	End();
 
 #endif // USE_IMGUI
 }
+
 
 bool ParticleManager::SavePresetToJson(const ParticlePreset& preset,
 	const std::string& directory)

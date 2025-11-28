@@ -410,25 +410,18 @@ void Enemy::AnimationDraw()
 
 void Enemy::ParticleDraw()
 {
-	/*if (isDead_ && deathParticle_) {
+	if (isDead_ && deathParticle_) {
 		deathParticle_->Draw();
 	}
 
-	if (isDead_ && smokeParticle_) {
+	/*if (isDead_ && smokeParticle_) {
 		smokeParticle_->Draw();
-	}*/
-
-	/*if (isDead_ && ex1Particle_) {
-		ex1Particle_->Draw();
 	}*/
 
 	if (isDead_ && test) {
 		test->Draw();
 	}
 
-	/*if (isDead_ && poweder) {
-		poweder->Draw();
-	}*/
 }
 
 void Enemy::OnCollision()

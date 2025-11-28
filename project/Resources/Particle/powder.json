@@ -39,6 +39,7 @@
     ],
     "textureFilePath": "Resources/ParticleTexture/powder.png",
     "useBillboard": true,
+    "useGravity": false,
     "useRandomPosition": true,
     "velocity": [
         2.359999895095825,

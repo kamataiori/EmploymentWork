@@ -6,7 +6,7 @@
         0.3706563711166382,
         1.0
     ],
-    "count": 49,
+    "count": 64,
     "flipY": false,
     "frequency": 1.0,
     "initialOffset": [
@@ -24,7 +24,7 @@
         1.0,
         1.0
     ],
-    "lifeTime": 1.0,
+    "lifeTime": 2.9000000953674316,
     "name": "NewParticle",
     "repeat": false,
     "rotationSpeed": [

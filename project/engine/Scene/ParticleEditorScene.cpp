@@ -192,26 +192,26 @@ void ParticleEditorScene::Debug()
 	ImVec2 workSize = viewport->WorkSize;
 
 	// レイアウト比率
-	const float leftRatio = 0.25f; // 左カラムの幅
-	const float rightRatio = 0.30f; // 右カラムの幅
-	const float cameraRatio = 0.30f; // 左カラムの下段(カメラ)が占める高さ割合
+	const float leftRatio = 0.25f;     // 左カラムの幅
+	const float rightRatio = 0.30f;    // 右カラムの幅
+	const float cameraRatio = 0.30f;   // 左カラムの下段が占める高さ割合
 
 	float leftWidth = workSize.x * leftRatio;
 	float rightWidth = workSize.x * rightRatio;
 
-	// 左カラムを上下に分割
+	// 左カラム（上：Particle、下：Camera）
 	float cameraHeight = workSize.y * cameraRatio;
 	float particleCtrlHeight = workSize.y - cameraHeight;
 
-	// 左上(Particle Control)
+	// 左上
 	ImVec2 leftTopPos = workPos;
 	ImVec2 leftTopSize = ImVec2(leftWidth, particleCtrlHeight);
 
-	// 左下(Camera Control)
+	// 左下（Camera）
 	ImVec2 leftBottomPos = ImVec2(workPos.x, workPos.y + particleCtrlHeight);
 	ImVec2 leftBottomSize = ImVec2(leftWidth, cameraHeight);
 
-	// 右カラム(プリセットエディタ)は全高
+	// 右
 	ImVec2 rightPos = ImVec2(workPos.x + workSize.x - rightWidth, workPos.y);
 	ImVec2 rightSize = ImVec2(rightWidth, workSize.y);
 
@@ -223,11 +223,30 @@ void ParticleEditorScene::Debug()
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 
-	//==========================
-	// 左上：Particle Control
-	//==========================
+	//===========================================
+	// ① 右：Particle Preset Editor（先に描く）
+	//===========================================
+	ImGui::SetNextWindowPos(rightPos);
+	ImGui::SetNextWindowSize(rightSize);
+
+	if (particle) {
+
+		// DrawImGuiParticlePresetEditor 内部で Begin()/End() が呼ばれる
+		particle->DrawImGuiParticlePresetEditor();
+
+		// 編集中のプリセット名を Emit 側に反映
+		const std::string& editingName = particle->GetCurrentEditingPresetName();
+		if (!editingName.empty()) {
+			emitPresetName = editingName;
+		}
+	}
+
+	//===========================================
+	// ② 左上：Particle Control（Emit 操作）
+	//===========================================
 	ImGui::SetNextWindowPos(leftTopPos);
 	ImGui::SetNextWindowSize(leftTopSize);
+
 	if (ImGui::Begin(kWindowName_Particle, nullptr, panelFlags))
 	{
 		ImGui::Text("このシーンはパーティクルプリセットの編集＆プレビュー用です。");
@@ -240,6 +259,7 @@ void ParticleEditorScene::Debug()
 
 		ImGui::Separator();
 
+		// Emit に使うプリセット名（右パネルの内容が反映される）
 		ImGui::Text("Emit Preset Name");
 		char buf[64]{};
 		strncpy_s(buf, sizeof(buf), emitPresetName.c_str(), _TRUNCATE);
@@ -252,6 +272,7 @@ void ParticleEditorScene::Debug()
 				particle->EmitByPresetName(emitPresetName, emitterTransform);
 			}
 		}
+
 		ImGui::Indent(10.0f);
 		ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f),
 			"・現在編集中のプリセットを1回だけ再生します\n"
@@ -265,6 +286,7 @@ void ParticleEditorScene::Debug()
 				particle->LoadAllPresets();
 			}
 		}
+
 		ImGui::Indent(10.0f);
 		ImGui::TextColored(ImVec4(0.7f, 1.0f, 0.7f, 1.0f),
 			"・Resources/Particle/*.json をすべて読み込み直します\n"
@@ -274,23 +296,22 @@ void ParticleEditorScene::Debug()
 	}
 	ImGui::End();
 
-	//==========================
-    // 左下：Camera Control
-    //==========================
+	//===========================================
+	// ③ 左下：Camera Control
+	//===========================================
 	ImGui::SetNextWindowPos(leftBottomPos);
 	ImGui::SetNextWindowSize(leftBottomSize);
+
 	if (ImGui::Begin(kWindowName_Camera, nullptr, panelFlags))
 	{
 		if (camera) {
+
 			ImGui::Text("Camera Control");
 			ImGui::Separator();
 
 			// デバッグカメラON/OFF
 			ImGui::Checkbox("Enable Debug Camera", &debugCameraEnabled_);
-			/*ImGui::TextUnformatted("WASD + Mouse で移動/回転");
-			ImGui::TextUnformatted("Mouse左クリックしながら回転");*/
 
-			// debugCameraEnabled_ が true のときだけ表示
 			if (debugCameraEnabled_) {
 				ImGui::TextUnformatted(
 					"操作方法:\n"
@@ -303,7 +324,7 @@ void ParticleEditorScene::Debug()
 				ImGui::Separator();
 			}
 
-			// 手動で位置・回転をいじるスライダー（お好みで）
+			// カメラ手動設定
 			Vector3 camPos = camera->GetTranslate();
 			if (ImGui::DragFloat3("Position", &camPos.x, 0.1f)) {
 				camera->SetTranslate(camPos);
@@ -321,35 +342,10 @@ void ParticleEditorScene::Debug()
 	}
 	ImGui::End();
 
-
-	//==========================
-	// 右：Particle Preset Editor
-	//==========================
-	ImGui::SetNextWindowPos(rightPos);
-	ImGui::SetNextWindowSize(rightSize);
-	if (particle) {
-		// 内部で ImGui::Begin("Particle Preset Editor") が呼ばれる
-		particle->DrawImGuiParticlePresetEditor();
-	}
-
-	//==========================
-	// 下：Console（固定）
-	//==========================
-	/*ImGui::SetNextWindowPos(bottomPos);
-	ImGui::SetNextWindowSize(bottomSize);
-	if (ImGui::Begin(kWindowName_Console, nullptr, panelFlags))
-	{
-		ImGui::Text("Console");
-		ImGui::Separator();
-		ImGui::Text("ここにログやデバッグ用の値を表示できます。");
-	}
-
-	ImGui::End();*/
-
-
 	ImGui::PopStyleVar(); // WindowRounding 戻す
 #endif
 }
+
 
 void ParticleEditorScene::UpdateDebugCamera()
 {
