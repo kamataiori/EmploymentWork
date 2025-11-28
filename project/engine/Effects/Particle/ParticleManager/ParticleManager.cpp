@@ -442,51 +442,66 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 		}
 	}
 
-	// --- テクスチャ選択（Resources 以下のファイルのみ） ---
+	// --- テクスチャ選択（Resources/ParticleTexture 以下のファイル） ---
 	if (!textureList.empty()) {
 		if (currentTextureIndex < 0 || currentTextureIndex >= (int)textureList.size()) {
 			currentTextureIndex = 0;
 		}
 
-		auto getter = [](void* data, int idx, const char** out_text) -> bool {
-			auto* vec = reinterpret_cast<std::vector<std::string>*>(data);
-			if (idx < 0 || idx >= (int)vec->size()) return false;
-			*out_text = (*vec)[idx].c_str();
-			return true;
-			};
+		const char* previewText = textureList[currentTextureIndex].c_str();
+		if (ImGui::BeginCombo("テクスチャファイル", previewText)) {
 
-		if (!textureList.empty()) {
-			if (currentTextureIndex < 0 || currentTextureIndex >= (int)textureList.size()) {
-				currentTextureIndex = 0;
+			// SRV マネージャ取得（プレビュー用）
+			SrvManager* srvManager = SrvManager::GetInstance();
+
+			for (int i = 0; i < (int)textureList.size(); ++i) {
+				bool isSelected = (i == currentTextureIndex);
+				const std::string& fileName = textureList[i];
+
+				if (ImGui::Selectable(fileName.c_str(), isSelected)) {
+					currentTextureIndex = i;
+
+					// JSON 用のパスを更新
+					preset.textureFilePath = "Resources/ParticleTexture/" + fileName;
+				}
+
+				// 選択中項目のチェックマーク
+				if (isSelected) {
+					ImGui::SetItemDefaultFocus();
+				}
+
+				// ここがポイント：マウスが乗ったらプレビュ画像を表示
+				if (ImGui::IsItemHovered()) {
+					ImGui::BeginTooltip();
+					{
+						// 1) テクスチャをロード（既にロード済みなら内部でキャッシュされている）
+						std::string fullPath = "Resources/ParticleTexture/" + fileName;
+						TextureManager::GetInstance()->LoadTexture(fullPath);
+						uint32_t texIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(fullPath);
+
+						// 2) SRV の GPU ハンドルを取得
+						D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = srvManager->GetGPUDescriptorHandle(texIndex);
+
+						// 3) ImGui::Image に渡す ID を作成
+						//    ImGui-DX12 実装に合わせてキャスト方法は合わせる
+						ImTextureID imguiTexId = (ImTextureID)gpuHandle.ptr;
+
+						// 4) プレビュー画像のサイズ
+						ImVec2 previewSize(256.0f, 256.0f);
+						ImGui::Image(imguiTexId, previewSize);
+					}
+					ImGui::EndTooltip();
+				}
 			}
 
-			auto getter = [](void* data, int idx, const char** out_text) -> bool {
-				auto* vec = reinterpret_cast<std::vector<std::string>*>(data);
-				if (idx < 0 || idx >= (int)vec->size()) return false;
-				*out_text = (*vec)[idx].c_str();  // filename だけ
-				return true;
-				};
-
-			// Combo を呼ぶ
-			if (ImGui::Combo("テクスチャファイル", &currentTextureIndex, getter,
-				(void*)&textureList, (int)textureList.size())) {
-
-				const std::string fileName = textureList[currentTextureIndex];
-
-				// JSON 用のパスは必ずここにそろえる
-				preset.textureFilePath = "Resources/ParticleTexture/" + fileName;
-			}
+			ImGui::EndCombo();
 		}
-		else {
-			ImGui::TextColored(ImVec4(1, 0, 0, 1),
-				"Resources/ParticleTexture 以下にテクスチャが見つかりません");
-		}
-
-
 	}
 	else {
-		TextColored(ImVec4(1, 0, 0, 1), "Resources 以下にテクスチャが見つかりません");
+		ImGui::TextColored(ImVec4(1, 0, 0, 1),
+			"Resources/ParticleTexture 以下にテクスチャが見つかりません");
 	}
+
 
 	// --- エミッター設定 ---
 	Separator();
@@ -754,7 +769,7 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 
 	// === ここからがポイント ===
 	// Emit によって新しく追加されたパーティクルだけに
-	// preset の velocity / rotationSpeed / scaleSpeed を適用する。
+	// presetを適用する
 	const size_t afterCount = group.particleList.size();
 	if (afterCount > beforeCount) {
 		auto it = group.particleList.begin();
@@ -764,6 +779,8 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 			p.velocity = preset.velocity;
 			p.rotationSpeed = preset.rotationSpeed;
 			p.scaleSpeed = preset.scaleSpeed;
+			p.color = preset.color;
+			p.lifeTime = preset.lifeTime;
 		}
 	}
 }

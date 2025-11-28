@@ -7,6 +7,8 @@
 
 inline constexpr const char* kWindowName_Particle = "Particle Control";
 inline constexpr const char* kWindowName_Preset = "Particle Preset Editor";
+inline constexpr const char* kWindowName_Console = "Console";
+inline constexpr const char* kWindowName_Camera = "Camera Control";
 
 class ParticleEditorScene : public BaseScene
 {
@@ -34,18 +36,27 @@ public:
     /// <summary>ImGui デバッグ</summary>
     void Debug() override;
 
+    // デバッグカメラ更新用ヘルパー
+    void UpdateDebugCamera();
 private:
+    // スカイボックス
     std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
-    std::unique_ptr<Camera> camera = std::make_unique<Camera>();          // 専用カメラ
-    std::unique_ptr<ParticleManager> particle = std::make_unique<ParticleManager>();  // プリセット対応パーティクル管理
 
+    // グリッド
+    Plane ground;
+
+    // カメラ
+    std::unique_ptr<Camera> camera = std::make_unique<Camera>();          // 専用カメラ
+    // デバッグカメラ ON/OFF
+    bool debugCameraEnabled_ = false;
+
+    std::unique_ptr<ParticleManager> particle = std::make_unique<ParticleManager>();  // プリセット対応パーティクル管理
     // Emit 位置など（ImGuiで編集＋EmitByPresetNameに渡す）
     Transform emitterTransform = {
         {1.0f, 1.0f, 1.0f},   // scale
         {0.0f, 0.0f, 0.0f},   // rotate
         {0.0f, 0.0f, 0.0f}    // translate
     };
-
     // Emit時に使うプリセット名（ImGuiで編集）
     std::string emitPresetName = "NewParticle";
 };

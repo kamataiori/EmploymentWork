@@ -131,6 +131,9 @@ void Enemy::Initialize()
 	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
 	poweder->LoadAllPresets();
 
+	test->Initialize(ParticleManager::VertexDataType::Plane);
+	test->LoadAllPresets();
+
 	// Emit 時に使う Transform の初期値
 	deathParticleTransform_ = transform;
 	/*deathParticleTransform_.scale = { 1.0f, 1.0f, 1.0f };
@@ -303,6 +306,11 @@ void Enemy::Update()
 					deathParticleTransform_.translate.y += 2.5f;
 					poweder->EmitByPresetName("powder", deathParticleTransform_);
 				}
+				if (test) {
+					deathParticleTransform_.translate = explosionPos;
+					deathParticleTransform_.translate.y += 2.5f;
+					test->EmitByPresetName("NewParticle", deathParticleTransform_);
+				}
 
 				hasSpawnedExplosion_ = true;
 
@@ -337,6 +345,10 @@ void Enemy::Update()
 
 		if (poweder) {
 			poweder->Update();
+		}
+
+		if (test) {
+			test->Update();
 		}
 
 
@@ -398,21 +410,25 @@ void Enemy::AnimationDraw()
 
 void Enemy::ParticleDraw()
 {
-	if (isDead_ && deathParticle_) {
+	/*if (isDead_ && deathParticle_) {
 		deathParticle_->Draw();
 	}
 
 	if (isDead_ && smokeParticle_) {
 		smokeParticle_->Draw();
-	}
+	}*/
 
-	if (isDead_ && ex1Particle_) {
+	/*if (isDead_ && ex1Particle_) {
 		ex1Particle_->Draw();
+	}*/
+
+	if (isDead_ && test) {
+		test->Draw();
 	}
 
-	if (isDead_ && poweder) {
+	/*if (isDead_ && poweder) {
 		poweder->Draw();
-	}
+	}*/
 }
 
 void Enemy::OnCollision()
@@ -462,6 +478,7 @@ void Enemy::SetCamera(Camera* camera)
 	smokeParticle_->SetCamera(camera);
 	ex1Particle_->SetCamera(camera);
 	poweder->SetCamera(camera);
+	test->SetCamera(camera);
 
 
 	// 必要なら武器や他のオブジェクトにもここで渡せる
