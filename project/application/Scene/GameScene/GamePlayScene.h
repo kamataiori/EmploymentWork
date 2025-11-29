@@ -14,6 +14,7 @@
 #include "CollisionManager.h"
 #include <Enemy/Enemy.h>
 #include <FollowCamera.h>
+#include "CameraEffectController.h"
 #include "SkyBox.h"
 
 //inline constexpr const char* kWindowName_PlayerControl = "Player Control";
@@ -84,6 +85,9 @@ private:
 	//3Dカメラの初期化
 	std::unique_ptr<Camera> camera1 = std::make_unique<Camera>();
 	std::unique_ptr<FollowCamera> followCamera;
+
+	// カメラ演出用コントローラ
+	std::unique_ptr<CameraEffectController> cameraEffect_;
 
 	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
 	std::unique_ptr<Object3d> ground;

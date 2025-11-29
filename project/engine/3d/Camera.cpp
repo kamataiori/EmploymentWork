@@ -31,6 +31,19 @@ void Camera::Update()
     //ImGui::End();
 }
 
+void Camera::AddTranslate(const Vector3& offset) {
+    transform.translate.x += offset.x;
+    transform.translate.y += offset.y;
+    transform.translate.z += offset.z;
+}
+
+void Camera::AddRotate(const Vector3& offset) {
+    transform.rotate.x += offset.x;
+    transform.rotate.y += offset.y;
+    transform.rotate.z += offset.z;
+}
+
+
 Matrix4x4 Camera::GetViewMatrix() const
 {
     Matrix4x4 rx = MakeRotateXMatrix(transform.rotate.x);

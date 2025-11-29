@@ -24,6 +24,8 @@ void GamePlayScene::Initialize()
 	// 3Dカメラの初期化
 	camera1->SetTranslate({ 0.0f, 0.0f, -20.0f });
 
+	cameraEffect_ = std::make_unique<CameraEffectController>();
+
 	player_ = std::make_unique<Player>(this);
 	enemy_ = std::make_unique<Enemy>(this);
 
@@ -91,6 +93,55 @@ void GamePlayScene::Update()
 	// カメラの更新
 	camera1->Update();
 	followCamera->Update();
+
+	// ========= ここからカメラシェイク入力 =========
+	Input* input = Input::GetInstance();
+
+	using ShakeMode = CameraEffectController::ShakeMode;
+
+	// Z キー：全方向シェイク
+	if (input->TriggerKey(DIK_Z)) {
+		CameraEffectController::ShakeParams params{};
+		params
+			.Duration(0.1f)
+			.AmpPos(0.5f)
+			.AmpRot(0.0f)
+			.Frequency(14.0f)
+			.Damping(2.0f)
+			.AffectRot(true)
+			.Mode(ShakeMode::All); // 全方向
+
+		cameraEffect_->StartShake(params);
+	}
+
+	// X キー：横揺れだけのシェイク（例）
+	if (input->TriggerKey(DIK_X)) {
+		cameraEffect_->StartSimpleShake(0.2f, 0.4f, ShakeMode::Horizontal);
+	}
+
+	// C キー：縦揺れだけのシェイク（例）
+	if (input->TriggerKey(DIK_C)) {
+		cameraEffect_->StartSimpleShake(0.2f, 0.4f, ShakeMode::Vertical);
+	}
+
+
+	using ZoomParams = CameraEffectController::ZoomParams;
+
+	// V キー：試しで一瞬ズームイン（FOV を小さくして寄る）
+	if (input->TriggerKey(DIK_V)) {
+		ZoomParams z{};
+		z.Duration(0.2f)    // 0.2 秒かけて
+			.ToFov(0.25f)      // FOV を 0.25 に（小さいほどアップ）
+			.UseCurrentFov(true); // 今の FOV からスタート
+
+		cameraEffect_->StartZoom(z);
+	}
+
+	// シェイクなどカメラ演出の更新（followCamera に対して適用）
+	constexpr float kDeltaTime = 1.0f / 60.0f; // 今は固定フレーム時間で OK
+	cameraEffect_->Update(followCamera.get(), kDeltaTime);
+
+	// ==========================================
 
 	if (Input::GetInstance()->TriggerKey(DIK_K)) {
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);

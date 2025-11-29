@@ -25,6 +25,10 @@ public:
 	void SetNearClip(float nearClip) {this->nearClip = nearClip;};
 	void SetFarClip(float farClip) {this->farClip = farClip;};
 
+	//------演出用加算API------
+	void AddTranslate(const Vector3& offset);
+	void AddRotate(const Vector3& offset);
+
 	//------getter------//
 	const Matrix4x4& GetWorldMatrix() const { return worldMatrix; }
 	//const Matrix4x4& GetViewMatrix() const { return viewMatrix; }
@@ -33,6 +37,12 @@ public:
 	const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix; }
 	const Vector3& GetRotate() const { return transform.rotate; }
 	const Vector3& GetTranslate() const { return transform.translate; }
+
+	/// <summary>
+    /// 現在の垂直 FOV（ラジアン）を取得
+    /// SetFovY で設定した値と同じもの
+    /// </summary>
+	float GetFovY() const { return horizontalViewingAngle; }
 
 
 protected:
