@@ -1,5 +1,5 @@
 #pragma once
-#include "Camera.h"
+#include "Camera/Camera.h"
 #include "ObjectBase.h"
 
 class FollowCamera : public Camera

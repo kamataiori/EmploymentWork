@@ -2,8 +2,8 @@
 #include "Object3dCommon.h"
 #include "Model.h"
 #include "ModelManager.h"
-#include "Camera.h"
-#include "CameraManager.h"
+#include "Camera/Camera.h"
+#include "Camera/CameraManager.h"
 #include <fstream>
 #include "Vector4.h"
 #include "Vector2.h"

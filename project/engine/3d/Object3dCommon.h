@@ -1,6 +1,6 @@
 #pragma once
 #include "DirectXCommon.h"
-#include "Camera.h"
+#include "Camera/Camera.h"
 
 //BlendMode
 enum BlendMode {

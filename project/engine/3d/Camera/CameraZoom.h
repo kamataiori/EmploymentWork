@@ -1,6 +1,6 @@
 #pragma once
 #include "Camera.h"
-#include "TweenEasing.h"
+#include "engine/TweenEasing.h"
 
 /// <summary>
 /// カメラの FOV を時間経過で変化させる「ズーム演出」専用クラス

@@ -4,11 +4,11 @@
 #include <random>
 #include <string>
 #include <d3d12.h>
-#include <Camera.h>
+#include <Camera/Camera.h>
 #include <Model.h>
 #include "TextureManager.h"
 #include "WinApp.h"
-#include <CameraManager.h>
+#include <Camera/CameraManager.h>
 #include "MathFunctions.h"
 #include <algorithm>
 #include <unordered_map>

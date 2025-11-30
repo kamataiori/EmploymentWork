@@ -14,7 +14,7 @@
 #include "CollisionManager.h"
 #include <Enemy/Enemy.h>
 #include <FollowCamera.h>
-#include "CameraEffectController.h"
+#include "Camera/CameraEffectController.h"
 #include "SkyBox.h"
 
 //inline constexpr const char* kWindowName_PlayerControl = "Player Control";
@@ -79,6 +79,11 @@ public:
 	/// </summary>
 	void CheckAllColisions();
 
+	/// <summary>
+    /// カメラ演出（撃破時の回り込みなど）
+    /// </summary>
+	void StartDefeatCamera();
+
 
 private:
 
@@ -88,6 +93,9 @@ private:
 
 	// カメラ演出用コントローラ
 	std::unique_ptr<CameraEffectController> cameraEffect_;
+	// フォローカメラを止めるかどうか
+	bool followCameraLocked_ = false;
+	
 
 	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
 	std::unique_ptr<Object3d> ground;
@@ -96,6 +104,8 @@ private:
 
 	std::unique_ptr<Player> player_;
 	std::unique_ptr<Enemy> enemy_;
+	bool enemyWasDead_ = false;   // 前フレームの死亡状態
+
 
 	
 

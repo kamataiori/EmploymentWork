@@ -80,6 +80,9 @@ public:
 	// 追尾ターゲット（Player）を渡してください（例：enemy->SetTargetTransform(&player->Get()->transform);）
 	void SetTargetTransform(const Transform* t) { target_ = t; }
 
+	bool IsDead() const { return isDead_; }
+
+
 
 private:
 

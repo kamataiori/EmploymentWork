@@ -92,14 +92,19 @@ void GamePlayScene::Update()
 
 	// カメラの更新
 	camera1->Update();
-	followCamera->Update();
+	// ロックされていないときだけ followCamera を更新する
+	if (!followCameraLocked_) {
+		followCamera->Update();
+	}
 
-	// ========= ここからカメラシェイク入力 =========
+	// ========= ここからカメラ演出入力 =========
 	Input* input = Input::GetInstance();
 
 	using ShakeMode = CameraEffectController::ShakeMode;
+	using ZoomParams = CameraEffectController::ZoomParams;
+	using MoveParams = CameraEffectController::MoveParams;
 
-	// Z キー：全方向シェイク
+	// --- Z キー：全方向シェイク ---
 	if (input->TriggerKey(DIK_Z)) {
 		CameraEffectController::ShakeParams params{};
 		params
@@ -114,30 +119,40 @@ void GamePlayScene::Update()
 		cameraEffect_->StartShake(params);
 	}
 
-	// X キー：横揺れだけのシェイク（例）
+	// --- X キー：横揺れだけシェイク ---
 	if (input->TriggerKey(DIK_X)) {
 		cameraEffect_->StartSimpleShake(0.2f, 0.4f, ShakeMode::Horizontal);
 	}
 
-	// C キー：縦揺れだけのシェイク（例）
+	// --- C キー：縦揺れだけシェイク ---
 	if (input->TriggerKey(DIK_C)) {
 		cameraEffect_->StartSimpleShake(0.2f, 0.4f, ShakeMode::Vertical);
 	}
 
-
-	using ZoomParams = CameraEffectController::ZoomParams;
-
-	// V キー：試しで一瞬ズームイン（FOV を小さくして寄る）
+	// --- V キー：一瞬ズームイン（FOV を小さくして寄る） ---
 	if (input->TriggerKey(DIK_V)) {
 		ZoomParams z{};
-		z.Duration(0.2f)    // 0.2 秒かけて
-			.ToFov(0.25f)      // FOV を 0.25 に（小さいほどアップ）
-			.UseCurrentFov(true); // 今の FOV からスタート
+		z.Duration(0.2f)          // 0.2 秒かけて
+			.ToFov(0.25f)           // FOV を 0.25 に（小さいほどアップ）
+			.UseCurrentFov(true);   // 今の FOV からスタート
 
 		cameraEffect_->StartZoom(z);
 	}
 
-	// シェイクなどカメラ演出の更新（followCamera に対して適用）
+	// O キー：撃破カメラテスト（回り込み）
+	// 敵死亡 → 撃破カメラ開始
+	bool enemyDeadNow = enemy_->IsDead();  // 今の状態
+
+	// 前フレームは生きていたのに、今フレーム死んだ
+	if (!enemyWasDead_ && enemyDeadNow)
+	{
+		StartDefeatCamera();
+	}
+
+	// 次フレームの比較用に記録
+	enemyWasDead_ = enemyDeadNow;
+
+	// シェイク / ズーム / 移動 などカメラ演出の更新（followCamera に対して適用）
 	constexpr float kDeltaTime = 1.0f / 60.0f; // 今は固定フレーム時間で OK
 	cameraEffect_->Update(followCamera.get(), kDeltaTime);
 
@@ -296,4 +311,32 @@ void GamePlayScene::CheckAllColisions()
 {
 	collisionManager_->CheckAllCollisions();
 }
+
+void GamePlayScene::StartDefeatCamera()
+{
+	// カメラ追従を止める
+	followCameraLocked_ = true;
+
+	// 中心はプレイヤーの位置だけ
+	const Transform& playerTf = player_->Get()->GetTransform();
+	Vector3 center = playerTf.translate;
+
+	// 回り込む角度（例：60度）
+	constexpr float kPi = 3.1415926535f;
+	float angleRad = kPi / 2.0f;
+
+	// 回り込みにかける時間
+	float duration = 1.0f;
+
+	// これ 1 行で「回り込み＋プレイヤー注視」まで全部やってくれる
+	cameraEffect_->StartOrbitMove(
+		followCamera.get(),
+		center,
+		angleRad,
+		duration,
+		Tween::Easing::EaseInExpo
+	);
+}
+
+
 

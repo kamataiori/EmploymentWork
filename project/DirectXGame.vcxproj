@@ -106,9 +106,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CameraEffectController.cpp" />
-    <ClCompile Include="CameraShake.cpp" />
-    <ClCompile Include="CameraZoom.cpp" />
+    <ClCompile Include="engine\3d\Camera\CameraEffectController.cpp" />
+    <ClCompile Include="engine\3d\Camera\CameraMove.cpp" />
+    <ClCompile Include="engine\3d\Camera\CameraShake.cpp" />
+    <ClCompile Include="engine\3d\Camera\CameraZoom.cpp" />
     <ClCompile Include="engine\3d\JsonLevelLoader.cpp" />
     <ClCompile Include="engine\3d\SceneController.cpp" />
     <ClCompile Include="engine\3d\SkyBox.cpp" />
@@ -129,8 +130,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Scene\Fade.cpp" />
     <ClCompile Include="engine\Scene\SceneManager\AbstractSceneFactory\AbstractSceneFactory.cpp" />
     <ClCompile Include="engine\Scene\SceneManager\BaseScene\BaseScene.cpp" />
-    <ClCompile Include="engine\3d\CameraManager.cpp" />
-    <ClCompile Include="engine\3d\Camera.cpp" />
+    <ClCompile Include="engine\3d\Camera\CameraManager.cpp" />
+    <ClCompile Include="engine\3d\Camera\Camera.cpp" />
     <ClCompile Include="engine\check\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\directx\DirectXCommon.cpp" />
     <ClCompile Include="engine\FrameWork\input\Input.cpp" />
@@ -172,18 +173,19 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerRogue.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerWarrior.cpp" />
     <ClCompile Include="engine\3d\Skinning.cpp" />
-    <ClCompile Include="MultiCollider.cpp" />
-    <ClCompile Include="PlayerAnimation.cpp" />
-    <ClCompile Include="PlayerAnimKey.cpp" />
-    <ClCompile Include="PlayerBullet.cpp" />
-    <ClCompile Include="PlayerIWeapon.cpp" />
-    <ClCompile Include="PlayerWeaponOBB.cpp" />
-    <ClCompile Include="ShapeIntersect.cpp" />
+    <ClCompile Include="engine\Collision\MultiCollider.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerAnimation.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerAnimKey.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerBullet.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerIWeapon.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.cpp" />
+    <ClCompile Include="engine\Collision\ShapeIntersect.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CameraEffectController.h" />
-    <ClInclude Include="CameraShake.h" />
-    <ClInclude Include="CameraZoom.h" />
+    <ClInclude Include="engine\3d\Camera\CameraEffectController.h" />
+    <ClInclude Include="engine\3d\Camera\CameraMove.h" />
+    <ClInclude Include="engine\3d\Camera\CameraShake.h" />
+    <ClInclude Include="engine\3d\Camera\CameraZoom.h" />
     <ClInclude Include="engine\3d\JsonLevelLoader.h" />
     <ClInclude Include="engine\3d\SceneController.h" />
     <ClInclude Include="engine\3d\SkyBox.h" />
@@ -205,8 +207,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\Scene\Fade.h" />
     <ClInclude Include="engine\Scene\SceneManager\AbstractSceneFactory\AbstractSceneFactory.h" />
     <ClInclude Include="engine\Scene\SceneManager\BaseScene\BaseScene.h" />
-    <ClInclude Include="engine\3d\CameraManager.h" />
-    <ClInclude Include="engine\3d\Camera.h" />
+    <ClInclude Include="engine\3d\Camera\CameraManager.h" />
+    <ClInclude Include="engine\3d\Camera\Camera.h" />
     <ClInclude Include="engine\check\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\directx\DirectXCommon.h" />
     <ClInclude Include="engine\Scene\UnityScene.h" />
@@ -257,17 +259,17 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerWarrior.h" />
     <ClInclude Include="engine\Effects\PostEffect\PostEffectManager.h" />
     <ClInclude Include="engine\math\Quaternion.h" />
-    <ClInclude Include="MultiCollider.h" />
-    <ClInclude Include="PlayerAnimation.h" />
-    <ClInclude Include="PlayerAnimKey.h" />
-    <ClInclude Include="PlayerBullet.h" />
-    <ClInclude Include="PlayerIWeapon.h" />
-    <ClInclude Include="PlayerWeaponOBB.h" />
+    <ClInclude Include="engine\Collision\MultiCollider.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerAnimation.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerAnimKey.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerBullet.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerIWeapon.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
     <ClInclude Include="engine\3d\StructAnimation.h" />
-    <ClInclude Include="ShapeIntersect.h" />
-    <ClInclude Include="TweenEasing.h" />
+    <ClInclude Include="engine\Collision\ShapeIntersect.h" />
+    <ClInclude Include="engine\TweenEasing.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />

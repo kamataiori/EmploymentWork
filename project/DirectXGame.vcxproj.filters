@@ -102,10 +102,10 @@
     <ClCompile Include="engine\3d\ModelManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Camera.cpp">
+    <ClCompile Include="engine\3d\Camera\Camera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\CameraManager.cpp">
+    <ClCompile Include="engine\3d\Camera\CameraManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="engine\FrameWork\MyGame\MyGame.cpp">
@@ -234,34 +234,37 @@
     <ClCompile Include="engine\Effects\PostEffect\PostEffectManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerAnimKey.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerAnimKey.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerAnimation.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerAnimation.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerIWeapon.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerIWeapon.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerWeaponOBB.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="MultiCollider.cpp">
+    <ClCompile Include="engine\Collision\MultiCollider.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="ShapeIntersect.cpp">
+    <ClCompile Include="engine\Collision\ShapeIntersect.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerBullet.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerBullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CameraEffectController.cpp">
+    <ClCompile Include="engine\3d\Camera\CameraEffectController.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CameraShake.cpp">
+    <ClCompile Include="engine\3d\Camera\CameraShake.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CameraZoom.cpp">
+    <ClCompile Include="engine\3d\Camera\CameraZoom.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Camera\CameraMove.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -356,10 +359,10 @@
     <ClInclude Include="engine\3d\ModelManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Camera.h">
+    <ClInclude Include="engine\3d\Camera\Camera.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\CameraManager.h">
+    <ClInclude Include="engine\3d\Camera\CameraManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\FrameWork\MyGame\MyGame.h">
@@ -506,37 +509,40 @@
     <ClInclude Include="engine\3d\SkyBox.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerAnimKey.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerAnimKey.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerAnimation.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerAnimation.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerIWeapon.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerIWeapon.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerWeaponOBB.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="MultiCollider.h">
+    <ClInclude Include="engine\Collision\MultiCollider.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ShapeIntersect.h">
+    <ClInclude Include="engine\Collision\ShapeIntersect.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerBullet.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CameraEffectController.h">
+    <ClInclude Include="engine\3d\Camera\CameraEffectController.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CameraShake.h">
+    <ClInclude Include="engine\3d\Camera\CameraShake.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="TweenEasing.h">
+    <ClInclude Include="engine\TweenEasing.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CameraZoom.h">
+    <ClInclude Include="engine\3d\Camera\CameraZoom.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Camera\CameraMove.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
