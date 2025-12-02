@@ -1,5 +1,6 @@
 #include "MyGame.h"
 #include <UnityScene.h>
+#include "TimeManager.h"
 
 #ifdef USE_IMGUI
 
@@ -16,7 +17,7 @@ void MyGame::Initialize()
 	sceneFactory_ = new SceneFactory();
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
 
-	SceneManager::GetInstance()->ChangeScene("TITLE");
+	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 
 #ifdef USE_IMGUI
 
@@ -53,10 +54,17 @@ void MyGame::Update()
 
 	// ImGuiのフレーム開始を宣言
 	imGuiManager_->Update();
+	ImGui::Begin("Performance");
+	ImGui::Text("FPS: %.2f", GetFPS());
+	ImGui::Text("Frame Time: %.2f ms", GetFrameTimeMs());
+	ImGui::Text("Average FPS: %.2f", GetAverageFPS());
+	ImGui::End();
 
 #endif // USE_IMGUI
 
 #ifdef USE_IMGUI
+
+
 
 	//ApplyImGuiStyle();
 
@@ -115,11 +123,16 @@ void MyGame::Update()
 
 #endif // USE_IMGUI
 
+	// ===== FPS & 時間計測 =====
 	auto now = std::chrono::steady_clock::now();
 	std::chrono::duration<float> delta = now - lastFrameTime_;
 	lastFrameTime_ = now;
 
 	float deltaSec = delta.count();
+	if (deltaSec <= 0.0f) {
+		deltaSec = 1.0f / 60.0f; // 万が一0になった時の保険
+	}
+
 	fps_ = 1.0f / deltaSec;
 	frameTimeMs_ = deltaSec * 1000.0f;
 
@@ -129,20 +142,18 @@ void MyGame::Update()
 		fpsHistory_.pop_front();
 	}
 
-	// 平均計算
 	float sum = 0.0f;
 	for (float f : fpsHistory_) sum += f;
 	averageFps_ = sum / static_cast<float>(fpsHistory_.size());
 
-	using namespace std::chrono;
 
-	// 時間の差分計算
-	auto randomNow = steady_clock::now();
-	deltaTime_ = duration<float>(randomNow - prevTime_).count();
-	prevTime_ = randomNow;
 
-	// PostEffectManagerにdeltaTimeを渡す
-	PostEffectManager::GetInstance()->RandomUpdate(deltaTime_);
+	// ===== TimeManager に生のΔtを渡す（ここが重要） =====
+	TimeManager::GetInstance()->Update(deltaSec);
+
+	// ===== PostEffect 側には「スケールなし」のΔtを渡す =====
+	float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
+	PostEffectManager::GetInstance()->RandomUpdate(unscaledDt);
 }
 
 void MyGame::Draw()

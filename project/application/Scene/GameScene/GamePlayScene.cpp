@@ -3,6 +3,7 @@
 #include "SceneManager.h"
 #include <OffscreenRendering.h>
 #include <MyGame.h>
+#include "TimeManager.h"
 
 void GamePlayScene::Initialize()
 {
@@ -121,7 +122,7 @@ void GamePlayScene::Update()
 
 	// --- X キー：横揺れだけシェイク ---
 	if (input->TriggerKey(DIK_X)) {
-		cameraEffect_->StartSimpleShake(0.2f, 0.4f, ShakeMode::Horizontal);
+		cameraEffect_->StartSimpleShake(0.2f, 0.05f, ShakeMode::Horizontal);
 	}
 
 	// --- C キー：縦揺れだけシェイク ---
@@ -132,7 +133,7 @@ void GamePlayScene::Update()
 	// --- V キー：一瞬ズームイン（FOV を小さくして寄る） ---
 	if (input->TriggerKey(DIK_V)) {
 		ZoomParams z{};
-		z.Duration(0.2f)          // 0.2 秒かけて
+		z.Duration(0.2f)            // 0.2 秒かけて
 			.ToFov(0.25f)           // FOV を 0.25 に（小さいほどアップ）
 			.UseCurrentFov(true);   // 今の FOV からスタート
 
@@ -143,18 +144,108 @@ void GamePlayScene::Update()
 	// 敵死亡 → 撃破カメラ開始
 	bool enemyDeadNow = enemy_->IsDead();  // 今の状態
 
-	// 前フレームは生きていたのに、今フレーム死んだ
 	if (!enemyWasDead_ && enemyDeadNow)
 	{
-		StartDefeatCamera();
+		// カメラ追従を止める
+		followCameraLocked_ = true;
+
+		// 回り込みの中心はプレイヤー位置
+		const Transform& playerTf = player_->Get()->GetTransform();
+		Vector3 center = playerTf.translate;
+
+		// 回り込み用パラメータを組み立てる
+		CameraEffectController::OrbitParams orbit{};
+		float angleRad = std::numbers::pi_v<float> / 1.5f;
+
+		orbit
+			.Center(center)                 // どこを中心に回り込むか
+			.Angle(angleRad)                // 回り込む角度
+			.Duration(0.6f)                 // 1秒かけて
+			.Easing(Tween::Easing::EaseInExpo); // 急激に加速するカーブ
+
+		// これ1行で「回り込み＋プレイヤー注視」まで全部やってくれる
+		cameraEffect_->StartOrbitMove(
+			followCamera.get(),
+			orbit
+		);
+
+		// ここでスローモーション開始（回り込みと同時スタート）
+		TimeManager::GetInstance()->SetTimeScale(0.1f); // 1/10 速度など好みで
+		slowMotionStarted_ = true;
+
+		// ズームは少し遅らせて開始したいので、ここではタイマーだけセット
+		defeatZoomTimer_ = 0.9f;    // 0.9秒後にズーム開始（好みで調整）
+		defeatZoomStarted_ = false;   // 念のためリセット
+
+		// ズーム状態もリセット
+		zoomActive_ = false;
+		zoomTimer_ = 0.0f;
 	}
 
-	// 次フレームの比較用に記録
+
+	// 次フレームの比較用
 	enemyWasDead_ = enemyDeadNow;
 
-	// シェイク / ズーム / 移動 などカメラ演出の更新（followCamera に対して適用）
-	constexpr float kDeltaTime = 1.0f / 60.0f; // 今は固定フレーム時間で OK
-	cameraEffect_->Update(followCamera.get(), kDeltaTime);
+	// ===== TimeManager から時間を取得 =====
+	float dt = TimeManager::GetInstance()->GetDeltaTime();         // スケール後
+	float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime(); // スケール無し（今は未使用でもOK）
+
+	// ===============================
+	//  撃破ズームの遅延開始
+	// ===============================
+	if (defeatZoomTimer_ > 0.0f && !defeatZoomStarted_)
+	{
+		// カメラ演出と同じ「ゲーム内時間」で減らす
+		defeatZoomTimer_ -= dt;
+
+		if (defeatZoomTimer_ <= 0.0f)
+		{
+			using ZoomParams = CameraEffectController::ZoomParams;
+
+			ZoomParams zoom{};
+			constexpr float kZoomDuration = 0.5f; // ズームにかける時間（ゲーム内時間）
+
+			zoom
+				.UseCurrentFov(true)
+				.ToFov(std::numbers::pi_v<float> / 8.0f)
+				.Duration(kZoomDuration)
+				.Easing(Tween::Easing::EaseOutExpo);
+
+			cameraEffect_->StartZoom(zoom);
+
+			defeatZoomStarted_ = true;
+
+			// ズーム中フラグ＆残り時間セット
+			zoomActive_ = true;
+			zoomTimer_ = kZoomDuration;
+		}
+	}
+
+	// ===============================
+	//  ズーム終了を監視してスロー解除
+	// ===============================
+	if (zoomActive_)
+	{
+		// ここも dt に変更
+		zoomTimer_ -= dt;
+
+		if (zoomTimer_ <= 0.0f)
+		{
+			zoomActive_ = false;
+
+			// ここでスローモーションを元に戻す
+			if (slowMotionStarted_)
+			{
+				TimeManager::GetInstance()->SetTimeScale(1.0f); // 通常速度に戻す
+				slowMotionStarted_ = false;
+			}
+		}
+	}
+
+
+	// カメラ演出の更新
+	cameraEffect_->Update(followCamera.get(), dt);
+
 
 	// ==========================================
 
@@ -195,7 +286,7 @@ void GamePlayScene::Update()
 		// シーン切り替え
 		SceneManager::GetInstance()->ChangeScene("Unity");
 	}
-	
+
 }
 
 void GamePlayScene::BackGroundDraw()
@@ -232,7 +323,7 @@ void GamePlayScene::Draw()
 	ground->Draw();
 	player_->Draw();
 	enemy_->Draw();
-	
+
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
@@ -248,7 +339,7 @@ void GamePlayScene::Draw()
 	// 各オブジェクトの描画
 	player_->AnimationDraw();
 	enemy_->AnimationDraw();
-	
+
 
 	// ================================================
 	// ここまでアニメーションオブジェクトの個々の描画
@@ -258,7 +349,7 @@ void GamePlayScene::Draw()
 	// ここからDrawLine個々の描画
 	// ================================================
 
-	
+
 
 	// ================================================
 	// ここまでDrawLine個々の描画
@@ -302,7 +393,8 @@ void GamePlayScene::Debug()
 
 	// ↓ ここから ImGui::Begin(...) など
 
-	
+
+
 
 #endif
 }
@@ -310,32 +402,6 @@ void GamePlayScene::Debug()
 void GamePlayScene::CheckAllColisions()
 {
 	collisionManager_->CheckAllCollisions();
-}
-
-void GamePlayScene::StartDefeatCamera()
-{
-	// カメラ追従を止める
-	followCameraLocked_ = true;
-
-	// 中心はプレイヤーの位置だけ
-	const Transform& playerTf = player_->Get()->GetTransform();
-	Vector3 center = playerTf.translate;
-
-	// 回り込む角度（例：60度）
-	constexpr float kPi = 3.1415926535f;
-	float angleRad = kPi / 2.0f;
-
-	// 回り込みにかける時間
-	float duration = 1.0f;
-
-	// これ 1 行で「回り込み＋プレイヤー注視」まで全部やってくれる
-	cameraEffect_->StartOrbitMove(
-		followCamera.get(),
-		center,
-		angleRad,
-		duration,
-		Tween::Easing::EaseInExpo
-	);
 }
 
 

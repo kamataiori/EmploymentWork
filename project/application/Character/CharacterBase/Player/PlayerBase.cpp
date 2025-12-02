@@ -1,6 +1,7 @@
 #include "PlayerBase.h"
 #include "PlayerWeaponOBB.h"
 #include <FollowCamera.h>
+#include "TimeManager.h"
 
 #ifdef max
 #undef max
@@ -88,9 +89,12 @@ void PlayerBase::Initialize()
 
 void PlayerBase::Update()
 {
+	// ===== Δt（スロー対応） =====
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
 	// ロックの減衰
 	if (animLockTimer_ > 0.0f) {
-		animLockTimer_ -= 1.0f / 60.0f;
+		animLockTimer_ -= dt;
 		if (animLockTimer_ <= 0.0f) {
 			animLockTimer_ = 0.0f;
 			currentAnimPriority_ = 0;
@@ -238,6 +242,9 @@ void PlayerBase::OnCollision()
 
 void PlayerBase::Move()
 {
+	// ===== Δt（回転のスムージング用） =====
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
 	// -------------------------------
 	// 入力による左右・前後移動処理
 	// -------------------------------
@@ -284,7 +291,6 @@ void PlayerBase::Move()
 	float deltaYaw = WrapPi(targetYaw - curYaw);
 	const float turnSpeed = 2.5f;
 	const float turnRate = std::numbers::pi_v<float> * turnSpeed; // 180deg/s（好みで調整可）
-	const float dt = 1.0f / 60.0f;              // 可変フレームなら実Δtを使う
 	const float maxStep = turnRate * dt;
 
 	if (deltaYaw > maxStep) deltaYaw = maxStep;
@@ -386,12 +392,15 @@ void PlayerBase::Jump()
 
 void PlayerBase::Blink()
 {
+	// ===== Δt（クールダウン・ダッシュ時間用） =====
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
 	// -------------------------------
 	// ダッシュ制御：1回だけ発動可能
 	// -------------------------------
 	// クールダウンを減算
 	if (move_.dashCooldown > 0.0f) {
-		move_.dashCooldown -= 1.0f / 60.0f;
+		move_.dashCooldown -= dt;
 		if (move_.dashCooldown < 0.0f) move_.dashCooldown = 0.0f;
 	}
 
@@ -422,7 +431,7 @@ void PlayerBase::Blink()
 
 	// ---- ダッシュ中の処理 ----
 	if (move_.isDashing) {
-		move_.dashTimer -= 1.0f / 60.0f;
+		move_.dashTimer -= dt;
 		transform.translate.x += move_.dashDir.x * move_.dashSpeed;
 		transform.translate.z += move_.dashDir.z * move_.dashSpeed;
 

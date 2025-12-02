@@ -2,6 +2,7 @@
 #include "MathFunctions.h"
 #include "TextureManager.h"
 #include <Object3d.h>
+#include "TimeManager.h"
 #include <iostream>
 
 void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypath, const std::string& filename)
@@ -43,11 +44,14 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypat
 
 void Model::Update()
 {
+	// Δt を取得（スロー演出の影響を受ける）
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
 	if (currentAnimation_) {
-		animationTime += 1.0f / 60.0f;
+		animationTime += dt;
 
 		if (isOneShot_) {
-			// ★ 一回だけ：duration でクランプして止める（最後のポーズ保持）
+			// 一回だけ：duration でクランプして止める（最後のポーズ保持）
 			if (animationTime >= currentAnimation_->duration) {
 				animationTime = currentAnimation_->duration; // クランプ
 			}
@@ -680,7 +684,12 @@ void Model::AppAnimation(Skeleton& skeleton, const AnimationData& animation, flo
 
 	// 補間時間を更新
 	if (blendTime_ < blendDuration_) {
-		blendTime_ += 1.0f / 60.0f;
+		float dt = TimeManager::GetInstance()->GetDeltaTime();
+		blendTime_ += dt;
+		if (blendTime_ >= blendDuration_) {
+			blendTime_ = blendDuration_;
+			prevAnimation_ = nullptr; // ブレンド終了
+		}
 	}
 	else {
 		prevAnimation_ = nullptr;

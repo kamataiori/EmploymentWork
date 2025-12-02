@@ -126,6 +126,10 @@ void ParticleManager::Update()
 	if (!camera_) {
 		return; // カメラが設定されていない場合は何もしない
 	}
+
+	// ========= 時間の取得（タイムスケール対応） =========
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
 	// カメラ情報を取得
 	Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, camera_->GetRotate(), camera_->GetTranslate());
 	Matrix4x4 viewMatrix = Inverse(cameraMatrix);
@@ -198,29 +202,29 @@ void ParticleManager::Update()
 			}
 
 			// 1. 位置更新：x += v * dt + 0.5 * a * dt^2
-			particle.transform.translate.x += particle.velocity.x * kDeltaTime + 0.5f * accel.x * kDeltaTime * kDeltaTime;
-			particle.transform.translate.y += particle.velocity.y * kDeltaTime + 0.5f * accel.y * kDeltaTime * kDeltaTime;
-			particle.transform.translate.z += particle.velocity.z * kDeltaTime + 0.5f * accel.z * kDeltaTime * kDeltaTime;
+			particle.transform.translate.x += particle.velocity.x * dt + 0.5f * accel.x * dt * dt;
+			particle.transform.translate.y += particle.velocity.y * dt + 0.5f * accel.y * dt * dt;
+			particle.transform.translate.z += particle.velocity.z * dt + 0.5f * accel.z * dt * dt;
 
 			// 2. 速度更新：v += a * dt
-			particle.velocity.x += accel.x * kDeltaTime;
-			particle.velocity.y += accel.y * kDeltaTime;
-			particle.velocity.z += accel.z * kDeltaTime;
+			particle.velocity.x += accel.x * dt;
+			particle.velocity.y += accel.y * dt;
+			particle.velocity.z += accel.z * dt;
 
 
 
 			// 回転の更新（rad/秒）
-			particle.transform.rotate.x += particle.rotationSpeed.x * kDeltaTime;
-			particle.transform.rotate.y += particle.rotationSpeed.y * kDeltaTime;
-			particle.transform.rotate.z += particle.rotationSpeed.z * kDeltaTime;
+			particle.transform.rotate.x += particle.rotationSpeed.x * dt;
+			particle.transform.rotate.y += particle.rotationSpeed.y * dt;
+			particle.transform.rotate.z += particle.rotationSpeed.z * dt;
 
 			// スケールの更新（/秒）
-			particle.transform.scale.x += particle.scaleSpeed.x * kDeltaTime;
-			particle.transform.scale.y += particle.scaleSpeed.y * kDeltaTime;
-			particle.transform.scale.z += particle.scaleSpeed.z * kDeltaTime;
+			particle.transform.scale.x += particle.scaleSpeed.x * dt;
+			particle.transform.scale.y += particle.scaleSpeed.y * dt;
+			particle.transform.scale.z += particle.scaleSpeed.z * dt;
 
 			// 経過時間を更新
-			particle.currentTime += kDeltaTime;
+			particle.currentTime += dt;
 
 			// Scale 行列
 			Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);

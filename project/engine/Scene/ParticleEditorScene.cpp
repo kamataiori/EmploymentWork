@@ -5,6 +5,8 @@
 
 #include <SrvManager.h>
 #include "PostEffectManager.h"
+#include "TimeManager.h"
+
 
 void ParticleEditorScene::Initialize()
 {
@@ -355,7 +357,7 @@ void ParticleEditorScene::UpdateDebugCamera()
 
 	Input* input = Input::GetInstance();
 
-	constexpr float kDeltaTime = 1.0f / 60.0f;
+	float dt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
 	constexpr float kMoveSpeed = 0.5f;    // WASD移動速度（必要なら調整）
 	constexpr float kRotateSpeed = 0.0003f;  // マウス回転速度（感度）
 
@@ -416,7 +418,9 @@ void ParticleEditorScene::UpdateDebugCamera()
 		worldMove = worldMove + right * move.x;
 		worldMove = worldMove + Vector3{ 0,1,0 } *move.y;
 
-		pos = pos + worldMove * (kMoveSpeed);
+		pos = pos + worldMove * (kMoveSpeed * dt * 60.0f);
+		// （60倍して速度感を現状に近づける）
+
 	}
 
 	//=========================================================

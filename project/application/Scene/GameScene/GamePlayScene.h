@@ -79,11 +79,6 @@ public:
 	/// </summary>
 	void CheckAllColisions();
 
-	/// <summary>
-    /// カメラ演出（撃破時の回り込みなど）
-    /// </summary>
-	void StartDefeatCamera();
-
 
 private:
 
@@ -95,7 +90,14 @@ private:
 	std::unique_ptr<CameraEffectController> cameraEffect_;
 	// フォローカメラを止めるかどうか
 	bool followCameraLocked_ = false;
-	
+	// 撃破演出用：ズームを何秒後に開始するかのタイマー
+	float defeatZoomTimer_ = -1.0f;   // < 0 なら未使用
+	bool  defeatZoomStarted_ = false; // ズーム開始済みかどうか
+	bool slowMotionStarted_ = false;  // スローモーションの開始時間
+	// ズームが「進行中」かどうか＆残り時間
+	bool  zoomActive_ = false;
+	float zoomTimer_ = 0.0f;
+	float zoomDuration_ = 0.0f;   // ズームの総時間を保存
 
 	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
 	std::unique_ptr<Object3d> ground;

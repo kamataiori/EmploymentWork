@@ -2,6 +2,8 @@
 #include <Input.h>
 #include <PlayerAnimKey.h>
 #include "PlayerBase.h"
+#include "TimeManager.h"
+
 
 // Yaw(=Y回転)から OBB の3軸を作るヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
@@ -75,7 +77,9 @@ void PlayerWeaponOBB::Update()
 {
 	// アクティブ時間の減衰
 	if (activeTime_ > 0.0f) {
-		activeTime_ -= (1.0f / 60.0f);
+		float dt = TimeManager::GetInstance()->GetDeltaTime();
+		activeTime_ -= dt;
+
 		if (activeTime_ < 0.0f) activeTime_ = 0.0f;
 	}
 

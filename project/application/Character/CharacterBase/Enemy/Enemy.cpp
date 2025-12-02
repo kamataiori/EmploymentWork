@@ -1,6 +1,7 @@
 #include "Enemy.h"
 #include <CollisionTypeIdDef.h>
 #include <SceneManager.h>
+#include "TimeManager.h"
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
@@ -144,6 +145,9 @@ void Enemy::Initialize()
 
 void Enemy::Update()
 {
+	// ====== Δt（スローモーション対応） ======
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
 	// ====== 簡易AI：Idle → Dash → Cooldown ループ ======
    // ターゲットがいれば計算
 	Vector3 toTargetXZ{ 0,0,0 };
@@ -165,7 +169,7 @@ void Enemy::Update()
 		case RushState::Idle:
 			// 常にプレイヤーへ向く（スムーズ）
 			transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_);
-			stateTimer_ -= 1.0f / 60.0f;
+			stateTimer_ -= dt;
 			if (stateTimer_ <= 0.0f) {
 				// ダッシュへ移行：向いている方向を固定
 				if (target_) {
@@ -187,7 +191,7 @@ void Enemy::Update()
 			transform.translate.x += dashDir_.x * dashSpeed_;
 			transform.translate.z += dashDir_.z * dashSpeed_;
 
-			stateTimer_ -= 1.0f / 60.0f;
+			stateTimer_ -= dt;
 			if (stateTimer_ <= 0.0f) {
 				state_ = RushState::Cooldown;
 				stateTimer_ = cooldownTime_;
@@ -198,7 +202,7 @@ void Enemy::Update()
 		case RushState::Cooldown:
 			// 向きだけは緩やかにターゲットへ（次のダッシュ準備）
 			transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_ * 0.6f);
-			stateTimer_ -= 1.0f / 60.0f;
+			stateTimer_ -= dt;
 			if (stateTimer_ <= 0.0f) {
 				state_ = RushState::Idle;
 				stateTimer_ = idleTime_;
@@ -235,7 +239,7 @@ void Enemy::Update()
 
 	// HitReact の終了管理：一定時間で Idle に戻す
 	if (hitReactTimer_ > 0.0f) {
-		hitReactTimer_ -= 1.0f / 60.0f; // 固定60FPS前提。可変ならΔtを使う
+		hitReactTimer_ -= dt; // 可変ならΔtを使う
 		if (hitReactTimer_ <= 0.0f) {
 			SetAnimationIfChanged(animation_.Idle);
 			hitReactTimer_ = 0.0f;
@@ -261,7 +265,7 @@ void Enemy::Update()
 	// ======== 死亡演出（縮小＋爆破＋タイトル遷移） ========
 	if (isDead_) {
 		// 経過時間（固定 60fps 前提）
-		deathTimer_ += 1.0f / 60.0f;
+		deathTimer_ += dt;
 
 		// Death アニメーションを少し見せてから縮小開始
 		const float kShrinkDelay = 0.8f;  // これだけ待ってから縮小

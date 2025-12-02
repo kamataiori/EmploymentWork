@@ -180,6 +180,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerIWeapon.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.cpp" />
     <ClCompile Include="engine\Collision\ShapeIntersect.cpp" />
+    <ClCompile Include="TimeManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3d\Camera\CameraEffectController.h" />
@@ -270,6 +271,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\StructAnimation.h" />
     <ClInclude Include="engine\Collision\ShapeIntersect.h" />
     <ClInclude Include="engine\TweenEasing.h" />
+    <ClInclude Include="TimeManager.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />

@@ -24,6 +24,49 @@ public:
     using ZoomParams = CameraZoom::Params;
     using MoveParams = CameraMove::Params;
 
+    /// <summary>
+    /// 回り込み用のパラメータ構造体。
+    /// シーン側はこれに center / angle / duration / easing を詰めて
+    /// StartOrbitMove(camera, params) を呼ぶだけでよい。
+    /// </summary>
+    struct OrbitParams
+    {
+        Vector3 center{};            // 回り込みの中心（例：プレイヤー位置）
+        float   angleRad = 0.0f;     // 回り込む角度（ラジアン）
+        float   duration = 0.0f;     // 何秒かけて回り込むか
+        Tween::EasingFunc easing = Tween::Easing::EaseInOutCubic;
+
+        // ===== ビルダー風 setter（チェーンで書けるように） =====
+
+        /// <summary>回り込みの中心を設定</summary>
+        OrbitParams& Center(const Vector3& c)
+        {
+            center = c;
+            return *this;
+        }
+
+        /// <summary>回り込む角度（ラジアン）を設定</summary>
+        OrbitParams& Angle(float rad)
+        {
+            angleRad = rad;
+            return *this;
+        }
+
+        /// <summary>回り込みにかける時間（秒）を設定</summary>
+        OrbitParams& Duration(float d)
+        {
+            duration = d;
+            return *this;
+        }
+
+        /// <summary>使用するイージング関数を設定</summary>
+        OrbitParams& Easing(Tween::EasingFunc func)
+        {
+            easing = func;
+            return *this;
+        }
+    };
+
 public:
     /// <summary>
     /// デフォルトコンストラクタ
@@ -47,6 +90,12 @@ public:
 
     void StartShake(const ShakeParams& params) { shake_.Start(params); }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="duration"></param>  シェイク時間
+    /// <param name="amplitudePosition"></param>  位置の揺れの強さ
+    /// <param name="mode"></param>
     void StartSimpleShake(float duration, float amplitudePosition, ShakeMode mode = ShakeMode::All)
     {
         shake_.StartSimple(duration, amplitudePosition, mode);
@@ -55,6 +104,11 @@ public:
     bool IsShaking() const { return shake_.IsActive(); }
 
     void StopShake() { shake_.Stop(); }
+
+
+    // ==============================
+    //  回り込み（オービット）API
+    // ==============================
 
     /// <summary>
     /// 撃破演出などで使える「ターゲット周りの回り込み」移動
@@ -68,6 +122,19 @@ public:
         Tween::EasingFunc easing = Tween::Easing::EaseInOutCubic)
     {
         move_.StartOrbitAroundTarget(camera, center, angleRad, duration, easing);
+    }
+
+    /// <summary>
+    /// OrbitParams を使った高レベル版
+    /// シーン側は OrbitParams に値を詰めて渡すだけ
+    /// </summary>
+    void StartOrbitMove(Camera* camera, const OrbitParams& params)
+    {
+        move_.StartOrbitAroundTarget(camera,
+            params.center,
+            params.angleRad,
+            params.duration,
+            params.easing);
     }
 
 
@@ -95,7 +162,7 @@ public:
     void StartMove(const MoveParams& params) { move_.Start(params); }
 
     /// <summary>
-    /// シンプル版移動。
+    /// シンプル版移動
     /// duration と targetPos だけ指定し、開始位置は現在のカメラ位置を使う。
     /// </summary>
     void StartSimpleMove(float duration, const Vector3& targetPos,

@@ -15,6 +15,8 @@
 #include <vector>
 #include <filesystem>
 #include <json.hpp>
+#include "TimeManager.h"
+
 
 class ParticleManager
 {
@@ -380,8 +382,6 @@ private:
 
 	// パーティクルの最大出力数
 	const uint32_t kNumMaxInstance = 10000;
-	//とりあえず60fps固定してあるが、実時間を計測して可変fpsで動かせるようにしておくとなおよい
-	const float kDeltaTime = 1.0f / 60.0f;
 
 private:
 	static const int kWindowWidth = 1280;
