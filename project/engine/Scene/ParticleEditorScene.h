@@ -10,53 +10,75 @@ inline constexpr const char* kWindowName_Preset = "Particle Preset Editor";
 inline constexpr const char* kWindowName_Console = "Console";
 inline constexpr const char* kWindowName_Camera = "Camera Control";
 
+// Niagara 風 UI 用の簡易 System / Emitter / Module
+struct NiagaraModuleUI {
+	const char* label;     // 「Emitter Settings」など
+};
+
+struct NiagaraEmitterUI {
+	std::string name;                      // 「NE_Sample」など
+	std::vector<NiagaraModuleUI> modules;  // 上から順のモジュール一覧
+};
+
+struct NiagaraSystemUI {
+	std::string name;                         // 「NS_Sample」など
+	std::vector<NiagaraEmitterUI> emitters;   // 将来的には複数エミッタ対応
+};
+
 class ParticleEditorScene : public BaseScene
 {
 public:
-    //------メンバ関数------
+	//------メンバ関数------
 
-    /// <summary>初期化</summary>
-    void Initialize() override;
+	/// <summary>初期化</summary>
+	void Initialize() override;
 
-    /// <summary>終了</summary>
-    void Finalize() override;
+	/// <summary>終了</summary>
+	void Finalize() override;
 
-    /// <summary>更新</summary>
-    void Update() override;
+	/// <summary>更新</summary>
+	void Update() override;
 
-    /// <summary>背景描画</summary>
-    void BackGroundDraw() override;
+	/// <summary>背景描画</summary>
+	void BackGroundDraw() override;
 
-    /// <summary>描画</summary>
-    void Draw() override;
+	/// <summary>描画</summary>
+	void Draw() override;
 
-    /// <summary>前景描画</summary>
-    void ForeGroundDraw() override;
+	/// <summary>前景描画</summary>
+	void ForeGroundDraw() override;
 
-    /// <summary>ImGui デバッグ</summary>
-    void Debug() override;
+	/// <summary>ImGui デバッグ</summary>
+	void Debug() override;
 
-    // デバッグカメラ更新用ヘルパー
-    void UpdateDebugCamera();
+	// デバッグカメラ更新用ヘルパー
+	void UpdateDebugCamera();
+
+	// Niagara 風 Emitter パネルの描画
+	void DrawNiagaraEmitterPanel();
 private:
-    // スカイボックス
-    std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
+	// スカイボックス
+	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
 
-    // グリッド
-    Plane ground;
+	// グリッド
+	Plane ground;
 
-    // カメラ
-    std::unique_ptr<Camera> camera = std::make_unique<Camera>();          // 専用カメラ
-    // デバッグカメラ ON/OFF
-    bool debugCameraEnabled_ = false;
+	// カメラ
+	std::unique_ptr<Camera> camera = std::make_unique<Camera>();          // 専用カメラ
+	// デバッグカメラ ON/OFF
+	bool debugCameraEnabled_ = false;
 
-    std::unique_ptr<ParticleManager> particle = std::make_unique<ParticleManager>();  // プリセット対応パーティクル管理
-    // Emit 位置など（ImGuiで編集＋EmitByPresetNameに渡す）
-    Transform emitterTransform = {
-        {1.0f, 1.0f, 1.0f},   // scale
-        {0.0f, 0.0f, 0.0f},   // rotate
-        {0.0f, 0.0f, 0.0f}    // translate
-    };
-    // Emit時に使うプリセット名（ImGuiで編集）
-    std::string emitPresetName = "NewParticle";
+	std::unique_ptr<ParticleManager> particle = std::make_unique<ParticleManager>();  // プリセット対応パーティクル管理
+	// Emit 位置など（ImGuiで編集＋EmitByPresetNameに渡す）
+	Transform emitterTransform = {
+		{1.0f, 1.0f, 1.0f},   // scale
+		{0.0f, 0.0f, 0.0f},   // rotate
+		{0.0f, 0.0f, 0.0f}    // translate
+	};
+	// Emit時に使うプリセット名（ImGuiで編集）
+	std::string emitPresetName = "NewParticle";
+
+	// Niagara 風 UI の System
+	NiagaraSystemUI niagaraSystemUI_;
+
 };

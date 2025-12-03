@@ -54,6 +54,23 @@ void ParticleEditorScene::Initialize()
 	AddRightDockWindow(kWindowName_Particle);
 	AddRightDockWindow(kWindowName_Preset);
 #endif
+
+	// Niagara 風 System / Emitter / Module のセットアップ
+	niagaraSystemUI_.name = "NS_Sample";
+
+	NiagaraEmitterUI emitterUI;
+	emitterUI.name = "NE_Sample";
+	emitterUI.modules = {
+		{ "Emitter Settings" },
+		{ "Emitter Spawn" },
+		{ "Emitter Update" },
+		{ "Particle Spawn" },
+		{ "Particle Update" },
+		{ "Render" },
+	};
+
+	niagaraSystemUI_.emitters.clear();
+	niagaraSystemUI_.emitters.push_back(emitterUI);
 }
 
 
@@ -261,7 +278,6 @@ void ParticleEditorScene::Debug()
 
 		ImGui::Separator();
 
-		// Emit に使うプリセット名（右パネルの内容が反映される）
 		ImGui::Text("Emit Preset Name");
 		char buf[64]{};
 		strncpy_s(buf, sizeof(buf), emitPresetName.c_str(), _TRUNCATE);
@@ -295,8 +311,14 @@ void ParticleEditorScene::Debug()
 			"・外部ツールで編集した JSON も反映されます\n"
 			"・プリセット一覧を最新状態に更新します");
 		ImGui::Unindent(10.0f);
+
+		ImGui::Separator();
+
+		// Niagara 風 Emitter パネル
+		DrawNiagaraEmitterPanel();
 	}
 	ImGui::End();
+
 
 	//===========================================
 	// ③ 左下：Camera Control
@@ -429,4 +451,137 @@ void ParticleEditorScene::UpdateDebugCamera()
 	camera->SetTranslate(pos);
 	camera->SetRotate(rot);
 }
+
+void ParticleEditorScene::DrawNiagaraEmitterPanel()
+{
+	if (!particle) {
+		ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), "ParticleManager がありません。");
+		return;
+	}
+
+	// 今の emitPresetName からプリセットを取得
+	ParticleManager::ParticlePreset* preset =
+		particle->FindPreset(emitPresetName);
+
+	if (!preset) {
+		ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1),
+			"プリセット \"%s\" はまだ読み込まれていません。\n"
+			"右側のプリセットエディタで保存/読み込みしてください。",
+			emitPresetName.c_str());
+		return;
+	}
+
+	// ===== System / Emitter ラベル =====
+	ImGui::TextColored(ImVec4(0.6f, 0.9f, 1.0f, 1.0f),
+		"System : %s", niagaraSystemUI_.name.c_str());
+
+	if (niagaraSystemUI_.emitters.empty()) {
+		return;
+	}
+	NiagaraEmitterUI& emitterUI = niagaraSystemUI_.emitters[0];
+
+	ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.3f, 1.0f),
+		"Emitter : %s", emitterUI.name.c_str());
+	ImGui::Spacing();
+
+	// ===== 各 Module を Niagara 風に上から順に =====
+
+	// 1) Emitter Settings
+	if (ImGui::CollapsingHeader("Emitter Settings", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		const char* vertexItems[] = { "Plane", "Ring", "Cylinder" };
+		int v = static_cast<int>(preset->emitterSettings.vertexType);
+		if (ImGui::Combo("Vertex Type", &v, vertexItems, IM_ARRAYSIZE(vertexItems))) {
+			preset->emitterSettings.vertexType =
+				static_cast<ParticleManager::VertexDataType>(v);
+		}
+
+		const char* blendItems[] = {
+			"None","Normal","Add","Subtract","Multiply","Screen"
+		};
+		int b = static_cast<int>(preset->emitterSettings.blendMode);
+		if (ImGui::Combo("Blend Mode", &b, blendItems, IM_ARRAYSIZE(blendItems))) {
+			preset->emitterSettings.blendMode =
+				static_cast<ParticleManager::BlendMode>(b);
+		}
+
+		// 必要ならテクスチャパスもここで編集
+		char texBuf[256]{};
+		strncpy_s(texBuf, sizeof(texBuf),
+			preset->emitterSettings.textureFilePath.c_str(), _TRUNCATE);
+		if (ImGui::InputText("Texture Path", texBuf, sizeof(texBuf))) {
+			preset->emitterSettings.textureFilePath = texBuf;
+		}
+	}
+
+	// 2) Emitter Spawn
+	if (ImGui::CollapsingHeader("Emitter Spawn", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		// count は uint32_t なので一度 int にコピーして編集
+		int spawnCount = static_cast<int>(preset->emitterSpawn.count);
+		if (ImGui::DragInt("Spawn Count", &spawnCount, 1, 1, 10000)) {
+			if (spawnCount < 1)   spawnCount = 1;
+			if (spawnCount > 10000) spawnCount = 10000;
+			preset->emitterSpawn.count = static_cast<uint32_t>(spawnCount);
+		}
+
+		ImGui::DragFloat("Frequency", &preset->emitterSpawn.frequency,
+			0.01f, 0.0f, 60.0f);
+		ImGui::Checkbox("Loop (Repeat)", &preset->emitterSpawn.repeat);
+		ImGui::Checkbox("Random Position", &preset->emitterSpawn.useRandomPosition);
+	}
+
+	// 3) Emitter Update（ここではエミッタの Transform / 位置など）
+	if (ImGui::CollapsingHeader("Emitter Update", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Text("Emitter Transform (Editor Only)");
+		ImGui::DragFloat3("Emitter Pos", &emitterTransform.translate.x, 0.1f);
+		ImGui::DragFloat3("Emitter Rot", &emitterTransform.rotate.x, 0.01f);
+		ImGui::DragFloat3("Emitter Scale", &emitterTransform.scale.x,
+			0.01f, 0.0f, 100.0f);
+	}
+
+	// 4) Particle Spawn（初期SRT & Offset）
+	if (ImGui::CollapsingHeader("Particle Spawn", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::DragFloat3("Initial Scale",
+			&preset->particleSpawn.initialScale.x, 0.01f, 0.0f, 100.0f);
+		ImGui::DragFloat3("Initial Rotate",
+			&preset->particleSpawn.initialRotate.x, 0.01f, -6.28f, 6.28f);
+		ImGui::DragFloat3("Initial Offset",
+			&preset->particleSpawn.initialOffset.x, 0.01f, -1000.0f, 1000.0f);
+	}
+
+	// 5) Particle Update（速度・重力・寿命など）
+	if (ImGui::CollapsingHeader("Particle Update", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::DragFloat3("Velocity",
+			&preset->particleUpdate.velocity.x, 0.01f, -1000.0f, 1000.0f);
+		ImGui::DragFloat3("Rotation Speed",
+			&preset->particleUpdate.rotationSpeed.x, 0.01f, -10.0f, 10.0f);
+		ImGui::DragFloat3("Scale Speed",
+			&preset->particleUpdate.scaleSpeed.x, 0.01f, -10.0f, 10.0f);
+		ImGui::Checkbox("Use Gravity", &preset->particleUpdate.useGravity);
+		ImGui::DragFloat("Life Time",
+			&preset->particleUpdate.lifeTime, 0.01f, 0.0f, 100.0f);
+	}
+
+	// 6) Render（色・ビルボードなど）
+	if (ImGui::CollapsingHeader("Render", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::ColorEdit4("Color", &preset->render.color.x);
+		ImGui::Checkbox("Billboard", &preset->render.useBillboard);
+		ImGui::Checkbox("Flip Y", &preset->render.flipY);
+	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	// このパネルから JSON 保存したい時用のボタン
+	if (ImGui::Button("Save Preset (Niagara Panel)")) {
+		particle->SavePresetToJson(*preset);
+	}
+}
+
+
 

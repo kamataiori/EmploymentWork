@@ -82,37 +82,60 @@ public:
 	// cylinderの反転
 	void SetFlipYToGroup(const std::string& groupName, bool flip);
 
+private:
+
+	// --- Emitter Settings モジュール ---
+	struct EmitterSettingsModule {
+		VertexDataType vertexType = VertexDataType::Plane; // Plane / Ring / Cylinder
+		std::string textureFilePath;                       // テクスチャパス
+		BlendMode blendMode = kBlendModeNormal;            // ブレンドモード
+	};
+
+	// --- Emitter Spawn モジュール ---
+	struct EmitterSpawnModule {
+		uint32_t count = 10;            // 発生数
+		float frequency = 1.0f;         // 発生間隔(秒)
+		bool repeat = false;            // 繰り返し
+		bool useRandomPosition = false; // ランダム発生
+	};
+
+	// --- Particle Spawn モジュール ---
+	struct ParticleSpawnModule {
+		Vector3 initialScale = { 1.0f, 1.0f, 1.0f };
+		Vector3 initialRotate = { 0.0f, 0.0f, 0.0f };
+		Vector3 initialOffset = { 0.0f, 0.0f, 0.0f }; // エミッタからの相対オフセット
+	};
+
+	// --- Particle Update モジュール ---
+	struct ParticleUpdateModule {
+		float lifeTime = 1.0f;               // 寿命
+		Vector3 velocity = { 0, 0, 0 };      // 速度
+		Vector3 rotationSpeed = { 0, 0, 0 }; // 回転速度
+		Vector3 scaleSpeed = { 0, 0, 0 };    // スケール速度
+		bool useGravity = false;             // 重力
+	};
+
+	// --- Render モジュール ---
+	struct RenderModule {
+		Vector4 color = { 1, 1, 1, 1 };    // 色
+		bool useBillboard = true;          // ビルボード
+		bool flipY = false;                // Cylinder の上下反転など
+	};
+
+public:
 
 	// JSON に保存するパーティクルプリセット
 	struct ParticlePreset {
-		std::string name;                     // プリセット名（= JSON ファイル名のベース）
-		VertexDataType vertexType = VertexDataType::Plane; // 使用するメッシュ形状（Plane/Ring/Cylinder）
+		std::string name;               // プリセット名
 
-		std::string textureFilePath;         // テクスチャパス (Resources/ からの相対パスを想定)
-		BlendMode blendMode = kBlendModeNormal;
-
-		// エミッター系の設定（今はとりあえずここに持たせる）
-		uint32_t count = 10;                                                // 発生数
-		float frequency = 1.0f;                                             // 発生間隔(秒)
-		bool repeat = false;                                                // 繰り返し
-		bool useRandomPosition = false;                                     // ランダム発生
-
-		// パーティクル共通パラメータ
-		bool flipY = false;                                                 // Cylinder の上下反転など
-		float lifeTime = 1.0f;                                              // 基本寿命
-
-		Vector3 initialScale = { 1.0f, 1.0f, 1.0f };
-		Vector3 initialRotate = { 0.0f, 0.0f, 0.0f };
-		Vector3 initialOffset = { 0.0f, 0.0f, 0.0f };                       // エミッター位置からの相対オフセット
-
-		Vector4 color = { 1.0f, 1.0f, 1.0f, 1.0f };                         // RGBA
-		bool useBillboard = true;                                           // trueなら常にカメラ目線
-		Vector3 velocity = { 0.0f, 0.0f, 0.0f };                            // velocity
-		Vector3 rotationSpeed = { 0.0f, 0.0f, 0.0f };                       // 回転速度(rad/sec)
-		Vector3 scaleSpeed = { 0.0f, 0.0f, 0.0f };                          // スケール変化速度(/sec)
-		bool useGravity = false;                                            // 重力を使うかどうか
-
+		// ---- 各モジュール ----
+		EmitterSettingsModule emitterSettings;
+		EmitterSpawnModule    emitterSpawn;
+		ParticleSpawnModule   particleSpawn;
+		ParticleUpdateModule  particleUpdate;
+		RenderModule          render;
 	};
+
 
 	/// ImGui 上でプリセットを編集＆保存するエディタ
 	void DrawImGuiParticlePresetEditor();
@@ -140,6 +163,10 @@ public:
 
 	// setter
 	void SetCurrentEditingPresetName(const std::string& name) { currentEditingPresetName_ = name; }
+
+	// プリセット取得（編集用）
+	ParticlePreset* FindPreset(const std::string& name);
+	const ParticlePreset* FindPreset(const std::string& name) const;
 
 private:
 

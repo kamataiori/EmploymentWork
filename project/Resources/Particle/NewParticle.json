@@ -1,50 +1,60 @@
 {
-    "blendMode": 2,
-    "color": [
-        0.3706563711166382,
-        0.3706563711166382,
-        0.3706563711166382,
-        1.0
-    ],
-    "count": 64,
-    "flipY": false,
-    "frequency": 1.0,
-    "initialOffset": [
-        0.0,
-        0.0,
-        0.0
-    ],
-    "initialRotate": [
-        0.0,
-        0.0,
-        0.0
-    ],
-    "initialScale": [
-        1.0,
-        1.0,
-        1.0
-    ],
-    "lifeTime": 2.9000000953674316,
+    "emitterSettings": {
+        "blendMode": 2,
+        "textureFilePath": "Resources/ParticleTexture/smoke.png",
+        "vertexType": 0
+    },
+    "emitterSpawn": {
+        "count": 64,
+        "frequency": 1.0,
+        "repeat": false,
+        "useRandomPosition": true
+    },
     "name": "NewParticle",
-    "repeat": false,
-    "rotationSpeed": [
-        0.0,
-        0.0,
-        0.0
-    ],
-    "scaleSpeed": [
-        0.0,
-        0.0,
-        0.0
-    ],
-    "textureFilePath": "Resources/ParticleTexture/smoke.png",
-    "useBillboard": true,
-    "useGravity": false,
-    "useRandomPosition": true,
-    "velocity": [
-        0.0,
-        1.1299999952316284,
-        0.0
-    ],
-    "vertexType": 0
+    "particleSpawn": {
+        "initialOffset": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialRotate": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialScale": [
+            1.0,
+            1.0,
+            1.0
+        ]
+    },
+    "particleUpdate": {
+        "lifeTime": 2.9000000953674316,
+        "rotationSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scaleSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "useGravity": false,
+        "velocity": [
+            0.0,
+            1.1299999952316284,
+            0.0
+        ]
+    },
+    "render": {
+        "color": [
+            0.0,
+            1.0,
+            0.24710416793823242,
+            1.0
+        ],
+        "flipY": false,
+        "useBillboard": true
+    }
 }
