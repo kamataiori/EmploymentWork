@@ -62,7 +62,6 @@ namespace
 
 		ImVec2 canvasSize(leftWidth, graphHeight);
 
-
 		// ここでマウス入力も取る
 		ImGui::InvisibleButton("CurveCanvas", canvasSize);
 		ImVec2 canvasMin = ImGui::GetItemRectMin();
@@ -286,7 +285,6 @@ void ParticleEditorScene::Initialize()
 	niagaraSystems_.clear();
 	niagaraEmitters_.clear();
 
-	// --- Niagara 風 UI の初期カード生成 -------------------
 	{
 		NiagaraSystemUI sys{};
 		sys.name = "NS_Sample";
@@ -315,15 +313,12 @@ void ParticleEditorScene::Initialize()
 		selectedEmitterIndex_ = 0;
 	}
 
-
 #ifdef USE_IMGUI
 	// 旧ドッキング設定はもう使わないので消してOK
 	// AddRightDockWindow(kWindowName_Particle);
 	// AddRightDockWindow(kWindowName_Preset);
 #endif
-
 }
-
 
 void ParticleEditorScene::Finalize()
 {
@@ -352,7 +347,6 @@ void ParticleEditorScene::Update()
 			}
 
 			// プリセットが存在しなければ Emit しない
-			// → ParticleManager 側で「preset not found」が出ないようにする
 			ParticleManager::ParticlePreset* preset =
 				particle->FindPreset(emitterUI.presetName);
 			if (!preset) {
@@ -374,7 +368,6 @@ void ParticleEditorScene::Update()
 
 	// デバッグ
 	Debug();
-
 }
 
 void ParticleEditorScene::BackGroundDraw()
@@ -382,68 +375,23 @@ void ParticleEditorScene::BackGroundDraw()
 	// Spriteの描画前処理。Spriteの描画設定に共通のグラフィックスコマンドを積む
 	SpriteCommon::GetInstance()->CommonSetting();
 
-	// ================================================
-	// ここからSprite個々の背景描画
-	// ================================================
-
-
-	// ================================================
-	// ここまでSprite個々の背景描画
-	// ================================================
+	// 背景スプライトあればここで
 }
 
 void ParticleEditorScene::Draw()
 {
-
-	//skybox->Draw();
-
-	// ================================================
-	// ここからSkyBoxの描画
-	// ================================================
-
-
-
-	// ================================================
-	// ここまでSkyBox個々の描画
-	// ================================================
-
-
 	// 3Dオブジェクトの描画前処理。3Dオブジェクトの描画設定に共通のグラフィックスコマンドを積む
 	Object3dCommon::GetInstance()->CommonSetting();
 
-	// ================================================
-	// ここから3Dオブジェクト個々の描画
-	// ================================================
+	// 3Dオブジェクトがあればここで
 
-
-
-	// ================================================
-	// ここまで3Dオブジェクト個々の描画
-	// ================================================
-
-	//	アニメーションオブジェクトの描画前処理。3Dオブジェクトの描画設定に共通のグラフィックスコマンドを積む
+	// アニメーションオブジェクトの描画前処理
 	Skinning::GetInstance()->CommonSetting();
 
-	// ================================================
-	// ここからアニメーションオブジェクトの個々の描画
-	// ================================================
-
-
-
-	// ================================================
-	// ここまでアニメーションオブジェクトの個々の描画
-	// ================================================
-
-	// ================================================
-	// ここからDrawLine個々の描画
-	// ================================================
+	// アニメーションオブジェクトがあればここで
 
 	// グリッド描画
 	DrawLine::GetInstance()->DrawPlane(ground);
-
-	// ================================================
-	// ここまでDrawLine個々の描画
-	// ================================================
 }
 
 void ParticleEditorScene::ForeGroundDraw()
@@ -451,58 +399,68 @@ void ParticleEditorScene::ForeGroundDraw()
 	// Spriteの描画前処理。Spriteの描画設定に共通のグラフィックスコマンドを積む
 	SpriteCommon::GetInstance()->CommonSetting();
 
-	// ================================================
-	// ここからSprite個々の前景描画(UIなど)
-	// ================================================
-
-
-	// ================================================
-	// ここまでSprite個々の前景描画(UIなど)
-	// ================================================
-
-	// ================================================
-	// ここからparticle個々の描画
-	// ================================================
+	// 前景スプライトがあればここで
 
 	// パーティクル描画
 	if (particle) {
 		particle->Draw();
 	}
-
-	// ================================================
-	// ここまでparticle個々の描画
-	// ================================================
 }
 
 void ParticleEditorScene::Debug()
 {
 #ifdef USE_IMGUI
 
+	// 背景を不透明にする
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.16f, 0.16f, 0.16f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.16f, 0.16f, 0.16f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.18f, 0.18f, 0.18f, 1.0f));
+
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
 	ImVec2 workPos = viewport->WorkPos;
 	ImVec2 workSize = viewport->WorkSize;
 
-	// レイアウト比率
-	const float inspectorRatio = 0.28f;   // 右インスペクタ幅
-	const float cameraRatio = 0.35f;   // 下カメラパネル高さ
+	const float totalW = workSize.x;
+	const float totalH = workSize.y;
 
-	float inspectorWidth = workSize.x * inspectorRatio;
-	float cameraHeight = workSize.y * cameraRatio;
+	// 安全のため比率をクランプ
+	const float kMinRatio = 0.15f;
+	ratioLeftRight_ = std::clamp(ratioLeftRight_, kMinRatio, 1.0f - kMinRatio);
+	ratioTopBottom_ = std::clamp(ratioTopBottom_, kMinRatio, 1.0f - kMinRatio);
+	ratioSceneCanvas_ = std::clamp(ratioSceneCanvas_, kMinRatio, 1.0f - kMinRatio);
 
-	float canvasWidth = workSize.x - inspectorWidth;
-	float canvasHeight = workSize.y - cameraHeight;
+	// ===== 比率 → 実際のサイズに変換 =====
+	float leftWidth = totalW * ratioLeftRight_;
+	float inspectorWidth = totalW - leftWidth;
 
-	// 中央：Niagaraキャンバス
-	ImVec2 canvasPos = workPos;
-	ImVec2 canvasSize = ImVec2(canvasWidth, canvasHeight);
+	float topHeight = totalH * ratioTopBottom_;
+	float bottomHeight = totalH - topHeight;
 
-	// 右：インスペクタ
-	ImVec2 inspectorPos = ImVec2(workPos.x + canvasWidth, workPos.y);
-	ImVec2 inspectorSize = ImVec2(inspectorWidth, canvasHeight);
+	float sceneWidth = leftWidth * ratioSceneCanvas_;
+	float canvasWidth = leftWidth - sceneWidth;
 
-	// 下：カメラコントロール
-	ImVec2 cameraPos = ImVec2(workPos.x, workPos.y + canvasHeight);
-	ImVec2 cameraSize = ImVec2(workSize.x, cameraHeight);
+	auto SafeSize = [](float w, float h) -> ImVec2 {
+		if (w < 1.0f) w = 1.0f;
+		if (h < 1.0f) h = 1.0f;
+		return ImVec2(w, h);
+		};
+
+	// ===== 各パネルの位置・サイズ =====
+	// 左上：SceneView
+	ImVec2 scenePos = workPos;
+	ImVec2 sceneSize = SafeSize(sceneWidth, topHeight);
+
+	// 中央上：Niagara Canvas
+	ImVec2 canvasPos = ImVec2(workPos.x + sceneWidth, workPos.y);
+	ImVec2 canvasSize = SafeSize(canvasWidth, topHeight);
+
+	// 右：Inspector（上下フル）
+	ImVec2 inspectorPos = ImVec2(workPos.x + leftWidth, workPos.y);
+	ImVec2 inspectorSize = SafeSize(inspectorWidth, totalH);
+
+	// 下：Camera / Curve（右の Inspector は含めない）
+	ImVec2 bottomPos = ImVec2(workPos.x, workPos.y + topHeight);
+	ImVec2 bottomSize = SafeSize(leftWidth, bottomHeight);
 
 	ImGuiWindowFlags panelFlags =
 		ImGuiWindowFlags_NoMove |
@@ -513,29 +471,128 @@ void ParticleEditorScene::Debug()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 
 	// -----------------------------
-	// 1) Niagara 関連 UI 本体
+	// 1) 各パネル描画
 	// -----------------------------
-	if (showNiagaraUI_) {
-		// 中央：NS / NE カード
-		DrawNiagaraCanvas(canvasPos, canvasSize, static_cast<int>(panelFlags));
 
-		// 右：選択中モジュールの詳細
+	if (showNiagaraUI_) {
+		DrawSceneViewPanel(scenePos, sceneSize, static_cast<int>(panelFlags));
+		DrawNiagaraCanvas(canvasPos, canvasSize, static_cast<int>(panelFlags));
 		DrawNiagaraInspector(inspectorPos, inspectorSize, static_cast<int>(panelFlags));
 	}
 
-	// カメラコントロール or カーブエディタ
 	if (curveEditorMode_ != CurveEditorMode::None && curveEditorTarget_) {
-		// カーブエディタを下パネルに表示
-		DrawCurveEditorPanel(cameraPos, cameraSize, static_cast<int>(panelFlags));
+		DrawCurveEditorPanel(bottomPos, bottomSize, static_cast<int>(panelFlags));
 	}
 	else {
-		// 通常はカメラコントロール
-		DrawCameraControlPanel(cameraPos, cameraSize, static_cast<int>(panelFlags));
+		DrawCameraControlPanel(bottomPos, bottomSize, static_cast<int>(panelFlags));
 	}
 
 	ImGui::PopStyleVar();
+	// ここで元のスタイルに戻す
+	ImGui::PopStyleColor(3);
+
+	// -----------------------------
+	// 2) スプリッタ（境界のドラッグ処理）
+	// -----------------------------
+	if (showNiagaraUI_)
+	{
+		ImDrawList* dl = ImGui::GetForegroundDrawList();
+		ImGuiIO& io = ImGui::GetIO();
+		ImVec2 mousePos = io.MousePos;
+
+		const float thickness = 4.0f;
+
+		static bool draggingSceneCanvas = false;
+		static bool draggingLeftRight = false;
+		static bool draggingTopBottom = false;
+
+		auto VerticalSplitter = [&](float x, float top, float bottom,
+			float totalWidth, float& ratio,
+			bool& draggingFlag)
+			{
+				float half = thickness * 0.5f;
+				bool hovered =
+					(mousePos.x >= x - half && mousePos.x <= x + half &&
+						mousePos.y >= top && mousePos.y <= bottom);
+
+				if (hovered || draggingFlag) {
+					ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+				}
+
+				if (hovered && ImGui::IsMouseClicked(0)) {
+					draggingFlag = true;
+				}
+				if (!ImGui::IsMouseDown(0)) {
+					draggingFlag = false;
+				}
+
+				if (draggingFlag) {
+					float delta = io.MouseDelta.x;
+					ratio += delta / totalWidth;
+					ratio = std::clamp(ratio, 0.15f, 1.0f - 0.15f);
+				}
+
+				dl->AddLine(ImVec2(x, top), ImVec2(x, bottom),
+					IM_COL32(180, 180, 180, hovered ? 255 : 160), 1.0f);
+			};
+
+		auto HorizontalSplitter = [&](float y, float left, float right,
+			float totalHeight, float& ratio,
+			bool& draggingFlag)
+			{
+				float half = thickness * 0.5f;
+				bool hovered =
+					(mousePos.y >= y - half && mousePos.y <= y + half &&
+						mousePos.x >= left && mousePos.x <= right);
+
+				if (hovered || draggingFlag) {
+					ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
+				}
+
+				if (hovered && ImGui::IsMouseClicked(0)) {
+					draggingFlag = true;
+				}
+				if (!ImGui::IsMouseDown(0)) {
+					draggingFlag = false;
+				}
+
+				if (draggingFlag) {
+					float delta = io.MouseDelta.y;
+					ratio += delta / totalHeight;
+					ratio = std::clamp(ratio, 0.15f, 1.0f - 0.15f);
+				}
+
+				dl->AddLine(ImVec2(left, y), ImVec2(right, y),
+					IM_COL32(180, 180, 180, hovered ? 255 : 160), 1.0f);
+			};
+
+		// Splitters…
+		{
+			float splitX = workPos.x + sceneWidth;
+			float top = workPos.y;
+			float bottom = workPos.y + topHeight;
+			VerticalSplitter(splitX, top, bottom, leftWidth, ratioSceneCanvas_, draggingSceneCanvas);
+		}
+
+		{
+			float splitX = workPos.x + leftWidth;
+			float top = workPos.y;
+			float bottom = workPos.y + totalH;
+			VerticalSplitter(splitX, top, bottom, totalW, ratioLeftRight_, draggingLeftRight);
+		}
+
+		{
+			float splitY = workPos.y + topHeight;
+			float left = workPos.x;
+			float right = workPos.x + leftWidth;
+			HorizontalSplitter(splitY, left, right, totalH, ratioTopBottom_, draggingTopBottom);
+		}
+	}
+
+
 #endif // USE_IMGUI
 }
+
 
 void ParticleEditorScene::UpdateDebugCamera()
 {
@@ -573,10 +630,6 @@ void ParticleEditorScene::UpdateDebugCamera()
 	if (input->PushKey(DIK_D)) move.x += 1.0f;
 	if (input->PushKey(DIK_A)) move.x -= 1.0f;
 
-	//// E / Q で上下移動
-	//if (input->PushKey(DIK_E)) move.y += 1.0f;
-	//if (input->PushKey(DIK_Q)) move.y -= 1.0f;
-
 	//=========================================================
 	// 2. マウス視点回転
 	//=========================================================
@@ -588,7 +641,6 @@ void ParticleEditorScene::UpdateDebugCamera()
 		const float kPitchLimit = 1.5f;
 		rot.x = std::clamp(rot.x, -kPitchLimit, kPitchLimit);
 	}
-
 
 	//=========================================================
 	// 3. ローカル移動 → ワールド座標へ変換
@@ -607,8 +659,6 @@ void ParticleEditorScene::UpdateDebugCamera()
 		worldMove = worldMove + Vector3{ 0,1,0 } *move.y;
 
 		pos = pos + worldMove * (kMoveSpeed * dt * 60.0f);
-		// （60倍して速度感を現状に近づける）
-
 	}
 
 	//=========================================================
@@ -618,12 +668,37 @@ void ParticleEditorScene::UpdateDebugCamera()
 	camera->SetRotate(rot);
 }
 
+//--------------------------------------------------
+// 左上：SceneView
+//--------------------------------------------------
+void ParticleEditorScene::DrawSceneViewPanel(const ImVec2& pos, const ImVec2& size, int panelFlags)
+{
+	ImGui::SetNextWindowPos(pos);
+	ImGui::SetNextWindowSize(size);
 
+	ImGuiWindowFlags flags = static_cast<ImGuiWindowFlags>(panelFlags);
+
+	if (!ImGui::Begin("SceneView", nullptr, flags))
+	{
+		ImGui::End();
+		return;
+	}
+
+	// MyGame::DrawCenterPanel と同じ描画方法
+	ImTextureID textureID = (ImTextureID)SrvManager::GetInstance()
+		->GetGPUDescriptorHandle(PostEffectManager::GetInstance()->GetSrvIndex()).ptr;
+
+	ImVec2 avail = ImGui::GetContentRegionAvail();
+	ImGui::Image(textureID, avail);
+
+	ImGui::End();
+}
+
+//--------------------------------------------------
+// 中央：Niagara Canvas
+//--------------------------------------------------
 void ParticleEditorScene::DrawNiagaraCanvas(const ImVec2& pos, const ImVec2& size, int panelFlags)
 {
-	//==================================================
-    // ① 中央：Niagara Canvas（NS/NE カード）
-    //==================================================
 	ImGui::SetNextWindowPos(pos);
 	ImGui::SetNextWindowSize(size);
 
@@ -667,14 +742,12 @@ void ParticleEditorScene::DrawNiagaraCanvas(const ImVec2& pos, const ImVec2& siz
 				niagaraEmitters_.push_back(em);
 			}
 
-			// ★ 追加：ペースト（コピーされているときだけ有効）
+			// ペースト
 			if (ImGui::MenuItem("Paste Emitter", nullptr, false, hasEmitterClipboard_)) {
 				if (hasEmitterClipboard_) {
 					NiagaraEmitterUI em = emitterClipboard_;
-					// 位置だけクリック位置に合わせる
 					em.posX = local.x;
 					em.posY = local.y;
-					// 名前はそのままコピー（＝同じ名前のエミッタが複数並ぶ）
 					niagaraEmitters_.push_back(em);
 				}
 			}
@@ -739,7 +812,6 @@ void ParticleEditorScene::DrawNiagaraCanvas(const ImVec2& pos, const ImVec2& siz
 		};
 		constexpr int kModuleCount = sizeof(kEmitterModules) / sizeof(ModuleDesc);
 
-		// ★ 削除要求されたエミッタのインデックス（ループ後に erase）
 		int emitterToDelete = -1;
 
 		// ===== Emitter カード描画 & ドラッグ & モジュール行 =====
@@ -761,7 +833,7 @@ void ParticleEditorScene::DrawNiagaraCanvas(const ImVec2& pos, const ImVec2& siz
 				em.posY += delta.y;
 			}
 
-			// ★ 右クリックメニュー（コピー / 削除）
+			// 右クリックメニュー（コピー / 削除）
 			if (ImGui::BeginPopupContextItem("EmitterCardContext")) {
 				if (ImGui::MenuItem("コピー")) {
 					emitterClipboard_ = em;
@@ -854,13 +926,12 @@ void ParticleEditorScene::DrawNiagaraCanvas(const ImVec2& pos, const ImVec2& siz
 			ImGui::PopID();
 		}
 
-		// ★ ここで実際に削除を反映
+		// 削除反映
 		if (emitterToDelete >= 0 &&
 			emitterToDelete < (int)niagaraEmitters_.size())
 		{
 			niagaraEmitters_.erase(niagaraEmitters_.begin() + emitterToDelete);
 
-			// 選択インデックスを補正
 			if (selectedEmitterIndex_ == emitterToDelete) {
 				selectedEmitterIndex_ = -1;
 			}
@@ -870,10 +941,11 @@ void ParticleEditorScene::DrawNiagaraCanvas(const ImVec2& pos, const ImVec2& siz
 		}
 	}
 	ImGui::End();
-
 }
 
-
+//--------------------------------------------------
+// 右：Emitter Inspector
+//--------------------------------------------------
 void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& size, int panelFlags)
 {
 	ImGui::SetNextWindowPos(pos);
@@ -932,7 +1004,7 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 	ImGui::Text("選択中モジュール : %s", kModuleNames[moduleIndex]);
 	ImGui::Separator();
 
-	// 右側パネルでも Niagara Editor の ON/OFF を操作できるように
+	// 右側パネルでも Niagara Editor の ON/OFF を操作
 	ImGui::Checkbox("Niagara Editor を表示", &showNiagaraUI_);
 	ImGui::Separator();
 
@@ -1099,14 +1171,13 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 	}
 	break;
 
-
 	case 6: // Render
 	{
 		ImGui::SeparatorText("Render");
 
 		// 基本設定
 		ImGui::ColorEdit4("色 (RGBA)", &preset->render.color.x);
-		// ★ 下パネルにカーブエディタを出す
+		// 下パネルにカーブエディタを出す
 		if (ImGui::Button("カラー/アルファをカーブで編集")) {
 			curveEditorMode_ = CurveEditorMode::Color;
 			curveEditorTarget_ = &preset->render.colorCurve;
@@ -1235,7 +1306,6 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 		}
 	}
 	break;
-
 	}
 
 	ImGui::Spacing();
@@ -1262,7 +1332,9 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 	ImGui::End();
 }
 
-
+//--------------------------------------------------
+// 下：Camera Control
+//--------------------------------------------------
 void ParticleEditorScene::DrawCameraControlPanel(const ImVec2& pos, const ImVec2& size, int panelFlags)
 {
 	ImGui::SetNextWindowPos(pos);
@@ -1280,7 +1352,7 @@ void ParticleEditorScene::DrawCameraControlPanel(const ImVec2& pos, const ImVec2
 		ImGui::Text("Control");
 		ImGui::Separator();
 
-		// ★ ここに Niagara Editor のトグルを常設
+		// Niagara Editor のトグル
 		ImGui::Checkbox("Niagara Editor を表示", &showNiagaraUI_);
 		ImGui::Separator();
 
@@ -1313,14 +1385,16 @@ void ParticleEditorScene::DrawCameraControlPanel(const ImVec2& pos, const ImVec2
 	ImGui::End();
 }
 
+//--------------------------------------------------
+// 下：Curve Editor
+//--------------------------------------------------
 void ParticleEditorScene::DrawCurveEditorPanel(const ImVec2& pos, const ImVec2& size, int panelFlags)
 {
 	ImGui::SetNextWindowPos(pos);
 	ImGui::SetNextWindowSize(size);
 
 	ImGuiWindowFlags flags = static_cast<ImGuiWindowFlags>(panelFlags)
-		| ImGuiWindowFlags_NoScrollbar
-		| ImGuiWindowFlags_NoScrollWithMouse;
+		| ImGuiWindowFlags_NoScrollWithMouse; // 横スクロールは許可（サイズが少し狭くなっても操作しやすく）
 
 	if (!ImGui::Begin("Curve Editor", nullptr, flags))
 	{
