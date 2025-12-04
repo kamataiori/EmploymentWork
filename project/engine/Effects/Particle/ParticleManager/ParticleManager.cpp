@@ -4,24 +4,30 @@
 
 using json = nlohmann::json;
 
+//======================================================================
+//  JSON 書き出し
+//======================================================================
 void to_json(json& j, const ParticleManager::ParticlePreset& p)
 {
 	j = json{
 		{ "name", p.name },
 
+		// ========= emitterSettings =========
 		{ "emitterSettings", {
 			{ "vertexType",      static_cast<int>(p.emitterSettings.vertexType) },
 			{ "textureFilePath", p.emitterSettings.textureFilePath },
 			{ "blendMode",       static_cast<int>(p.emitterSettings.blendMode) }
 		}},
 
+		// ========= emitterSpawn =========
 		{ "emitterSpawn", {
-			{ "count",            p.emitterSpawn.count },
-			{ "frequency",        p.emitterSpawn.frequency },
-			{ "repeat",           p.emitterSpawn.repeat },
-			{ "useRandomPosition",p.emitterSpawn.useRandomPosition }
+			{ "count",             p.emitterSpawn.count },
+			{ "frequency",         p.emitterSpawn.frequency },
+			{ "repeat",            p.emitterSpawn.repeat },
+			{ "useRandomPosition", p.emitterSpawn.useRandomPosition }
 		}},
 
+		// ========= particleSpawn =========
 		{ "particleSpawn", {
 			{ "initialScale",  { p.particleSpawn.initialScale.x,
 								 p.particleSpawn.initialScale.y,
@@ -34,6 +40,7 @@ void to_json(json& j, const ParticleManager::ParticlePreset& p)
 								 p.particleSpawn.initialOffset.z } }
 		}},
 
+		// ========= particleUpdate =========
 		{ "particleUpdate", {
 			{ "lifeTime",      p.particleUpdate.lifeTime },
 			{ "velocity",      { p.particleUpdate.velocity.x,
@@ -48,6 +55,7 @@ void to_json(json& j, const ParticleManager::ParticlePreset& p)
 			{ "useGravity",    p.particleUpdate.useGravity }
 		}},
 
+		// ========= render =========
 		{ "render", {
 			{ "color",        { p.render.color.x,
 								p.render.color.y,
@@ -57,13 +65,49 @@ void to_json(json& j, const ParticleManager::ParticlePreset& p)
 			{ "flipY",        p.render.flipY }
 		}},
 	};
+
+	// -----------------------------
+	// scaleCurve のシリアライズ
+	// -----------------------------
+	{
+		json scaleCurveJson;
+		scaleCurveJson["enabled"] = p.particleUpdate.scaleCurve.enabled;
+
+		json keysJson = json::array();
+		for (const auto& key : p.particleUpdate.scaleCurve.keys) {
+			// [t, v] 形式で保存
+			keysJson.push_back({ key.t, key.v });
+		}
+		scaleCurveJson["keys"] = keysJson;
+
+		j["particleUpdate"]["scaleCurve"] = scaleCurveJson;
+	}
+
+	// -----------------------------
+	// colorCurve のシリアライズ
+	// -----------------------------
+	{
+		json colorCurveJson;
+		colorCurveJson["enabled"] = p.render.colorCurve.enabled;
+
+		json keysJson = json::array();
+		for (const auto& key : p.render.colorCurve.keys) {
+			keysJson.push_back({ key.t, key.v });
+		}
+		colorCurveJson["keys"] = keysJson;
+
+		j["render"]["colorCurve"] = colorCurveJson;
+	}
 }
 
-
+//======================================================================
+//  JSON 読み込み
+//======================================================================
 void from_json(const json& j, ParticleManager::ParticlePreset& p)
 {
 	p.name = j.value("name", "");
 
+	// 古い形式との互換用: 直下に Vec3 / Vec4 がある場合も読む
 	auto readVec3 = [&j](const char* key, Vector3 defaultValue) {
 		Vector3 v = defaultValue;
 		if (j.contains(key) && j[key].is_array() && j[key].size() == 3) {
@@ -89,18 +133,17 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 	if (j.contains("emitterSettings") && j["emitterSettings"].is_object()) {
 		const auto& es = j["emitterSettings"];
 		p.emitterSettings.vertexType = static_cast<ParticleManager::VertexDataType>(
-			es.value("vertexType", 0));
+			es.value("vertexType", static_cast<int>(ParticleManager::VertexDataType::Plane)));
 		p.emitterSettings.textureFilePath = es.value("textureFilePath", "");
 		p.emitterSettings.blendMode = static_cast<ParticleManager::BlendMode>(
-			es.value("blendMode", (int)ParticleManager::kBlendModeNormal));
+			es.value("blendMode", static_cast<int>(ParticleManager::kBlendModeNormal)));
 	}
 	else {
-		// 旧フォーマット用（フラットなキー）
 		p.emitterSettings.vertexType = static_cast<ParticleManager::VertexDataType>(
-			j.value("vertexType", 0));
+			j.value("vertexType", static_cast<int>(ParticleManager::VertexDataType::Plane)));
 		p.emitterSettings.textureFilePath = j.value("textureFilePath", "");
 		p.emitterSettings.blendMode = static_cast<ParticleManager::BlendMode>(
-			j.value("blendMode", (int)ParticleManager::kBlendModeNormal));
+			j.value("blendMode", static_cast<int>(ParticleManager::kBlendModeNormal)));
 	}
 
 	// ========= emitterSpawn =========
@@ -158,6 +201,26 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 		p.particleUpdate.rotationSpeed = read3("rotationSpeed", { 0,0,0 });
 		p.particleUpdate.scaleSpeed = read3("scaleSpeed", { 0,0,0 });
 		p.particleUpdate.useGravity = pu.value("useGravity", false);
+
+		// ---- scaleCurve ----
+		p.particleUpdate.scaleCurve.enabled = false;
+		p.particleUpdate.scaleCurve.keys.clear();
+		if (pu.contains("scaleCurve") && pu["scaleCurve"].is_object()) {
+			const auto& sc = pu["scaleCurve"];
+			p.particleUpdate.scaleCurve.enabled =
+				sc.value("enabled", false);
+
+			if (sc.contains("keys") && sc["keys"].is_array()) {
+				for (const auto& elem : sc["keys"]) {
+					if (elem.is_array() && elem.size() == 2) {
+						ParticleManager::CurveKey key;
+						key.t = elem[0].get<float>();
+						key.v = elem[1].get<float>();
+						p.particleUpdate.scaleCurve.keys.push_back(key);
+					}
+				}
+			}
+		}
 	}
 	else {
 		p.particleUpdate.lifeTime = j.value("lifeTime", 1.0f);
@@ -165,6 +228,10 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 		p.particleUpdate.rotationSpeed = readVec3("rotationSpeed", { 0,0,0 });
 		p.particleUpdate.scaleSpeed = readVec3("scaleSpeed", { 0,0,0 });
 		p.particleUpdate.useGravity = j.value("useGravity", false);
+
+		// particleUpdate が丸ごと無い旧データではカーブは無効
+		p.particleUpdate.scaleCurve.enabled = false;
+		p.particleUpdate.scaleCurve.keys.clear();
 	}
 
 	// ========= render =========
@@ -184,11 +251,34 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 		p.render.color = read4("color", { 1,1,1,1 });
 		p.render.useBillboard = r.value("useBillboard", true);
 		p.render.flipY = r.value("flipY", false);
+
+		// ---- colorCurve ----
+		p.render.colorCurve.enabled = false;
+		p.render.colorCurve.keys.clear();
+		if (r.contains("colorCurve") && r["colorCurve"].is_object()) {
+			const auto& cc = r["colorCurve"];
+			p.render.colorCurve.enabled =
+				cc.value("enabled", false);
+
+			if (cc.contains("keys") && cc["keys"].is_array()) {
+				for (const auto& elem : cc["keys"]) {
+					if (elem.is_array() && elem.size() == 2) {
+						ParticleManager::CurveKey key;
+						key.t = elem[0].get<float>();
+						key.v = elem[1].get<float>();
+						p.render.colorCurve.keys.push_back(key);
+					}
+				}
+			}
+		}
 	}
 	else {
 		p.render.color = readVec4("color", { 1,1,1,1 });
 		p.render.useBillboard = j.value("useBillboard", true);
 		p.render.flipY = j.value("flipY", false);
+
+		p.render.colorCurve.enabled = false;
+		p.render.colorCurve.keys.clear();
 	}
 }
 
@@ -335,6 +425,26 @@ void ParticleManager::Update()
 			// 経過時間を更新
 			particle.currentTime += dt;
 
+			// NormalizedAge [0,1]
+			float age = (particle.lifeTime > 0.0f)
+				? (particle.currentTime / particle.lifeTime)
+				: 0.0f;
+			age = std::clamp(age, 0.0f, 1.0f);
+
+			// ---- スケール更新（カーブ or 速度） ----
+			if (group.second.scaleCurve.enabled &&
+				!group.second.scaleCurve.keys.empty()) {
+				float s = group.second.scaleCurve.Evaluate(age);
+				particle.transform.scale = particle.initialScale * s;
+			}
+			else {
+				// 従来のスケール速度処理
+				particle.transform.scale.x += particle.scaleSpeed.x * dt;
+				particle.transform.scale.y += particle.scaleSpeed.y * dt;
+				particle.transform.scale.z += particle.scaleSpeed.z * dt;
+			}
+
+
 			// Scale 行列
 			Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);
 
@@ -377,7 +487,28 @@ void ParticleManager::Update()
 
 				// カラーを設定し、アルファ値を減衰
 				group.second.instancingDataPtr[group.second.instanceCount].color = particle.color;
-				group.second.instancingDataPtr[group.second.instanceCount].color.w = 1.0f - (particle.currentTime / particle.lifeTime);
+				Vector4 outColor;
+
+				if (group.second.colorCurve.enabled &&
+					!group.second.colorCurve.keys.empty()) {
+					float c = group.second.colorCurve.Evaluate(age);
+					outColor.x = particle.initialColor.x * c;
+					outColor.y = particle.initialColor.y * c;
+					outColor.z = particle.initialColor.z * c;
+					outColor.w = particle.initialColor.w * c;
+				}
+				else {
+					outColor = particle.color;
+				}
+
+				// 寿命によるフェードも掛けたい場合はここで掛ける
+				outColor.w *= (1.0f - age);
+				if (outColor.w < 0.0f) { outColor.w = 0.0f; }
+
+				group.second.instancingDataPtr[group.second.instanceCount].color = outColor;
+				group.second.instancingDataPtr[group.second.instanceCount].flipY =
+					group.second.flipY ? 1.0f : 0.0f;
+
 				group.second.instancingDataPtr[group.second.instanceCount].flipY = group.second.flipY ? 1.0f : 0.0f;
 				if (group.second.instancingDataPtr[group.second.instanceCount].color.w < 0.0f)
 				{
@@ -397,67 +528,55 @@ void ParticleManager::Draw()
 {
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList().Get();
 
-	// ルートシグネチャを設定
+	// ルートシグネチャは一回だけ
 	commandList->SetGraphicsRootSignature(rootSignature_.Get());
 
-	// キャッシュ内に指定されたブレンドモードのPSOが存在するか確認
-	auto it = pipelineStateCache_.find(blendMode_);
-	if (it == pipelineStateCache_.end() || !it->second) {
-		Logger::Log("PSO for blend mode not found, defaulting to normal blend mode.");
-		it = pipelineStateCache_.find(kBlendModeNormal);
-		if (it == pipelineStateCache_.end() || !it->second) {
-			Logger::Log("Default PSO not found. Aborting draw call.");
-			return;
-		}
-	}
-
-
-
-	commandList->SetPipelineState(it->second.Get());
-
-	// プリミティブトポロジ（描画形状）を設定
+	// プリミティブトポロジ & VBV は共通
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	// VBV (Vertex Buffer View)を設定
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 
-	// SrvManagerのインスタンスを取得
 	SrvManager* srvManager = SrvManager::GetInstance();
 
-	// 全てのパーティクルグループについて処理を行う
-	for (auto& group : particleGroups) {
-		if (group.second.instanceCount == 0) continue; // インスタンスが無い場合はスキップ
-
-		Vector2 textureLeftTop = group.second.textureLeftTop;
-		Vector2 textureSize = group.second.textureSize;
-
-		for (auto& particle : group.second.particleList)
-		{
-			// UV座標の計算
-			float uStart = textureLeftTop.x / textureSize.x;
-			float uEnd = (textureLeftTop.x + textureSize.x) / textureSize.x;
-			float vStart = textureLeftTop.y / textureSize.y;
-			float vEnd = (textureLeftTop.y + textureSize.y) / textureSize.y;
-
-			// 必要であればUV座標を設定する処理を追加
+	// 全てのパーティクルグループ
+	for (auto& pair : particleGroups) {
+		auto& group = pair.second;
+		if (group.instanceCount == 0) {
+			continue;
 		}
 
-		//マテリアルCBufferの場所を設定
+		// ★ このグループ専用のブレンドモードから PSO を取得
+		auto psoIt = pipelineStateCache_.find(group.blendMode);
+		if (psoIt == pipelineStateCache_.end() || !psoIt->second) {
+			// 念のため、無ければノーマルにフォールバック
+			Logger::Log("PSO for group blend mode not found, fallback to normal.");
+			psoIt = pipelineStateCache_.find(kBlendModeNormal);
+			if (psoIt == pipelineStateCache_.end() || !psoIt->second) {
+				Logger::Log("Default PSO not found. Skip this group.");
+				continue;
+			}
+		}
+
+		// ★ グループごとに PSO をセット
+		commandList->SetPipelineState(psoIt->second.Get());
+
+		// （ここから下は今と同じでOK）
+		Vector2 textureLeftTop = group.textureLeftTop;
+		Vector2 textureSize = group.textureSize;
+
+		for (auto& particle : group.particleList) {
+			// 必要ならUV計算の処理など
+		}
+
 		commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootDescriptorTable(2, srvManager->GetGPUDescriptorHandle(group.srvIndex));
+		commandList->SetGraphicsRootDescriptorTable(1, srvManager->GetGPUDescriptorHandle(group.instancingSrvIndex));
 
-		// テクスチャのSRVのDescriptorTableを設定
-		commandList->SetGraphicsRootDescriptorTable(2, srvManager->GetGPUDescriptorHandle(group.second.srvIndex));
+		commandList->DrawInstanced(group.vertexCount, group.instanceCount, 0, 0);
 
-		// インスタンシングデータのSRVのDescriptorTableを設定
-		commandList->SetGraphicsRootDescriptorTable(1, srvManager->GetGPUDescriptorHandle(group.second.instancingSrvIndex));
-
-		// Draw Call (インスタンシング描画)
-		commandList->DrawInstanced(group.second.vertexCount, group.second.instanceCount, 0, 0);
-
-		// インスタンスカウントをリセット
-		group.second.instanceCount = 0;
+		group.instanceCount = 0;
 	}
 }
+
 
 void ParticleManager::DrawImGuiParticlePresetEditor()
 {
@@ -864,7 +983,6 @@ void ParticleManager::LoadAllPresets(const std::string& directory)
 void ParticleManager::EmitByPresetName(const std::string& presetName,
 	const Transform& emitterTransform)
 {
-
 	// ---- プリセット検索 or 読み込み ----
 	ParticlePreset preset;
 	{
@@ -881,7 +999,7 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		}
 	}
 
-	// JSON 側の name が空なら、presetName を使う
+	// JSON 側の name が空なら presetName を使う
 	if (preset.name.empty()) {
 		preset.name = presetName;
 	}
@@ -892,7 +1010,9 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 	auto itGroup = particleGroups.find(groupName);
 	if (itGroup == particleGroups.end()) {
 		// テクスチャとブレンドモードはプリセットから
-		CreateParticleGroup(groupName, preset.emitterSettings.textureFilePath, preset.emitterSettings.blendMode);
+		CreateParticleGroup(groupName,
+			preset.emitterSettings.textureFilePath,
+			preset.emitterSettings.blendMode);
 
 		// 新規作成したグループに対して プリセットの設定を反映
 		SetFlipYToGroup(groupName, preset.render.flipY);
@@ -914,8 +1034,13 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		SetGravityToGroup(groupName, preset.particleUpdate.useGravity);
 	}
 
-	// グループ参照を取得（ここまでで必ず存在している）
+	// ---- ここで初めて group を取得する（※ここから group が使える）----
 	ParticleGroup& group = particleGroups[groupName];
+
+	// ★ カーブをグループにコピー（新規・既存どちらでもここで更新される）
+	group.scaleCurve = preset.particleUpdate.scaleCurve;
+	group.colorCurve = preset.render.colorCurve;
+
 	const size_t beforeCount = group.particleList.size();
 
 	// ---- 呼び出し元の Transform とプリセット値を合成 ----
@@ -959,8 +1084,7 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 	}
 
 	// === ここからがポイント ===
-	// Emit によって新しく追加されたパーティクルだけに
-	// presetを適用する
+	// Emit によって新しく追加されたパーティクルだけに preset を適用する
 	const size_t afterCount = group.particleList.size();
 	if (afterCount > beforeCount) {
 		auto it = group.particleList.begin();
@@ -972,9 +1096,14 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 			p.scaleSpeed = preset.particleUpdate.scaleSpeed;
 			p.color = preset.render.color;
 			p.lifeTime = preset.particleUpdate.lifeTime;
+			// ★ カーブ用の基準値
+			p.initialScale = p.transform.scale;
+			p.initialColor = p.color;
 		}
 	}
 }
+
+
 
 ParticleManager::ParticlePreset* ParticleManager::FindPreset(const std::string& name)
 {
@@ -1091,77 +1220,84 @@ void ParticleManager::CreateCylinderVertexData() {
 }
 
 
-void ParticleManager::CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode)
+void ParticleManager::CreateParticleGroup(const std::string name,
+	const std::string textureFilePath,
+	BlendMode blendMode)
 {
-	// 登録済みの名前かチェックして assert
-	bool nameExists = false;
-	for (auto it = particleGroups.begin(); it != particleGroups.end(); ++it) {
-		if (it->second.materialFilePath == name) {
-			nameExists = true;
-			break;
-		}
-	}
-	if (nameExists) {
+	// ----------------------------------------
+	// 同名グループの二重登録チェック
+	// ----------------------------------------
+	if (particleGroups.find(name) != particleGroups.end()) {
 		assert(false && "Particle group with this name already exists!");
 	}
 
+	// ----------------------------------------
+	// テクスチャパスの決定（空ならデフォルトを使う）
+	// ----------------------------------------
+	std::string resolvedTexPath = textureFilePath;
+
+	if (resolvedTexPath.empty()) {
+		// ★ここは実際に存在するパーティクル用テクスチャに合わせてください
+		//   さっき Inspector で使っていたパスにしています
+		resolvedTexPath = "Resources/ParticleTexture/smoke.png";
+		Logger::Log(
+			"ParticleManager::CreateParticleGroup : textureFilePath is empty. "
+			"Use default texture -> " + resolvedTexPath);
+	}
+
+	// ----------------------------------------
 	// 新たなパーティクルグループを作成
+	// ----------------------------------------
 	ParticleGroup newGroup;
-	newGroup.materialFilePath = textureFilePath;
+	newGroup.materialFilePath = resolvedTexPath;
 
-	// テクスチャのSRVインデックスを取得して設定
-	TextureManager::GetInstance()->LoadTexture(textureFilePath);
+	// テクスチャ読み込み・SRV取得
+	TextureManager::GetInstance()->LoadTexture(resolvedTexPath);
+	newGroup.srvIndex =
+		TextureManager::GetInstance()->GetTextureIndexByFilePath(resolvedTexPath);
 
-	newGroup.srvIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(textureFilePath);
-
-	// テクスチャサイズを取得
-	const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureFilePath);
-	Vector2 textureSize = { static_cast<float>(metadata.width), static_cast<float>(metadata.height) };
-
-	//// サイズを設定（指定があればそれを使用、なければテクスチャサイズを使用）
-	//if (customSize.x > 0.0f && customSize.y > 0.0f) {
-	//	newGroup.textureSize = customSize;
-	//}
-	//else {
-	//	newGroup.textureSize = textureSize;
-	//}
-
-	//// テクスチャサイズを設定
-	//AdjustTextureSize(newGroup, textureFilePath);
+	// テクスチャサイズを取得（必要なら後で使えるように）
+	const DirectX::TexMetadata& metadata =
+		TextureManager::GetInstance()->GetMetaData(resolvedTexPath);
+	Vector2 textureSize = {
+		static_cast<float>(metadata.width),
+		static_cast<float>(metadata.height)
+	};
+	// 必要なら newGroup.textureSize = textureSize; など
 
 	// 頂点数を取得
 	newGroup.vertexCount = static_cast<UINT>(modelData.vertices.size());
 
 	// インスタンシング用リソースの生成
-	//InstancingResource();
 	newGroup.instancingResource =
 		dxCommon_->CreateBufferResource(sizeof(ParticleForGPU) * kNumMaxInstance);
-	newGroup.instancingResource->Map(0, nullptr, reinterpret_cast<void**>(&newGroup.instancingDataPtr));
-	for (uint32_t index = 0; index < kNumMaxInstance; ++index)
-	{
+	newGroup.instancingResource->Map(
+		0, nullptr, reinterpret_cast<void**>(&newGroup.instancingDataPtr));
+
+	for (uint32_t index = 0; index < kNumMaxInstance; ++index) {
 		newGroup.instancingDataPtr[index].WVP = MakeIdentity4x4();
 		newGroup.instancingDataPtr[index].World = MakeIdentity4x4();
-		//newGroup.instancingDataPtr[index].color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+		// newGroup.instancingDataPtr[index].Color = {1,1,1,1}; // 必要なら
 	}
 
-	// 最大インスタンシング用リソースの生成
-	//InstancingMaxResource();
-
-	// インスタンシング用SRVを確保してSRVインデックスを記録
+	// インスタンシング用 SRV を確保
 	newGroup.instancingSrvIndex = srvManager_->Allocate();
-	srvManager_->CreateSRVforStructuredBuffer(newGroup.instancingSrvIndex, newGroup.instancingResource.Get(), kNumMaxInstance, sizeof(ParticleForGPU));
+	srvManager_->CreateSRVforStructuredBuffer(
+		newGroup.instancingSrvIndex,
+		newGroup.instancingResource.Get(),
+		kNumMaxInstance,
+		sizeof(ParticleForGPU));
 
-	// パーティクルグループをリストに追加
+	// グループごとのブレンドモードを設定
+	newGroup.blendMode = blendMode;
+
+	// マップに登録
 	particleGroups.emplace(name, newGroup);
 
 	// マテリアルデータの初期化
 	CreateMaterialData();
-
-	// 新しいブレンドモードを設定
-	blendMode_ = blendMode;
-	//GraphicsPipelineState(blendMode);  // 再生成
-
 }
+
 
 void ParticleManager::SetFlipYToGroup(const std::string& groupName, bool flip)
 {
@@ -1221,6 +1357,10 @@ ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomE
 	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	particle.lifeTime = 1.0f;
 	particle.currentTime = 0.0f;
+
+	particle.initialScale = particle.transform.scale;
+	particle.initialColor = particle.color;
+
 
 	return particle;
 }
@@ -1839,3 +1979,25 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> ParticleManager::PSO()
 //
 //	assert(SUCCEEDED(hr));
 //}
+
+float ParticleManager::Curve1D::Evaluate(float t) const
+{
+	if (!enabled || keys.empty()) {
+		return 1.0f; // カーブ無効 or キー無しなら倍率1.0
+	}
+
+	// t を 0～1 にクランプ
+	if (t <= keys.front().t) { return keys.front().v; }
+	if (t >= keys.back().t) { return keys.back().v; }
+
+	// 区間を線形補間
+	for (size_t i = 0; i + 1 < keys.size(); ++i) {
+		const CurveKey& k0 = keys[i];
+		const CurveKey& k1 = keys[i + 1];
+		if (t >= k0.t && t <= k1.t && k1.t > k0.t) {
+			float u = (t - k0.t) / (k1.t - k0.t);
+			return k0.v + (k1.v - k0.v) * u;
+		}
+	}
+	return keys.back().v;
+}

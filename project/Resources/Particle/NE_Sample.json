@@ -5,12 +5,12 @@
         "vertexType": 0
     },
     "emitterSpawn": {
-        "count": 64,
+        "count": 22,
         "frequency": 1.0,
         "repeat": false,
         "useRandomPosition": true
     },
-    "name": "NewParticle",
+    "name": "NE_Sample",
     "particleSpawn": {
         "initialOffset": [
             0.0,
@@ -29,12 +29,25 @@
         ]
     },
     "particleUpdate": {
-        "lifeTime": 2.9000000953674316,
+        "lifeTime": 3.859999895095825,
         "rotationSpeed": [
             0.0,
-            1.2899999618530273,
+            0.0,
             0.0
         ],
+        "scaleCurve": {
+            "enabled": true,
+            "keys": [
+                [
+                    0.0,
+                    2.0199999809265137
+                ],
+                [
+                    1.0,
+                    0.0
+                ]
+            ]
+        },
         "scaleSpeed": [
             0.0,
             0.0,
@@ -43,17 +56,30 @@
         "useGravity": false,
         "velocity": [
             0.0,
-            1.1299999952316284,
+            1.3600000143051147,
             0.0
         ]
     },
     "render": {
         "color": [
-            0.6795363426208496,
-            0.0,
-            1.0,
+            0.5019304752349854,
+            0.5019304752349854,
+            0.5019304752349854,
             1.0
         ],
+        "colorCurve": {
+            "enabled": true,
+            "keys": [
+                [
+                    0.009493670426309109,
+                    5.0
+                ],
+                [
+                    0.35601264238357544,
+                    0.0595238097012043
+                ]
+            ]
+        },
         "flipY": false,
         "useBillboard": true
     }

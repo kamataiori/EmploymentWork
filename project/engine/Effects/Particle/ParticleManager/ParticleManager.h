@@ -56,10 +56,10 @@ public:
 		float frequencyTime;  //頻度用時刻
 	};
 
-    /// <summary>
-    /// 初期化
-    /// </summary>
-    void Initialize(VertexDataType type);
+	/// <summary>
+	/// 初期化
+	/// </summary>
+	void Initialize(VertexDataType type);
 
 	/// <summary>
 	/// 更新
@@ -81,6 +81,20 @@ public:
 
 	// cylinderの反転
 	void SetFlipYToGroup(const std::string& groupName, bool flip);
+
+	// ---- 1次元カーブ -------------------------------------------------
+	struct CurveKey {
+		float t = 0.0f;   // 0.0～1.0 (NormalizedAge)
+		float v = 1.0f;   // 倍率など
+	};
+
+	struct Curve1D {
+		bool enabled = false;
+		std::vector<CurveKey> keys;
+
+		// t [0,1] で評価（キーが無効なら1.0を返す）
+		float Evaluate(float t) const;
+	};
 
 private:
 
@@ -113,6 +127,9 @@ private:
 		Vector3 rotationSpeed = { 0, 0, 0 }; // 回転速度
 		Vector3 scaleSpeed = { 0, 0, 0 };    // スケール速度
 		bool useGravity = false;             // 重力
+
+		// スケール倍率カーブ（NormalizedAge に対する multiplier）
+		Curve1D scaleCurve;
 	};
 
 	// --- Render モジュール ---
@@ -120,6 +137,8 @@ private:
 		Vector4 color = { 1, 1, 1, 1 };    // 色
 		bool useBillboard = true;          // ビルボード
 		bool flipY = false;                // Cylinder の上下反転など
+		//色の強さ/α用カーブ
+		Curve1D colorCurve;
 	};
 
 public:
@@ -167,6 +186,7 @@ public:
 	// プリセット取得（編集用）
 	ParticlePreset* FindPreset(const std::string& name);
 	const ParticlePreset* FindPreset(const std::string& name) const;
+
 
 private:
 
@@ -260,6 +280,10 @@ private:
 		Vector4   color{ 1.0f, 1.0f, 1.0f, 1.0f };
 		float lifeTime;
 		float currentTime;
+
+		// カーブ用の基準値
+		Vector3 initialScale{ 1.0f, 1.0f, 1.0f };
+		Vector4 initialColor{ 1.0f, 1.0f, 1.0f, 1.0f };
 	};
 
 	struct ParticleForGPU
@@ -300,6 +324,12 @@ private:
 		bool flipY = false; // デフォルトは反転しない
 
 		bool useGravity = false;
+
+		BlendMode blendMode = kBlendModeNormal;
+
+		// このグループに適用するカーブ
+		Curve1D scaleCurve;
+		Curve1D colorCurve;
 
 	};
 
@@ -419,7 +449,7 @@ private:
 	// Cameraの初期化
 	Camera* camera_ = nullptr;
 	//常にカメラ目線
-	Transform cameraTransform{ {1.0f,1.0f,1.0f},{1.0f,1.0f,1.0f},{0.0f,23.0f,10.0f}};
+	Transform cameraTransform{ {1.0f,1.0f,1.0f},{1.0f,1.0f,1.0f},{0.0f,23.0f,10.0f} };
 
 	Matrix4x4 worldviewProjectionMatrix;
 
@@ -479,11 +509,11 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO();
 
 private:
-    DirectXCommon* dxCommon_ = nullptr;
-    SrvManager* srvManager_ = nullptr;
+	DirectXCommon* dxCommon_ = nullptr;
+	SrvManager* srvManager_ = nullptr;
 	// Modelの初期化
 	Model* model_ = nullptr;
-   
+
 	//--------RootSignature部分--------//
 
 	//DescriptorRange

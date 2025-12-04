@@ -5,24 +5,39 @@
 #include "Object3d.h"
 #include "SkyBox.h"
 
+#include <vector>
+#include <string>
+
 inline constexpr const char* kWindowName_Particle = "Particle Control";
 inline constexpr const char* kWindowName_Preset = "Particle Preset Editor";
 inline constexpr const char* kWindowName_Console = "Console";
 inline constexpr const char* kWindowName_Camera = "Camera Control";
 
-// Niagara 風 UI 用の簡易 System / Emitter / Module
-struct NiagaraModuleUI {
-	const char* label;     // 「Emitter Settings」など
+// Niagara風 UI 用の簡易データ
+struct NiagaraSystemUI {
+	std::string name;
+	float posX = 0.0f;
+	float posY = 0.0f;
+	float width = 140.0f;
+	float height = 120.0f;
 };
 
 struct NiagaraEmitterUI {
-	std::string name;                      // 「NE_Sample」など
-	std::vector<NiagaraModuleUI> modules;  // 上から順のモジュール一覧
-};
+	std::string name;
+	std::string presetName;   // このエミッタが編集するプリセット名
+	float posX = 0.0f;
+	float posY = 0.0f;
+	float width = 160.0f;
+	float height = 260.0f;
 
-struct NiagaraSystemUI {
-	std::string name;                         // 「NS_Sample」など
-	std::vector<NiagaraEmitterUI> emitters;   // 将来的には複数エミッタ対応
+	// 0: Name
+	// 1: Emitter Settings
+	// 2: Emitter Spawn
+	// 3: Emitter Update
+	// 4: Particle Spawn
+	// 5: Particle Update
+	// 6: Render
+	int selectedModuleIndex = 0;
 };
 
 class ParticleEditorScene : public BaseScene
@@ -54,8 +69,14 @@ public:
 	// デバッグカメラ更新用ヘルパー
 	void UpdateDebugCamera();
 
-	// Niagara 風 Emitter パネルの描画
-	void DrawNiagaraEmitterPanel();
+private:
+	// ====== ヘルパー関数（Debug を分割） ======
+	void DrawNiagaraCanvas(const ImVec2& pos, const ImVec2& size, int panelFlags);
+	void DrawNiagaraInspector(const ImVec2& pos, const ImVec2& size, int panelFlags);
+	void DrawCameraControlPanel(const ImVec2& pos, const ImVec2& size, int panelFlags);
+	// 下パネル用のカーブエディタ
+	void DrawCurveEditorPanel(const ImVec2& pos, const ImVec2& size, int panelFlags);
+
 private:
 	// スカイボックス
 	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
@@ -80,5 +101,30 @@ private:
 
 	// Niagara 風 UI の System
 	NiagaraSystemUI niagaraSystemUI_;
+
+	// ===== Niagara風 UI 用データ =====
+	std::vector<NiagaraSystemUI> niagaraSystems_;
+	std::vector<NiagaraEmitterUI> niagaraEmitters_;
+	int selectedSystemIndex_ = -1;
+	int selectedEmitterIndex_ = -1;
+	int systemNameCounter_ = 1;
+	int emitterNameCounter_ = 1;
+
+	// Niagara エディタ全体の表示 / 非表示
+	bool showNiagaraUI_ = true;
+
+	// エミッターのコピー用クリップボード
+	NiagaraEmitterUI emitterClipboard_;
+	bool hasEmitterClipboard_ = false;
+
+	// どのカーブを下パネルで編集しているか
+	enum class CurveEditorMode {
+		None,
+		Scale,
+		Color
+	};
+	CurveEditorMode curveEditorMode_ = CurveEditorMode::None;
+	ParticleManager::Curve1D* curveEditorTarget_ = nullptr;
+	std::string curveEditorTitle_;
 
 };
