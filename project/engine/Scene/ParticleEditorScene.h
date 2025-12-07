@@ -131,7 +131,7 @@ private:
     CurveEditorMode curveEditorMode_ = CurveEditorMode::None;
     ParticleManager::Curve1D* curveEditorTarget_ = nullptr;
     std::string curveEditorTitle_;
-
+    
     // ==========================
     // レイアウト比率（ドラッグで変更される）
     // ==========================
@@ -143,5 +143,24 @@ private:
 
     // 左上領域の中の「SceneView」と「Niagara Canvas」の比率
     float ratioSceneCanvas_ = 0.50f; // 0.5 : 0.5 からスタート
+
+   // ==========================
+   // System 用 UI 状態を追加
+   // ==========================
+   /// <summary>
+   /// 新規 / 既存 System 名の入力用バッファ
+   /// </summary>
+    std::string systemNameInput_;
+
+    /// <summary>
+    /// 「既存 System」コンボ用インデックス
+    /// （Canvas 上の selectedSystemIndex_ とは別物）
+    /// </summary>
+    int systemComboIndex_ = -1;
+
+    /// <summary>
+    /// 「再生する System」コンボ用インデックス
+    /// </summary>
+    int emitSystemComboIndex_ = -1;
 
 };

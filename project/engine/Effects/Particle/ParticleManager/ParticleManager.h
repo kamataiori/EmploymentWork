@@ -17,6 +17,10 @@
 #include <json.hpp>
 #include "TimeManager.h"
 
+#include "ParticleEmitter.h"
+#include "ParticleEmitterInstance.h"
+#include "ParticleSystem.h"
+
 
 class ParticleManager
 {
@@ -170,6 +174,7 @@ public:
 
 	/// ディレクトリ内のすべてのプリセットを読み込む（今後のため）
 	void LoadAllPresets(const std::string& directory = "Resources/Particle");
+	void SavePreset(const ParticleEmitter& preset);
 
 	/// <summary>
 	/// JSON プリセット名からパーティクルを発生させる
@@ -187,13 +192,101 @@ public:
 	ParticlePreset* FindPreset(const std::string& name);
 	const ParticlePreset* FindPreset(const std::string& name) const;
 
+	/// </summary>
+	/// <param name="presetName">ParticlePreset 名</param>
+	/// <param name="emitterTransform">発生位置・回転・スケール</param>
+	/// <returns>生成されたエミッターインスタンス（nullptr の場合は失敗）</returns>
+	ParticleEmitterInstance* CreateEmitterInstanceFromPreset(
+		const std::string& presetName,
+		const Transform& emitterTransform);
+
+	/// <summary>
+	/// 新システム用エミッターの更新処理
+	/// （内部から Update() の最後で呼び出す）
+	/// </summary>
+	void UpdateEmitters(float dt);
+
+	/// <summary>
+	/// 新システム用エミッターの描画処理
+	/// （内部から Draw() の最後で呼び出す）
+	/// </summary>
+	void DrawEmitters();
+
+	// ---- System 管理用API（新規） ----
+
+    // System を 1 つ作成してコンテナに登録
+	ParticleSystem* CreateSystem(const std::string& systemName);
+
+	// 既に存在する System を名前で取得（なければ nullptr）
+	ParticleSystem* FindSystem(const std::string& systemName);
+
+	// 指定 System に、新しいエミッターを 1 つ追加
+	// （どのプリセットを使うか、Transform はここで渡す）
+	ParticleEmitterInstance* AddEmitterToSystem(
+		const std::string& systemName,
+		const std::string& presetName,
+		const Transform& emitterTransform);
+
+	// ----------------------------------------
+    // Systemにプリセットを登録する簡易API
+    // （JSONは変えず、コード／エディタ側から設定する用）
+    // ----------------------------------------
+	void RegisterSystemPreset(const std::string& systemName,
+		const std::string& presetName);
+
+	// Systemに登録されているプリセット一覧を取得（エディタ用）
+	const std::vector<std::string>* GetSystemPresets(const std::string& systemName) const;
+
+	// System名一覧（プルダウン表示用など）
+	std::vector<std::string> GetAllSystemNames() const;
+
+	// Systemを一括削除したいとき用
+	void ClearAllSystems();
+
+	// System名を指定して、登録されている全プリセットを一括Emitする
+	void EmitSystemByName(const std::string& systemName, const Transform& emitterTransform);
+
+
+
 
 private:
+
+	// ========================================
+    // System定義：複数のプリセット名をひとまとめにしたもの
+    // ========================================
+	struct ParticleSystemDef {
+		std::string name;                       // System名
+		std::vector<std::string> presetNames;   // このSystemで発生させるプリセット名の一覧
+	};
+
+	// System名 -> 定義
+	std::unordered_map<std::string, ParticleSystemDef> systemDefs_;
+
 
 	std::unordered_map<std::string, ParticlePreset> presets_;  // name -> プリセット
 
 	// プリセットエディタで最後に触っていたプリセット名
 	std::string currentEditingPresetName_;
+
+	// ===== 新しいエミッター / システム管理用コンテナ =====
+
+	// 新しいエミッターインスタンス（Niagara でいう Emitter Instance）
+	std::vector<std::unique_ptr<ParticleEmitterInstance>> emitterInstances_;
+
+	// 将来的に複数エミッターをまとめる ParticleSystem（Niagara System 相当）
+	std::vector<std::unique_ptr<ParticleSystem>> systems_;
+
+	//// 実行中の単体エミッター（EmitByPresetName 用）
+	//std::vector<std::unique_ptr<ParticleEmitterInstance>> activeEmitters;
+
+	//// 実行中のシステム（EmitSystem 用）★ステップ2で使用
+	//std::vector<std::unique_ptr<ParticleSystem>> activeSystems;
+
+	// System を使った Emit（ステップ2で実装）
+	void EmitSystem(const std::string& systemName, const Transform& transform);
+
+	// ループ処理（EmitterInstance / System の Update）
+	void Update(float dt);
 
 private:
 

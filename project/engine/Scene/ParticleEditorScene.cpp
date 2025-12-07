@@ -1008,10 +1008,12 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 	ImGui::Checkbox("Niagara Editor を表示", &showNiagaraUI_);
 	ImGui::Separator();
 
-	// ---- モジュール 0: Name（エミッタ名＆プリセット名） ----
+	// ---- モジュール 0: Name（エミッタ名＆プリセット名＆System紐付け） ----
 	if (moduleIndex == 0)
 	{
-		// ★ エミッタ名
+		// =====================================================
+		// 1) エミッタ名
+		// =====================================================
 		char emitterNameBuf[64]{};
 		strncpy_s(emitterNameBuf, sizeof(emitterNameBuf),
 			emitterUI->name.c_str(), _TRUNCATE);
@@ -1029,7 +1031,9 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 			}
 		}
 
-		// ★ プリセット名
+		// =====================================================
+		// 2) プリセット名
+		// =====================================================
 		char presetNameBuf[64]{};
 		strncpy_s(presetNameBuf, sizeof(presetNameBuf),
 			emitterUI->presetName.c_str(), _TRUNCATE);
@@ -1044,9 +1048,124 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 			"同じプリセット名を持つエミッタは、同じパーティクル設定を共有します。\n"
 			"（エミッタ名とプリセット名を同じにしておくと分かりやすいです）");
 
+		ImGui::Separator();
+
+		// =====================================================
+		// 3) System への登録 UI
+		// =====================================================
+		ImGui::SeparatorText("System");
+
+		ParticleManager* pm = particle.get();
+
+		// 入力欄のバッファを用意（std::string ⇔ char配列）
+		char systemBuf[64]{};
+		if (systemNameInput_.size() >= sizeof(systemBuf)) {
+			systemNameInput_.resize(sizeof(systemBuf) - 1);
+		}
+		std::snprintf(systemBuf, sizeof(systemBuf), "%s", systemNameInput_.c_str());
+
+		if (ImGui::InputText("System名 (新規/既存)", systemBuf, IM_ARRAYSIZE(systemBuf))) {
+			systemNameInput_ = systemBuf;
+		}
+
+		// 既存System名一覧を取得
+		std::vector<std::string> systemNames;
+		if (pm) {
+			systemNames = pm->GetAllSystemNames();
+		}
+
+		// 既存Systemをコンボで選択
+		if (!systemNames.empty()) {
+			if (systemComboIndex_ < 0 ||
+				systemComboIndex_ >= static_cast<int>(systemNames.size())) {
+				systemComboIndex_ = 0;
+			}
+
+			const char* preview = systemNames[systemComboIndex_].c_str();
+
+			if (ImGui::BeginCombo("既存 System", preview)) {
+				for (int i = 0; i < static_cast<int>(systemNames.size()); ++i) {
+					bool isSelected = (i == systemComboIndex_);
+					if (ImGui::Selectable(systemNames[i].c_str(), isSelected)) {
+						systemComboIndex_ = i;
+						// コンボで選択したら入力欄にも反映
+						systemNameInput_ = systemNames[i];
+					}
+					if (isSelected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+		}
+		else {
+			ImGui::TextDisabled("登録済み System はありません");
+		}
+
+		// 「このプリセットを System に追加」ボタン
+		if (ImGui::Button("このプリセットを System に追加")) {
+			if (pm && !emitterUI->presetName.empty()) {
+				// 優先順位: 入力欄 > コンボ選択
+				std::string sysName = systemNameInput_;
+				if (sysName.empty() &&
+					systemComboIndex_ >= 0 &&
+					systemComboIndex_ < static_cast<int>(systemNames.size())) {
+					sysName = systemNames[systemComboIndex_];
+				}
+
+				if (!sysName.empty()) {
+					pm->RegisterSystemPreset(sysName, emitterUI->presetName);
+				}
+			}
+		}
+
+		// =====================================================
+		// 4) System 単位で Emit する UI
+		// =====================================================
+		ImGui::SeparatorText("System Emit");
+
+		if (!systemNames.empty()) {
+			if (emitSystemComboIndex_ < 0 ||
+				emitSystemComboIndex_ >= static_cast<int>(systemNames.size())) {
+				emitSystemComboIndex_ = 0;
+			}
+
+			const char* emitPreview = systemNames[emitSystemComboIndex_].c_str();
+
+			if (ImGui::BeginCombo("再生する System", emitPreview)) {
+				for (int i = 0; i < static_cast<int>(systemNames.size()); ++i) {
+					bool isSelected = (i == emitSystemComboIndex_);
+					if (ImGui::Selectable(systemNames[i].c_str(), isSelected)) {
+						emitSystemComboIndex_ = i;
+					}
+					if (isSelected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			if (ImGui::Button("System を Emit")) {
+				auto* pm2 = particle.get();
+				if (pm2 &&
+					emitSystemComboIndex_ >= 0 &&
+					emitSystemComboIndex_ < static_cast<int>(systemNames.size())) {
+
+					const std::string& sysName = systemNames[emitSystemComboIndex_];
+
+					// 位置は現在の emitterTransform を使って Emit
+					pm2->EmitSystemByName(sysName, emitterTransform);
+				}
+			}
+		}
+		else {
+			ImGui::TextDisabled("Emit できる System がありません");
+		}
+
 		ImGui::End();
 		return;
 	}
+
 
 	// それ以外のモジュールはプリセットを参照
 	ParticleManager::ParticlePreset* preset =

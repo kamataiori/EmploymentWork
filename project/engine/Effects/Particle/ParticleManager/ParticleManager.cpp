@@ -521,6 +521,16 @@ void ParticleManager::Update()
 			++it;
 		}
 	}
+
+	// 新システム用エミッターも更新（emitterInstances_ が空なら何もしない）
+	UpdateEmitters(dt);
+
+	// ここで System 全体も更新
+	for (auto& system : systems_) {
+		if (system) {
+			system->Update(dt);
+		}
+	}
 }
 
 
@@ -574,6 +584,16 @@ void ParticleManager::Draw()
 		commandList->DrawInstanced(group.vertexCount, group.instanceCount, 0, 0);
 
 		group.instanceCount = 0;
+	}
+
+	// 新システム用エミッターも描画
+	DrawEmitters();
+
+	// System 経由のエミッターも描画
+	for (auto& system : systems_) {
+		if (system) {
+			system->Draw();
+		}
 	}
 }
 
@@ -980,6 +1000,10 @@ void ParticleManager::LoadAllPresets(const std::string& directory)
 	}
 }
 
+void ParticleManager::SavePreset(const ParticleEmitter& preset)
+{
+}
+
 void ParticleManager::EmitByPresetName(const std::string& presetName,
 	const Transform& emitterTransform)
 {
@@ -1123,6 +1147,177 @@ const ParticleManager::ParticlePreset* ParticleManager::FindPreset(const std::st
 	return &it->second;
 }
 
+ParticleEmitterInstance* ParticleManager::CreateEmitterInstanceFromPreset(const std::string& presetName, const Transform& emitterTransform)
+{
+	// プリセットを検索
+	ParticlePreset* preset = FindPreset(presetName);
+	if (!preset) {
+		// 見つからない場合はログを出して nullptr を返す
+		Logger::Log(std::string("ParticleManager::CreateEmitterInstanceFromPreset : preset not found : ")
+			+ presetName + "\n");
+		return nullptr;
+	}
+
+	// 新しいエミッターインスタンスを生成
+	auto instance = std::make_unique<ParticleEmitterInstance>();
+
+	// プリセットを渡して初期化
+	// （現状の ParticleEmitterInstance は ParticlePreset 型を直接参照していない想定なので、
+	//  必要に応じてクラス側の Initialize でプリセットの情報をコピーする形にしておく）
+	instance->Initialize(preset);
+
+	// Transform を設定
+	instance->transform_ = emitterTransform; // transform_ が public ならそのまま、private なら setter を用意してください
+
+	// 管理コンテナに登録
+	ParticleEmitterInstance* rawPtr = instance.get();
+	emitterInstances_.push_back(std::move(instance));
+
+	return rawPtr;
+}
+
+void ParticleManager::UpdateEmitters(float dt)
+{
+	// 今のところは単純に全エミッターを更新するだけ
+	// 将来的には「再生中フラグ」「自動破棄」などをここに追加する
+	for (auto& emitter : emitterInstances_) {
+		if (emitter) {
+			emitter->Update(dt);
+		}
+	}
+}
+
+void ParticleManager::DrawEmitters()
+{
+	for (auto& emitter : emitterInstances_) {
+		if (emitter) {
+			emitter->Draw();
+		}
+	}
+}
+
+ParticleSystem* ParticleManager::CreateSystem(const std::string& systemName)
+{
+	// すでに同名 System があればそれを返す
+	if (auto* existing = FindSystem(systemName)) {
+		return existing;
+	}
+
+	// 新しく System を作成して登録
+	auto system = std::make_unique<ParticleSystem>(systemName);
+	ParticleSystem* rawPtr = system.get();
+	systems_.push_back(std::move(system));
+	return rawPtr;
+}
+
+ParticleSystem* ParticleManager::FindSystem(const std::string& systemName)
+{
+	for (auto& system : systems_) {
+		if (system && system->GetName() == systemName) {
+			return system.get();
+		}
+	}
+	return nullptr;
+}
+
+ParticleEmitterInstance* ParticleManager::AddEmitterToSystem(const std::string& systemName, const std::string& presetName, const Transform& emitterTransform)
+{
+	// (1) System を確保
+	ParticleSystem* system = FindSystem(systemName);
+	if (!system) {
+		system = CreateSystem(systemName);
+	}
+	if (!system) {
+		Logger::Log("ParticleManager::AddEmitterToSystem : failed to create/find system : "
+			+ systemName + "\n");
+		return nullptr;
+	}
+
+	// (2) プリセットから EmitterInstance を 1つ作成
+	ParticleEmitterInstance* emitter =
+		CreateEmitterInstanceFromPreset(presetName, emitterTransform);
+
+	if (!emitter) {
+		Logger::Log("ParticleManager::AddEmitterToSystem : failed to create emitter from preset : "
+			+ presetName + "\n");
+		return nullptr;
+	}
+
+	// (3) System に登録（所有権は ParticleManager 側に残したまま）
+	system->AddEmitter(emitter);
+
+	return emitter;
+}
+
+void ParticleManager::RegisterSystemPreset(const std::string& systemName, const std::string& presetName)
+{
+	// systemDefs_[key] アクセスで、なければ自動生成される
+	auto& def = systemDefs_[systemName];
+
+	// 初めての登録時は name を設定
+	if (def.name.empty()) {
+		def.name = systemName;
+	}
+
+	// 重複登録を避けたい場合はチェック
+	auto& list = def.presetNames;
+	if (std::find(list.begin(), list.end(), presetName) == list.end()) {
+		list.push_back(presetName);
+	}
+}
+
+const std::vector<std::string>* ParticleManager::GetSystemPresets(const std::string& systemName) const
+{
+	auto it = systemDefs_.find(systemName);
+	if (it == systemDefs_.end()) {
+		return nullptr;
+	}
+	return &it->second.presetNames;
+}
+
+std::vector<std::string> ParticleManager::GetAllSystemNames() const
+{
+	std::vector<std::string> result;
+	result.reserve(systemDefs_.size());
+
+	for (const auto& [name, def] : systemDefs_) {
+		// def.name が空の場合はマップのキーを優先
+		if (!def.name.empty()) {
+			result.push_back(def.name);
+		}
+		else {
+			result.push_back(name);
+		}
+	}
+	return result;
+}
+
+void ParticleManager::ClearAllSystems()
+{
+	systemDefs_.clear();
+}
+
+void ParticleManager::EmitSystemByName(const std::string& systemName, const Transform& emitterTransform)
+{
+	auto it = systemDefs_.find(systemName);
+	if (it == systemDefs_.end()) {
+		// 指定された System が登録されていない
+		return;
+	}
+
+	const ParticleSystemDef& def = it->second;
+
+	// System に紐付いている全てのプリセットを Emit
+	for (const std::string& presetName : def.presetNames) {
+		// 既存の機能をそのまま利用
+		EmitByPresetName(presetName, emitterTransform);
+	}
+}
+
+
+void ParticleManager::EmitSystem(const std::string& systemName, const Transform& transform)
+{
+}
 
 void ParticleManager::VertexBufferView()
 {
@@ -1941,44 +2136,6 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> ParticleManager::PSO()
 
 	return pipelineState;
 }
-
-//void ParticleManager::PSO()
-//{
-//	////=========PSOを生成する=========////
-//
-//	/*D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};*/
-//	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();    //RootSignature
-//	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc_;    //InputLayout
-//	graphicsPipelineStateDesc.VS = { vertexShaderBlob_->GetBufferPointer(),
-//	vertexShaderBlob_->GetBufferSize() };    //VertexShader
-//	graphicsPipelineStateDesc.PS = { pixelShaderBlob_->GetBufferPointer(),
-//	pixelShaderBlob_->GetBufferSize() };    //PixelShader
-//	graphicsPipelineStateDesc.BlendState = blendDesc_;    //BlendState
-//	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc_;    //RasterizerState
-//	//書き込むRTVの情報
-//	graphicsPipelineStateDesc.NumRenderTargets = 1;
-//	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-//	//利用するトポロジ(形状)のタイプ。三角形
-//	graphicsPipelineStateDesc.PrimitiveTopologyType =
-//		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-//	//どのように画面に色を打ち込むかの設定(気にしなくて良い)
-//	graphicsPipelineStateDesc.SampleDesc.Count = 1;
-//	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-//	//DepthStencilの設定
-//	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc_;
-//	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-//	//実際に生成
-//	/*Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState = nullptr;*/
-//	HRESULT hr = dxCommon_->GetDevice().Get()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
-//		IID_PPV_ARGS(&graphicsPipelineState));
-//
-//	if (FAILED(hr)) {
-//		Logger::Log("PSO\n");
-//		exit(1);
-//	}
-//
-//	assert(SUCCEEDED(hr));
-//}
 
 float ParticleManager::Curve1D::Evaluate(float t) const
 {
