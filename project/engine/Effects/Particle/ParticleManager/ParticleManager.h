@@ -1,56 +1,31 @@
 #pragma once
 #include "DirectXCommon.h"
 #include "SrvManager.h"
-#include <random>
-#include <string>
-#include <d3d12.h>
 #include <Camera/Camera.h>
 #include <Model.h>
 #include "TextureManager.h"
 #include "WinApp.h"
 #include <Camera/CameraManager.h>
 #include "MathFunctions.h"
-#include <algorithm>
-#include <unordered_map>
-#include <vector>
-#include <filesystem>
-#include <json.hpp>
 #include "TimeManager.h"
 
 #include "ParticleEmitter.h"
 #include "ParticleEmitterInstance.h"
 #include "ParticleSystem.h"
+#include "ParticlePreset.h"
 
+#include <random>
+#include <string>
+#include <algorithm>
+#include <unordered_map>
+#include <vector>
+#include <filesystem>
+#include <json.hpp>
+#include <d3d12.h>
 
 class ParticleManager
 {
 public:
-
-	// メッシュの選択
-	enum class VertexDataType {
-		Plane,
-		Ring,
-		Cylinder,
-		// 今後追加予定の形状もここに列挙
-	};
-
-	//BlendMode
-	enum BlendMode {
-		//!< ブレンドなし
-		kBlendModeNone,
-		//!< 通常αブレンド。デフォルト。Src * SrcA + Dest * (1 - SrcA)
-		kBlendModeNormal,
-		//!< 加算。Src * SrcA + Dest * 1
-		kBlendModeAdd,
-		//!< 減算。Dest * 1 - Src * SrcA
-		kBlendModeSubtract,
-		//!< 乗算。Src * 0 + Dest * Src
-		kBlendModeMultiply,
-		//!< スクリーン。Src * (1 - Dest) + Dest * 1
-		kBlendModeScreen,
-		// 利用してはいけない
-		kCountOfBlendMode,
-	};
 
 	//ParticleのEmitter構造体
 	struct Emitter {
@@ -78,7 +53,7 @@ public:
 	/// <summary>
 	/// パーティクルグループの生成
 	/// </summary>
-	void CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode = kBlendModeNormal);
+	void CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode  = kBlendModeNormal);
 
 	// カメラの設定
 	void SetCamera(Camera* camera) { this->camera_ = camera; }
@@ -86,79 +61,8 @@ public:
 	// cylinderの反転
 	void SetFlipYToGroup(const std::string& groupName, bool flip);
 
-	// ---- 1次元カーブ -------------------------------------------------
-	struct CurveKey {
-		float t = 0.0f;   // 0.0～1.0 (NormalizedAge)
-		float v = 1.0f;   // 倍率など
-	};
-
-	struct Curve1D {
-		bool enabled = false;
-		std::vector<CurveKey> keys;
-
-		// t [0,1] で評価（キーが無効なら1.0を返す）
-		float Evaluate(float t) const;
-	};
-
-private:
-
-	// --- Emitter Settings モジュール ---
-	struct EmitterSettingsModule {
-		VertexDataType vertexType = VertexDataType::Plane; // Plane / Ring / Cylinder
-		std::string textureFilePath;                       // テクスチャパス
-		BlendMode blendMode = kBlendModeNormal;            // ブレンドモード
-	};
-
-	// --- Emitter Spawn モジュール ---
-	struct EmitterSpawnModule {
-		uint32_t count = 10;            // 発生数
-		float frequency = 1.0f;         // 発生間隔(秒)
-		bool repeat = false;            // 繰り返し
-		bool useRandomPosition = false; // ランダム発生
-	};
-
-	// --- Particle Spawn モジュール ---
-	struct ParticleSpawnModule {
-		Vector3 initialScale = { 1.0f, 1.0f, 1.0f };
-		Vector3 initialRotate = { 0.0f, 0.0f, 0.0f };
-		Vector3 initialOffset = { 0.0f, 0.0f, 0.0f }; // エミッタからの相対オフセット
-	};
-
-	// --- Particle Update モジュール ---
-	struct ParticleUpdateModule {
-		float lifeTime = 1.0f;               // 寿命
-		Vector3 velocity = { 0, 0, 0 };      // 速度
-		Vector3 rotationSpeed = { 0, 0, 0 }; // 回転速度
-		Vector3 scaleSpeed = { 0, 0, 0 };    // スケール速度
-		bool useGravity = false;             // 重力
-
-		// スケール倍率カーブ（NormalizedAge に対する multiplier）
-		Curve1D scaleCurve;
-	};
-
-	// --- Render モジュール ---
-	struct RenderModule {
-		Vector4 color = { 1, 1, 1, 1 };    // 色
-		bool useBillboard = true;          // ビルボード
-		bool flipY = false;                // Cylinder の上下反転など
-		//色の強さ/α用カーブ
-		Curve1D colorCurve;
-	};
 
 public:
-
-	// JSON に保存するパーティクルプリセット
-	struct ParticlePreset {
-		std::string name;               // プリセット名
-
-		// ---- 各モジュール ----
-		EmitterSettingsModule emitterSettings;
-		EmitterSpawnModule    emitterSpawn;
-		ParticleSpawnModule   particleSpawn;
-		ParticleUpdateModule  particleUpdate;
-		RenderModule          render;
-	};
-
 
 	/// ImGui 上でプリセットを編集＆保存するエディタ
 	void DrawImGuiParticlePresetEditor();
@@ -247,20 +151,7 @@ public:
 	void EmitSystemByName(const std::string& systemName, const Transform& emitterTransform);
 
 
-
-
 private:
-
-	// ========================================
-    // System定義：複数のプリセット名をひとまとめにしたもの
-    // ========================================
-	struct ParticleSystemDef {
-		std::string name;                       // System名
-		std::vector<std::string> presetNames;   // このSystemで発生させるプリセット名の一覧
-	};
-
-	// System名 -> 定義
-	std::unordered_map<std::string, ParticleSystemDef> systemDefs_;
 
 
 	std::unordered_map<std::string, ParticlePreset> presets_;  // name -> プリセット

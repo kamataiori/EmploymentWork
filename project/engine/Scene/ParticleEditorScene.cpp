@@ -17,7 +17,7 @@
 namespace
 {
 	void DrawCurve1DEditor(const char* title,
-		ParticleManager::Curve1D& curve,
+		Curve1D& curve,
 		bool* openFlag)
 	{
 		if (!*openFlag) { return; }
@@ -268,7 +268,7 @@ void ParticleEditorScene::Initialize()
 	// ===== パーティクル初期化 =====
 	particle = std::make_unique<ParticleManager>();
 	// デフォルトはPlaneとして初期化（Ring/CylinderプリセットもEmitByPresetNameから使える想定）
-	particle->Initialize(ParticleManager::VertexDataType::Plane);
+	particle->Initialize(VertexDataType::Plane);
 	particle->SetCamera(camera.get());
 
 	// 起動時に一括プリセット読み込み（Resources/Particle/*.json）
@@ -1280,12 +1280,11 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 
 
 	// それ以外のモジュールはプリセットを参照
-	ParticleManager::ParticlePreset* preset =
-		particle->FindPreset(emitterUI->presetName);
+	ParticlePreset* preset = particle->FindPreset(emitterUI->presetName);
 
 	// ★ プリセットがまだ存在しない場合は、その場でデフォルトを新規作成して保存
 	if (!preset && !emitterUI->presetName.empty()) {
-		ParticleManager::ParticlePreset newPreset{};
+		ParticlePreset newPreset{};
 		newPreset.name = emitterUI->presetName;
 
 		// デフォルト値のまま JSON 保存 → 内部の presets_ にも登録される
@@ -1314,7 +1313,7 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 		int v = static_cast<int>(preset->emitterSettings.vertexType);
 		if (ImGui::Combo("頂点タイプ", &v, vertexItems, IM_ARRAYSIZE(vertexItems))) {
 			preset->emitterSettings.vertexType =
-				static_cast<ParticleManager::VertexDataType>(v);
+				static_cast<VertexDataType>(v);
 		}
 
 		const char* blendItems[] = {
@@ -1323,7 +1322,7 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 		int b = static_cast<int>(preset->emitterSettings.blendMode);
 		if (ImGui::Combo("ブレンドモード", &b, blendItems, IM_ARRAYSIZE(blendItems))) {
 			preset->emitterSettings.blendMode =
-				static_cast<ParticleManager::BlendMode>(b);
+				static_cast<BlendMode>(b);
 		}
 	}
 	break;

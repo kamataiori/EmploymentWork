@@ -136,7 +136,7 @@ private:
         Color
     };
     CurveEditorMode curveEditorMode_ = CurveEditorMode::None;
-    ParticleManager::Curve1D* curveEditorTarget_ = nullptr;
+    Curve1D* curveEditorTarget_ = nullptr;
     std::string curveEditorTitle_;
     
     // ==========================

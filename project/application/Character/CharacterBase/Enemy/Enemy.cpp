@@ -109,30 +109,30 @@ void Enemy::Initialize()
 	// 死亡エフェクト用パーティクル（プリセット "fire" を使用）
 	// -------------------------
 	deathParticle_ = std::make_unique<ParticleManager>();
-	deathParticle_->Initialize(ParticleManager::VertexDataType::Plane);
+	deathParticle_->Initialize(VertexDataType::Plane);
 
 	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
 	deathParticle_->LoadAllPresets();
 
 	smokeParticle_ = std::make_unique<ParticleManager>();
-	smokeParticle_->Initialize(ParticleManager::VertexDataType::Plane);
+	smokeParticle_->Initialize(VertexDataType::Plane);
 
 	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
 	smokeParticle_->LoadAllPresets();
 
 	ex1Particle_ = std::make_unique<ParticleManager>();
-	ex1Particle_->Initialize(ParticleManager::VertexDataType::Plane);
+	ex1Particle_->Initialize(VertexDataType::Plane);
 
 	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
 	ex1Particle_->LoadAllPresets();
 
 	poweder = std::make_unique<ParticleManager>();
-	poweder->Initialize(ParticleManager::VertexDataType::Plane);
+	poweder->Initialize(VertexDataType::Plane);
 
 	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
 	poweder->LoadAllPresets();
 
-	test->Initialize(ParticleManager::VertexDataType::Plane);
+	test->Initialize(VertexDataType::Plane);
 	test->LoadAllPresets();
 
 	// Emit 時に使う Transform の初期値

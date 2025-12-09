@@ -185,6 +185,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="TimeManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BlendMode.h" />
     <ClInclude Include="engine\3d\Camera\CameraEffectController.h" />
     <ClInclude Include="engine\3d\Camera\CameraMove.h" />
     <ClInclude Include="engine\3d\Camera\CameraShake.h" />
@@ -270,6 +271,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Particle.h" />
     <ClInclude Include="ParticleEmitterInstance.h" />
     <ClInclude Include="ParticleModule.h" />
+    <ClInclude Include="ParticlePreset.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />

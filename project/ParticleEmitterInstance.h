@@ -6,6 +6,7 @@
 #include "MathFunctions.h"
 #include "Particle.h"
 #include "ParticleModule.h"
+#include "ParticlePreset.h"
 
 // Emitter のインスタンス（実行中の1個のエミッタ）
 class ParticleEmitterInstance

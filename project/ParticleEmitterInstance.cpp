@@ -6,7 +6,7 @@
 static constexpr float kGravity = -9.81f;
 
 // 便利用：内部で使うエイリアス
-using PMPreset = ParticleManager::ParticlePreset;
+using PMPreset = ParticlePreset;
 
 void ParticleEmitterInstance::Initialize(const void* presetRef)
 {

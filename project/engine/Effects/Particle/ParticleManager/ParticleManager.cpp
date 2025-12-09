@@ -7,7 +7,7 @@ using json = nlohmann::json;
 //======================================================================
 //  JSON 書き出し
 //======================================================================
-void to_json(json& j, const ParticleManager::ParticlePreset& p)
+void to_json(json& j, const ParticlePreset& p)
 {
 	j = json{
 		{ "name", p.name },
@@ -103,7 +103,7 @@ void to_json(json& j, const ParticleManager::ParticlePreset& p)
 //======================================================================
 //  JSON 読み込み
 //======================================================================
-void from_json(const json& j, ParticleManager::ParticlePreset& p)
+void from_json(const json& j, ParticlePreset& p)
 {
 	p.name = j.value("name", "");
 
@@ -132,18 +132,18 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 	// ========= emitterSettings =========
 	if (j.contains("emitterSettings") && j["emitterSettings"].is_object()) {
 		const auto& es = j["emitterSettings"];
-		p.emitterSettings.vertexType = static_cast<ParticleManager::VertexDataType>(
-			es.value("vertexType", static_cast<int>(ParticleManager::VertexDataType::Plane)));
+		p.emitterSettings.vertexType = static_cast<VertexDataType>(
+			es.value("vertexType", static_cast<int>(VertexDataType::Plane)));
 		p.emitterSettings.textureFilePath = es.value("textureFilePath", "");
-		p.emitterSettings.blendMode = static_cast<ParticleManager::BlendMode>(
-			es.value("blendMode", static_cast<int>(ParticleManager::kBlendModeNormal)));
+		p.emitterSettings.blendMode = static_cast<BlendMode>(
+			es.value("blendMode", static_cast<int>(kBlendModeNormal)));
 	}
 	else {
-		p.emitterSettings.vertexType = static_cast<ParticleManager::VertexDataType>(
-			j.value("vertexType", static_cast<int>(ParticleManager::VertexDataType::Plane)));
+		p.emitterSettings.vertexType = static_cast<VertexDataType>(
+			j.value("vertexType", static_cast<int>(VertexDataType::Plane)));
 		p.emitterSettings.textureFilePath = j.value("textureFilePath", "");
-		p.emitterSettings.blendMode = static_cast<ParticleManager::BlendMode>(
-			j.value("blendMode", static_cast<int>(ParticleManager::kBlendModeNormal)));
+		p.emitterSettings.blendMode = static_cast<BlendMode>(
+			j.value("blendMode", static_cast<int>(kBlendModeNormal)));
 	}
 
 	// ========= emitterSpawn =========
@@ -213,7 +213,7 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 			if (sc.contains("keys") && sc["keys"].is_array()) {
 				for (const auto& elem : sc["keys"]) {
 					if (elem.is_array() && elem.size() == 2) {
-						ParticleManager::CurveKey key;
+						CurveKey key;
 						key.t = elem[0].get<float>();
 						key.v = elem[1].get<float>();
 						p.particleUpdate.scaleCurve.keys.push_back(key);
@@ -263,7 +263,7 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 			if (cc.contains("keys") && cc["keys"].is_array()) {
 				for (const auto& elem : cc["keys"]) {
 					if (elem.is_array() && elem.size() == 2) {
-						ParticleManager::CurveKey key;
+						CurveKey key;
 						key.t = elem[0].get<float>();
 						key.v = elem[1].get<float>();
 						p.render.colorCurve.keys.push_back(key);
@@ -1099,7 +1099,7 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 	}
 }
 
-ParticleManager::ParticlePreset* ParticleManager::FindPreset(const std::string& name)
+ParticlePreset* ParticleManager::FindPreset(const std::string& name)
 {
 	auto it = presets_.find(name);
 	if (it == presets_.end()) {
@@ -1108,7 +1108,7 @@ ParticleManager::ParticlePreset* ParticleManager::FindPreset(const std::string& 
 	return &it->second;
 }
 
-const ParticleManager::ParticlePreset* ParticleManager::FindPreset(const std::string& name) const
+const ParticlePreset* ParticleManager::FindPreset(const std::string& name) const
 {
 	auto it = presets_.find(name);
 	if (it == presets_.end()) {
@@ -1221,42 +1221,46 @@ ParticleEmitterInstance* ParticleManager::AddEmitterToSystem(const std::string& 
 
 void ParticleManager::RegisterSystemPreset(const std::string& systemName, const std::string& presetName)
 {
-	// systemDefs_[key] アクセスで、なければ自動生成される
-	auto& def = systemDefs_[systemName];
-
-	// 初めての登録時は name を設定
-	if (def.name.empty()) {
-		def.name = systemName;
+	if (systemName.empty() || presetName.empty()) {
+		return;
 	}
 
-	// 重複登録を避けたい場合はチェック
-	auto& list = def.presetNames;
-	if (std::find(list.begin(), list.end(), presetName) == list.end()) {
-		list.push_back(presetName);
+	// System を確保（なければ作る）
+	ParticleSystem* system = FindSystem(systemName);
+	if (!system) {
+		system = CreateSystem(systemName);
 	}
+	if (!system) {
+		Logger::Log("ParticleManager::RegisterSystemPreset : failed to create/find system : "
+			+ systemName + "\n");
+		return;
+	}
+
+	// System 側にプリセット名を登録
+	system->AddPresetName(presetName);
 }
 
 const std::vector<std::string>* ParticleManager::GetSystemPresets(const std::string& systemName) const
 {
-	auto it = systemDefs_.find(systemName);
-	if (it == systemDefs_.end()) {
-		return nullptr;
+	if (systemName.empty()) { return nullptr; }
+
+	// const 関数なので systems_ を const で読む
+	for (const auto& system : systems_) {
+		if (system && system->GetName() == systemName) {
+			return &system->GetPresetNames();
+		}
 	}
-	return &it->second.presetNames;
+	return nullptr;
 }
 
 std::vector<std::string> ParticleManager::GetAllSystemNames() const
 {
 	std::vector<std::string> result;
-	result.reserve(systemDefs_.size());
+	result.reserve(systems_.size());
 
-	for (const auto& [name, def] : systemDefs_) {
-		// def.name が空の場合はマップのキーを優先
-		if (!def.name.empty()) {
-			result.push_back(def.name);
-		}
-		else {
-			result.push_back(name);
+	for (const auto& system : systems_) {
+		if (system) {
+			result.push_back(system->GetName());
 		}
 	}
 	return result;
@@ -1264,26 +1268,26 @@ std::vector<std::string> ParticleManager::GetAllSystemNames() const
 
 void ParticleManager::ClearAllSystems()
 {
-	systemDefs_.clear();
+	systems_.clear();
 }
 
 void ParticleManager::EmitSystemByName(const std::string& systemName, const Transform& emitterTransform)
 {
-	auto it = systemDefs_.find(systemName);
-	if (it == systemDefs_.end()) {
-		// 指定された System が登録されていない
+	if (systemName.empty()) { return; }
+
+	ParticleSystem* system = FindSystem(systemName);
+	if (!system) {
+		// 指定された System が存在しない
 		return;
 	}
 
-	const ParticleSystemDef& def = it->second;
+	const auto& presetNames = system->GetPresetNames();
 
 	// System に紐付いている全てのプリセットを Emit
-	for (const std::string& presetName : def.presetNames) {
-		// 既存の機能をそのまま利用
+	for (const std::string& presetName : presetNames) {
 		EmitByPresetName(presetName, emitterTransform);
 	}
 }
-
 
 void ParticleManager::EmitSystem(const std::string& systemName, const Transform& transform)
 {
@@ -2238,26 +2242,4 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> ParticleManager::PSO()
 	}
 
 	return pipelineState;
-}
-
-float ParticleManager::Curve1D::Evaluate(float t) const
-{
-	if (!enabled || keys.empty()) {
-		return 1.0f; // カーブ無効 or キー無しなら倍率1.0
-	}
-
-	// t を 0～1 にクランプ
-	if (t <= keys.front().t) { return keys.front().v; }
-	if (t >= keys.back().t) { return keys.back().v; }
-
-	// 区間を線形補間
-	for (size_t i = 0; i + 1 < keys.size(); ++i) {
-		const CurveKey& k0 = keys[i];
-		const CurveKey& k1 = keys[i + 1];
-		if (t >= k0.t && t <= k1.t && k1.t > k0.t) {
-			float u = (t - k0.t) / (k1.t - k0.t);
-			return k0.v + (k1.v - k0.v) * u;
-		}
-	}
-	return keys.back().v;
 }
