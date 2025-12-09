@@ -1,48 +1,125 @@
 #include "ParticleSystem.h"
-#include "ParticleEmitterInstance.h"
-#include <algorithm>
 
 ParticleSystem::ParticleSystem(const std::string& name)
     : name_(name)
 {
+    // Transform の初期値（必要なら調整）
+    transform_.scale = { 1.0f, 1.0f, 1.0f };
+    transform_.rotate = { 0.0f, 0.0f, 0.0f };
+    transform_.translate = { 0.0f, 0.0f, 0.0f };
 }
 
-// 既存：AddEmitter / Update / Draw はそのままでOK
-
-void ParticleSystem::AddEmitter(ParticleEmitterInstance* emitter)
+ParticleEmitterInstance* ParticleSystem::AddEmitter(
+    ParticleEmitterInstance* emitter,
+    float startTime,
+    bool autoPlay)
 {
-    if (!emitter) { return; }
-    emitters_.push_back(emitter);
-}
-
-void ParticleSystem::Update(float dt)
-{
-    for (auto* e : emitters_) {
-        if (e) {
-            e->Update(dt);
-        }
+    if (!emitter) {
+        return nullptr;
     }
+    EmitterEntry entry;
+    entry.emitter = emitter;
+    entry.startTime = startTime;
+    entry.autoPlay = autoPlay;
+    entry.playedOnce = false;
+
+    emitters_.push_back(entry);
+    return emitter;
 }
 
-void ParticleSystem::Draw()
-{
-    for (auto* e : emitters_) {
-        if (e) {
-            e->Draw();
-        }
-    }
-}
-
-// System 定義としてのプリセット名リスト管理
 void ParticleSystem::AddPresetName(const std::string& presetName)
 {
     if (presetName.empty()) {
         return;
     }
 
-    // 重複を避ける
-    auto it = std::find(presetNames_.begin(), presetNames_.end(), presetName);
-    if (it == presetNames_.end()) {
-        presetNames_.push_back(presetName);
+    // 重複チェック
+    for (const auto& n : presetNames_) {
+        if (n == presetName) {
+            return;
+        }
     }
+    presetNames_.push_back(presetName);
+}
+
+// ====== 再生制御 ======
+
+void ParticleSystem::Play()
+{
+    time_ = 0.0f;
+    playing_ = true;
+
+    // すべての Emitter を初期状態に戻してから、時間に応じて再生させる
+    for (auto& e : emitters_) {
+        e.playedOnce = false;
+        if (e.emitter) {
+            e.emitter->Reset();
+            e.emitter->Stop(); // startTime に達するまでは止めておく
+        }
+    }
+}
+
+void ParticleSystem::Stop()
+{
+    playing_ = false;
+
+    // 必要なら Emitter も止める
+    for (auto& e : emitters_) {
+        if (e.emitter) {
+            e.emitter->Stop();
+        }
+    }
+}
+
+void ParticleSystem::Reset()
+{
+    time_ = 0.0f;
+
+    for (auto& e : emitters_) {
+        e.playedOnce = false;
+        if (e.emitter) {
+            e.emitter->Reset();
+            e.emitter->Stop();
+        }
+    }
+}
+
+// ====== Update ======
+
+void ParticleSystem::Update(float dt)
+{
+    if (!playing_) {
+        return;
+    }
+
+    time_ += dt;
+
+    // 再生開始時間に達した Emitter に Play をかけるだけ
+    // ※ Emitter の Update(dt)（シミュレーション）は ParticleManager 側で行う
+    for (auto& e : emitters_) {
+        if (!e.emitter) {
+            continue;
+        }
+
+        // すでに一度再生した Emitter はスキップ（シンプルな一回再生）
+        if (e.playedOnce) {
+            continue;
+        }
+
+        // startTime に達していなければまだ再生しない
+        if (time_ < e.startTime) {
+            continue;
+        }
+
+        if (e.autoPlay) {
+            e.emitter->Reset();
+            e.emitter->Play();
+        }
+
+        e.playedOnce = true;
+    }
+
+    // ここに「System 自体をループさせたい」処理を足していくこともできる
+    // 例:
+    // if (time_ > duration_ && loop_) { ... }
 }

@@ -1,203 +1,195 @@
 #include "ParticleEmitterInstance.h"
 #include "ParticleManager.h"   // ParticleManager::ParticlePreset を見るため
 #include <algorithm>
+#include <random>
 
 // 重力加速度（ParticleManager 側の挙動に合わせる）
 static constexpr float kGravity = -9.81f;
 
+static float RandomRange(float minValue, float maxValue)
+{
+    // 1つの乱数エンジンを使い回す
+    static std::mt19937 s_rng(std::random_device{}());
+    std::uniform_real_distribution<float> dist(minValue, maxValue);
+    return dist(s_rng);
+}
+
 // 便利用：内部で使うエイリアス
 using PMPreset = ParticlePreset;
 
-void ParticleEmitterInstance::Initialize(const void* presetRef)
+void ParticleEmitterInstance::Initialize(const PMPreset* preset)
 {
-    preset_ = presetRef;
-
-    const auto* preset = reinterpret_cast<const PMPreset*>(presetRef);
-    if (!preset) {
-        return;
-    }
-
-    // プリセット名を覚えておく（= ParticleGroup のキーになる）
-    presetName_ = preset->name;
-
-    // ==== Spawn 系 ====
-    spawnCount_ = preset->emitterSpawn.count;
-    spawnInterval_ = preset->emitterSpawn.frequency;
-    spawnRepeat_ = preset->emitterSpawn.repeat;
-    spawnTimer_ = 0.0f;
-    emitting_ = false;
-
-    // ==== Update 系 ====
-    baseLifeTime_ = preset->particleUpdate.lifeTime;
-    baseVelocity_ = preset->particleUpdate.velocity;
-    baseRotationSpeed_ = preset->particleUpdate.rotationSpeed;
-    baseScaleSpeed_ = preset->particleUpdate.scaleSpeed;
-    useGravity_ = preset->particleUpdate.useGravity;
-
-    // ==== Render 系 ====
-    baseColor_ = preset->render.color;
-    billboard_ = preset->render.useBillboard;
-    flipY_ = preset->render.flipY;
-
-    // ざっくり確保（あとで必要なら調整）
-    if (spawnCount_ > 0) {
-        particles_.reserve(spawnCount_ * 4);
-    }
+    preset_ = preset;
+    particles_.clear();
+    emitTimer_ = 0.0f;
+    playing_ = true;
 }
 
-void ParticleEmitterInstance::Emit()
+void ParticleEmitterInstance::SetTransform(const Transform& t)
 {
-    if (!preset_) {
-        return;
-    }
-
-    emitting_ = true;
-    spawnTimer_ = 0.0f;
-
-    // 1回目は即時発生
-    EmitOnce();
-
-    // ループしない設定ならここで止める
-    if (!spawnRepeat_) {
-        emitting_ = false;
-    }
+    emitterTransform_ = t;
 }
 
-void ParticleEmitterInstance::EmitOnce()
+void ParticleEmitterInstance::Play()
 {
-    if (!preset_ || spawnCount_ == 0) {
-        return;
-    }
+    playing_ = true;
+    emitTimer_ = 0.0f;
+}
 
-    for (uint32_t i = 0; i < spawnCount_; ++i) {
-        Particle p{};
+void ParticleEmitterInstance::Stop()
+{
+    playing_ = false;
+}
 
-        p.active = true;
-        p.life = 0.0f;
-        p.maxLife = baseLifeTime_;
-
-        // エミッタの Transform から初期Transformを設定
-        p.position = transform_.translate;
-        p.rotation = transform_.rotate;
-        p.scale = transform_.scale;
-        p.initialScale = transform_.scale;
-
-        p.velocity = baseVelocity_;
-        p.rotationSpeed = baseRotationSpeed_;
-        p.scaleSpeed = baseScaleSpeed_;
-
-        p.color = baseColor_;
-        p.initialColor = baseColor_;
-
-        // inactive スロットがあれば再利用
-        bool reused = false;
-        for (auto& existing : particles_) {
-            if (!existing.active) {
-                existing = p;
-                reused = true;
-                break;
-            }
-        }
-        if (!reused) {
-            particles_.push_back(p);
-        }
-
-        // Module 側でSpawn時にいじりたい場合用
-        for (auto& m : modules_) {
-            m->ApplySpawn(*this, p);
-        }
-    }
+void ParticleEmitterInstance::Reset()
+{
+    particles_.clear();
+    emitTimer_ = 0.0f;
 }
 
 void ParticleEmitterInstance::Update(float dt)
 {
-    if (!preset_) {
-        return;
+    if (!preset_) { return; }
+
+    // 今の設計では Spawn ロジックは UpdateParticles 内部に入れてもいいし、
+    // ここから SpawnParticles() を呼んでも OK
+    UpdateParticles(dt);
+}
+
+void ParticleEmitterInstance::SpawnParticles()
+{
+    if (!preset_) { return; }
+
+    const auto& spawn = preset_->emitterSpawn;
+    const auto& pSpawn = preset_->particleSpawn;
+
+    for (uint32_t i = 0; i < spawn.count; ++i) {
+        Particle p{};
+
+        // 位置 = Emitter の Transform + モジュールのオフセット
+        Vector3 pos = emitterTransform_.translate;
+
+        if (spawn.useRandomPosition) {
+            float rx = RandomRange(-1.0f, 1.0f);
+            float ry = RandomRange(-1.0f, 1.0f);
+            float rz = RandomRange(-1.0f, 1.0f);
+            pos.x += rx; pos.y += ry; pos.z += rz;
+        }
+
+        pos.x += pSpawn.initialOffset.x;
+        pos.y += pSpawn.initialOffset.y;
+        pos.z += pSpawn.initialOffset.z;
+
+        p.position = pos;
+
+        // スケール / 回転 初期値
+        p.scale = pSpawn.initialScale;
+        p.rotation = pSpawn.initialRotate;
+
+        // カラー初期値
+        p.color = preset_->render.color;
+        p.initialScale = p.scale;
+        p.initialColor = p.color;
+
+        // UpdateModule 側の値
+        const auto& u = preset_->particleUpdate;
+        p.velocity = u.velocity;
+        p.rotationSpeed = u.rotationSpeed;
+        p.scaleSpeed = u.scaleSpeed;
+        p.life = 0.0f;
+        p.maxLife = u.lifeTime;
+        p.active = true;
+
+        particles_.push_back(p);
     }
+}
 
-    const auto* preset = reinterpret_cast<const PMPreset*>(preset_);
+void ParticleEmitterInstance::UpdateParticles(float dt)
+{
+    if (!preset_) { return; }
 
-    // ==== 自動発生（repeat=true のとき） ====
-    if (spawnRepeat_ && emitting_) {
-        spawnTimer_ -= dt;
-        while (spawnTimer_ <= 0.0f) {
-            EmitOnce();
-            spawnTimer_ += spawnInterval_;
+    const auto& spawn = preset_->emitterSpawn;
+    const auto& updateM = preset_->particleUpdate;
+    const auto& renderM = preset_->render;
 
-            if (spawnInterval_ <= 0.0f) {
-                emitting_ = false;
-                break;
+    // 1) 自動 Emit 制御
+    if (playing_) {
+        emitTimer_ += dt;
+
+        if (spawn.frequency <= 0.0f) {
+            // frequency 0 → 毎フレーム Emit
+            SpawnParticles();
+        }
+        else {
+            while (emitTimer_ >= spawn.frequency) {
+                SpawnParticles();
+                emitTimer_ -= spawn.frequency;
+
+                if (!spawn.repeat) {
+                    playing_ = false;
+                    break;
+                }
             }
         }
     }
 
-    // ==== 各パーティクル更新 ====
+    // 2) 既存粒子の更新
     for (auto& p : particles_) {
-        if (!p.active) {
-            continue;
-        }
+        if (!p.active) { continue; }
 
+        // 寿命更新
         p.life += dt;
         if (p.life >= p.maxLife) {
             p.active = false;
             continue;
         }
 
-        float age = (p.maxLife > 0.0f) ? (p.life / p.maxLife) : 0.0f;
-        age = std::clamp(age, 0.0f, 1.0f);
+        float age = p.life / p.maxLife; // 0～1
 
-        // 重力
-        if (useGravity_) {
-            p.velocity.y += kGravity * dt;
-        }
-
-        // 位置
+        // --- 移動 ---
         p.position.x += p.velocity.x * dt;
         p.position.y += p.velocity.y * dt;
         p.position.z += p.velocity.z * dt;
 
-        // 回転
+        // 重力
+        if (updateM.useGravity) {
+            p.velocity.y += kGravity * dt;  // kGravity = -9.81f
+        }
+
+        // --- 回転 ---
         p.rotation.x += p.rotationSpeed.x * dt;
         p.rotation.y += p.rotationSpeed.y * dt;
         p.rotation.z += p.rotationSpeed.z * dt;
 
-        // スケール：カーブ優先
-        const auto& scaleCurve = preset->particleUpdate.scaleCurve;
-        if (scaleCurve.enabled && !scaleCurve.keys.empty()) {
-            float s = scaleCurve.Evaluate(age);
+        // --- スケール ---
+        p.scale.x += p.scaleSpeed.x * dt;
+        p.scale.y += p.scaleSpeed.y * dt;
+        p.scale.z += p.scaleSpeed.z * dt;
+
+        // カーブスケール（倍率）
+        if (updateM.scaleCurve.enabled && !updateM.scaleCurve.keys.empty()) {
+            float s = updateM.scaleCurve.Evaluate(age);
             p.scale.x = p.initialScale.x * s;
             p.scale.y = p.initialScale.y * s;
             p.scale.z = p.initialScale.z * s;
         }
-        else {
-            p.scale.x += p.scaleSpeed.x * dt;
-            p.scale.y += p.scaleSpeed.y * dt;
-            p.scale.z += p.scaleSpeed.z * dt;
-        }
 
-        // 色：colorCurve を適用
-        const auto& colorCurve = preset->render.colorCurve;
-        if (colorCurve.enabled && !colorCurve.keys.empty()) {
-            float c = colorCurve.Evaluate(age);
+        // カラーカーブ
+        if (renderM.colorCurve.enabled && !renderM.colorCurve.keys.empty()) {
+            float c = renderM.colorCurve.Evaluate(age);
             p.color.x = p.initialColor.x * c;
             p.color.y = p.initialColor.y * c;
             p.color.z = p.initialColor.z * c;
             p.color.w = p.initialColor.w * c;
         }
-
-        // Module による追加更新
-        for (auto& m : modules_) {
-            m->ApplyUpdate(*this, p, dt);
-        }
     }
 
-    // ※ 死んだParticleを vector から消すのはコストも大きいので、
-    //   今は active フラグだけで管理しています。
+    // 3) 死んだ粒子をまとめて削除
+    particles_.erase(
+        std::remove_if(particles_.begin(), particles_.end(),
+            [](const Particle& p) { return !p.active; }),
+        particles_.end()
+    );
 }
 
-void ParticleEmitterInstance::Draw()
-{
-    // 現状は何もしない。
-    // 実際の描画は ParticleManager::Update() が instancingDataPtr に
-    // particles_ の内容を書き込んで行う。
-}
+

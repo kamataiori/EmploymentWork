@@ -329,212 +329,50 @@ void ParticleManager::Update()
 	// ========= 時間の取得（タイムスケール対応） =========
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-	// カメラ情報を取得
-	Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, camera_->GetRotate(), camera_->GetTranslate());
+	// ========= カメラ行列の計算 =========
+	Matrix4x4 cameraMatrix = MakeAffineMatrix(
+		{ 1.0f,1.0f,1.0f },
+		camera_->GetRotate(),
+		camera_->GetTranslate()
+	);
 	Matrix4x4 viewMatrix = Inverse(cameraMatrix);
-	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kWindowWidth) / float(kWindowHeight), 0.1f, 100.0f);
+	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
+		0.45f,
+		float(kWindowWidth) / float(kWindowHeight),
+		0.1f,
+		100.0f
+	);
 	Matrix4x4 viewProjectionMatrix = Multiply(viewMatrix, projectionMatrix);
 
-	// カメラ目線の設定
+	// ========= ビルボード行列の計算 =========
 	Matrix4x4 backToFrontMatrix = MakeRotateYMatrix(std::numbers::pi_v<float>);
 	Matrix4x4 billboardMatrix{};
-	if (usebillboardMatrix)
-	{
+	if (usebillboardMatrix) {
 		billboardMatrix = Multiply(backToFrontMatrix, cameraMatrix);
-		billboardMatrix.m[3][0] = 0.0f; // 平行移動成分は無視
+		// 平行移動は無視
+		billboardMatrix.m[3][0] = 0.0f;
 		billboardMatrix.m[3][1] = 0.0f;
 		billboardMatrix.m[3][2] = 0.0f;
 	}
-	else
-	{
+	else {
 		billboardMatrix = MakeIdentity4x4();
 	}
-	//if (usebillboardMatrix)
-	//{
-	//	// カメラの Y 回転だけをビルボードに適用（Z軸回転は除外）
-	//	billboardMatrix = MakeRotateYMatrix(camera_->GetRotate().y);
-	//	billboardMatrix.m[3][0] = 0.0f; // 平行移動成分は無視
-	//	billboardMatrix.m[3][1] = 0.0f;
-	//	billboardMatrix.m[3][2] = 0.0f;
-	//}
-	//else
-	//{
-	//	billboardMatrix = MakeIdentity4x4();
-	//}
 
-	// スケール調整用の倍率を設定
-	constexpr float scaleMultiplier = 0.01f; // 必要に応じて調整
-
-	for (auto& group : particleGroups)
-	{
-		Vector2 textureSize = group.second.textureSize;
-
-		for (auto it = group.second.particleList.begin(); it != group.second.particleList.end();)
-		{
-			Particle& particle = *it;
-
-			// パーティクルの寿命が尽きた場合は削除
-			if (particle.lifeTime <= particle.currentTime)
-			{
-				it = group.second.particleList.erase(it);
-				continue;
-			}
-
-			// スケールをテクスチャサイズに基づいて調整
-			/*particle.transform.scale.x = textureSize.x * scaleMultiplier;
-			particle.transform.scale.y = textureSize.y * scaleMultiplier;*/
-
-			//// 重力適用
-			//if (group.second.useGravity) {
-			//	particle.velocity.y += -9.81f * kDeltaTime;
-			//}
-
-			//// 位置の更新
-			//particle.transform.translate = particle.transform.translate + particle.velocity * kDeltaTime;
-
-			// ==== Velocity Verlet Integration ====
-
-            //重力加速度
-			Vector3 accel = { 0.0f, 0.0f, 0.0f };
-			if (group.second.useGravity) {
-				accel.y = -9.81f;
-			}
-
-			// 1. 位置更新：x += v * dt + 0.5 * a * dt^2
-			particle.transform.translate.x += particle.velocity.x * dt + 0.5f * accel.x * dt * dt;
-			particle.transform.translate.y += particle.velocity.y * dt + 0.5f * accel.y * dt * dt;
-			particle.transform.translate.z += particle.velocity.z * dt + 0.5f * accel.z * dt * dt;
-
-			// 2. 速度更新：v += a * dt
-			particle.velocity.x += accel.x * dt;
-			particle.velocity.y += accel.y * dt;
-			particle.velocity.z += accel.z * dt;
-
-
-
-			// 回転の更新（rad/秒）
-			particle.transform.rotate.x += particle.rotationSpeed.x * dt;
-			particle.transform.rotate.y += particle.rotationSpeed.y * dt;
-			particle.transform.rotate.z += particle.rotationSpeed.z * dt;
-
-			// スケールの更新（/秒）
-			particle.transform.scale.x += particle.scaleSpeed.x * dt;
-			particle.transform.scale.y += particle.scaleSpeed.y * dt;
-			particle.transform.scale.z += particle.scaleSpeed.z * dt;
-
-			// 経過時間を更新
-			particle.currentTime += dt;
-
-			// NormalizedAge [0,1]
-			float age = (particle.lifeTime > 0.0f)
-				? (particle.currentTime / particle.lifeTime)
-				: 0.0f;
-			age = std::clamp(age, 0.0f, 1.0f);
-
-			// ---- スケール更新（カーブ or 速度） ----
-			if (group.second.scaleCurve.enabled &&
-				!group.second.scaleCurve.keys.empty()) {
-				float s = group.second.scaleCurve.Evaluate(age);
-				particle.transform.scale = particle.initialScale * s;
-			}
-			else {
-				// 従来のスケール速度処理
-				particle.transform.scale.x += particle.scaleSpeed.x * dt;
-				particle.transform.scale.y += particle.scaleSpeed.y * dt;
-				particle.transform.scale.z += particle.scaleSpeed.z * dt;
-			}
-
-
-			// Scale 行列
-			Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);
-
-			// 回転行列
-			Matrix4x4 rotateMatrix = MakeIdentity4x4();
-			if (usebillboardMatrix)
-			{
-				// ビルボード時はZ回転だけを反映（画面上でクルクル回るイメージ）
-				rotateMatrix = MakeRotateZMatrix(particle.transform.rotate.z);
-			}
-			else
-			{
-				// ビルボードを使わない場合はXYZ回転をフルに反映
-				Matrix4x4 rotX = MakeRotateXMatrix(particle.transform.rotate.x);
-				Matrix4x4 rotY = MakeRotateYMatrix(particle.transform.rotate.y);
-				Matrix4x4 rotZ = MakeRotateZMatrix(particle.transform.rotate.z);
-				rotateMatrix = Multiply(rotZ, Multiply(rotY, rotX));
-			}
-
-			// Translate 行列
-			Matrix4x4 translateMatrix = MakeTranslateMatrix(particle.transform.translate);
-
-			// 回転はビルボードに任せるので、particle.transform.rotate は使わない
-			// world = S * Billboard * T
-			/*Matrix4x4 worldMatrix =
-				Multiply(Multiply(scaleMatrix, billboardMatrix), translateMatrix);*/
-
-				// 回転も反映してるorldMatrix
-			Matrix4x4 worldMatrix =
-				Multiply(Multiply(Multiply(scaleMatrix, billboardMatrix), rotateMatrix), translateMatrix);
-
-			// VP を掛ける
-			Matrix4x4 worldviewProjectionMatrix = Multiply(worldMatrix, viewProjectionMatrix);
-
-			// インスタンシングデータの設定
-			if (group.second.instanceCount < kNumMaxInstance)
-			{
-				group.second.instancingDataPtr[group.second.instanceCount].WVP = worldviewProjectionMatrix;
-				group.second.instancingDataPtr[group.second.instanceCount].World = worldMatrix;
-
-				// カラーを設定し、アルファ値を減衰
-				group.second.instancingDataPtr[group.second.instanceCount].color = particle.color;
-				Vector4 outColor;
-
-				if (group.second.colorCurve.enabled &&
-					!group.second.colorCurve.keys.empty()) {
-					float c = group.second.colorCurve.Evaluate(age);
-					outColor.x = particle.initialColor.x * c;
-					outColor.y = particle.initialColor.y * c;
-					outColor.z = particle.initialColor.z * c;
-					outColor.w = particle.initialColor.w * c;
-				}
-				else {
-					outColor = particle.color;
-				}
-
-				// 寿命によるフェードも掛けたい場合はここで掛ける
-				outColor.w *= (1.0f - age);
-				if (outColor.w < 0.0f) { outColor.w = 0.0f; }
-
-				group.second.instancingDataPtr[group.second.instanceCount].color = outColor;
-				group.second.instancingDataPtr[group.second.instanceCount].flipY =
-					group.second.flipY ? 1.0f : 0.0f;
-
-				group.second.instancingDataPtr[group.second.instanceCount].flipY = group.second.flipY ? 1.0f : 0.0f;
-				if (group.second.instancingDataPtr[group.second.instanceCount].color.w < 0.0f)
-				{
-					group.second.instancingDataPtr[group.second.instanceCount].color.w = 0.0f;
-				}
-
-				++group.second.instanceCount;
-			}
-
-			++it;
-		}
-	}
-
-	// 新システム用エミッターも更新（emitterInstances_ が空なら何もしない）
-	UpdateEmitters(dt);
-
-	// ==== 新EmitterInstance → GPUインスタンス書き込み ====
-	PopulateInstancesFromEmitters(viewProjectionMatrix, billboardMatrix);
-
-	// ここで System 全体も更新
+	// 1) System を更新（Emitter の Play/Stop タイミング制御だけ）
 	for (auto& system : systems_) {
 		if (system) {
 			system->Update(dt);
 		}
 	}
+
+	// 2) すべての EmitterInstance を更新（シミュレーション）
+	UpdateEmitters(dt);
+
+	// 3) EmitterInstance → particleGroups のインスタンスバッファに詰める
+	PopulateInstancesFromEmitters(viewProjectionMatrix, billboardMatrix);
+
 }
+
 
 
 void ParticleManager::Draw()
@@ -587,16 +425,6 @@ void ParticleManager::Draw()
 		commandList->DrawInstanced(group.vertexCount, group.instanceCount, 0, 0);
 
 		group.instanceCount = 0;
-	}
-
-	// 新システム用エミッターも描画
-	DrawEmitters();
-
-	// System 経由のエミッターも描画
-	for (auto& system : systems_) {
-		if (system) {
-			system->Draw();
-		}
 	}
 }
 
@@ -1152,16 +980,7 @@ void ParticleManager::UpdateEmitters(float dt)
 	// 将来的には「再生中フラグ」「自動破棄」などをここに追加する
 	for (auto& emitter : emitterInstances_) {
 		if (emitter) {
-			emitter->Update(dt);
-		}
-	}
-}
-
-void ParticleManager::DrawEmitters()
-{
-	for (auto& emitter : emitterInstances_) {
-		if (emitter) {
-			emitter->Draw();
+			emitter->Update(dt);  // ← シミュレーションだけ
 		}
 	}
 }
@@ -1293,90 +1112,87 @@ void ParticleManager::EmitSystem(const std::string& systemName, const Transform&
 {
 }
 
-void ParticleManager::PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& billboardMatrix)
+void ParticleManager::PopulateInstancesFromEmitters(
+	const Matrix4x4& viewProjectionMatrix,
+	const Matrix4x4& billboardMatrix)
 {
-	// 各EmitterInstanceごとに処理
-    for (auto& emitterPtr : emitterInstances_) {
-        if (!emitterPtr) {
-            continue;
-        }
-        ParticleEmitterInstance& emitter = *emitterPtr;
+	for (auto& emitterPtr : emitterInstances_) {
+		if (!emitterPtr) {
+			continue;
+		}
+		ParticleEmitterInstance& emitter = *emitterPtr;
 
-        // プリセットへのポインタを取得
-        const void* rawPreset = emitter.GetPresetRaw();
-        if (!rawPreset) {
-            continue;
-        }
-        const auto* preset = reinterpret_cast<const ParticlePreset*>(rawPreset);
+		// どのプリセットか取得（※描画設定を見るため）
+		const void* rawPreset = emitter.GetPresetRaw();
+		if (!rawPreset) {
+			continue;
+		}
+		const auto* preset = reinterpret_cast<const ParticlePreset*>(rawPreset);
 
-        // このプリセットに対応するParticleGroupを準備
-        ParticleGroup& group = EnsureGroupForPreset(*preset);
+		// このプリセットに対応する ParticleGroup を準備
+		ParticleGroup& group = EnsureGroupForPreset(*preset);
 
-        // このエミッタの全パーティクルをGPUインスタンスに書き込む
-        const auto& particles = emitter.GetParticles();
-        for (const auto& p : particles) {
-            if (!p.active) {
-                continue;
-            }
+		// Emitter が持っている粒子を全部読む（読み取り専用）
+		const auto& particles = emitter.GetParticles();
+		for (const auto& p : particles) {
+			if (!p.active) {
+				continue;
+			}
+			if (group.instanceCount >= kNumMaxInstance) {
+				break;
+			}
 
-            if (group.instanceCount >= kNumMaxInstance) {
-                break; // これ以上詰め込めない
-            }
+			// === Transform から World 行列を作る ===
+			Vector3 scale = p.scale;
+			Vector3 rotate = p.rotation;
+			Vector3 position = p.position;
 
-            // === Transform から World行列を作る ===
-            Vector3 scale    = p.scale;
-            Vector3 rotate   = p.rotation;
-            Vector3 position = p.position;
+			Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
 
-            // Scale
-            Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
+			Matrix4x4 rotateMatrix = MakeIdentity4x4();
+			if (usebillboardMatrix) {
+				// ビルボード使用時は Z 回転だけ
+				rotateMatrix = MakeRotateZMatrix(rotate.z);
+			}
+			else {
+				Matrix4x4 rotX = MakeRotateXMatrix(rotate.x);
+				Matrix4x4 rotY = MakeRotateYMatrix(rotate.y);
+				Matrix4x4 rotZ = MakeRotateZMatrix(rotate.z);
+				rotateMatrix = Multiply(rotZ, Multiply(rotY, rotX));
+			}
 
-            // Rotate
-            Matrix4x4 rotateMatrix = MakeIdentity4x4();
-            if (usebillboardMatrix) {
-                // ビルボード使用時は Z 回転だけ
-                rotateMatrix = MakeRotateZMatrix(rotate.z);
-            } else {
-                Matrix4x4 rotX = MakeRotateXMatrix(rotate.x);
-                Matrix4x4 rotY = MakeRotateYMatrix(rotate.y);
-                Matrix4x4 rotZ = MakeRotateZMatrix(rotate.z);
-                rotateMatrix = Multiply(rotZ, Multiply(rotY, rotX));
-            }
+			Matrix4x4 translateMatrix = MakeTranslateMatrix(position);
 
-            // Translate
-            Matrix4x4 translateMatrix = MakeTranslateMatrix(position);
+			Matrix4x4 bbMatrix = usebillboardMatrix ? billboardMatrix : MakeIdentity4x4();
 
-            // Billboard
-            Matrix4x4 bbMatrix = usebillboardMatrix ? billboardMatrix : MakeIdentity4x4();
+			// world = S * Billboard * R * T
+			Matrix4x4 worldMatrix =
+				Multiply(Multiply(Multiply(scaleMatrix, bbMatrix), rotateMatrix), translateMatrix);
 
-            // world = S * Billboard * R * T
-            Matrix4x4 worldMatrix =
-                Multiply(Multiply(Multiply(scaleMatrix, bbMatrix), rotateMatrix), translateMatrix);
+			Matrix4x4 wvp = Multiply(worldMatrix, viewProjectionMatrix);
 
-            // WVP
-            Matrix4x4 wvp = Multiply(worldMatrix, viewProjectionMatrix);
+			// === GPU インスタンスへ書き込み ===
+			ParticleForGPU& gpu = group.instancingDataPtr[group.instanceCount];
+			gpu.WVP = wvp;
+			gpu.World = worldMatrix;
 
-            // === GPUインスタンスへ書き込み ===
-            ParticleForGPU& gpu = group.instancingDataPtr[group.instanceCount];
-            gpu.WVP   = wvp;
-            gpu.World = worldMatrix;
+			// 色（Emitter 側で ColorCurve 適用済）
+			Vector4 outColor = p.color;
 
-            // 色（Emitter側でColorCurve適用済なので、そのまま使う）
-            Vector4 outColor = p.color;
+			// 寿命によるフェードだけここで掛ける
+			float age = (p.maxLife > 0.0f) ? (p.life / p.maxLife) : 0.0f;
+			age = std::clamp(age, 0.0f, 1.0f);
+			outColor.w *= (1.0f - age);
+			if (outColor.w < 0.0f) { outColor.w = 0.0f; }
 
-            // 寿命によるフェードだけここで掛ける
-            float age = (p.maxLife > 0.0f) ? (p.life / p.maxLife) : 0.0f;
-            age = std::clamp(age, 0.0f, 1.0f);
-            outColor.w *= (1.0f - age);
-            if (outColor.w < 0.0f) { outColor.w = 0.0f; }
+			gpu.color = outColor;
+			gpu.flipY = emitter.IsFlipY() ? 1.0f : 0.0f;
 
-            gpu.color = outColor;
-            gpu.flipY = emitter.IsFlipY() ? 1.0f : 0.0f;
-
-            ++group.instanceCount;
-        }
-    }
+			++group.instanceCount;
+		}
+	}
 }
+
 
 void ParticleManager::VertexBufferView()
 {

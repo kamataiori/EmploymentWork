@@ -1,87 +1,71 @@
 #pragma once
 #include <vector>
-#include <memory>
 #include <string>
+#include "Transform.h"
+#include "Particle.h"       // struct Particle { position, velocity, life,... }
+#include "ParticlePreset.h" // struct ParticlePreset {...}
 
-#include "MathFunctions.h"
-#include "Particle.h"
-#include "ParticleModule.h"
-#include "ParticlePreset.h"
-
-// Emitter のインスタンス（実行中の1個のエミッタ）
 class ParticleEmitterInstance
 {
 public:
+    using PMPreset = ParticlePreset;
+
     ParticleEmitterInstance() = default;
 
-    // ParticleManager::ParticlePreset* をそのまま渡してOK
-    // （ここでは const void* として受け取り、cpp 側でキャスト）
-    void Initialize(const void* presetRef);
+    // ==============================
+    // 初期化 & 基本情報
+    // ==============================
+    // ※プリセットへの「生ポインタ」を保持するだけ（所有権は ParticleManager）
+    void Initialize(const PMPreset* preset);
+    void SetTransform(const Transform& t);
+    const Transform& GetTransform() const { return emitterTransform_; }
 
-    // Emit 開始（repeat が true なら自動で繰り返す）
-    void Emit();
+    // ==============================
+    // 再生制御
+    // ==============================
+    void Play();      // ループ再生開始
+    void Stop();      // 停止（今ある粒子はそのまま死ぬまで動く）
+    void Reset();     // 全粒子クリア
+    bool IsPlaying() const { return playing_; }
 
-    // その場で 1 回だけ Emit する
-    void EmitOnce();
-
-    // 毎フレーム更新
+    // ==============================
+    // 毎フレーム更新（シミュレーションだけ）
+    // ==============================
+    // ParticleManager から呼ぶのは基本これだけ
     void Update(float dt);
 
-    // 描画処理
-    // ※ 実際の DrawInstanced は ParticleManager::Draw() 側でやるので、
-    //   ここでは「必要なら将来用の処理」を書く程度。現状は何もしなくてOK。
-    void Draw();
+    // EmitOnce 相当：周囲から「一発だけ出したい」ときにも使える
+    void SpawnParticles();
 
-    // 外から Transform を直接いじる用
-    Transform& GetTransform() { return transform_; }
-    const Transform& GetTransform() const { return transform_; }
-    void SetTransform(const Transform& t) { transform_ = t; }
+    // 内部用：寿命・移動・カーブ適用など
+    void UpdateParticles(float dt);
 
-    // ==== ParticleManager から読むためのゲッター ====
+    // ==============================
+    // 描画側から見るための情報（Read-only）
+    // ==============================
+    const PMPreset* GetPreset() const { return preset_; }
 
-    // 今このエミッタが持っているパーティクル一覧
+    // 型が分からない所でも使えるように Raw も用意
+    const void* GetPresetRaw() const { return static_cast<const void*>(preset_); }
+
+    // このエミッタが持っている粒子配列（描画側は読み取り専用）
     const std::vector<Particle>& GetParticles() const { return particles_; }
 
-    // 自分が参照しているプリセット（ParticleManager::ParticlePreset）への生ポインタ
-    const void* GetPresetRaw() const { return preset_; }
-
-    // プリセット名（=グループ名）を覚えておく
-    const std::string& GetPresetName() const { return presetName_; }
-
-    bool IsBillboard() const { return billboard_; }
-    bool IsFlipY() const { return flipY_; }
+    // RenderModule の情報をそのまま返すヘルパ
+    bool IsBillboard() const { return preset_ ? preset_->render.useBillboard : true; }
+    bool IsFlipY()     const { return preset_ ? preset_->render.flipY : false; }
 
 private:
-    // 生成元プリセットへのポインタ（実際の型は ParticleManager::ParticlePreset）
-    const void* preset_ = nullptr;
+    // Niagara の「モジュール」情報（定数データ）
+    const PMPreset* preset_ = nullptr;
 
-    // プリセット名（= groupName 用）
-    std::string presetName_;
+    // エミッタ自体の Transform（発生位置・向き）
+    Transform emitterTransform_{};
 
-    // 実行中パーティクル
+    // 実行時の粒子状態
     std::vector<Particle> particles_;
 
-    // Transform（エミッタの位置・回転・スケール）
-    Transform transform_{};
-
-    // Spawn 用
-    uint32_t spawnCount_ = 1;
-    float    spawnInterval_ = 0.0f;
-    bool     spawnRepeat_ = false;
-    float    spawnTimer_ = 0.0f;
-    bool     emitting_ = false;
-
-    // Update / Render の基本値（プリセットからコピーしておく）
-    Vector3 baseVelocity_{};
-    Vector3 baseRotationSpeed_{};
-    Vector3 baseScaleSpeed_{};
-    float   baseLifeTime_ = 1.0f;
-    bool    useGravity_ = false;
-
-    Vector4 baseColor_{ 1,1,1,1 };
-    bool    billboard_ = true;
-    bool    flipY_ = false;
-
-    // 将来的な Module 用
-    std::vector<std::unique_ptr<ParticleModule>> modules_;
+    // Emit 制御用
+    float emitTimer_ = 0.0f;
+    bool  playing_ = true;
 };

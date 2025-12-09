@@ -61,9 +61,6 @@ public:
 	// cylinderの反転
 	void SetFlipYToGroup(const std::string& groupName, bool flip);
 
-
-public:
-
 	/// ImGui 上でプリセットを編集＆保存するエディタ
 	void DrawImGuiParticlePresetEditor();
 
@@ -110,12 +107,6 @@ public:
 	/// </summary>
 	void UpdateEmitters(float dt);
 
-	/// <summary>
-	/// 新システム用エミッターの描画処理
-	/// （内部から Draw() の最後で呼び出す）
-	/// </summary>
-	void DrawEmitters();
-
 	// ---- System 管理用API（新規） ----
 
     // System を 1 つ作成してコンテナに登録
@@ -150,9 +141,7 @@ public:
 	// System名を指定して、登録されている全プリセットを一括Emitする
 	void EmitSystemByName(const std::string& systemName, const Transform& emitterTransform);
 
-
 private:
-
 
 	std::unordered_map<std::string, ParticlePreset> presets_;  // name -> プリセット
 
@@ -167,12 +156,6 @@ private:
 	// 将来的に複数エミッターをまとめる ParticleSystem（Niagara System 相当）
 	std::vector<std::unique_ptr<ParticleSystem>> systems_;
 
-	//// 実行中の単体エミッター（EmitByPresetName 用）
-	//std::vector<std::unique_ptr<ParticleEmitterInstance>> activeEmitters;
-
-	//// 実行中のシステム（EmitSystem 用）★ステップ2で使用
-	//std::vector<std::unique_ptr<ParticleSystem>> activeSystems;
-
 	// System を使った Emit（ステップ2で実装）
 	void EmitSystem(const std::string& systemName, const Transform& transform);
 
@@ -181,8 +164,6 @@ private:
 
 	// 新EmitterInstanceのパーティクルをインスタンシングバッファへ書き込む
 	void PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix,const Matrix4x4& billboardMatrix);
-
-private:
 
 	/// <summary>
 	/// 頂点リソースの生成、バッファービューの作成
