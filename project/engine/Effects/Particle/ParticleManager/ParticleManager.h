@@ -288,6 +288,9 @@ private:
 	// ループ処理（EmitterInstance / System の Update）
 	void Update(float dt);
 
+	// 新EmitterInstanceのパーティクルをインスタンシングバッファへ書き込む
+	void PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix,const Matrix4x4& billboardMatrix);
+
 private:
 
 	/// <summary>

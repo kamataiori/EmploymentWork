@@ -525,6 +525,9 @@ void ParticleManager::Update()
 	// 新システム用エミッターも更新（emitterInstances_ が空なら何もしない）
 	UpdateEmitters(dt);
 
+	// ==== 新EmitterInstance → GPUインスタンス書き込み ====
+	PopulateInstancesFromEmitters(viewProjectionMatrix, billboardMatrix);
+
 	// ここで System 全体も更新
 	for (auto& system : systems_) {
 		if (system) {
@@ -1134,7 +1137,7 @@ ParticleEmitterInstance* ParticleManager::CreateEmitterInstanceFromPreset(const 
 	instance->Initialize(preset);
 
 	// Transform を設定
-	instance->transform_ = emitterTransform; // transform_ が public ならそのまま、private なら setter を用意してください
+	instance->SetTransform(emitterTransform);
 
 	// 管理コンテナに登録
 	ParticleEmitterInstance* rawPtr = instance.get();
@@ -1284,6 +1287,91 @@ void ParticleManager::EmitSystemByName(const std::string& systemName, const Tran
 
 void ParticleManager::EmitSystem(const std::string& systemName, const Transform& transform)
 {
+}
+
+void ParticleManager::PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& billboardMatrix)
+{
+	// 各EmitterInstanceごとに処理
+    for (auto& emitterPtr : emitterInstances_) {
+        if (!emitterPtr) {
+            continue;
+        }
+        ParticleEmitterInstance& emitter = *emitterPtr;
+
+        // プリセットへのポインタを取得
+        const void* rawPreset = emitter.GetPresetRaw();
+        if (!rawPreset) {
+            continue;
+        }
+        const auto* preset = reinterpret_cast<const ParticlePreset*>(rawPreset);
+
+        // このプリセットに対応するParticleGroupを準備
+        ParticleGroup& group = EnsureGroupForPreset(*preset);
+
+        // このエミッタの全パーティクルをGPUインスタンスに書き込む
+        const auto& particles = emitter.GetParticles();
+        for (const auto& p : particles) {
+            if (!p.active) {
+                continue;
+            }
+
+            if (group.instanceCount >= kNumMaxInstance) {
+                break; // これ以上詰め込めない
+            }
+
+            // === Transform から World行列を作る ===
+            Vector3 scale    = p.scale;
+            Vector3 rotate   = p.rotation;
+            Vector3 position = p.position;
+
+            // Scale
+            Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
+
+            // Rotate
+            Matrix4x4 rotateMatrix = MakeIdentity4x4();
+            if (usebillboardMatrix) {
+                // ビルボード使用時は Z 回転だけ
+                rotateMatrix = MakeRotateZMatrix(rotate.z);
+            } else {
+                Matrix4x4 rotX = MakeRotateXMatrix(rotate.x);
+                Matrix4x4 rotY = MakeRotateYMatrix(rotate.y);
+                Matrix4x4 rotZ = MakeRotateZMatrix(rotate.z);
+                rotateMatrix = Multiply(rotZ, Multiply(rotY, rotX));
+            }
+
+            // Translate
+            Matrix4x4 translateMatrix = MakeTranslateMatrix(position);
+
+            // Billboard
+            Matrix4x4 bbMatrix = usebillboardMatrix ? billboardMatrix : MakeIdentity4x4();
+
+            // world = S * Billboard * R * T
+            Matrix4x4 worldMatrix =
+                Multiply(Multiply(Multiply(scaleMatrix, bbMatrix), rotateMatrix), translateMatrix);
+
+            // WVP
+            Matrix4x4 wvp = Multiply(worldMatrix, viewProjectionMatrix);
+
+            // === GPUインスタンスへ書き込み ===
+            ParticleForGPU& gpu = group.instancingDataPtr[group.instanceCount];
+            gpu.WVP   = wvp;
+            gpu.World = worldMatrix;
+
+            // 色（Emitter側でColorCurve適用済なので、そのまま使う）
+            Vector4 outColor = p.color;
+
+            // 寿命によるフェードだけここで掛ける
+            float age = (p.maxLife > 0.0f) ? (p.life / p.maxLife) : 0.0f;
+            age = std::clamp(age, 0.0f, 1.0f);
+            outColor.w *= (1.0f - age);
+            if (outColor.w < 0.0f) { outColor.w = 0.0f; }
+
+            gpu.color = outColor;
+            gpu.flipY = emitter.IsFlipY() ? 1.0f : 0.0f;
+
+            ++group.instanceCount;
+        }
+    }
 }
 
 void ParticleManager::VertexBufferView()

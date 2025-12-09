@@ -292,6 +292,13 @@ void ParticleEditorScene::Initialize()
 		sys.posY = 40.0f;
 		sys.width = 140.0f;
 		sys.height = 120.0f;
+
+		// 再生系の初期値（お好みで）
+		sys.playing = false;
+		sys.loop = false;
+		sys.emitInterval = 0.2f;
+		sys.emitTimer = 0.0f;
+
 		niagaraSystems_.push_back(sys);
 		systemNameCounter_ = 2;
 		selectedSystemIndex_ = 0;
@@ -302,6 +309,12 @@ void ParticleEditorScene::Initialize()
 
 		// エミッタ名とプリセット名を最初は同じにしておく
 		em.presetName = em.name;
+
+		// デフォルト System に所属させる
+		if (!niagaraSystems_.empty()) {
+			em.systemName = niagaraSystems_.front().name;  // "NS_Sample"
+		}
+
 		emitPresetName = em.presetName;
 
 		em.posX = 280.0f;
@@ -312,6 +325,7 @@ void ParticleEditorScene::Initialize()
 		emitterNameCounter_ = 2;
 		selectedEmitterIndex_ = 0;
 	}
+
 
 #ifdef USE_IMGUI
 	// 旧ドッキング設定はもう使わないので消してOK
@@ -326,6 +340,9 @@ void ParticleEditorScene::Finalize()
 
 void ParticleEditorScene::Update()
 {
+	// deltaTime
+	float dt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
+
 	// カメラ更新
 	if (camera) camera->Update();
 
@@ -338,28 +355,52 @@ void ParticleEditorScene::Update()
 	// パーティクル更新
 	if (particle) {
 
-		// 全 NiagaraEmitterUI を回して Emit する
-		for (auto& emitterUI : niagaraEmitters_) {
-
-			// プリセット名が空ならスキップ
-			if (emitterUI.presetName.empty()) {
-				continue;
-			}
-
-			// プリセットが存在しなければ Emit しない
-			ParticleManager::ParticlePreset* preset =
-				particle->FindPreset(emitterUI.presetName);
-			if (!preset) {
-				continue;
-			}
-
-			// 実際に Emit（今は全エミッタ同じ emitterTransform を使っている）
-			particle->EmitByPresetName(emitterUI.presetName, emitterTransform);
-		}
-
 		// 位置や寿命などの更新
 		particle->Update();
 	}
+
+	// ===== System の自動再生 =====
+	if (particle) {
+		for (auto& sys : niagaraSystems_) {
+			if (!sys.playing) {
+				continue;
+			}
+			if (sys.name.empty()) {
+				continue;
+			}
+
+			// Emit 間隔が 0 以下なら「一度だけ Emit して停止」
+			if (sys.emitInterval <= 0.0f) {
+				particle->EmitSystemByName(sys.name, emitterTransform);
+
+				if (sys.loop) {
+					// Loop + interval<=0 の場合は「毎フレームEmit」扱い。
+					// 重いようなら、ここで適当なクールタイムを設けても良い。
+				}
+				else {
+					sys.playing = false;
+				}
+			}
+			else {
+				// タイマー減算
+				sys.emitTimer -= dt;
+				if (sys.emitTimer <= 0.0f) {
+					// Emit
+					particle->EmitSystemByName(sys.name, emitterTransform);
+
+					if (sys.loop) {
+						// 指定間隔で繰り返し
+						sys.emitTimer += sys.emitInterval;
+					}
+					else {
+						// 1回だけ
+						sys.playing = false;
+					}
+				}
+			}
+		}
+	}
+
 
 	if (Input::GetInstance()->TriggerKey(DIK_G)) {
 		// シーン切り替え
@@ -593,7 +634,6 @@ void ParticleEditorScene::Debug()
 #endif // USE_IMGUI
 }
 
-
 void ParticleEditorScene::UpdateDebugCamera()
 {
 	if (!debugCameraEnabled_ || !camera) {
@@ -734,6 +774,12 @@ void ParticleEditorScene::DrawNiagaraCanvas(const ImVec2& pos, const ImVec2& siz
 				NiagaraEmitterUI em{};
 				em.name = "NE_" + std::to_string(emitterNameCounter_++);
 				em.presetName = emitPresetName;   // いま編集中のプリセット名をデフォルトで付ける
+				// 選択中の System があれば、その名前を System 名としてセット
+				if (selectedSystemIndex_ >= 0 &&
+					selectedSystemIndex_ < static_cast<int>(niagaraSystems_.size())) {
+					em.systemName = niagaraSystems_[selectedSystemIndex_].name;
+				}
+
 				em.posX = local.x;
 				em.posY = local.y;
 				em.width = 170.0f;
@@ -970,13 +1016,64 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 		emitterUI = &niagaraEmitters_[selectedEmitterIndex_];
 	}
 
+	// 選択中の System を取得
+	NiagaraSystemUI* systemUI = nullptr;
+	if (selectedSystemIndex_ >= 0 &&
+		selectedSystemIndex_ < static_cast<int>(niagaraSystems_.size())) {
+		systemUI = &niagaraSystems_[selectedSystemIndex_];
+	}
+
+	// ---- Emitter が未選択の場合 ----
 	if (!emitterUI) {
+
+		// ★ System が選択されていれば、System 用 Inspector を表示
+		if (systemUI) {
+			ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f),
+				"System Inspector");
+			ImGui::Separator();
+
+			ImGui::Text("System : %s", systemUI->name.c_str());
+			ImGui::Separator();
+
+			// ループ再生 ON/OFF
+			ImGui::Checkbox("Loop 再生", &systemUI->loop);
+
+			// Emit 間隔（秒）
+			ImGui::DragFloat("Emit 間隔 (sec)",
+				&systemUI->emitInterval,
+				0.01f, 0.0f, 10.0f);
+
+			// 再生 / 停止ボタン
+			if (!systemUI->playing) {
+				if (ImGui::Button("再生 (Play)")) {
+					systemUI->playing = true;
+					systemUI->emitTimer = 0.0f;  // 押した瞬間にEmitしたいので0にしておく
+				}
+			}
+			else {
+				if (ImGui::Button("停止 (Stop)")) {
+					systemUI->playing = false;
+				}
+			}
+
+			ImGui::Separator();
+			ImGui::TextWrapped(
+				"この System には Editor で登録した複数のプリセットが\n"
+				"紐付いています。Loop を ON にすると、Emit 間隔ごとに\n"
+				"\"System Emit\" と同じ処理が自動で呼ばれます。");
+
+			ImGui::End();
+			return;
+		}
+
+		// System も選ばれていない場合は従来通りメッセージ
 		ImGui::TextColored(ImVec4(1, 1, 0, 1),
-			"中央の NE_* パネルをクリックして\n"
-			"エミッタを選択してください。");
+			"中央の NS_* または NE_* パネルをクリックして\n"
+			"System / Emitter を選択してください。");
 		ImGui::End();
 		return;
 	}
+
 
 	if (!particle) {
 		ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
@@ -1057,15 +1154,13 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 
 		ParticleManager* pm = particle.get();
 
-		// 入力欄のバッファを用意（std::string ⇔ char配列）
+		// --- System 名 入力欄（Emitter 固有） ---
 		char systemBuf[64]{};
-		if (systemNameInput_.size() >= sizeof(systemBuf)) {
-			systemNameInput_.resize(sizeof(systemBuf) - 1);
-		}
-		std::snprintf(systemBuf, sizeof(systemBuf), "%s", systemNameInput_.c_str());
-
+		std::snprintf(systemBuf, sizeof(systemBuf), "%s", emitterUI->systemName.c_str());
 		if (ImGui::InputText("System名 (新規/既存)", systemBuf, IM_ARRAYSIZE(systemBuf))) {
-			systemNameInput_ = systemBuf;
+			emitterUI->systemName = systemBuf;
+			// シーン共通の入力値にも反映しておく（任意）
+			systemNameInput_ = emitterUI->systemName;
 		}
 
 		// 既存System名一覧を取得
@@ -1076,9 +1171,21 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 
 		// 既存Systemをコンボで選択
 		if (!systemNames.empty()) {
+			// 初期インデックスの決定
 			if (systemComboIndex_ < 0 ||
 				systemComboIndex_ >= static_cast<int>(systemNames.size())) {
+
 				systemComboIndex_ = 0;
+
+				// Emitter にすでに systemName があれば、そのインデックスを探す
+				if (!emitterUI->systemName.empty()) {
+					for (int i = 0; i < static_cast<int>(systemNames.size()); ++i) {
+						if (systemNames[i] == emitterUI->systemName) {
+							systemComboIndex_ = i;
+							break;
+						}
+					}
+				}
 			}
 
 			const char* preview = systemNames[systemComboIndex_].c_str();
@@ -1088,8 +1195,8 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 					bool isSelected = (i == systemComboIndex_);
 					if (ImGui::Selectable(systemNames[i].c_str(), isSelected)) {
 						systemComboIndex_ = i;
-						// コンボで選択したら入力欄にも反映
-						systemNameInput_ = systemNames[i];
+						emitterUI->systemName = systemNames[i];   // Emitter に反映
+						systemNameInput_ = emitterUI->systemName; // 任意で共通入力にも反映
 					}
 					if (isSelected) {
 						ImGui::SetItemDefaultFocus();
@@ -1102,11 +1209,12 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 			ImGui::TextDisabled("登録済み System はありません");
 		}
 
-		// 「このプリセットを System に追加」ボタン
 		if (ImGui::Button("このプリセットを System に追加")) {
 			if (pm && !emitterUI->presetName.empty()) {
-				// 優先順位: 入力欄 > コンボ選択
-				std::string sysName = systemNameInput_;
+
+				// 優先順位: Emitter の systemName > コンボで選んだ名前
+				std::string sysName = emitterUI->systemName;
+
 				if (sysName.empty() &&
 					systemComboIndex_ >= 0 &&
 					systemComboIndex_ < static_cast<int>(systemNames.size())) {
@@ -1115,6 +1223,10 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 
 				if (!sysName.empty()) {
 					pm->RegisterSystemPreset(sysName, emitterUI->presetName);
+
+					// Emitter 側の systemName も確定させる
+					emitterUI->systemName = sysName;
+					systemNameInput_ = sysName;
 				}
 			}
 		}
@@ -1436,17 +1548,23 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 
 	ImGui::Separator();
 
+	// ここから新EmitterInstanceルート
+	// ここから新EmitterInstanceルート
 	if (ImGui::Button("Emit 実行")) {
-		if (particle) {
+		if (particle && !emitPresetName.empty()) {
+			// ★ いったん旧システムの Emit を使う
 			particle->EmitByPresetName(emitPresetName, emitterTransform);
 		}
 	}
+
+
 	ImGui::SameLine();
 	if (ImGui::Button("全プリセット再読み込み")) {
 		if (particle) {
 			particle->LoadAllPresets();
 		}
 	}
+
 
 	ImGui::End();
 }

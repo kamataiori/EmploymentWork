@@ -7,25 +7,15 @@
 #include "Particle.h"
 #include "ParticleModule.h"
 
-// ===============================================
-// ParticleEmitterInstance
-// 1つの「実行中エミッター」を表すクラス
-// ・Transform（位置/回転/スケール）
-// ・Particle 配列
-// ・Spawn / Update / Render のランタイム値
-// ===============================================
+// Emitter のインスタンス（実行中の1個のエミッタ）
 class ParticleEmitterInstance
 {
 public:
     ParticleEmitterInstance() = default;
 
-    // ParticleManager::ParticlePreset* 相当のポインタを受け取る。
-    // 型は void* にしておき、cpp 側で正しい型にキャストする。
+    // ParticleManager::ParticlePreset* をそのまま渡してOK
+    // （ここでは const void* として受け取り、cpp 側でキャスト）
     void Initialize(const void* presetRef);
-
-    // Transform は外から直接触れるように public にしておく
-    // （ParticleManager::CreateEmitterInstanceFromPreset で直接書き込んでいる）
-    Transform transform_;
 
     // Emit 開始（repeat が true なら自動で繰り返す）
     void Emit();
@@ -36,30 +26,51 @@ public:
     // 毎フレーム更新
     void Update(float dt);
 
-    // 描画処理（後でインスタンシング書き込みを移植）
+    // 描画処理
+    // ※ 実際の DrawInstanced は ParticleManager::Draw() 側でやるので、
+    //   ここでは「必要なら将来用の処理」を書く程度。現状は何もしなくてOK。
     void Draw();
 
+    // 外から Transform を直接いじる用
+    Transform& GetTransform() { return transform_; }
+    const Transform& GetTransform() const { return transform_; }
+    void SetTransform(const Transform& t) { transform_ = t; }
+
+    // ==== ParticleManager から読むためのゲッター ====
+
+    // 今このエミッタが持っているパーティクル一覧
+    const std::vector<Particle>& GetParticles() const { return particles_; }
+
+    // 自分が参照しているプリセット（ParticleManager::ParticlePreset）への生ポインタ
+    const void* GetPresetRaw() const { return preset_; }
+
+    // プリセット名（=グループ名）を覚えておく
+    const std::string& GetPresetName() const { return presetName_; }
+
+    bool IsBillboard() const { return billboard_; }
+    bool IsFlipY() const { return flipY_; }
+
 private:
-    // 元プリセット（Curve など参照用）。型は void* で保持。
+    // 生成元プリセットへのポインタ（実際の型は ParticleManager::ParticlePreset）
     const void* preset_ = nullptr;
 
-    // 現在生きているパーティクル
-    std::vector<Particle> particles_;
-
-    // 追加モジュール（将来用）
-    std::vector<std::unique_ptr<ParticleModule>> modules_;
-
-    // 自分が基にしているプリセット名（EnsureGroupForPreset などで使う用）
+    // プリセット名（= groupName 用）
     std::string presetName_;
 
-    // Spawn 用
-    uint32_t spawnCount_ = 1;     // 1回のEmitで出す数
-    float    spawnInterval_ = 0.0f;  // 連続発生間隔(秒)
-    bool     spawnRepeat_ = false; // ループさせるか
-    float    spawnTimer_ = 0.0f;  // 間隔用タイマー
-    bool     emitting_ = false; // Emit() 中かどうか
+    // 実行中パーティクル
+    std::vector<Particle> particles_;
 
-    // Update / Render 用の基本設定（Presetからコピーするイメージ）
+    // Transform（エミッタの位置・回転・スケール）
+    Transform transform_{};
+
+    // Spawn 用
+    uint32_t spawnCount_ = 1;
+    float    spawnInterval_ = 0.0f;
+    bool     spawnRepeat_ = false;
+    float    spawnTimer_ = 0.0f;
+    bool     emitting_ = false;
+
+    // Update / Render の基本値（プリセットからコピーしておく）
     Vector3 baseVelocity_{};
     Vector3 baseRotationSpeed_{};
     Vector3 baseScaleSpeed_{};
@@ -69,4 +80,7 @@ private:
     Vector4 baseColor_{ 1,1,1,1 };
     bool    billboard_ = true;
     bool    flipY_ = false;
+
+    // 将来的な Module 用
+    std::vector<std::unique_ptr<ParticleModule>> modules_;
 };

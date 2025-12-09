@@ -20,11 +20,18 @@ struct NiagaraSystemUI {
     float posY = 0.0f;
     float width = 140.0f;
     float height = 120.0f;
+
+    // System の再生制御用
+    bool  playing = false;  // 再生中かどうか
+    bool  loop = false;  // ループ再生するか
+    float emitInterval = 0.2f;   // Emit 間隔(秒)
+    float emitTimer = 0.0f;   // 内部タイマー
 };
 
 struct NiagaraEmitterUI {
     std::string name;
     std::string presetName;   // このエミッタが編集するプリセット名
+    std::string systemName;   // このエミッタが属する System 名
     float posX = 0.0f;
     float posY = 0.0f;
     float width = 160.0f;

@@ -1,0 +1,90 @@
+{
+    "emitterSettings": {
+        "blendMode": 2,
+        "textureFilePath": "Resources/ParticleTexture/image.png",
+        "vertexType": 0
+    },
+    "emitterSpawn": {
+        "count": 35,
+        "frequency": 1.0,
+        "repeat": false,
+        "useRandomPosition": true
+    },
+    "name": "NE_Sample2",
+    "particleSpawn": {
+        "initialOffset": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialRotate": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialScale": [
+            1.0,
+            1.0,
+            1.0
+        ]
+    },
+    "particleUpdate": {
+        "lifeTime": 2.630000114440918,
+        "rotationSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scaleCurve": {
+            "enabled": true,
+            "keys": [
+                [
+                    0.0,
+                    1.0
+                ],
+                [
+                    0.4141414165496826,
+                    3.809523820877075
+                ],
+                [
+                    1.0,
+                    5.0
+                ]
+            ]
+        },
+        "scaleSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "useGravity": false,
+        "velocity": [
+            0.0,
+            2.5399999618530273,
+            0.0
+        ]
+    },
+    "render": {
+        "color": [
+            1.0,
+            0.27799224853515625,
+            0.0,
+            1.0
+        ],
+        "colorCurve": {
+            "enabled": true,
+            "keys": [
+                [
+                    0.0,
+                    1.0
+                ],
+                [
+                    1.0,
+                    5.0
+                ]
+            ]
+        },
+        "flipY": false,
+        "useBillboard": true
+    }
+}
