@@ -458,6 +458,10 @@ private:
 
 public:
 
+	// プリセットの内容に合わせて ParticleGroup を準備し、
+    // カーブやフラグ類を反映したうえで参照を返す共通ヘルパー
+	ParticleGroup& EnsureGroupForPreset(const ParticlePreset& preset);
+
 	/// <summary>
 	/// エミッター
 	/// </summary>

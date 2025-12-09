@@ -1,16 +1,46 @@
 #include "ParticleEmitterInstance.h"
-// ここで ParticlePreset の実体定義が必要になるので、
-// 現状は ParticleManager.h を include しても OK。
-// 将来、ParticlePreset を外出ししたら差し替える。
 #include "ParticleManager.h"
+#include <algorithm>
 
-void ParticleEmitterInstance::Initialize(ParticlePreset* presetRef)
+// 重力加速度（ParticleManager 側の挙動に合わせる）
+static constexpr float kGravity = -9.81f;
+
+void ParticleEmitterInstance::Initialize(const void* presetRef)
 {
     preset_ = presetRef;
 
-    // 必要なら粒子配列の予約など
-    // 例：preset の maxCount 相当の値があれば reserve する、など
-    // particles_.reserve(256);
+    // ParticleManager 側のプリセット型にキャスト
+    const auto* preset = reinterpret_cast<const ParticleManager::ParticlePreset*>(presetRef);
+    if (!preset) {
+        return;
+    }
+
+    // ここでプリセット名を覚えておく
+    presetName_ = preset->name;
+
+    // ---- Spawn 系 ----
+    spawnCount_ = preset->emitterSpawn.count;
+    spawnInterval_ = preset->emitterSpawn.frequency;
+    spawnRepeat_ = preset->emitterSpawn.repeat;
+    spawnTimer_ = 0.0f;
+    emitting_ = false;
+
+    // ---- Update 系 ----
+    baseLifeTime_ = preset->particleUpdate.lifeTime;
+    baseVelocity_ = preset->particleUpdate.velocity;
+    baseRotationSpeed_ = preset->particleUpdate.rotationSpeed;
+    baseScaleSpeed_ = preset->particleUpdate.scaleSpeed;
+    useGravity_ = preset->particleUpdate.useGravity;
+
+    // ---- Render 系 ----
+    baseColor_ = preset->render.color;
+    billboard_ = preset->render.useBillboard;
+    flipY_ = preset->render.flipY;
+
+    // 必要に応じて粒子配列をあらかじめ確保
+    if (spawnCount_ > 0) {
+        particles_.reserve(spawnCount_ * 4);
+    }
 }
 
 void ParticleEmitterInstance::Emit()
@@ -19,110 +49,151 @@ void ParticleEmitterInstance::Emit()
         return;
     }
 
-    // ★ 今は簡易的なダミー実装：
-    //   - 本格的な処理は後で ParticleManager から移植する
-    //
-    // ここで本来は：
-    //   - preset_->emitterSpawn.count, frequency などを見て
-    //   - 必要な数だけ Particle を生成し
-    //   - preset_->particleSpawn / particleUpdate を使って初期化する
-    //
-    // 今はとりあえず「1個だけ、原点に寿命付きで作る」
-    Particle p;
-    p.active = true;
-    p.position = transform_.translate; // Transform の位置
-    p.scale = { 1, 1, 1 };
-    p.color = { 1, 1, 1, 1 };
-    p.life = 0.0f;
-    p.maxLife = 1.0f;
+    emitting_ = true;
+    spawnTimer_ = 0.0f; // 即時に 1 回目を出す
 
-    // モジュール側にも初期化フックを渡す（将来用）
-    for (auto& m : modules_) {
-        m->ApplySpawn(*this, p);
+    EmitOnce();
+
+    // 繰り返し設定でない場合は、1 回出したら終わり
+    if (!spawnRepeat_) {
+        emitting_ = false;
     }
-
-    particles_.push_back(p);
 }
 
 void ParticleEmitterInstance::EmitOnce()
 {
+    if (!preset_ || spawnCount_ == 0) {
+        return;
+    }
+
     for (uint32_t i = 0; i < spawnCount_; ++i) {
         Particle p{};
+
         p.active = true;
-        p.position = transform_.translate;      // 位置
-        p.velocity = baseVelocity_;            // 速度
-        p.rotation = transform_.rotate;
-        p.scale = transform_.scale;
-        p.rotationSpeed = baseRotationSpeed_;
-        p.scaleSpeed = baseScaleSpeed_;
-        p.color = baseColor_;
         p.life = 0.0f;
         p.maxLife = baseLifeTime_;
 
-        particles_.push_back(p);
+        // 位置・回転はエミッターの Transform から
+        p.position = transform_.translate;
+        p.rotation = transform_.rotate;
+
+        // スケールは Transform のスケールを初期値として保持
+        p.scale = transform_.scale;
+        p.initialScale = transform_.scale;
+
+        // 速度 / 回転速度 / スケール速度
+        p.velocity = baseVelocity_;
+        p.rotationSpeed = baseRotationSpeed_;
+        p.scaleSpeed = baseScaleSpeed_;
+
+        // 色も「現在値」と「初期値」の両方に入れておく
+        p.color = baseColor_;
+        p.initialColor = baseColor_;
+
+        // 既存スロットの再利用（inactive なものがあればそこを上書き）
+        bool reused = false;
+        for (auto& existing : particles_) {
+            if (!existing.active) {
+                existing = p;
+                reused = true;
+                break;
+            }
+        }
+        if (!reused) {
+            particles_.push_back(p);
+        }
+
+        // モジュール側にも初期化フックを渡す（将来用）
+        for (auto& m : modules_) {
+            m->ApplySpawn(*this, p);
+        }
     }
 }
 
 void ParticleEmitterInstance::Update(float dt)
 {
-    //if (!preset_) {
-    //    return;
-    //}
+    if (!preset_) {
+        return;
+    }
 
-    //for (auto& p : particles_) {
-    //    if (!p.active) { continue; }
+    const auto* preset = reinterpret_cast<const ParticleManager::ParticlePreset*>(preset_);
 
-    //    // 寿命更新
-    //    p.life += dt;
-    //    if (p.life >= p.maxLife) {
-    //        p.active = false;
-    //        continue;
-    //    }
-
-    //    // 簡易：速度だけ適用（本格版は particleUpdateModule を見る）
-    //    p.position = Add(p.position, Multiply(dt, p.velocity));
-
-    //    // モジュールで追加カスタム更新
-    //    for (auto& m : modules_) {
-    //        m->ApplyUpdate(*this, p, dt);
-    //    }
-    //}
-
-    // 死んだパーティクルを削除してもいい（が、GCコストが気になるならフラグ方式でOK）
-    // 今はそのままにしておき、後で最適化で詰める。
-
-
-    // 1) ループ発生ならタイマーで EmitOnce を呼ぶ
-    if (spawnRepeat_) {
-        spawnTimer_ += dt;
-        while (spawnTimer_ >= spawnInterval_) {
-            spawnTimer_ -= spawnInterval_;
+    // ---- 自動発生（repeat=true のとき）----
+    if (spawnRepeat_ && emitting_) {
+        spawnTimer_ -= dt;
+        while (spawnTimer_ <= 0.0f) {
             EmitOnce();
+            spawnTimer_ += spawnInterval_;
+
+            // spawnInterval_ <= 0 の場合は無限ループ防止で止める
+            if (spawnInterval_ <= 0.0f) {
+                emitting_ = false;
+                break;
+            }
         }
     }
 
-    // 2) 既存粒子の更新
+    // ---- 各パーティクルの更新 ----
     for (auto& p : particles_) {
-        if (!p.active) { continue; }
+        if (!p.active) {
+            continue;
+        }
 
+        // 寿命更新
         p.life += dt;
         if (p.life >= p.maxLife) {
             p.active = false;
             continue;
         }
 
-        // 速度・重力
+        // NormalizedAge を 0～1 にクランプ
+        float age = (p.maxLife > 0.0f) ? (p.life / p.maxLife) : 0.0f;
+        age = std::clamp(age, 0.0f, 1.0f);
+
+        // 重力
         if (useGravity_) {
-            p.velocity.y -= 0.98f * dt;  // 既存の重力処理と同じにする
+            p.velocity.y += kGravity * dt;
         }
-        p.position += p.velocity * dt;
 
-        // 回転・スケール
-        p.rotation += p.rotationSpeed * dt;
-        p.scale += p.scaleSpeed * dt;
+        // 位置更新
+        p.position.x += p.velocity.x * dt;
+        p.position.y += p.velocity.y * dt;
+        p.position.z += p.velocity.z * dt;
 
-        // ColorOverLife / ScaleOverLife のカーブが必要なら、
-        // ここで NormalizedAge = p.life / p.maxLife を使って評価する
+        // 回転更新
+        p.rotation.x += p.rotationSpeed.x * dt;
+        p.rotation.y += p.rotationSpeed.y * dt;
+        p.rotation.z += p.rotationSpeed.z * dt;
+
+        // ---- スケール更新（カーブ or 速度）----
+        const auto& scaleCurve = preset->particleUpdate.scaleCurve;
+        if (scaleCurve.enabled && !scaleCurve.keys.empty()) {
+            float s = scaleCurve.Evaluate(age);
+            p.scale.x = p.initialScale.x * s;
+            p.scale.y = p.initialScale.y * s;
+            p.scale.z = p.initialScale.z * s;
+        }
+        else {
+            p.scale.x += p.scaleSpeed.x * dt;
+            p.scale.y += p.scaleSpeed.y * dt;
+            p.scale.z += p.scaleSpeed.z * dt;
+        }
+
+        // ---- 色更新（colorCurve）----
+        const auto& colorCurve = preset->render.colorCurve;
+        if (colorCurve.enabled && !colorCurve.keys.empty()) {
+            float c = colorCurve.Evaluate(age);
+            p.color.x = p.initialColor.x * c;
+            p.color.y = p.initialColor.y * c;
+            p.color.z = p.initialColor.z * c;
+            p.color.w = p.initialColor.w * c;
+        }
+
+        // モジュールによる Update（将来用）
+        for (auto& m : modules_) {
+            m->ApplyUpdate(*this, p, dt);
+        }
+    }
 }
 
 void ParticleEmitterInstance::Draw()
@@ -131,14 +202,12 @@ void ParticleEmitterInstance::Draw()
         return;
     }
 
-    // ★ 現状の描画は ParticleManager::Draw() 内にあるので、
-    //   ここでは「将来ここに移す」前提で何もしない or
-    //   必要な情報を外部へ渡す形だけ決めておく。
+    // 現状の描画は ParticleManager::Draw() 内にあるので、
+    // ここではまだ何もしない。
     //
-    // たとえば：
-    //   - VertexBuffer に書き込むデータを作る
-    //   - カメラ情報を使って Billboard 行列を計算する
-    //   - Texture / BlendMode を preset_ から引く
-    //
-    // 今は空実装で OK（移植フェーズで中身を入れていく）。
+    // 将来的には：
+    //  - particles_ の内容からインスタンシング用頂点データを組み立てる
+    //  - billboard_ や flipY_ を使ってワールド行列やUVを調整する
+    //  - ParticleManager 側の VertexBuffer に書き込む
+    // といった処理をこのクラスへ移していく予定。
 }

@@ -1,7 +1,10 @@
 #pragma once
 #include <string>
 #include <vector>
-#include <Transform.h>
+#include <memory>
+
+#include "Transform.h"
+#include "MathFunctions.h"
 #include "ParticleModule.h"
 
 // ===============================================
@@ -14,27 +17,28 @@
 
 // ---------- Spawn ----------
 struct SpawnSettings {
-    uint32_t count = 1;      // Emit 時に生成される粒子数
-    float frequency = 0.1f;  // 連続発生するときの間隔
-    bool repeat = true;      // ループ発生するか
-    bool randomOffset = false; // 位置にランダム性を持たせる
+    uint32_t count = 1;       // Emit 時に生成される粒子数
+    float    frequency = 0.1f; // 連続発生するときの間隔
+    bool     repeat = true;   // ループ発生するか
+    bool     randomOffset = false; // 位置にランダム性を持たせる
 };
 
 // ---------- Update ----------
 struct UpdateSettings {
-    Vector3 velocity{};      // 初速
-    Vector3 rotationSpeed{}; // 回転速度
-    Vector3 scaleSpeed{};    // スケールの増減
-    float lifeTime = 1.0f;   // 粒子の寿命
-    bool useGravity = false; // 重力を使うか
+    Vector3 velocity{};       // 初速
+    Vector3 rotationSpeed{};  // 回転速度
+    Vector3 scaleSpeed{};     // スケールの増減
+    float   lifeTime = 1.0f;  // 粒子の寿命
+    bool    useGravity = false; // 重力を使うか
 };
 
 // ---------- Render ----------
 struct RenderSettings {
-    Vector4 color{ 1,1,1,1 };    // 色
-    bool billboard = true;     // ビルボード
-    bool flipY = false;        // 上下反転
-    std::string textureFilePath; // 使用するテクスチャ
+    // ★ Vector4 が見えないとき構文エラーになるので MathFunctions.h が必須
+    Vector4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; // 色（float明示のほうが安全）
+    bool billboard = true;                 // ビルボード
+    bool flipY = false;                    // 上下反転
+    std::string textureFilePath;          // 使用するテクスチャ
 };
 
 class ParticleEmitter {

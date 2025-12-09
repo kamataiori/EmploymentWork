@@ -1028,42 +1028,11 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		preset.name = presetName;
 	}
 
-	const std::string groupName = preset.name;
+	// プリセットに対応するグループを準備（新規作成 or 更新）して参照を取得
+	ParticleGroup& group = EnsureGroupForPreset(preset);
 
-	// ---- パーティクルグループが無ければ作成 ----
-	auto itGroup = particleGroups.find(groupName);
-	if (itGroup == particleGroups.end()) {
-		// テクスチャとブレンドモードはプリセットから
-		CreateParticleGroup(groupName,
-			preset.emitterSettings.textureFilePath,
-			preset.emitterSettings.blendMode);
-
-		// 新規作成したグループに対して プリセットの設定を反映
-		SetFlipYToGroup(groupName, preset.render.flipY);
-		SetLifeTimeToGroup(groupName, preset.particleUpdate.lifeTime);
-		SetColorToGroup(groupName, preset.render.color);
-
-		// ビルボードは現在マネージャ全体設定
-		SetUseBillboard(preset.render.useBillboard);
-
-		// 重力フラグだけグループに反映
-		SetGravityToGroup(groupName, preset.particleUpdate.useGravity);
-	}
-	else {
-		// 既にあるグループにも、最新プリセットの値を反映しておく
-		SetFlipYToGroup(groupName, preset.render.flipY);
-		SetLifeTimeToGroup(groupName, preset.particleUpdate.lifeTime);
-		SetColorToGroup(groupName, preset.render.color);
-		SetUseBillboard(preset.render.useBillboard);
-		SetGravityToGroup(groupName, preset.particleUpdate.useGravity);
-	}
-
-	// ---- ここで初めて group を取得する（※ここから group が使える）----
-	ParticleGroup& group = particleGroups[groupName];
-
-	// ★ カーブをグループにコピー（新規・既存どちらでもここで更新される）
-	group.scaleCurve = preset.particleUpdate.scaleCurve;
-	group.colorCurve = preset.render.colorCurve;
+	// ここでグループ名をもう一度ローカル変数にしておく
+	const std::string& groupName = preset.name;
 
 	const size_t beforeCount = group.particleList.size();
 
@@ -1120,14 +1089,12 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 			p.scaleSpeed = preset.particleUpdate.scaleSpeed;
 			p.color = preset.render.color;
 			p.lifeTime = preset.particleUpdate.lifeTime;
-			// ★ カーブ用の基準値
+			// カーブ用の基準値
 			p.initialScale = p.transform.scale;
 			p.initialColor = p.color;
 		}
 	}
 }
-
-
 
 ParticleManager::ParticlePreset* ParticleManager::FindPreset(const std::string& name)
 {
@@ -1622,6 +1589,54 @@ ParticleManager::Particle ParticleManager::CylinderMakeNewParticle(const Vector3
 	p.currentTime = 0;
 
 	return p;
+}
+
+//======================================================================
+// プリセットに対応する ParticleGroup を用意＆更新する共通ヘルパー
+//======================================================================
+ParticleManager::ParticleGroup& ParticleManager::EnsureGroupForPreset(const ParticlePreset& preset)
+{
+	// グループ名はプリセット名と同じにする
+	std::string groupName = preset.name;
+
+	// まだグループが無ければ作成
+	auto itGroup = particleGroups.find(groupName);
+	if (itGroup == particleGroups.end()) {
+		// テクスチャとブレンドモードはプリセットから
+		CreateParticleGroup(
+			groupName,
+			preset.emitterSettings.textureFilePath,
+			preset.emitterSettings.blendMode
+		);
+
+		// 新規作成したグループに対して プリセットの設定を反映
+		SetFlipYToGroup(groupName, preset.render.flipY);
+		SetLifeTimeToGroup(groupName, preset.particleUpdate.lifeTime);
+		SetColorToGroup(groupName, preset.render.color);
+
+		// ビルボードは現在マネージャ全体設定
+		SetUseBillboard(preset.render.useBillboard);
+
+		// 重力フラグをグループに反映
+		SetGravityToGroup(groupName, preset.particleUpdate.useGravity);
+	}
+	else {
+		// 既にあるグループにも、最新プリセットの値を反映しておく
+		SetFlipYToGroup(groupName, preset.render.flipY);
+		SetLifeTimeToGroup(groupName, preset.particleUpdate.lifeTime);
+		SetColorToGroup(groupName, preset.render.color);
+		SetUseBillboard(preset.render.useBillboard);
+		SetGravityToGroup(groupName, preset.particleUpdate.useGravity);
+	}
+
+	// ここで実際のグループ参照を取得
+	ParticleGroup& group = particleGroups[groupName];
+
+	// カーブも常に最新のものをコピー
+	group.scaleCurve = preset.particleUpdate.scaleCurve;
+	group.colorCurve = preset.render.colorCurve;
+
+	return group;
 }
 
 void ParticleManager::Emit(const std::string& name, const Transform& transform, uint32_t count, bool useRandomPosition) {

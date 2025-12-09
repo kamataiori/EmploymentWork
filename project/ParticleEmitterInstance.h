@@ -7,41 +7,57 @@
 #include "Particle.h"
 #include "ParticleModule.h"
 
-
-// 前方宣言：
-// ここでは「プリセットの型」はまだ ParticleManager 側にある前提
-// 後で Step2 以降で独立させる
-class ParticlePreset;
-
-//
 // ===============================================
 // ParticleEmitterInstance
-// 「実際に動いているエミッター1個」を表すクラス。
-// - プリセット（ParticlePreset）への参照
-// - Transform（位置/回転/スケール）
-// - Particle 配列
-// - 必要なら追加のモジュール（ParticleModule）
-// 
-// この段階では、まだ ParticleManager と接続しない。
-// 先にクラスだけ用意して、あとから徐々にロジックを移植する。
+// 1つの「実行中エミッター」を表すクラス
+// ・Transform（位置/回転/スケール）
+// ・Particle 配列
+// ・Spawn / Update / Render のランタイム値
 // ===============================================
 class ParticleEmitterInstance
 {
 public:
-    // このエミッターが参照するプリセット（設定データ）
-    ParticlePreset* preset_ = nullptr;
+    ParticleEmitterInstance() = default;
 
-    // 将来用：追加モジュール（ColorOverLife など）
+    // ParticleManager::ParticlePreset* 相当のポインタを受け取る。
+    // 型は void* にしておき、cpp 側で正しい型にキャストする。
+    void Initialize(const void* presetRef);
+
+    // Transform は外から直接触れるように public にしておく
+    // （ParticleManager::CreateEmitterInstanceFromPreset で直接書き込んでいる）
+    Transform transform_;
+
+    // Emit 開始（repeat が true なら自動で繰り返す）
+    void Emit();
+
+    // その場で 1 回だけ Emit する
+    void EmitOnce();
+
+    // 毎フレーム更新
+    void Update(float dt);
+
+    // 描画処理（後でインスタンシング書き込みを移植）
+    void Draw();
+
+private:
+    // 元プリセット（Curve など参照用）。型は void* で保持。
+    const void* preset_ = nullptr;
+
+    // 現在生きているパーティクル
+    std::vector<Particle> particles_;
+
+    // 追加モジュール（将来用）
     std::vector<std::unique_ptr<ParticleModule>> modules_;
 
-    Transform transform_;                 // エミッターの位置・回転・スケール
-    std::vector<Particle> particles_;     // このエミッターが持つ粒子
+    // 自分が基にしているプリセット名（EnsureGroupForPreset などで使う用）
+    std::string presetName_;
 
     // Spawn 用
-    uint32_t spawnCount_ = 1;           // 1回のEmitで出す数
-    float    spawnInterval_ = 0.1f;       // 連続発生間隔
-    bool     spawnRepeat_ = false;      // ループさせるか
-    float    spawnTimer_ = 0.0f;       // 間隔用タイマー
+    uint32_t spawnCount_ = 1;     // 1回のEmitで出す数
+    float    spawnInterval_ = 0.0f;  // 連続発生間隔(秒)
+    bool     spawnRepeat_ = false; // ループさせるか
+    float    spawnTimer_ = 0.0f;  // 間隔用タイマー
+    bool     emitting_ = false; // Emit() 中かどうか
 
     // Update / Render 用の基本設定（Presetからコピーするイメージ）
     Vector3 baseVelocity_{};
@@ -53,25 +69,4 @@ public:
     Vector4 baseColor_{ 1,1,1,1 };
     bool    billboard_ = true;
     bool    flipY_ = false;
-
-public:
-    ParticleEmitterInstance() = default;
-
-    // プリセットの設定（後で manager から呼び出す想定）
-    void Initialize(ParticlePreset* presetRef);
-
-    // 一度の Emit でパーティクルを生成する
-    // （内部的には preset_ の Spawn モジュールを見る想定）
-    void Emit();
-
-    // 1回だけまとめて出す
-    void EmitOnce();
-
-    // 毎フレーム更新
-    void Update(float dt);
-
-    // 描画処理
-    // ※ 実際の描画は今はまだ ParticleManager にあるので、
-    //    当面は「頂点バッファへ流し込むための情報を用意する」程度に留める
-    void Draw();
 };

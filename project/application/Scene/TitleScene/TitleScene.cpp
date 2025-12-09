@@ -60,63 +60,9 @@ void TitleScene::Initialize()
 
 	// カメラのセット
 	plane->SetCamera(camera1.get());
-	particle->SetCamera(camera1.get());
 	animationCube->SetCamera(camera1.get());
 	sneak->SetCamera(camera1.get());
-	primitiveParticle->SetCamera(camera1.get());
-	ringParticle->SetCamera(camera1.get());
-	cyrinderParticle->SetCamera(camera1.get());
-
-	// ---- 各パーティクルマネージャの初期化とグループ作成 ----
-
-// Plane
-	particle->Initialize(ParticleManager::VertexDataType::Plane);
-	particle->CreateParticleGroup("particle", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd);
-	auto emitter = std::make_unique<ParticleEmitter>();
-	emitter->Initialize(
-		particle.get(),
-		"particle",
-		Transform{ {1.0f, 1.0f, -4.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
-		EmitterConfig{ ShapeType::Plane, 10, 0.5f, true }
-	);
-	emitters.push_back(std::move(emitter));
-
-	// Primitive
-	primitiveParticle->Initialize(ParticleManager::VertexDataType::Plane);
-	primitiveParticle->CreateParticleGroup("primitive", "Resources/circle2.png");
-	auto primitiveEmitter = std::make_unique<ParticleEmitter>();
-	primitiveEmitter->Initialize(
-		primitiveParticle.get(),
-		"primitive",
-		Transform{ {1.0f, 1.0f, -4.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
-		EmitterConfig{ ShapeType::Primitive, 8, 0.5f, true }
-	);
-	primitiveEmitters.push_back(std::move(primitiveEmitter));
-
-	// Ring
-	ringParticle->Initialize(ParticleManager::VertexDataType::Ring);
-	ringParticle->CreateParticleGroup("ring", "Resources/gradationLine.png");
-	auto ringEmitter = std::make_unique<ParticleEmitter>();
-	ringEmitter->Initialize(
-		ringParticle.get(),
-		"ring",
-		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
-		EmitterConfig{ ShapeType::Ring }
-	);
-	ringEmitters.push_back(std::move(ringEmitter));
-
-	// Cylinder
-	cyrinderParticle->Initialize(ParticleManager::VertexDataType::Cylinder);
-	cyrinderParticle->CreateParticleGroup("cyrinder", "Resources/gradationLine.png");
-	auto cyrinderEmitter = std::make_unique<ParticleEmitter>();
-	cyrinderEmitter->Initialize(
-		cyrinderParticle.get(),
-		"cyrinder",
-		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
-		EmitterConfig{ ShapeType::Cylinder }
-	);
-	cyrinderEmitters.push_back(std::move(cyrinderEmitter));
-	cyrinderParticle->SetFlipYToGroup("cyrinder", true);
+	
 
 
 	DrawLine::GetInstance()->SetCamera(camera1.get());
@@ -205,36 +151,6 @@ void TitleScene::Update()
 	// カメラの更新
 	camera1->Update();
 
-	for (auto& emitter : emitters)
-	{
-		emitter->Update();
-	}
-
-	if (changeSpeed_) {
-		particle->SetVelocityToGroup("particle", { 0.0f, 1.5f, 0.0f }); // 速い速度
-	}
-	else {
-		particle->SetVelocityToGroup("particle", { 0.0f, 0.1f, 0.0f }); // 遅い速度
-	}
-	for (auto& PrimitiveEmitter : primitiveEmitters)
-	{
-		PrimitiveEmitter->Update();
-	}
-
-	for (auto& ringEmitter : ringEmitters)
-	{
-		ringEmitter->Update();
-	}
-
-	for (auto& cyrinderEmitter : cyrinderEmitters)
-	{
-		cyrinderEmitter->Update();
-	}
-
-	particle->Update();
-	primitiveParticle->Update();
-	ringParticle->Update();
-	cyrinderParticle->Update();
 
 	if (Input::GetInstance()->TriggerKey(DIK_K)) {
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
@@ -464,10 +380,7 @@ void TitleScene::ForeGroundDraw()
 	// ここからparticle個々の描画
 	// ================================================
 
-	/*particle->Draw();
-	primitiveParticle->Draw();
-	ringParticle->Draw();
-	cyrinderParticle->Draw();*/
+	
 
 	// ================================================
 	// ここまでparticle個々の描画
