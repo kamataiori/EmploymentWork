@@ -8,6 +8,7 @@
 #include <CollisionTypeIdDef.h>
 #include "ParticleManager.h"
 #include "ParticleEmitter.h"
+#include "Camera/CameraEffectController.h"
 
 class ObjectBase
 {
@@ -91,9 +92,22 @@ public:
     // GetColliderをゲット
     MultiCollider* GetMultiCollider() const { return multiCollider_.get(); }
 
+    // カメラ演出コントローラをセット
+    void SetCameraEffectController(CameraEffectController* controller) {
+        cameraEffectController_ = controller;
+    }
+
+    // 必要ならゲッターも
+    CameraEffectController* GetCameraEffectController() const {
+        return cameraEffectController_;
+    }
+
 protected:
     // カメラを共通保持
     Camera* camera_ = nullptr;
+
+    // カメラ演出コントローラ（シーン側から渡してもらう）
+    CameraEffectController* cameraEffectController_ = nullptr;
 
     // キャラクターの基本Transform
     Transform transform;

@@ -148,6 +148,11 @@ void Enemy::Update()
 	// ====== Δt（スローモーション対応） ======
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
+	if (hitTimer_ > 0.0f) {
+		hitTimer_ -= dt;
+		if (hitTimer_ < 0.0f) hitTimer_ = 0.0f;
+	}
+
 	// ====== 簡易AI：Idle → Dash → Cooldown ループ ======
    // ターゲットがいれば計算
 	Vector3 toTargetXZ{ 0,0,0 };
@@ -313,7 +318,7 @@ void Enemy::Update()
 				if (test) {
 					deathParticleTransform_.translate = explosionPos;
 					deathParticleTransform_.translate.y += 2.5f;
-					test->EmitByPresetName("NewParticle", deathParticleTransform_);
+					test->EmitByPresetName("NE_Sample", deathParticleTransform_);
 				}
 
 				hasSpawnedExplosion_ = true;
@@ -392,8 +397,6 @@ void Enemy::Draw()
 {
 	// コライダーの描画
 	multiCollider_->Draw();
-
-
 }
 
 void Enemy::ForeGroundDraw()
@@ -430,15 +433,24 @@ void Enemy::ParticleDraw()
 
 void Enemy::OnCollision()
 {
+
+	if (hitTimer_ > 0.0f) {
+		return; // 無敵中は多段ヒットを無視
+	}
+
 	// ===== HP減少 =====
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
 
-	/*if (poweder) {
-		deathParticleTransform_.translate = explosionPos;
-		deathParticleTransform_.translate.y += 2.5f;
-		poweder->EmitByPresetName("powder", deathParticleTransform_);
-	}*/
+	// 敵がダメージを受けたときのシェイク
+	if (cameraEffectController_) {
+		// 少しだけ強め・短めにするなど調整はお好みで
+		cameraEffectController_->StartSimpleShake(
+			0.05f,
+			0.1f,
+			CameraEffectController::ShakeMode::Horizontal
+		);
+	}
 
 	// ===== HPチェック =====
 	if (hp_ <= 0 && !isDead_) {

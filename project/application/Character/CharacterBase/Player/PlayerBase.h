@@ -165,9 +165,14 @@ private:
 	bool isCollided_ = false;  // 当たり判定フラグ
 
 	// HP関連
-	int hp_ = 10000;                     // 現在HP
-	const int kMaxHP_ = 10000;           // 最大HP
-	const int kDamagePerHit_ = 1;     // 1回の衝突ダメージ
+	int hp_ = 4000;                     // 現在HP
+	const int kMaxHP_ = 4000;           // 最大HP
+	const int kDamagePerHit_ = 10;     // 1回の衝突ダメージ
+
+	// 何秒ごとにダメージを受けられるか
+	float hitInterval_ = 0.1f;   // 例：0.3秒ごとに1回だけダメージ
+	// 次にダメージを受けられるまでの残り時間
+	float hitTimer_ = 0.0f;
 
 	// === HPバー表示用 ===（Player用 左下）
 	std::unique_ptr<Sprite> hpBarBG_;    // 背景

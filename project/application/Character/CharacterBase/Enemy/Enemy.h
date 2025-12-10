@@ -115,7 +115,10 @@ private:
 	// HP
 	int hp_ = 1000;                   // 現在HP
 	const int kMaxHP_ = 1000;         // 最大HP
-	const int kDamagePerHit_ = 10;   // 被弾時のダメージ量
+	const int kDamagePerHit_ = 5;   // 被弾時のダメージ量
+
+	float hitInterval_ = 0.1f;
+	float hitTimer_ = 0.0f;
 
 	// === HPバー表示用 ===
 	std::unique_ptr<Sprite> hpBarBG_;    // 背景（薄い色）

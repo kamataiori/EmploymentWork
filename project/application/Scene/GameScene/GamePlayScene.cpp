@@ -35,12 +35,15 @@ void GamePlayScene::Initialize()
 
 	player_->Initialize(followCamera.get());
 	player_->Get()->SetCamera(followCamera.get());
-	/*followCamera->SetTarget(player_->Get());*/
+	// player の現在キャラにカメラ演出コントローラを渡す
+	player_->Get()->SetCameraEffectController(cameraEffect_.get());
 
 	enemy_->Initialize();
 	enemy_->SetCamera(followCamera.get());
 	enemy_->SetTargetTransform(&player_->Get()->GetTransform());
 	enemy_->SetCamera(followCamera.get());
+	// enemy にも同じコントローラを渡す
+	enemy_->SetCameraEffectController(cameraEffect_.get());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 
@@ -98,49 +101,6 @@ void GamePlayScene::Update()
 		followCamera->Update();
 	}
 
-	// ========= ここからカメラ演出入力 =========
-	Input* input = Input::GetInstance();
-
-	using ShakeMode = CameraEffectController::ShakeMode;
-	using ZoomParams = CameraEffectController::ZoomParams;
-	using MoveParams = CameraEffectController::MoveParams;
-
-	// --- Z キー：全方向シェイク ---
-	if (input->TriggerKey(DIK_Z)) {
-		CameraEffectController::ShakeParams params{};
-		params
-			.Duration(0.1f)
-			.AmpPos(0.5f)
-			.AmpRot(0.0f)
-			.Frequency(14.0f)
-			.Damping(2.0f)
-			.AffectRot(true)
-			.Mode(ShakeMode::All); // 全方向
-
-		cameraEffect_->StartShake(params);
-	}
-
-	// --- X キー：横揺れだけシェイク ---
-	if (input->TriggerKey(DIK_X)) {
-		cameraEffect_->StartSimpleShake(0.2f, 0.05f, ShakeMode::Horizontal);
-	}
-
-	// --- C キー：縦揺れだけシェイク ---
-	if (input->TriggerKey(DIK_C)) {
-		cameraEffect_->StartSimpleShake(0.2f, 0.4f, ShakeMode::Vertical);
-	}
-
-	// --- V キー：一瞬ズームイン（FOV を小さくして寄る） ---
-	if (input->TriggerKey(DIK_V)) {
-		ZoomParams z{};
-		z.Duration(0.2f)            // 0.2 秒かけて
-			.ToFov(0.25f)           // FOV を 0.25 に（小さいほどアップ）
-			.UseCurrentFov(true);   // 今の FOV からスタート
-
-		cameraEffect_->StartZoom(z);
-	}
-
-	// O キー：撃破カメラテスト（回り込み）
 	// 敵死亡 → 撃破カメラ開始
 	bool enemyDeadNow = enemy_->IsDead();  // 今の状態
 
@@ -149,99 +109,103 @@ void GamePlayScene::Update()
 		// カメラ追従を止める
 		followCameraLocked_ = true;
 
-		// 回り込みの中心はプレイヤー位置
+		// 回り込みの中心はプレイヤー位置（お好みで敵位置などに変えてOK）
 		const Transform& playerTf = player_->Get()->GetTransform();
 		Vector3 center = playerTf.translate;
 
-		// 回り込み用パラメータを組み立てる
+		// 回り込み用パラメータ
 		CameraEffectController::OrbitParams orbit{};
-		float angleRad = std::numbers::pi_v<float> / 1.5f;
+		float angleRad = std::numbers::pi_v<float> / 1.5f; // 回り込む角度
 
 		orbit
-			.Center(center)                 // どこを中心に回り込むか
-			.Angle(angleRad)                // 回り込む角度
-			.Duration(0.6f)                 // 1秒かけて
-			.Easing(Tween::Easing::EaseInExpo); // 急激に加速するカーブ
+			.Center(center)                       // どこを中心に回り込むか
+			.Angle(angleRad)                      // 回り込む角度
+			.Duration(0.6f)                       // 0.6秒かけて
+			.Easing(Tween::Easing::EaseInExpo);   // お好みのEasing
 
-		// これ1行で「回り込み＋プレイヤー注視」まで全部やってくれる
+		// 「回り込み＋ターゲット注視」を開始
 		cameraEffect_->StartOrbitMove(
 			followCamera.get(),
 			orbit
 		);
 
-		// ここでスローモーション開始（回り込みと同時スタート）
-		TimeManager::GetInstance()->SetTimeScale(0.1f); // 1/10 速度など好みで
+		// ===== スローモーション開始 =====
+		// 好みで値を調整：0.1f だと1/10速度
+		TimeManager::GetInstance()->SetTimeScale(0.1f);
 		slowMotionStarted_ = true;
 
-		// ズームは少し遅らせて開始したいので、ここではタイマーだけセット
-		defeatZoomTimer_ = 0.9f;    // 0.9秒後にズーム開始（好みで調整）
-		defeatZoomStarted_ = false;   // 念のためリセット
+		// スロー継続時間（ゲーム内時間）をセット
+		// 0.7f 秒くらいにしておくと、回り込みとほぼ同時に終わる感じ
+		slowTimer_ = 0.7f;
 
-		// ズーム状態もリセット
+		// ズーム制御用フラグをリセット
+		defeatZoomStarted_ = false;
 		zoomActive_ = false;
 		zoomTimer_ = 0.0f;
 	}
 
-
-	// 次フレームの比較用
+	// 次フレームの比較用に状態を保存
 	enemyWasDead_ = enemyDeadNow;
 
 	// ===== TimeManager から時間を取得 =====
-	float dt = TimeManager::GetInstance()->GetDeltaTime();         // スケール後
-	float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime(); // スケール無し（今は未使用でもOK）
+	float dt = TimeManager::GetInstance()->GetDeltaTime();               // スケール後
+	float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime(); // スケール無し（必要ならこちらで管理）
 
 	// ===============================
-	//  撃破ズームの遅延開始
+	//  スローの時間を管理
 	// ===============================
-	if (defeatZoomTimer_ > 0.0f && !defeatZoomStarted_)
+	if (slowMotionStarted_)
 	{
-		// カメラ演出と同じ「ゲーム内時間」で減らす
-		defeatZoomTimer_ -= dt;
+		// スロー自体の長さを「ゲーム内時間」で見るなら dt
+		// 現実時間ベースにしたければ unscaledDt に変更してもよい
+		slowTimer_ -= dt;
 
-		if (defeatZoomTimer_ <= 0.0f)
+		if (slowTimer_ <= 0.0f)
 		{
-			using ZoomParams = CameraEffectController::ZoomParams;
+			slowMotionStarted_ = false;
 
-			ZoomParams zoom{};
-			constexpr float kZoomDuration = 0.5f; // ズームにかける時間（ゲーム内時間）
+			// ===== スロー終了：タイムスケールを元に戻す =====
+			TimeManager::GetInstance()->SetTimeScale(1.0f);
 
-			zoom
-				.UseCurrentFov(true)
-				.ToFov(std::numbers::pi_v<float> / 8.0f)
-				.Duration(kZoomDuration)
-				.Easing(Tween::Easing::EaseOutExpo);
+			// ===== ここで初めてズームを開始する =====
+			if (!defeatZoomStarted_)
+			{
+				using ZoomParams = CameraEffectController::ZoomParams;
 
-			cameraEffect_->StartZoom(zoom);
+				ZoomParams zoom{};
+				constexpr float kZoomDuration = 0.5f; // ズームにかける時間（等速）
 
-			defeatZoomStarted_ = true;
+				zoom
+					.UseCurrentFov(true)                               // 現在のFOVから
+					.ToFov(std::numbers::pi_v<float> / 8.0f)          // 目標FOV（小さいほど寄る）
+					.Duration(kZoomDuration)
+					.Easing(Tween::Easing::EaseOutExpo);
 
-			// ズーム中フラグ＆残り時間セット
-			zoomActive_ = true;
-			zoomTimer_ = kZoomDuration;
+				cameraEffect_->StartZoom(zoom);
+
+				defeatZoomStarted_ = true;
+				zoomActive_ = true;
+				zoomTimer_ = kZoomDuration;
+			}
 		}
 	}
 
 	// ===============================
-	//  ズーム終了を監視してスロー解除
+	//  ズームの経過管理（タイムスケールは既に1.0）
 	// ===============================
 	if (zoomActive_)
 	{
-		// ここも dt に変更
 		zoomTimer_ -= dt;
 
 		if (zoomTimer_ <= 0.0f)
 		{
 			zoomActive_ = false;
-
-			// ここでスローモーションを元に戻す
-			if (slowMotionStarted_)
-			{
-				TimeManager::GetInstance()->SetTimeScale(1.0f); // 通常速度に戻す
-				slowMotionStarted_ = false;
-			}
+			// ここではタイムスケールはいじらない（既に通常速度）
+			// 必要ならこのタイミングでフォローカメラ解除やシーン遷移なども可能
+			// followCameraLocked_ = false;
+			// SceneManager::GetInstance()->ChangeScene("TITLE");
 		}
 	}
-
 
 	// カメラ演出の更新
 	cameraEffect_->Update(followCamera.get(), dt);

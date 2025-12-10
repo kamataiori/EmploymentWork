@@ -2,6 +2,7 @@
 #include "PlayerWeaponOBB.h"
 #include <FollowCamera.h>
 #include "TimeManager.h"
+#include <PostEffectManager.h>
 
 #ifdef max
 #undef max
@@ -103,6 +104,14 @@ void PlayerBase::Update()
 		}
 	}
 
+	// 被弾無敵タイマーの減衰
+	if (hitTimer_ > 0.0f) {
+		hitTimer_ -= dt;
+		if (hitTimer_ < 0.0f) {
+			hitTimer_ = 0.0f;
+		}
+	}
+
 	// playerの基本となる動きの呼出し
 	Move();
 
@@ -169,6 +178,51 @@ void PlayerBase::Update()
 		hpBarFill_->SetSize({ curW, hpBarHeight_ });
 		hpBarFill_->SetPosition({ left, bottom });
 		hpBarFill_->Update();
+
+		// ===============================
+	    //  HP に応じたビネット演出
+	    //  ratio が 0.5 → 0.0 で徐々に強くする
+	    // ===============================
+		if (ratio < 0.7f) {
+			// 0.5 の時 0、0.0 の時 1 になる係数
+			float t = (0.7f - ratio) / 0.7f;
+			t = std::clamp(t, 0.0f, 1.0f);
+
+			// 補間用ヘルパ（なければ自前で書いてOK）
+			auto Lerp = [](float a, float b, float t) {
+				return a + (b - a) * t;
+				};
+
+			// --- パラメータ設定（好みで調整してOK） ---
+			// Power: ビネットの濃さ
+			float minPower = 0.1f;
+			float maxPower = 0.4f;
+			float power = Lerp(minPower, maxPower, t);
+
+			// Scale: 画面のどこまでビネットが広がるか
+			float minScale = 0.2f;
+			float maxScale = 0.6f;
+			float scale = Lerp(minScale, maxScale, t);
+
+			// Color: 濃い赤にしていく
+			Vector3 minColor{ 0.4f, 0.0f, 0.0f }; // 暗めの赤
+			Vector3 maxColor{ 1.0f, 0.0f, 0.0f }; // 明るく強い赤
+			Vector3 color{
+				Lerp(minColor.x, maxColor.x, t),
+				Lerp(minColor.y, maxColor.y, t),
+				Lerp(minColor.z, maxColor.z, t)
+			};
+
+			// ビネット有効化 & パラメータ反映
+			PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
+			PostEffectManager::GetInstance()->SetVignettePower(power);
+			//PostEffectManager::GetInstance()->SetVignetteScale(scale);
+			PostEffectManager::GetInstance()->SetVignetteColor(color);
+		}
+		else {
+			// HP が半分以上ならビネットを切る（通常描画に戻す）
+			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
+		}
 	}
 
 
@@ -211,12 +265,26 @@ void PlayerBase::OnCollision()
 		return;
 	}*/
 
+	// 多段ヒット防止（無敵時間中なら何もしない）
+	if (hitTimer_ > 0.0f) {
+		return;
+	}
+
 	// ====== HP減少処理 ======
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
 
-	/*poweder->EmitByPresetName("powder", transform);
-	poweder->Update();*/
+	// ヒットした瞬間にカメラシェイク
+	//if (cameraEffectController_) {
+	//	// 手軽なシンプル版シェイク
+	//	// (duration: 0.2秒, 振れ幅: 0.25, 全方向)
+	//	cameraEffectController_->StartSimpleShake(
+	//		0.02f,
+	//		0.25f,
+	//		CameraEffectController::ShakeMode::Horizontal
+	//	);
+	//}
+
 
 	// ====== HPチェック ======
 	if (hp_ <= 0) {
@@ -477,6 +545,11 @@ void PlayerBase::PlayAnimKey(PlayerAnimKey key)
 
 void PlayerBase::RequestAnimKey(PlayerAnimKey key, int priority, float lockSec)
 {
+	// ロック中は同じか低い優先度のリクエストを無視
+	if (animLockTimer_ > 0.0f && priority <= currentAnimPriority_) {
+		return;
+	}
+
 	// 低い優先度からの上書きは禁止（攻撃中に移動で潰さない）
 	if (priority < currentAnimPriority_) return;
 

@@ -668,6 +668,9 @@ void ParticleEditorScene::UpdateDebugCamera()
 	camera->SetRotate(rot);
 }
 
+#ifdef USE_IMGUI
+
+
 //--------------------------------------------------
 // 左上：SceneView
 //--------------------------------------------------
@@ -1422,3 +1425,5 @@ void ParticleEditorScene::DrawCurveEditorPanel(const ImVec2& pos, const ImVec2& 
 
 	ImGui::End();
 }
+
+#endif // USE_IMGUI

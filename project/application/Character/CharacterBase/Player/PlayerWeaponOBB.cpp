@@ -127,12 +127,26 @@ void PlayerWeaponOBB::Draw()
 
 void PlayerWeaponOBB::NormalAttack()
 {
+	// オーナーがいない場合は何もしない
+	if (!owner_) {
+		return;
+	}
+
+	// アニメーションロック中は新しい攻撃を受け付けない
+	if (owner_->IsAnimLocked()) {
+		return;
+	}
+
 	// クリックの立ち上がりで発動
 	if (Input::GetInstance()->TriggerMouseButton(0)) {
-		activeTime_ = activeDuration_; // 一定時間だけ有効
+		// 一定時間だけ当たり判定を有効化
+		activeTime_ = activeDuration_;
+
 		if (owner_) {
-			
-			owner_->RequestAnimKey(PlayerAnimKey::SwordAttackFast, 10, activeDuration_);
+			// アニメーション再生 ＋ ロック時間を設定
+			// ※ attackLockSec はアニメーションの長さに合わせて調整してください
+			constexpr float attackLockSec = 0.7f;   // 例：0.7秒ぐらい
+			owner_->RequestAnimKey(PlayerAnimKey::SwordAttackFast, 10, attackLockSec);
 		}
 	}
 }

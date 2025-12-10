@@ -17,7 +17,7 @@ void MyGame::Initialize()
 	sceneFactory_ = new SceneFactory();
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
 
-	SceneManager::GetInstance()->ChangeScene("PARTICLE");
+	SceneManager::GetInstance()->ChangeScene("TITLE");
 
 #ifdef USE_IMGUI
 
