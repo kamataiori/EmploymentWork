@@ -1361,31 +1361,107 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 	{
 		ImGui::SeparatorText("Particle Spawn");
 
+		// --- 初期スケール ---
 		ImGui::DragFloat3("初期スケール",
 			&preset->particleSpawn.initialScale.x,
 			0.01f, 0.0f, 100.0f);
+
+		ImGui::Checkbox("初期スケールをランダムにする",
+			&preset->particleSpawn.initialScaleRandom.useRandom);
+		ImGui::DragFloat3("Scale Min",
+			&preset->particleSpawn.initialScaleRandom.minValue.x,
+			0.01f, -1000.0f, 1000.0f);
+		ImGui::DragFloat3("Scale Max",
+			&preset->particleSpawn.initialScaleRandom.maxValue.x,
+			0.01f, -1000.0f, 1000.0f);
+
+		ImGui::Separator();
+
+		// --- 初期回転 ---
 		ImGui::DragFloat3("初期回転",
 			&preset->particleSpawn.initialRotate.x,
 			0.01f, -6.28f, 6.28f);
+
+		ImGui::Checkbox("初期回転をランダムにする",
+			&preset->particleSpawn.initialRotateRandom.useRandom);
+		ImGui::DragFloat3("Rot Min",
+			&preset->particleSpawn.initialRotateRandom.minValue.x,
+			0.01f, -6.28f, 6.28f);
+		ImGui::DragFloat3("Rot Max",
+			&preset->particleSpawn.initialRotateRandom.maxValue.x,
+			0.01f, -6.28f, 6.28f);
+
+		ImGui::Separator();
+
+		// --- 初期オフセット ---
 		ImGui::DragFloat3("初期オフセット",
 			&preset->particleSpawn.initialOffset.x,
 			0.01f, -1000.0f, 1000.0f);
+
+		ImGui::Checkbox("初期オフセットをランダムにする",
+			&preset->particleSpawn.initialOffsetRandom.useRandom);
+		ImGui::DragFloat3("Offset Min",
+			&preset->particleSpawn.initialOffsetRandom.minValue.x,
+			0.01f, -1000.0f, 1000.0f);
+		ImGui::DragFloat3("Offset Max",
+			&preset->particleSpawn.initialOffsetRandom.maxValue.x,
+			0.01f, -1000.0f, 1000.0f);
 	}
 	break;
+
 
 	case 5: // Particle Update
 	{
 		ImGui::SeparatorText("Particle Update");
 
+		// --- 速度 ---
 		ImGui::DragFloat3("速度",
 			&preset->particleUpdate.velocity.x,
 			0.01f, -1000.0f, 1000.0f);
+
+		ImGui::Checkbox("速度をランダムにする",
+			&preset->particleUpdate.velocityRandom.useRandom);
+		ImGui::DragFloat3("Vel Min",
+			&preset->particleUpdate.velocityRandom.minValue.x,
+			0.01f, -1000.0f, 1000.0f);
+		ImGui::DragFloat3("Vel Max",
+			&preset->particleUpdate.velocityRandom.maxValue.x,
+			0.01f, -1000.0f, 1000.0f);
+
+		ImGui::Separator();
+
+		// --- 回転速度 ---
 		ImGui::DragFloat3("回転速度",
 			&preset->particleUpdate.rotationSpeed.x,
 			0.01f, -10.0f, 10.0f);
+
+		ImGui::Checkbox("回転速度をランダムにする",
+			&preset->particleUpdate.rotationRandom.useRandom);
+		ImGui::DragFloat3("RotSpd Min",
+			&preset->particleUpdate.rotationRandom.minValue.x,
+			0.01f, -10.0f, 10.0f);
+		ImGui::DragFloat3("RotSpd Max",
+			&preset->particleUpdate.rotationRandom.maxValue.x,
+			0.01f, -10.0f, 10.0f);
+
+		ImGui::Separator();
+
+		// --- スケール速度 ---
 		ImGui::DragFloat3("スケール速度",
 			&preset->particleUpdate.scaleSpeed.x,
 			0.01f, -10.0f, 10.0f);
+
+		ImGui::Checkbox("スケール速度をランダムにする",
+			&preset->particleUpdate.scaleRandom.useRandom);
+		ImGui::DragFloat3("ScaleSpd Min",
+			&preset->particleUpdate.scaleRandom.minValue.x,
+			0.01f, -10.0f, 10.0f);
+		ImGui::DragFloat3("ScaleSpd Max",
+			&preset->particleUpdate.scaleRandom.maxValue.x,
+			0.01f, -10.0f, 10.0f);
+
+		ImGui::Separator();
+
 		ImGui::Checkbox("重力を使う",
 			&preset->particleUpdate.useGravity);
 		ImGui::DragFloat("寿命(秒)",
@@ -1400,6 +1476,7 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 		}
 	}
 	break;
+
 
 	case 6: // Render
 	{
@@ -1548,13 +1625,21 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 	ImGui::Separator();
 
 	// ここから新EmitterInstanceルート
-	// ここから新EmitterInstanceルート
 	if (ImGui::Button("Emit 実行")) {
 		if (particle && !emitPresetName.empty()) {
-			// ★ いったん旧システムの Emit を使う
-			particle->EmitByPresetName(emitPresetName, emitterTransform);
+
+			// 新しい EmitterInstance を作成して emitterInstances_ に登録
+			ParticleEmitterInstance* inst =
+				particle->CreateEmitterInstanceFromPreset(emitPresetName, emitterTransform);
+
+			// 失敗時だけ簡易ログ（任意）
+			if (!inst) {
+				// ここで ImGui::Text で警告を出したり、Logger::Log してもOK
+				// Logger::Log("Emit 実行: Preset が見つかりません: " + emitPresetName);
+			}
 		}
 	}
+
 
 
 	ImGui::SameLine();

@@ -25,6 +25,16 @@ struct CurveKey {
     float v = 1.0f;   // 倍率など
 };
 
+// ===============================================
+// ランダム
+// ===============================================
+struct RandomRange3 {
+    bool useRandom = false;
+    Vector3 minValue{ 0,0,0 };
+    Vector3 maxValue{ 0,0,0 };
+};
+
+
 struct Curve1D {
     bool enabled = false;
     std::vector<CurveKey> keys;
@@ -75,17 +85,25 @@ struct EmitterSpawnModule {
 
 // --- Particle Spawn モジュール ---
 struct ParticleSpawnModule {
-    Vector3 initialScale = { 1.0f, 1.0f, 1.0f };
-    Vector3 initialRotate = { 0.0f, 0.0f, 0.0f };
-    Vector3 initialOffset = { 0.0f, 0.0f, 0.0f }; // エミッタからの相対オフセット
+    Vector3 initialScale{ 1,1,1 };
+    RandomRange3 initialScaleRandom;
+
+    Vector3 initialRotate{ 0,0,0 };
+    RandomRange3 initialRotateRandom;
+
+    Vector3 initialOffset{ 0,0,0 };
+    RandomRange3 initialOffsetRandom; // エミッタからの相対オフセット
 };
 
 // --- Particle Update モジュール ---
 struct ParticleUpdateModule {
     float   lifeTime = 1.0f;               // 寿命
     Vector3 velocity = { 0, 0, 0 };        // 速度
-    Vector3 rotationSpeed = { 0, 0, 0 };        // 回転速度
-    Vector3 scaleSpeed = { 0, 0, 0 };        // スケール速度
+    RandomRange3 velocityRandom;
+    Vector3 rotationSpeed = { 0, 0, 0 };   // 回転速度
+    RandomRange3 rotationRandom;
+    Vector3 scaleSpeed = { 0, 0, 0 };      // スケール速度
+    RandomRange3 scaleRandom;
     bool    useGravity = false;              // 重力
 
     // スケール倍率カーブ（NormalizedAge に対する multiplier）

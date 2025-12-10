@@ -62,6 +62,7 @@ void ParticleEmitterInstance::SpawnParticles()
 
     const auto& spawn = preset_->emitterSpawn;
     const auto& pSpawn = preset_->particleSpawn;
+    const auto& u = preset_->particleUpdate;
 
     for (uint32_t i = 0; i < spawn.count; ++i) {
         Particle p{};
@@ -69,6 +70,7 @@ void ParticleEmitterInstance::SpawnParticles()
         // 位置 = Emitter の Transform + モジュールのオフセット
         Vector3 pos = emitterTransform_.translate;
 
+        // --- EmitterSpawn 側のランダム位置（既存） ---
         if (spawn.useRandomPosition) {
             float rx = RandomRange(-1.0f, 1.0f);
             float ry = RandomRange(-1.0f, 1.0f);
@@ -76,26 +78,99 @@ void ParticleEmitterInstance::SpawnParticles()
             pos.x += rx; pos.y += ry; pos.z += rz;
         }
 
-        pos.x += pSpawn.initialOffset.x;
-        pos.y += pSpawn.initialOffset.y;
-        pos.z += pSpawn.initialOffset.z;
+        // --- ParticleSpawn.initialOffset のランダム ---
+        Vector3 offset = pSpawn.initialOffset;
+        if (pSpawn.initialOffsetRandom.useRandom) {
+            offset.x = RandomRange(
+                pSpawn.initialOffsetRandom.minValue.x,
+                pSpawn.initialOffsetRandom.maxValue.x);
+            offset.y = RandomRange(
+                pSpawn.initialOffsetRandom.minValue.y,
+                pSpawn.initialOffsetRandom.maxValue.y);
+            offset.z = RandomRange(
+                pSpawn.initialOffsetRandom.minValue.z,
+                pSpawn.initialOffsetRandom.maxValue.z);
+        }
+        pos.x += offset.x;
+        pos.y += offset.y;
+        pos.z += offset.z;
 
         p.position = pos;
 
-        // スケール / 回転 初期値
-        p.scale = pSpawn.initialScale;
-        p.rotation = pSpawn.initialRotate;
+        // --- 初期スケール（ランダム対応） ---
+        Vector3 scale = pSpawn.initialScale;
+        if (pSpawn.initialScaleRandom.useRandom) {
+            scale.x = RandomRange(
+                pSpawn.initialScaleRandom.minValue.x,
+                pSpawn.initialScaleRandom.maxValue.x);
+            scale.y = RandomRange(
+                pSpawn.initialScaleRandom.minValue.y,
+                pSpawn.initialScaleRandom.maxValue.y);
+            scale.z = RandomRange(
+                pSpawn.initialScaleRandom.minValue.z,
+                pSpawn.initialScaleRandom.maxValue.z);
+        }
+        p.scale = scale;
+
+        // --- 初期回転（ランダム対応） ---
+        Vector3 rot = pSpawn.initialRotate;
+        if (pSpawn.initialRotateRandom.useRandom) {
+            rot.x = RandomRange(
+                pSpawn.initialRotateRandom.minValue.x,
+                pSpawn.initialRotateRandom.maxValue.x);
+            rot.y = RandomRange(
+                pSpawn.initialRotateRandom.minValue.y,
+                pSpawn.initialRotateRandom.maxValue.y);
+            rot.z = RandomRange(
+                pSpawn.initialRotateRandom.minValue.z,
+                pSpawn.initialRotateRandom.maxValue.z);
+        }
+        p.rotation = rot;
 
         // カラー初期値
         p.color = preset_->render.color;
         p.initialScale = p.scale;
         p.initialColor = p.color;
 
-        // UpdateModule 側の値
-        const auto& u = preset_->particleUpdate;
-        p.velocity = u.velocity;
-        p.rotationSpeed = u.rotationSpeed;
-        p.scaleSpeed = u.scaleSpeed;
+        // ========= ParticleUpdate 側 =========
+
+        // --- 速度（ランダム対応） ---
+        Vector3 vel = u.velocity;
+        if (u.velocityRandom.useRandom) {
+            vel.x = RandomRange(
+                u.velocityRandom.minValue.x, u.velocityRandom.maxValue.x);
+            vel.y = RandomRange(
+                u.velocityRandom.minValue.y, u.velocityRandom.maxValue.y);
+            vel.z = RandomRange(
+                u.velocityRandom.minValue.z, u.velocityRandom.maxValue.z);
+        }
+        p.velocity = vel;
+
+        // --- 回転速度（ランダム対応） ---
+        Vector3 rotSpd = u.rotationSpeed;
+        if (u.rotationRandom.useRandom) {
+            rotSpd.x = RandomRange(
+                u.rotationRandom.minValue.x, u.rotationRandom.maxValue.x);
+            rotSpd.y = RandomRange(
+                u.rotationRandom.minValue.y, u.rotationRandom.maxValue.y);
+            rotSpd.z = RandomRange(
+                u.rotationRandom.minValue.z, u.rotationRandom.maxValue.z);
+        }
+        p.rotationSpeed = rotSpd;
+
+        // --- スケール速度（ランダム対応） ---
+        Vector3 sclSpd = u.scaleSpeed;
+        if (u.scaleRandom.useRandom) {
+            sclSpd.x = RandomRange(
+                u.scaleRandom.minValue.x, u.scaleRandom.maxValue.x);
+            sclSpd.y = RandomRange(
+                u.scaleRandom.minValue.y, u.scaleRandom.maxValue.y);
+            sclSpd.z = RandomRange(
+                u.scaleRandom.minValue.z, u.scaleRandom.maxValue.z);
+        }
+        p.scaleSpeed = sclSpd;
+
+        // 寿命
         p.life = 0.0f;
         p.maxLife = u.lifeTime;
         p.active = true;

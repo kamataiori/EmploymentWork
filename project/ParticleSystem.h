@@ -66,6 +66,13 @@ public:
     void Reset();  // time_ を 0 に戻し、Emitter も Reset + Stop
     bool IsPlaying() const { return playing_; }
 
+    // System 全体の長さ＆ループ設定
+    void SetDuration(float d) { duration_ = d; }   // d <= 0 なら「長さ未設定＝ループ判定しない」
+    float GetDuration() const { return duration_; }
+
+    void SetLoop(bool loop) { loop_ = loop; }
+    bool IsLoop() const { return loop_; }
+
     // ====== 毎フレーム更新 ======
     // ・System の time_ を進める
     // ・startTime に達した Emitter に対して Play() を呼ぶ など
@@ -85,4 +92,8 @@ private:
     // System 内部時間
     float time_ = 0.0f;
     bool  playing_ = false;
+
+    // System の長さとループ設定
+    float duration_ = 0.0f;  // 0 のままなら「ループ判定しない」
+    bool  loop_ = false;
 };

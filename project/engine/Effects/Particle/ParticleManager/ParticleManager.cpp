@@ -28,32 +28,94 @@ void to_json(json& j, const ParticlePreset& p)
 		}},
 
 		// ========= particleSpawn =========
-		{ "particleSpawn", {
-			{ "initialScale",  { p.particleSpawn.initialScale.x,
-								 p.particleSpawn.initialScale.y,
-								 p.particleSpawn.initialScale.z } },
-			{ "initialRotate", { p.particleSpawn.initialRotate.x,
-								 p.particleSpawn.initialRotate.y,
-								 p.particleSpawn.initialRotate.z } },
-			{ "initialOffset", { p.particleSpawn.initialOffset.x,
-								 p.particleSpawn.initialOffset.y,
-								 p.particleSpawn.initialOffset.z } }
-		}},
+{        "particleSpawn", {
+	{ "initialScale",  { p.particleSpawn.initialScale.x,
+						 p.particleSpawn.initialScale.y,
+						 p.particleSpawn.initialScale.z } },
+	{ "initialRotate", { p.particleSpawn.initialRotate.x,
+						 p.particleSpawn.initialRotate.y,
+						 p.particleSpawn.initialRotate.z } },
+	{ "initialOffset", { p.particleSpawn.initialOffset.x,
+						 p.particleSpawn.initialOffset.y,
+						 p.particleSpawn.initialOffset.z } },
+
+						 // ランダム範囲
+						 { "initialScaleRandom", {
+							 { "useRandom", p.particleSpawn.initialScaleRandom.useRandom },
+							 { "min", { p.particleSpawn.initialScaleRandom.minValue.x,
+										p.particleSpawn.initialScaleRandom.minValue.y,
+										p.particleSpawn.initialScaleRandom.minValue.z } },
+							 { "max", { p.particleSpawn.initialScaleRandom.maxValue.x,
+										p.particleSpawn.initialScaleRandom.maxValue.y,
+										p.particleSpawn.initialScaleRandom.maxValue.z } }
+						 }},
+						 { "initialRotateRandom", {
+							 { "useRandom", p.particleSpawn.initialRotateRandom.useRandom },
+							 { "min", { p.particleSpawn.initialRotateRandom.minValue.x,
+										p.particleSpawn.initialRotateRandom.minValue.y,
+										p.particleSpawn.initialRotateRandom.minValue.z } },
+							 { "max", { p.particleSpawn.initialRotateRandom.maxValue.x,
+										p.particleSpawn.initialRotateRandom.maxValue.y,
+										p.particleSpawn.initialRotateRandom.maxValue.z } }
+						 }},
+						 { "initialOffsetRandom", {
+							 { "useRandom", p.particleSpawn.initialOffsetRandom.useRandom },
+							 { "min", { p.particleSpawn.initialOffsetRandom.minValue.x,
+										p.particleSpawn.initialOffsetRandom.minValue.y,
+										p.particleSpawn.initialOffsetRandom.minValue.z } },
+							 { "max", { p.particleSpawn.initialOffsetRandom.maxValue.x,
+										p.particleSpawn.initialOffsetRandom.maxValue.y,
+										p.particleSpawn.initialOffsetRandom.maxValue.z } }
+						 }}
+				}},
+
 
 		// ========= particleUpdate =========
-		{ "particleUpdate", {
-			{ "lifeTime",      p.particleUpdate.lifeTime },
-			{ "velocity",      { p.particleUpdate.velocity.x,
-								 p.particleUpdate.velocity.y,
-								 p.particleUpdate.velocity.z } },
-			{ "rotationSpeed", { p.particleUpdate.rotationSpeed.x,
-								 p.particleUpdate.rotationSpeed.y,
-								 p.particleUpdate.rotationSpeed.z } },
-			{ "scaleSpeed",    { p.particleUpdate.scaleSpeed.x,
-								 p.particleUpdate.scaleSpeed.y,
-								 p.particleUpdate.scaleSpeed.z } },
-			{ "useGravity",    p.particleUpdate.useGravity }
-		}},
+{ "particleUpdate", {
+	{ "lifeTime",      p.particleUpdate.lifeTime },
+
+	{ "velocity",      { p.particleUpdate.velocity.x,
+						 p.particleUpdate.velocity.y,
+						 p.particleUpdate.velocity.z } },
+	{ "rotationSpeed", { p.particleUpdate.rotationSpeed.x,
+						 p.particleUpdate.rotationSpeed.y,
+						 p.particleUpdate.rotationSpeed.z } },
+	{ "scaleSpeed",    { p.particleUpdate.scaleSpeed.x,
+						 p.particleUpdate.scaleSpeed.y,
+						 p.particleUpdate.scaleSpeed.z } },
+
+						 // ランダム範囲
+						 { "velocityRandom", {
+							 { "useRandom", p.particleUpdate.velocityRandom.useRandom },
+							 { "min", { p.particleUpdate.velocityRandom.minValue.x,
+										p.particleUpdate.velocityRandom.minValue.y,
+										p.particleUpdate.velocityRandom.minValue.z } },
+							 { "max", { p.particleUpdate.velocityRandom.maxValue.x,
+										p.particleUpdate.velocityRandom.maxValue.y,
+										p.particleUpdate.velocityRandom.maxValue.z } }
+						 }},
+						 { "rotationRandom", {
+							 { "useRandom", p.particleUpdate.rotationRandom.useRandom },
+							 { "min", { p.particleUpdate.rotationRandom.minValue.x,
+										p.particleUpdate.rotationRandom.minValue.y,
+										p.particleUpdate.rotationRandom.minValue.z } },
+							 { "max", { p.particleUpdate.rotationRandom.maxValue.x,
+										p.particleUpdate.rotationRandom.maxValue.y,
+										p.particleUpdate.rotationRandom.maxValue.z } }
+						 }},
+						 { "scaleRandom", {
+							 { "useRandom", p.particleUpdate.scaleRandom.useRandom },
+							 { "min", { p.particleUpdate.scaleRandom.minValue.x,
+										p.particleUpdate.scaleRandom.minValue.y,
+										p.particleUpdate.scaleRandom.minValue.z } },
+							 { "max", { p.particleUpdate.scaleRandom.maxValue.x,
+										p.particleUpdate.scaleRandom.maxValue.y,
+										p.particleUpdate.scaleRandom.maxValue.z } }
+						 }},
+
+						 { "useGravity",    p.particleUpdate.useGravity }
+					 }},
+
 
 		// ========= render =========
 		{ "render", {
@@ -173,14 +235,47 @@ void from_json(const json& j, ParticlePreset& p)
 			}
 			return v;
 			};
+
 		p.particleSpawn.initialScale = read3("initialScale", { 1,1,1 });
 		p.particleSpawn.initialRotate = read3("initialRotate", { 0,0,0 });
 		p.particleSpawn.initialOffset = read3("initialOffset", { 0,0,0 });
+
+		// ----- ランダム値の読み込み -----
+		auto readRandom3 = [&ps](const char* key, const RandomRange3& def) {
+			RandomRange3 r = def;
+			if (ps.contains(key) && ps[key].is_object()) {
+				const auto& obj = ps[key];
+				r.useRandom = obj.value("useRandom", def.useRandom);
+
+				auto read3v = [&obj](const char* k, Vector3 dv) {
+					Vector3 v = dv;
+					if (obj.contains(k) && obj[k].is_array() && obj[k].size() == 3) {
+						v.x = obj[k][0].get<float>();
+						v.y = obj[k][1].get<float>();
+						v.z = obj[k][2].get<float>();
+					}
+					return v;
+					};
+
+				r.minValue = read3v("min", def.minValue);
+				r.maxValue = read3v("max", def.maxValue);
+			}
+			return r;
+			};
+
+		p.particleSpawn.initialScaleRandom = readRandom3("initialScaleRandom", RandomRange3{});
+		p.particleSpawn.initialRotateRandom = readRandom3("initialRotateRandom", RandomRange3{});
+		p.particleSpawn.initialOffsetRandom = readRandom3("initialOffsetRandom", RandomRange3{});
 	}
 	else {
+		// 旧データ用（ランダム無し）
 		p.particleSpawn.initialScale = readVec3("initialScale", { 1,1,1 });
 		p.particleSpawn.initialRotate = readVec3("initialRotate", { 0,0,0 });
 		p.particleSpawn.initialOffset = readVec3("initialOffset", { 0,0,0 });
+
+		p.particleSpawn.initialScaleRandom = RandomRange3{};
+		p.particleSpawn.initialRotateRandom = RandomRange3{};
+		p.particleSpawn.initialOffsetRandom = RandomRange3{};
 	}
 
 	// ========= particleUpdate =========
@@ -202,37 +297,50 @@ void from_json(const json& j, ParticlePreset& p)
 		p.particleUpdate.scaleSpeed = read3("scaleSpeed", { 0,0,0 });
 		p.particleUpdate.useGravity = pu.value("useGravity", false);
 
-		// ---- scaleCurve ----
-		p.particleUpdate.scaleCurve.enabled = false;
-		p.particleUpdate.scaleCurve.keys.clear();
-		if (pu.contains("scaleCurve") && pu["scaleCurve"].is_object()) {
-			const auto& sc = pu["scaleCurve"];
-			p.particleUpdate.scaleCurve.enabled =
-				sc.value("enabled", false);
+		// ----- ランダム値の読み込み -----
+		auto readRandom3 = [&pu](const char* key, const RandomRange3& def) {
+			RandomRange3 r = def;
+			if (pu.contains(key) && pu[key].is_object()) {
+				const auto& obj = pu[key];
+				r.useRandom = obj.value("useRandom", def.useRandom);
 
-			if (sc.contains("keys") && sc["keys"].is_array()) {
-				for (const auto& elem : sc["keys"]) {
-					if (elem.is_array() && elem.size() == 2) {
-						CurveKey key;
-						key.t = elem[0].get<float>();
-						key.v = elem[1].get<float>();
-						p.particleUpdate.scaleCurve.keys.push_back(key);
+				auto read3v = [&obj](const char* k, Vector3 dv) {
+					Vector3 v = dv;
+					if (obj.contains(k) && obj[k].is_array() && obj[k].size() == 3) {
+						v.x = obj[k][0].get<float>();
+						v.y = obj[k][1].get<float>();
+						v.z = obj[k][2].get<float>();
 					}
-				}
+					return v;
+					};
+
+				r.minValue = read3v("min", def.minValue);
+				r.maxValue = read3v("max", def.maxValue);
 			}
-		}
+			return r;
+			};
+
+		p.particleUpdate.velocityRandom = readRandom3("velocityRandom", RandomRange3{});
+		p.particleUpdate.rotationRandom = readRandom3("rotationRandom", RandomRange3{});
+		p.particleUpdate.scaleRandom = readRandom3("scaleRandom", RandomRange3{});
+
+		// scaleCurve の復元処理（既存処理）はこの下にそのまま残す
 	}
 	else {
+		// 旧フォーマット互換（ランダム無し）
 		p.particleUpdate.lifeTime = j.value("lifeTime", 1.0f);
 		p.particleUpdate.velocity = readVec3("velocity", { 0,0,0 });
 		p.particleUpdate.rotationSpeed = readVec3("rotationSpeed", { 0,0,0 });
 		p.particleUpdate.scaleSpeed = readVec3("scaleSpeed", { 0,0,0 });
 		p.particleUpdate.useGravity = j.value("useGravity", false);
 
-		// particleUpdate が丸ごと無い旧データではカーブは無効
-		p.particleUpdate.scaleCurve.enabled = false;
-		p.particleUpdate.scaleCurve.keys.clear();
+		p.particleUpdate.velocityRandom = RandomRange3{};
+		p.particleUpdate.rotationRandom = RandomRange3{};
+		p.particleUpdate.scaleRandom = RandomRange3{};
+
+		// 旧データではカーブ無効、など既存処理はそのまま
 	}
+
 
 	// ========= render =========
 	if (j.contains("render") && j["render"].is_object()) {
@@ -1092,24 +1200,32 @@ void ParticleManager::ClearAllSystems()
 
 void ParticleManager::EmitSystemByName(const std::string& systemName, const Transform& emitterTransform)
 {
-	if (systemName.empty()) { return; }
-
-	ParticleSystem* system = FindSystem(systemName);
-	if (!system) {
-		// 指定された System が存在しない
-		return;
-	}
-
-	const auto& presetNames = system->GetPresetNames();
-
-	// System に紐付いている全てのプリセットを Emit
-	for (const std::string& presetName : presetNames) {
-		EmitByPresetName(presetName, emitterTransform);
-	}
+	// EmitSystem() に丸投げする
+	EmitSystem(systemName, emitterTransform);
 }
 
 void ParticleManager::EmitSystem(const std::string& systemName, const Transform& transform)
 {
+	if (systemName.empty()) {
+		return;
+	}
+
+	// まず System が存在するかチェック
+	ParticleSystem* system = FindSystem(systemName);
+	if (!system) {
+		// Editor 上では System がまだ登録されていない可能性もあるので、その場合は何もしない
+		return;
+	}
+
+	// この System に紐付いているプリセット名一覧を取得
+	const auto& presetNames = system->GetPresetNames();
+
+	// 各プリセットごとに EmitterInstance を生成して System にぶら下げる
+	for (const std::string& presetName : presetNames) {
+		// ※ AddEmitterToSystem 内で CreateEmitterInstanceFromPreset を呼び、
+		//    emitterInstances_ に push_back ＋ system->AddEmitter(emitter) までやってくれます
+		AddEmitterToSystem(systemName, presetName, transform);
+	}
 }
 
 void ParticleManager::PopulateInstancesFromEmitters(

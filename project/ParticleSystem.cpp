@@ -119,7 +119,15 @@ void ParticleSystem::Update(float dt)
         e.playedOnce = true;
     }
 
-    // ここに「System 自体をループさせたい」処理を足していくこともできる
-    // 例:
-    // if (time_ > duration_ && loop_) { ... }
+    // ===== ここから System 自体のループ処理 =====
+    if (duration_ > 0.0f && time_ >= duration_) {
+        if (loop_) {
+            // 再生し直す。time_ や Emitter 状態を初期化
+            Play();
+        }
+        else {
+            // 1 回で終了
+            playing_ = false;
+        }
+    }
 }
