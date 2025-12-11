@@ -262,8 +262,8 @@ void ParticleEmitterInstance::UpdateParticles(float dt)
         }
 
         // =============================
-// 色：グラデーション + 時間カーブ + 強さカーブ
-// =============================
+        // 色：グラデーション + 時間カーブ + 強さカーブ
+        // =============================
         {
             // NormalizedAge = p.life / p.maxLife
             float age = p.life / p.maxLife;

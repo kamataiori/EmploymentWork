@@ -1258,6 +1258,148 @@ void ParticleManager::EmitSystemByName(const std::string& systemName, const Tran
 	EmitSystem(systemName, emitterTransform);
 }
 
+bool ParticleManager::SaveSystemToJson(const std::string& systemName, const std::string& directory)
+{
+	if (systemName.empty()) {
+		return false;
+	}
+
+	ParticleSystem* system = FindSystem(systemName);
+	if (!system) {
+		Logger::Log("SaveSystemToJson : system not found : " + systemName + "\n");
+		return false;
+	}
+
+	namespace fs = std::filesystem;
+
+	// ディレクトリがなければ作る
+	if (!fs::exists(directory)) {
+		fs::create_directories(directory);
+	}
+
+	fs::path path = fs::path(directory) / (systemName + ".json");
+
+	nlohmann::json j;
+
+	// System 名
+	j["name"] = system->GetName();
+
+	// 紐付いているプリセット名一覧
+	const auto& presetNames = system->GetPresetNames();
+	j["presets"] = presetNames; // vector<string> はそのまま入れられる
+
+	std::ofstream ofs(path);
+	if (!ofs) {
+		Logger::Log("SaveSystemToJson : failed to open file : " + path.string() + "\n");
+		return false;
+	}
+
+	ofs << j.dump(4);
+	return true;
+}
+
+bool ParticleManager::LoadSystemFromJson(const std::string& systemName, const std::string& directory)
+{
+	if (systemName.empty()) {
+		return false;
+	}
+
+	namespace fs = std::filesystem;
+	fs::path path = fs::path(directory) / (systemName + ".json");
+
+	if (!fs::exists(path)) {
+		Logger::Log("LoadSystemFromJson : file not found : " + path.string() + "\n");
+		return false;
+	}
+
+	std::ifstream ifs(path);
+	if (!ifs) {
+		Logger::Log("LoadSystemFromJson : failed to open file : " + path.string() + "\n");
+		return false;
+	}
+
+	nlohmann::json j;
+	ifs >> j;
+
+	std::string nameInJson = j.value("name", systemName);
+	if (nameInJson.empty()) {
+		nameInJson = systemName;
+	}
+
+	// System を作成 or 取得
+	ParticleSystem* system = CreateSystem(nameInJson);
+	if (!system) {
+		Logger::Log("LoadSystemFromJson : failed to create system : " + nameInJson + "\n");
+		return false;
+	}
+
+	// いったんプリセット名リストをクリア
+	system->ClearPresetNames();
+
+	auto it = j.find("presets");
+	if (it != j.end() && it->is_array()) {
+		for (auto& elem : *it) {
+			if (elem.is_string()) {
+				std::string presetName = elem.get<std::string>();
+				if (!presetName.empty()) {
+					system->AddPresetName(presetName);
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+void ParticleManager::LoadAllSystems(const std::string& directory)
+{
+	namespace fs = std::filesystem;
+
+	ClearAllSystems();
+
+	if (!fs::exists(directory)) {
+		return;
+	}
+
+	for (auto& entry : fs::directory_iterator(directory)) {
+		if (!entry.is_regular_file()) {
+			continue;
+		}
+
+		fs::path path = entry.path();
+		if (path.extension() != ".json") {
+			continue;
+		}
+
+		// ファイル名(拡張子なし)を systemName として扱う
+		std::string systemName = path.stem().string();
+		LoadSystemFromJson(systemName, directory);
+	}
+}
+
+bool ParticleManager::RenameSystem(const std::string& oldName, const std::string& newName)
+{
+	if (oldName.empty() || newName.empty() || oldName == newName) {
+		return false;
+	}
+
+	ParticleSystem* target = FindSystem(oldName);
+	if (!target) {
+		return false;
+	}
+
+	// 同名チェック
+	for (const auto& sys : systems_) {
+		if (sys && sys.get() != target && sys->GetName() == newName) {
+			Logger::Log("ParticleManager::RenameSystem : name already exists : " + newName + "\n");
+			return false;
+		}
+	}
+
+	target->SetName(newName);
+	return true;
+}
+
 void ParticleManager::EmitSystem(const std::string& systemName, const Transform& transform)
 {
 	if (systemName.empty()) {

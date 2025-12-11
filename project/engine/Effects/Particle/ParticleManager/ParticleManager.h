@@ -141,6 +141,17 @@ public:
 	// System名を指定して、登録されている全プリセットを一括Emitする
 	void EmitSystemByName(const std::string& systemName, const Transform& emitterTransform);
 
+	// --- System JSON 保存/読み込み ---
+	bool SaveSystemToJson(const std::string& systemName,const std::string& directory = "Resources/ParticleSystem");
+
+	bool LoadSystemFromJson(const std::string& systemName,const std::string& directory = "Resources/ParticleSystem");
+
+	void LoadAllSystems(const std::string& directory = "Resources/ParticleSystem");
+
+	// System 名変更（Editor のリネーム用）
+	bool RenameSystem(const std::string& oldName, const std::string& newName);
+
+
 private:
 
 	std::unordered_map<std::string, ParticlePreset> presets_;  // name -> プリセット

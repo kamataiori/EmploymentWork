@@ -1032,7 +1032,44 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 				"System Inspector");
 			ImGui::Separator();
 
-			ImGui::Text("System : %s", systemUI->name.c_str());
+			// --- System Name 編集欄 ---
+			{
+				char buf[64];
+				strncpy_s(buf, sizeof(buf), systemUI->name.c_str(), _TRUNCATE);
+
+				if (ImGui::InputText("System Name", buf, sizeof(buf))) {
+
+					std::string oldName = systemUI->name;
+					std::string newName = buf;
+
+					if (!newName.empty() && newName != oldName) {
+
+						// ① まず UI 側の名前は必ず更新
+						systemUI->name = newName;
+
+						// ② Emitter 側の systemName も更新
+						for (auto& e : niagaraEmitters_) {
+							if (e.systemName == oldName) {
+								e.systemName = newName;
+							}
+						}
+
+						// ③ ParticleManager に System が存在すれば、そっちの名前も変更を試みる
+						if (particle) {
+							// 失敗しても特に何もしない（ログだけ出すとかでOK）
+							particle->RenameSystem(oldName, newName);
+						}
+					}
+				}
+			}
+
+			if (ImGui::Button("Save System JSON")) {
+				if (particle) {
+					// ここで使われる systemUI->name は、↑で入力したものがそのまま入る
+					particle->SaveSystemToJson(systemUI->name);
+				}
+			}
+
 			ImGui::Separator();
 
 			// ループ再生 ON/OFF
