@@ -5,12 +5,12 @@
         "vertexType": 0
     },
     "emitterSpawn": {
-        "count": 22,
+        "count": 35,
         "frequency": 1.0,
         "repeat": false,
         "useRandomPosition": true
     },
-    "name": "NE_Sample",
+    "name": "NEcolor",
     "particleSpawn": {
         "initialOffset": [
             0.0,
@@ -68,7 +68,7 @@
         }
     },
     "particleUpdate": {
-        "lifeTime": 3.859999895095825,
+        "lifeTime": 2.7300000190734863,
         "rotationRandom": {
             "max": [
                 0.0,
@@ -108,27 +108,27 @@
         "useGravity": false,
         "velocity": [
             0.0,
-            1.3600000143051147,
+            0.0,
             0.0
         ],
         "velocityRandom": {
             "max": [
-                0.0,
-                0.0,
-                0.0
+                3.5299999713897705,
+                3.740000009536743,
+                3.4200000762939453
             ],
             "min": [
-                0.0,
-                0.0,
-                0.0
+                -3.049999952316284,
+                -3.1600000858306885,
+                -3.430000066757202
             ],
-            "useRandom": false
+            "useRandom": true
         }
     },
     "render": {
         "color": [
-            0.6795363426208496,
-            0.0,
+            1.0,
+            1.0,
             1.0,
             1.0
         ],
@@ -138,14 +138,14 @@
                 [
                     0.0,
                     1.0,
-                    0.9266408681869507,
+                    0.23166024684906006,
                     0.0,
                     1.0
                 ],
                 [
                     1.0,
                     1.0,
-                    0.06949806213378906,
+                    0.3011583089828491,
                     0.0,
                     1.0
                 ]

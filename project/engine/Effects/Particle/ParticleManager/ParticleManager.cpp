@@ -71,16 +71,16 @@ void to_json(json& j, const ParticlePreset& p)
 
 
 		// ========= particleUpdate =========
-{ "particleUpdate", {
-	{ "lifeTime",      p.particleUpdate.lifeTime },
+		{ "particleUpdate", {
+		   { "lifeTime",      p.particleUpdate.lifeTime },
 
-	{ "velocity",      { p.particleUpdate.velocity.x,
+		   { "velocity",      { p.particleUpdate.velocity.x,
 						 p.particleUpdate.velocity.y,
 						 p.particleUpdate.velocity.z } },
-	{ "rotationSpeed", { p.particleUpdate.rotationSpeed.x,
+		   { "rotationSpeed", { p.particleUpdate.rotationSpeed.x,
 						 p.particleUpdate.rotationSpeed.y,
 						 p.particleUpdate.rotationSpeed.z } },
-	{ "scaleSpeed",    { p.particleUpdate.scaleSpeed.x,
+		   { "scaleSpeed",    { p.particleUpdate.scaleSpeed.x,
 						 p.particleUpdate.scaleSpeed.y,
 						 p.particleUpdate.scaleSpeed.z } },
 
@@ -129,37 +129,43 @@ void to_json(json& j, const ParticlePreset& p)
 	};
 
 	// -----------------------------
-	// scaleCurve のシリアライズ
+	// colorGradient のシリアライズ
 	// -----------------------------
 	{
-		json scaleCurveJson;
-		scaleCurveJson["enabled"] = p.particleUpdate.scaleCurve.enabled;
+		json gradJson;
+		gradJson["enabled"] = p.render.colorGradient.enabled;
 
 		json keysJson = json::array();
-		for (const auto& key : p.particleUpdate.scaleCurve.keys) {
-			// [t, v] 形式で保存
-			keysJson.push_back({ key.t, key.v });
+		for (const auto& key : p.render.colorGradient.keys) {
+			keysJson.push_back({
+				key.t,
+				key.color.x,
+				key.color.y,
+				key.color.z,
+				key.color.w
+				});
 		}
-		scaleCurveJson["keys"] = keysJson;
+		gradJson["keys"] = keysJson;
 
-		j["particleUpdate"]["scaleCurve"] = scaleCurveJson;
+		j["render"]["colorGradient"] = gradJson;
 	}
 
 	// -----------------------------
-	// colorCurve のシリアライズ
+	// gradientTimeCurve のシリアライズ
 	// -----------------------------
 	{
-		json colorCurveJson;
-		colorCurveJson["enabled"] = p.render.colorCurve.enabled;
+		json timeCurveJson;
+		timeCurveJson["enabled"] = p.render.gradientTimeCurve.enabled;
 
 		json keysJson = json::array();
-		for (const auto& key : p.render.colorCurve.keys) {
+		for (const auto& key : p.render.gradientTimeCurve.keys) {
 			keysJson.push_back({ key.t, key.v });
 		}
-		colorCurveJson["keys"] = keysJson;
+		timeCurveJson["keys"] = keysJson;
 
-		j["render"]["colorCurve"] = colorCurveJson;
+		j["render"]["gradientTimeCurve"] = timeCurveJson;
 	}
+
 }
 
 //======================================================================
@@ -365,8 +371,7 @@ void from_json(const json& j, ParticlePreset& p)
 		p.render.colorCurve.keys.clear();
 		if (r.contains("colorCurve") && r["colorCurve"].is_object()) {
 			const auto& cc = r["colorCurve"];
-			p.render.colorCurve.enabled =
-				cc.value("enabled", false);
+			p.render.colorCurve.enabled = cc.value("enabled", false);
 
 			if (cc.contains("keys") && cc["keys"].is_array()) {
 				for (const auto& elem : cc["keys"]) {
@@ -379,6 +384,49 @@ void from_json(const json& j, ParticlePreset& p)
 				}
 			}
 		}
+
+		// ---- colorGradient ----
+		p.render.colorGradient.enabled = false;
+		p.render.colorGradient.keys.clear();
+		if (r.contains("colorGradient") && r["colorGradient"].is_object()) {
+			const auto& cg = r["colorGradient"];
+			p.render.colorGradient.enabled = cg.value("enabled", false);
+
+			if (cg.contains("keys") && cg["keys"].is_array()) {
+				for (const auto& elem : cg["keys"]) {
+					if (elem.is_array() && elem.size() == 5) {
+						ColorKey4 key;
+						key.t = elem[0].get<float>();
+						key.color.x = elem[1].get<float>();
+						key.color.y = elem[2].get<float>();
+						key.color.z = elem[3].get<float>();
+						key.color.w = elem[4].get<float>();
+						p.render.colorGradient.keys.push_back(key);
+					}
+				}
+			}
+		}
+
+		// ---- gradientTimeCurve ----
+		p.render.gradientTimeCurve.enabled = false;
+		p.render.gradientTimeCurve.keys.clear();
+		if (r.contains("gradientTimeCurve") && r["gradientTimeCurve"].is_object()) {
+			const auto& gc = r["gradientTimeCurve"];
+			p.render.gradientTimeCurve.enabled = gc.value("enabled", false);
+
+			if (gc.contains("keys") && gc["keys"].is_array()) {
+				for (const auto& elem : gc["keys"]) {
+					if (elem.is_array() && elem.size() == 2) {
+						CurveKey key;
+						key.t = elem[0].get<float>();
+						key.v = elem[1].get<float>();
+						p.render.gradientTimeCurve.keys.push_back(key);
+					}
+				}
+			}
+		}
+
+
 	}
 	else {
 		p.render.color = readVec4("color", { 1,1,1,1 });
@@ -387,9 +435,15 @@ void from_json(const json& j, ParticlePreset& p)
 
 		p.render.colorCurve.enabled = false;
 		p.render.colorCurve.keys.clear();
-	}
-}
 
+		p.render.colorGradient.enabled = false;
+		p.render.colorGradient.keys.clear();
+
+		p.render.gradientTimeCurve.enabled = false;
+		p.render.gradientTimeCurve.keys.clear();
+	}
+
+}
 
 void ParticleManager::Initialize(VertexDataType type)
 {

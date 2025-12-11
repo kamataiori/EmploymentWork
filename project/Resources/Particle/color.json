@@ -1,16 +1,16 @@
 {
     "emitterSettings": {
         "blendMode": 2,
-        "textureFilePath": "Resources/ParticleTexture/smoke.png",
+        "textureFilePath": "Resources/ParticleTexture/circle.png",
         "vertexType": 0
     },
     "emitterSpawn": {
-        "count": 22,
+        "count": 52,
         "frequency": 1.0,
         "repeat": false,
         "useRandomPosition": true
     },
-    "name": "NE_Sample",
+    "name": "color",
     "particleSpawn": {
         "initialOffset": [
             0.0,
@@ -68,7 +68,7 @@
         }
     },
     "particleUpdate": {
-        "lifeTime": 3.859999895095825,
+        "lifeTime": 3.5399999618530273,
         "rotationRandom": {
             "max": [
                 0.0,
@@ -108,28 +108,28 @@
         "useGravity": false,
         "velocity": [
             0.0,
-            1.3600000143051147,
+            0.0,
             0.0
         ],
         "velocityRandom": {
             "max": [
-                0.0,
-                0.0,
-                0.0
+                4.210000038146973,
+                4.809999942779541,
+                4.650000095367432
             ],
             "min": [
-                0.0,
-                0.0,
-                0.0
+                -4.25,
+                -4.360000133514404,
+                -4.409999847412109
             ],
-            "useRandom": false
+            "useRandom": true
         }
     },
     "render": {
         "color": [
-            0.6795363426208496,
-            0.0,
             1.0,
+            0.2084941864013672,
+            0.0,
             1.0
         ],
         "colorGradient": {
@@ -138,14 +138,14 @@
                 [
                     0.0,
                     1.0,
-                    0.9266408681869507,
+                    0.25482624769210815,
                     0.0,
                     1.0
                 ],
                 [
                     1.0,
                     1.0,
-                    0.06949806213378906,
+                    0.0,
                     0.0,
                     1.0
                 ]
@@ -153,8 +153,17 @@
         },
         "flipY": false,
         "gradientTimeCurve": {
-            "enabled": false,
-            "keys": []
+            "enabled": true,
+            "keys": [
+                [
+                    0.0,
+                    1.0
+                ],
+                [
+                    1.0,
+                    5.0
+                ]
+            ]
         },
         "useBillboard": true
     }

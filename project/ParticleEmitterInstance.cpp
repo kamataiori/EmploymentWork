@@ -10,9 +10,21 @@ static float RandomRange(float minValue, float maxValue)
 {
     // 1つの乱数エンジンを使い回す
     static std::mt19937 s_rng(std::random_device{}());
+
+    // ユーザーが min/max を逆に入れても落ちないようにする
+    if (maxValue < minValue) {
+        std::swap(minValue, maxValue);
+    }
+
+    // min == max の場合は、その値をそのまま返す
+    if (minValue == maxValue) {
+        return minValue;
+    }
+
     std::uniform_real_distribution<float> dist(minValue, maxValue);
     return dist(s_rng);
 }
+
 
 // 便利用：内部で使うエイリアス
 using PMPreset = ParticlePreset;
@@ -249,14 +261,39 @@ void ParticleEmitterInstance::UpdateParticles(float dt)
             p.scale.z = p.initialScale.z * s;
         }
 
-        // カラーカーブ
-        if (renderM.colorCurve.enabled && !renderM.colorCurve.keys.empty()) {
-            float c = renderM.colorCurve.Evaluate(age);
-            p.color.x = p.initialColor.x * c;
-            p.color.y = p.initialColor.y * c;
-            p.color.z = p.initialColor.z * c;
-            p.color.w = p.initialColor.w * c;
+        // =============================
+// 色：グラデーション + 時間カーブ + 強さカーブ
+// =============================
+        {
+            // NormalizedAge = p.life / p.maxLife
+            float age = p.life / p.maxLife;
+
+            // 1) グラデーション用の t を決める（時間カーブ）
+            float gradT = age;
+            if (renderM.gradientTimeCurve.enabled && !renderM.gradientTimeCurve.keys.empty()) {
+                gradT = renderM.gradientTimeCurve.Evaluate(age);
+            }
+            gradT = std::clamp(gradT, 0.0f, 1.0f);
+
+            // 2) グラデーションから「ベース色」を取得
+            Vector4 col = p.initialColor;
+            if (renderM.colorGradient.enabled && !renderM.colorGradient.keys.empty()) {
+                col = renderM.colorGradient.Evaluate(gradT);
+            }
+
+            // 3) colorCurve で色の強さ/αを時間でコントロール
+            if (renderM.colorCurve.enabled && !renderM.colorCurve.keys.empty()) {
+                float c = renderM.colorCurve.Evaluate(age);
+                col.x *= c;
+                col.y *= c;
+                col.z *= c;
+                col.w *= c;
+            }
+
+            p.color = col;
         }
+
+
     }
 
     // 3) 死んだ粒子をまとめて削除

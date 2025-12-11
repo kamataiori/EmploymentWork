@@ -39,17 +39,13 @@ struct Curve1D {
     bool enabled = false;
     std::vector<CurveKey> keys;
 
-    // t [0,1] で評価（キーが無効なら1.0を返す）
     float Evaluate(float t) const {
         if (!enabled || keys.empty()) {
-            return 1.0f; // カーブ無効 or キー無しなら倍率1.0
+            return 1.0f;
         }
-
-        // t を 0～1 にクランプ
         if (t <= keys.front().t) { return keys.front().v; }
         if (t >= keys.back().t) { return keys.back().v; }
 
-        // 区間を線形補間
         for (size_t i = 0; i + 1 < keys.size(); ++i) {
             const CurveKey& k0 = keys[i];
             const CurveKey& k1 = keys[i + 1];
@@ -58,11 +54,46 @@ struct Curve1D {
                 return k0.v + (k1.v - k0.v) * u;
             }
         }
-
-        // ここまで来ることはほぼ無いが、安全のため
         return 1.0f;
     }
 };
+
+//======================================
+// 色用グラデーション
+//======================================
+struct ColorKey4 {
+    float   t = 0.0f;          // 0〜1 (NormalizedAge か時間カーブの値)
+    Vector4 color{ 1,1,1,1 };  // この t での色
+};
+
+struct ColorGradient {
+    bool enabled = false;
+    std::vector<ColorKey4> keys;
+
+    Vector4 Evaluate(float t) const {
+        if (!enabled || keys.empty()) {
+            return { 1,1,1,1 };
+        }
+        if (t <= keys.front().t) { return keys.front().color; }
+        if (t >= keys.back().t) { return keys.back().color; }
+
+        for (size_t i = 0; i + 1 < keys.size(); ++i) {
+            const ColorKey4& k0 = keys[i];
+            const ColorKey4& k1 = keys[i + 1];
+            if (t >= k0.t && t <= k1.t && k1.t > k0.t) {
+                float u = (t - k0.t) / (k1.t - k0.t);
+                Vector4 c{};
+                c.x = k0.color.x + (k1.color.x - k0.color.x) * u;
+                c.y = k0.color.y + (k1.color.y - k0.color.y) * u;
+                c.z = k0.color.z + (k1.color.z - k0.color.z) * u;
+                c.w = k0.color.w + (k1.color.w - k0.color.w) * u;
+                return c;
+            }
+        }
+        return keys.back().color;
+    }
+};
+
 
 // ===============================================
 // 各モジュール
@@ -118,6 +149,13 @@ struct RenderModule {
 
     // 色の強さ/α用カーブ
     Curve1D colorCurve;
+
+    // 色そのものを変えるためのグラデーション
+    ColorGradient colorGradient;
+
+    // 「何秒目でグラデーションのどの位置まで進むか」を決める時間カーブ
+    // age(0〜1) -> グラデーションの t(0〜1)
+    Curve1D gradientTimeCurve;
 };
 
 // ===============================================

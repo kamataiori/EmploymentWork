@@ -1482,17 +1482,61 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 	{
 		ImGui::SeparatorText("Render");
 
-		// 基本設定
-		ImGui::ColorEdit4("色 (RGBA)", &preset->render.color.x);
-		// 下パネルにカーブエディタを出す
-		if (ImGui::Button("カラー/アルファをカーブで編集")) {
+		// ベース色
+		ImGui::ColorEdit4("ベース色 (RGBA)", &preset->render.color.x);
+
+		//========================
+		// カラーグラデーション
+		//========================
+		ImGui::SeparatorText("カラーグラデーション");
+		ImGui::Checkbox("グラデーションを使う", &preset->render.colorGradient.enabled);
+
+		auto& grad = preset->render.colorGradient;
+
+		// シンプルに「0 と 1 の 2 キー」を最低保証
+		if (grad.keys.size() < 2) {
+			grad.keys.resize(2);
+			grad.keys[0].t = 0.0f;
+			grad.keys[1].t = 1.0f;
+			grad.keys[0].color = preset->render.color;
+			grad.keys[1].color = preset->render.color;
+		}
+
+		// 開始色・終了色を直接編集（本体を触る）
+		ImGui::ColorEdit4("開始色", &grad.keys[0].color.x);
+		ImGui::ColorEdit4("終了色", &grad.keys[1].color.x);
+
+		if (ImGui::Button("グラデーションをリセット")) {
+			grad.keys[0].t = 0.0f;
+			grad.keys[1].t = 1.0f;
+			grad.keys[0].color = preset->render.color;
+			grad.keys[1].color = preset->render.color;
+		}
+
+		//========================
+		// 時間カーブ
+		//========================
+		ImGui::SeparatorText("時間カーブ");
+
+		if (ImGui::Button("グラデーション時間をカーブで編集...")) {
+			curveEditorMode_ = CurveEditorMode::GradientTime;
+			curveEditorTarget_ = &preset->render.gradientTimeCurve;
+			curveEditorTitle_ = "Gradient Time (Age -> GradT)";
+		}
+
+		//========================
+		// カラー強度/α カーブ
+		//========================
+		if (ImGui::Button("カラー強度/αをカーブで編集...")) {
 			curveEditorMode_ = CurveEditorMode::Color;
 			curveEditorTarget_ = &preset->render.colorCurve;
-			curveEditorTitle_ = "Color / Alpha Over Life";
+			curveEditorTitle_ = "Color Intensity / Alpha Over Life";
 		}
 
 		ImGui::Checkbox("ビルボード", &preset->render.useBillboard);
 		ImGui::Checkbox("上下反転(Flip Y)", &preset->render.flipY);
+
+
 
 		ImGui::SeparatorText("テクスチャ");
 

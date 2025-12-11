@@ -133,7 +133,8 @@ private:
     enum class CurveEditorMode {
         None,
         Scale,
-        Color
+        Color,
+        GradientTime,
     };
     CurveEditorMode curveEditorMode_ = CurveEditorMode::None;
     Curve1D* curveEditorTarget_ = nullptr;
