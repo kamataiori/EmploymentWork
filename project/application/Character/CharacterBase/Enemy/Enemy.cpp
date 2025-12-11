@@ -135,6 +135,13 @@ void Enemy::Initialize()
 	test->Initialize(VertexDataType::Plane);
 	test->LoadAllPresets();
 
+	deathSystem_ = std::make_unique<ParticleManager>();
+	deathSystem_->Initialize(VertexDataType::Plane);
+
+	// プリセットと System を両方読み込む
+	deathSystem_->LoadAllPresets();
+	deathSystem_->LoadAllSystems();
+
 	// Emit 時に使う Transform の初期値
 	deathParticleTransform_ = transform;
 	/*deathParticleTransform_.scale = { 1.0f, 1.0f, 1.0f };
@@ -289,6 +296,10 @@ void Enemy::Update()
 				explosionPos = transform.translate;
 				//explosionPos.y += 1.0f;
 
+				deathParticleTransform_.translate = explosionPos;
+				deathParticleTransform_.translate.y += 3.5f;
+				deathSystem_->EmitSystemByName("ADE", deathParticleTransform_);
+
 				 // fire プリセットをこの位置で Emit
 				if (deathParticle_) {
 					deathParticleTransform_.translate = explosionPos;
@@ -355,6 +366,10 @@ void Enemy::Update()
 			test->Update();
 		}
 
+		if (deathSystem_) {
+			deathSystem_->Update();
+		}
+
 
 		// 一定時間経ったら TITLE へ戻る
 		if (deathTimer_ >= kDeathToTitleDelay_) {
@@ -415,7 +430,8 @@ void Enemy::AnimationDraw()
 void Enemy::ParticleDraw()
 {
 	if (isDead_ && deathParticle_) {
-		deathParticle_->Draw();
+		//deathParticle_->Draw();
+		deathSystem_->Draw();
 	}
 
 	/*if (isDead_ && smokeParticle_) {
@@ -423,7 +439,7 @@ void Enemy::ParticleDraw()
 	}*/
 
 	if (isDead_ && test) {
-		test->Draw();
+		//test->Draw();
 	}
 
 }
@@ -476,7 +492,7 @@ void Enemy::SetCamera(Camera* camera)
 	ex1Particle_->SetCamera(camera);
 	poweder->SetCamera(camera);
 	test->SetCamera(camera);
-
+	deathSystem_->SetCamera(camera);
 
 	// 必要なら武器や他のオブジェクトにもここで渡せる
 	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能
