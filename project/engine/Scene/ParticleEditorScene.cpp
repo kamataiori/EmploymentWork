@@ -708,6 +708,7 @@ void ParticleEditorScene::UpdateDebugCamera()
 	camera->SetRotate(rot);
 }
 
+#ifdef USE_IMGUI
 //--------------------------------------------------
 // 左上：SceneView
 //--------------------------------------------------
@@ -1790,6 +1791,8 @@ void ParticleEditorScene::DrawCameraControlPanel(const ImVec2& pos, const ImVec2
 //--------------------------------------------------
 // 下：Curve Editor
 //--------------------------------------------------
+
+
 void ParticleEditorScene::DrawCurveEditorPanel(const ImVec2& pos, const ImVec2& size, int panelFlags)
 {
 	ImGui::SetNextWindowPos(pos);
@@ -1815,6 +1818,7 @@ void ParticleEditorScene::DrawCurveEditorPanel(const ImVec2& pos, const ImVec2& 
 	}
 
 	bool open = (curveEditorMode_ != CurveEditorMode::None);
+
 	DrawCurve1DEditor(curveEditorTitle_.c_str(), *curveEditorTarget_, &open);
 
 	if (!open) {
@@ -1824,3 +1828,5 @@ void ParticleEditorScene::DrawCurveEditorPanel(const ImVec2& pos, const ImVec2& 
 
 	ImGui::End();
 }
+
+#endif // USE_IMGUI

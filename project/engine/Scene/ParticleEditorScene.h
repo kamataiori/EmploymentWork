@@ -77,6 +77,8 @@ public:
     void UpdateDebugCamera();
 
 private:
+
+#ifdef USE_IMGUI
     // ====== ヘルパー関数（Debug を分割） ======
     // 左上：現在のゲーム画面（RenderTexture）表示
     void DrawSceneViewPanel(const ImVec2& pos, const ImVec2& size, int panelFlags);
@@ -88,6 +90,7 @@ private:
     void DrawCameraControlPanel(const ImVec2& pos, const ImVec2& size, int panelFlags);
     // 下：カーブエディタ
     void DrawCurveEditorPanel(const ImVec2& pos, const ImVec2& size, int panelFlags);
+#endif // USE_IMGUI
 
 private:
     // スカイボックス
