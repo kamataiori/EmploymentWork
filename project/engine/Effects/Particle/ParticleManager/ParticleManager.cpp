@@ -4,48 +4,178 @@
 
 using json = nlohmann::json;
 
-// VertexDataType, BlendMode を int で保存するシンプル版
-void to_json(json& j, const ParticleManager::ParticlePreset& p)
+//======================================================================
+//  JSON 書き出し
+//======================================================================
+void to_json(json& j, const ParticlePreset& p)
 {
 	j = json{
-		{"name", p.name},
-		{"vertexType", static_cast<int>(p.vertexType)},
-		{"textureFilePath", p.textureFilePath},
-		{"blendMode", static_cast<int>(p.blendMode)},
-		{"count", p.count},
-		{"frequency", p.frequency},
-		{"repeat", p.repeat},
-		{"useRandomPosition", p.useRandomPosition},
-		{"flipY", p.flipY},
-		{"lifeTime", p.lifeTime},
-		{"initialScale",  {p.initialScale.x,  p.initialScale.y,  p.initialScale.z}},
-		{"initialRotate", {p.initialRotate.x, p.initialRotate.y, p.initialRotate.z}},
-		{"initialOffset", {p.initialOffset.x, p.initialOffset.y, p.initialOffset.z}},
-		{"color",         {p.color.x, p.color.y, p.color.z, p.color.w}},
-		{"useBillboard",  p.useBillboard},
-		{"velocity",      {p.velocity.x,      p.velocity.y,      p.velocity.z}},
-		{"rotationSpeed", {p.rotationSpeed.x, p.rotationSpeed.y, p.rotationSpeed.z}},
-		{"scaleSpeed",    {p.scaleSpeed.x,    p.scaleSpeed.y,    p.scaleSpeed.z}},
-		{"useGravity", p.useGravity},
+		{ "name", p.name },
 
+		// ========= emitterSettings =========
+		{ "emitterSettings", {
+			{ "vertexType",      static_cast<int>(p.emitterSettings.vertexType) },
+			{ "textureFilePath", p.emitterSettings.textureFilePath },
+			{ "blendMode",       static_cast<int>(p.emitterSettings.blendMode) }
+		}},
+
+		// ========= emitterSpawn =========
+		{ "emitterSpawn", {
+			{ "count",             p.emitterSpawn.count },
+			{ "frequency",         p.emitterSpawn.frequency },
+			{ "repeat",            p.emitterSpawn.repeat },
+			{ "useRandomPosition", p.emitterSpawn.useRandomPosition }
+		}},
+
+		// ========= particleSpawn =========
+{        "particleSpawn", {
+	{ "initialScale",  { p.particleSpawn.initialScale.x,
+						 p.particleSpawn.initialScale.y,
+						 p.particleSpawn.initialScale.z } },
+	{ "initialRotate", { p.particleSpawn.initialRotate.x,
+						 p.particleSpawn.initialRotate.y,
+						 p.particleSpawn.initialRotate.z } },
+	{ "initialOffset", { p.particleSpawn.initialOffset.x,
+						 p.particleSpawn.initialOffset.y,
+						 p.particleSpawn.initialOffset.z } },
+
+						 // ランダム範囲
+						 { "initialScaleRandom", {
+							 { "useRandom", p.particleSpawn.initialScaleRandom.useRandom },
+							 { "min", { p.particleSpawn.initialScaleRandom.minValue.x,
+										p.particleSpawn.initialScaleRandom.minValue.y,
+										p.particleSpawn.initialScaleRandom.minValue.z } },
+							 { "max", { p.particleSpawn.initialScaleRandom.maxValue.x,
+										p.particleSpawn.initialScaleRandom.maxValue.y,
+										p.particleSpawn.initialScaleRandom.maxValue.z } }
+						 }},
+						 { "initialRotateRandom", {
+							 { "useRandom", p.particleSpawn.initialRotateRandom.useRandom },
+							 { "min", { p.particleSpawn.initialRotateRandom.minValue.x,
+										p.particleSpawn.initialRotateRandom.minValue.y,
+										p.particleSpawn.initialRotateRandom.minValue.z } },
+							 { "max", { p.particleSpawn.initialRotateRandom.maxValue.x,
+										p.particleSpawn.initialRotateRandom.maxValue.y,
+										p.particleSpawn.initialRotateRandom.maxValue.z } }
+						 }},
+						 { "initialOffsetRandom", {
+							 { "useRandom", p.particleSpawn.initialOffsetRandom.useRandom },
+							 { "min", { p.particleSpawn.initialOffsetRandom.minValue.x,
+										p.particleSpawn.initialOffsetRandom.minValue.y,
+										p.particleSpawn.initialOffsetRandom.minValue.z } },
+							 { "max", { p.particleSpawn.initialOffsetRandom.maxValue.x,
+										p.particleSpawn.initialOffsetRandom.maxValue.y,
+										p.particleSpawn.initialOffsetRandom.maxValue.z } }
+						 }}
+				}},
+
+
+		// ========= particleUpdate =========
+		{ "particleUpdate", {
+		   { "lifeTime",      p.particleUpdate.lifeTime },
+
+		   { "velocity",      { p.particleUpdate.velocity.x,
+						 p.particleUpdate.velocity.y,
+						 p.particleUpdate.velocity.z } },
+		   { "rotationSpeed", { p.particleUpdate.rotationSpeed.x,
+						 p.particleUpdate.rotationSpeed.y,
+						 p.particleUpdate.rotationSpeed.z } },
+		   { "scaleSpeed",    { p.particleUpdate.scaleSpeed.x,
+						 p.particleUpdate.scaleSpeed.y,
+						 p.particleUpdate.scaleSpeed.z } },
+
+						 // ランダム範囲
+						 { "velocityRandom", {
+							 { "useRandom", p.particleUpdate.velocityRandom.useRandom },
+							 { "min", { p.particleUpdate.velocityRandom.minValue.x,
+										p.particleUpdate.velocityRandom.minValue.y,
+										p.particleUpdate.velocityRandom.minValue.z } },
+							 { "max", { p.particleUpdate.velocityRandom.maxValue.x,
+										p.particleUpdate.velocityRandom.maxValue.y,
+										p.particleUpdate.velocityRandom.maxValue.z } }
+						 }},
+						 { "rotationRandom", {
+							 { "useRandom", p.particleUpdate.rotationRandom.useRandom },
+							 { "min", { p.particleUpdate.rotationRandom.minValue.x,
+										p.particleUpdate.rotationRandom.minValue.y,
+										p.particleUpdate.rotationRandom.minValue.z } },
+							 { "max", { p.particleUpdate.rotationRandom.maxValue.x,
+										p.particleUpdate.rotationRandom.maxValue.y,
+										p.particleUpdate.rotationRandom.maxValue.z } }
+						 }},
+						 { "scaleRandom", {
+							 { "useRandom", p.particleUpdate.scaleRandom.useRandom },
+							 { "min", { p.particleUpdate.scaleRandom.minValue.x,
+										p.particleUpdate.scaleRandom.minValue.y,
+										p.particleUpdate.scaleRandom.minValue.z } },
+							 { "max", { p.particleUpdate.scaleRandom.maxValue.x,
+										p.particleUpdate.scaleRandom.maxValue.y,
+										p.particleUpdate.scaleRandom.maxValue.z } }
+						 }},
+
+						 { "useGravity",    p.particleUpdate.useGravity }
+					 }},
+
+
+		// ========= render =========
+		{ "render", {
+			{ "color",        { p.render.color.x,
+								p.render.color.y,
+								p.render.color.z,
+								p.render.color.w } },
+			{ "useBillboard", p.render.useBillboard },
+			{ "flipY",        p.render.flipY }
+		}},
 	};
+
+	// -----------------------------
+	// colorGradient のシリアライズ
+	// -----------------------------
+	{
+		json gradJson;
+		gradJson["enabled"] = p.render.colorGradient.enabled;
+
+		json keysJson = json::array();
+		for (const auto& key : p.render.colorGradient.keys) {
+			keysJson.push_back({
+				key.t,
+				key.color.x,
+				key.color.y,
+				key.color.z,
+				key.color.w
+				});
+		}
+		gradJson["keys"] = keysJson;
+
+		j["render"]["colorGradient"] = gradJson;
+	}
+
+	// -----------------------------
+	// gradientTimeCurve のシリアライズ
+	// -----------------------------
+	{
+		json timeCurveJson;
+		timeCurveJson["enabled"] = p.render.gradientTimeCurve.enabled;
+
+		json keysJson = json::array();
+		for (const auto& key : p.render.gradientTimeCurve.keys) {
+			keysJson.push_back({ key.t, key.v });
+		}
+		timeCurveJson["keys"] = keysJson;
+
+		j["render"]["gradientTimeCurve"] = timeCurveJson;
+	}
+
 }
 
-void from_json(const json& j, ParticleManager::ParticlePreset& p)
+//======================================================================
+//  JSON 読み込み
+//======================================================================
+void from_json(const json& j, ParticlePreset& p)
 {
 	p.name = j.value("name", "");
-	p.vertexType = static_cast<ParticleManager::VertexDataType>(
-		j.value("vertexType", 0));
-	p.textureFilePath = j.value("textureFilePath", "");
-	p.blendMode = static_cast<ParticleManager::BlendMode>(
-		j.value("blendMode", (int)ParticleManager::kBlendModeNormal));
-	p.count = j.value("count", 10u);
-	p.frequency = j.value("frequency", 1.0f);
-	p.repeat = j.value("repeat", false);
-	p.useRandomPosition = j.value("useRandomPosition", false);
-	p.flipY = j.value("flipY", false);
-	p.lifeTime = j.value("lifeTime", 1.0f);
 
+	// 古い形式との互換用: 直下に Vec3 / Vec4 がある場合も読む
 	auto readVec3 = [&j](const char* key, Vector3 defaultValue) {
 		Vector3 v = defaultValue;
 		if (j.contains(key) && j[key].is_array() && j[key].size() == 3) {
@@ -67,20 +197,251 @@ void from_json(const json& j, ParticleManager::ParticlePreset& p)
 		return v;
 		};
 
-	p.initialScale = readVec3("initialScale", { 1.0f, 1.0f, 1.0f });
-	p.initialRotate = readVec3("initialRotate", { 0.0f, 0.0f, 0.0f });
-	p.initialOffset = readVec3("initialOffset", { 0.0f, 0.0f, 0.0f });
+	// ========= emitterSettings =========
+	if (j.contains("emitterSettings") && j["emitterSettings"].is_object()) {
+		const auto& es = j["emitterSettings"];
+		p.emitterSettings.vertexType = static_cast<VertexDataType>(
+			es.value("vertexType", static_cast<int>(VertexDataType::Plane)));
+		p.emitterSettings.textureFilePath = es.value("textureFilePath", "");
+		p.emitterSettings.blendMode = static_cast<BlendMode>(
+			es.value("blendMode", static_cast<int>(kBlendModeNormal)));
+	}
+	else {
+		p.emitterSettings.vertexType = static_cast<VertexDataType>(
+			j.value("vertexType", static_cast<int>(VertexDataType::Plane)));
+		p.emitterSettings.textureFilePath = j.value("textureFilePath", "");
+		p.emitterSettings.blendMode = static_cast<BlendMode>(
+			j.value("blendMode", static_cast<int>(kBlendModeNormal)));
+	}
 
-	// 色とビルボード
-	p.color = readVec4("color", { 1.0f, 1.0f, 1.0f, 1.0f });
-	p.useBillboard = j.value("useBillboard", true);
-	// particle発生後のSRT
-	p.velocity = readVec3("velocity", { 0.0f, 0.0f, 0.0f });
-	p.rotationSpeed = readVec3("rotationSpeed", { 0.0f, 0.0f, 0.0f });
-	p.scaleSpeed = readVec3("scaleSpeed", { 0.0f, 0.0f, 0.0f });
-	// 重力
-	p.useGravity = j.value("useGravity", false);
+	// ========= emitterSpawn =========
+	if (j.contains("emitterSpawn") && j["emitterSpawn"].is_object()) {
+		const auto& es = j["emitterSpawn"];
+		p.emitterSpawn.count = es.value("count", 10u);
+		p.emitterSpawn.frequency = es.value("frequency", 1.0f);
+		p.emitterSpawn.repeat = es.value("repeat", false);
+		p.emitterSpawn.useRandomPosition = es.value("useRandomPosition", false);
+	}
+	else {
+		p.emitterSpawn.count = j.value("count", 10u);
+		p.emitterSpawn.frequency = j.value("frequency", 1.0f);
+		p.emitterSpawn.repeat = j.value("repeat", false);
+		p.emitterSpawn.useRandomPosition = j.value("useRandomPosition", false);
+	}
 
+	// ========= particleSpawn =========
+	if (j.contains("particleSpawn") && j["particleSpawn"].is_object()) {
+		const auto& ps = j["particleSpawn"];
+		auto read3 = [&ps](const char* key, Vector3 def) {
+			Vector3 v = def;
+			if (ps.contains(key) && ps[key].is_array() && ps[key].size() == 3) {
+				v.x = ps[key][0].get<float>();
+				v.y = ps[key][1].get<float>();
+				v.z = ps[key][2].get<float>();
+			}
+			return v;
+			};
+
+		p.particleSpawn.initialScale = read3("initialScale", { 1,1,1 });
+		p.particleSpawn.initialRotate = read3("initialRotate", { 0,0,0 });
+		p.particleSpawn.initialOffset = read3("initialOffset", { 0,0,0 });
+
+		// ----- ランダム値の読み込み -----
+		auto readRandom3 = [&ps](const char* key, const RandomRange3& def) {
+			RandomRange3 r = def;
+			if (ps.contains(key) && ps[key].is_object()) {
+				const auto& obj = ps[key];
+				r.useRandom = obj.value("useRandom", def.useRandom);
+
+				auto read3v = [&obj](const char* k, Vector3 dv) {
+					Vector3 v = dv;
+					if (obj.contains(k) && obj[k].is_array() && obj[k].size() == 3) {
+						v.x = obj[k][0].get<float>();
+						v.y = obj[k][1].get<float>();
+						v.z = obj[k][2].get<float>();
+					}
+					return v;
+					};
+
+				r.minValue = read3v("min", def.minValue);
+				r.maxValue = read3v("max", def.maxValue);
+			}
+			return r;
+			};
+
+		p.particleSpawn.initialScaleRandom = readRandom3("initialScaleRandom", RandomRange3{});
+		p.particleSpawn.initialRotateRandom = readRandom3("initialRotateRandom", RandomRange3{});
+		p.particleSpawn.initialOffsetRandom = readRandom3("initialOffsetRandom", RandomRange3{});
+	}
+	else {
+		// 旧データ用（ランダム無し）
+		p.particleSpawn.initialScale = readVec3("initialScale", { 1,1,1 });
+		p.particleSpawn.initialRotate = readVec3("initialRotate", { 0,0,0 });
+		p.particleSpawn.initialOffset = readVec3("initialOffset", { 0,0,0 });
+
+		p.particleSpawn.initialScaleRandom = RandomRange3{};
+		p.particleSpawn.initialRotateRandom = RandomRange3{};
+		p.particleSpawn.initialOffsetRandom = RandomRange3{};
+	}
+
+	// ========= particleUpdate =========
+	if (j.contains("particleUpdate") && j["particleUpdate"].is_object()) {
+		const auto& pu = j["particleUpdate"];
+		auto read3 = [&pu](const char* key, Vector3 def) {
+			Vector3 v = def;
+			if (pu.contains(key) && pu[key].is_array() && pu[key].size() == 3) {
+				v.x = pu[key][0].get<float>();
+				v.y = pu[key][1].get<float>();
+				v.z = pu[key][2].get<float>();
+			}
+			return v;
+			};
+
+		p.particleUpdate.lifeTime = pu.value("lifeTime", 1.0f);
+		p.particleUpdate.velocity = read3("velocity", { 0,0,0 });
+		p.particleUpdate.rotationSpeed = read3("rotationSpeed", { 0,0,0 });
+		p.particleUpdate.scaleSpeed = read3("scaleSpeed", { 0,0,0 });
+		p.particleUpdate.useGravity = pu.value("useGravity", false);
+
+		// ----- ランダム値の読み込み -----
+		auto readRandom3 = [&pu](const char* key, const RandomRange3& def) {
+			RandomRange3 r = def;
+			if (pu.contains(key) && pu[key].is_object()) {
+				const auto& obj = pu[key];
+				r.useRandom = obj.value("useRandom", def.useRandom);
+
+				auto read3v = [&obj](const char* k, Vector3 dv) {
+					Vector3 v = dv;
+					if (obj.contains(k) && obj[k].is_array() && obj[k].size() == 3) {
+						v.x = obj[k][0].get<float>();
+						v.y = obj[k][1].get<float>();
+						v.z = obj[k][2].get<float>();
+					}
+					return v;
+					};
+
+				r.minValue = read3v("min", def.minValue);
+				r.maxValue = read3v("max", def.maxValue);
+			}
+			return r;
+			};
+
+		p.particleUpdate.velocityRandom = readRandom3("velocityRandom", RandomRange3{});
+		p.particleUpdate.rotationRandom = readRandom3("rotationRandom", RandomRange3{});
+		p.particleUpdate.scaleRandom = readRandom3("scaleRandom", RandomRange3{});
+
+		// scaleCurve の復元処理（既存処理）はこの下にそのまま残す
+	}
+	else {
+		// 旧フォーマット互換（ランダム無し）
+		p.particleUpdate.lifeTime = j.value("lifeTime", 1.0f);
+		p.particleUpdate.velocity = readVec3("velocity", { 0,0,0 });
+		p.particleUpdate.rotationSpeed = readVec3("rotationSpeed", { 0,0,0 });
+		p.particleUpdate.scaleSpeed = readVec3("scaleSpeed", { 0,0,0 });
+		p.particleUpdate.useGravity = j.value("useGravity", false);
+
+		p.particleUpdate.velocityRandom = RandomRange3{};
+		p.particleUpdate.rotationRandom = RandomRange3{};
+		p.particleUpdate.scaleRandom = RandomRange3{};
+
+		// 旧データではカーブ無効、など既存処理はそのまま
+	}
+
+
+	// ========= render =========
+	if (j.contains("render") && j["render"].is_object()) {
+		const auto& r = j["render"];
+		auto read4 = [&r](const char* key, Vector4 def) {
+			Vector4 v = def;
+			if (r.contains(key) && r[key].is_array() && r[key].size() == 4) {
+				v.x = r[key][0].get<float>();
+				v.y = r[key][1].get<float>();
+				v.z = r[key][2].get<float>();
+				v.w = r[key][3].get<float>();
+			}
+			return v;
+			};
+
+		p.render.color = read4("color", { 1,1,1,1 });
+		p.render.useBillboard = r.value("useBillboard", true);
+		p.render.flipY = r.value("flipY", false);
+
+		// ---- colorCurve ----
+		p.render.colorCurve.enabled = false;
+		p.render.colorCurve.keys.clear();
+		if (r.contains("colorCurve") && r["colorCurve"].is_object()) {
+			const auto& cc = r["colorCurve"];
+			p.render.colorCurve.enabled = cc.value("enabled", false);
+
+			if (cc.contains("keys") && cc["keys"].is_array()) {
+				for (const auto& elem : cc["keys"]) {
+					if (elem.is_array() && elem.size() == 2) {
+						CurveKey key;
+						key.t = elem[0].get<float>();
+						key.v = elem[1].get<float>();
+						p.render.colorCurve.keys.push_back(key);
+					}
+				}
+			}
+		}
+
+		// ---- colorGradient ----
+		p.render.colorGradient.enabled = false;
+		p.render.colorGradient.keys.clear();
+		if (r.contains("colorGradient") && r["colorGradient"].is_object()) {
+			const auto& cg = r["colorGradient"];
+			p.render.colorGradient.enabled = cg.value("enabled", false);
+
+			if (cg.contains("keys") && cg["keys"].is_array()) {
+				for (const auto& elem : cg["keys"]) {
+					if (elem.is_array() && elem.size() == 5) {
+						ColorKey4 key;
+						key.t = elem[0].get<float>();
+						key.color.x = elem[1].get<float>();
+						key.color.y = elem[2].get<float>();
+						key.color.z = elem[3].get<float>();
+						key.color.w = elem[4].get<float>();
+						p.render.colorGradient.keys.push_back(key);
+					}
+				}
+			}
+		}
+
+		// ---- gradientTimeCurve ----
+		p.render.gradientTimeCurve.enabled = false;
+		p.render.gradientTimeCurve.keys.clear();
+		if (r.contains("gradientTimeCurve") && r["gradientTimeCurve"].is_object()) {
+			const auto& gc = r["gradientTimeCurve"];
+			p.render.gradientTimeCurve.enabled = gc.value("enabled", false);
+
+			if (gc.contains("keys") && gc["keys"].is_array()) {
+				for (const auto& elem : gc["keys"]) {
+					if (elem.is_array() && elem.size() == 2) {
+						CurveKey key;
+						key.t = elem[0].get<float>();
+						key.v = elem[1].get<float>();
+						p.render.gradientTimeCurve.keys.push_back(key);
+					}
+				}
+			}
+		}
+
+
+	}
+	else {
+		p.render.color = readVec4("color", { 1,1,1,1 });
+		p.render.useBillboard = j.value("useBillboard", true);
+		p.render.flipY = j.value("flipY", false);
+
+		p.render.colorCurve.enabled = false;
+		p.render.colorCurve.keys.clear();
+
+		p.render.colorGradient.enabled = false;
+		p.render.colorGradient.keys.clear();
+
+		p.render.gradientTimeCurve.enabled = false;
+		p.render.gradientTimeCurve.keys.clear();
+	}
 
 }
 
@@ -130,225 +491,105 @@ void ParticleManager::Update()
 	// ========= 時間の取得（タイムスケール対応） =========
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-	// カメラ情報を取得
-	Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, camera_->GetRotate(), camera_->GetTranslate());
+	// ========= カメラ行列の計算 =========
+	Matrix4x4 cameraMatrix = MakeAffineMatrix(
+		{ 1.0f,1.0f,1.0f },
+		camera_->GetRotate(),
+		camera_->GetTranslate()
+	);
 	Matrix4x4 viewMatrix = Inverse(cameraMatrix);
-	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kWindowWidth) / float(kWindowHeight), 0.1f, 100.0f);
+	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
+		0.45f,
+		float(kWindowWidth) / float(kWindowHeight),
+		0.1f,
+		100.0f
+	);
 	Matrix4x4 viewProjectionMatrix = Multiply(viewMatrix, projectionMatrix);
 
-	// カメラ目線の設定
+	// ========= ビルボード行列の計算 =========
 	Matrix4x4 backToFrontMatrix = MakeRotateYMatrix(std::numbers::pi_v<float>);
 	Matrix4x4 billboardMatrix{};
-	if (usebillboardMatrix)
-	{
+	if (usebillboardMatrix) {
 		billboardMatrix = Multiply(backToFrontMatrix, cameraMatrix);
-		billboardMatrix.m[3][0] = 0.0f; // 平行移動成分は無視
+		// 平行移動は無視
+		billboardMatrix.m[3][0] = 0.0f;
 		billboardMatrix.m[3][1] = 0.0f;
 		billboardMatrix.m[3][2] = 0.0f;
 	}
-	else
-	{
+	else {
 		billboardMatrix = MakeIdentity4x4();
 	}
-	//if (usebillboardMatrix)
-	//{
-	//	// カメラの Y 回転だけをビルボードに適用（Z軸回転は除外）
-	//	billboardMatrix = MakeRotateYMatrix(camera_->GetRotate().y);
-	//	billboardMatrix.m[3][0] = 0.0f; // 平行移動成分は無視
-	//	billboardMatrix.m[3][1] = 0.0f;
-	//	billboardMatrix.m[3][2] = 0.0f;
-	//}
-	//else
-	//{
-	//	billboardMatrix = MakeIdentity4x4();
-	//}
 
-	// スケール調整用の倍率を設定
-	constexpr float scaleMultiplier = 0.01f; // 必要に応じて調整
-
-	for (auto& group : particleGroups)
-	{
-		Vector2 textureSize = group.second.textureSize;
-
-		for (auto it = group.second.particleList.begin(); it != group.second.particleList.end();)
-		{
-			Particle& particle = *it;
-
-			// パーティクルの寿命が尽きた場合は削除
-			if (particle.lifeTime <= particle.currentTime)
-			{
-				it = group.second.particleList.erase(it);
-				continue;
-			}
-
-			// スケールをテクスチャサイズに基づいて調整
-			/*particle.transform.scale.x = textureSize.x * scaleMultiplier;
-			particle.transform.scale.y = textureSize.y * scaleMultiplier;*/
-
-			//// 重力適用
-			//if (group.second.useGravity) {
-			//	particle.velocity.y += -9.81f * kDeltaTime;
-			//}
-
-			//// 位置の更新
-			//particle.transform.translate = particle.transform.translate + particle.velocity * kDeltaTime;
-
-			// ==== Velocity Verlet Integration ====
-
-            //重力加速度
-			Vector3 accel = { 0.0f, 0.0f, 0.0f };
-			if (group.second.useGravity) {
-				accel.y = -9.81f;
-			}
-
-			// 1. 位置更新：x += v * dt + 0.5 * a * dt^2
-			particle.transform.translate.x += particle.velocity.x * dt + 0.5f * accel.x * dt * dt;
-			particle.transform.translate.y += particle.velocity.y * dt + 0.5f * accel.y * dt * dt;
-			particle.transform.translate.z += particle.velocity.z * dt + 0.5f * accel.z * dt * dt;
-
-			// 2. 速度更新：v += a * dt
-			particle.velocity.x += accel.x * dt;
-			particle.velocity.y += accel.y * dt;
-			particle.velocity.z += accel.z * dt;
-
-
-
-			// 回転の更新（rad/秒）
-			particle.transform.rotate.x += particle.rotationSpeed.x * dt;
-			particle.transform.rotate.y += particle.rotationSpeed.y * dt;
-			particle.transform.rotate.z += particle.rotationSpeed.z * dt;
-
-			// スケールの更新（/秒）
-			particle.transform.scale.x += particle.scaleSpeed.x * dt;
-			particle.transform.scale.y += particle.scaleSpeed.y * dt;
-			particle.transform.scale.z += particle.scaleSpeed.z * dt;
-
-			// 経過時間を更新
-			particle.currentTime += dt;
-
-			// Scale 行列
-			Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);
-
-			// 回転行列
-			Matrix4x4 rotateMatrix = MakeIdentity4x4();
-			if (usebillboardMatrix)
-			{
-				// ビルボード時はZ回転だけを反映（画面上でクルクル回るイメージ）
-				rotateMatrix = MakeRotateZMatrix(particle.transform.rotate.z);
-			}
-			else
-			{
-				// ビルボードを使わない場合はXYZ回転をフルに反映
-				Matrix4x4 rotX = MakeRotateXMatrix(particle.transform.rotate.x);
-				Matrix4x4 rotY = MakeRotateYMatrix(particle.transform.rotate.y);
-				Matrix4x4 rotZ = MakeRotateZMatrix(particle.transform.rotate.z);
-				rotateMatrix = Multiply(rotZ, Multiply(rotY, rotX));
-			}
-
-			// Translate 行列
-			Matrix4x4 translateMatrix = MakeTranslateMatrix(particle.transform.translate);
-
-			// 回転はビルボードに任せるので、particle.transform.rotate は使わない
-			// world = S * Billboard * T
-			/*Matrix4x4 worldMatrix =
-				Multiply(Multiply(scaleMatrix, billboardMatrix), translateMatrix);*/
-
-				// 回転も反映してるorldMatrix
-			Matrix4x4 worldMatrix =
-				Multiply(Multiply(Multiply(scaleMatrix, billboardMatrix), rotateMatrix), translateMatrix);
-
-			// VP を掛ける
-			Matrix4x4 worldviewProjectionMatrix = Multiply(worldMatrix, viewProjectionMatrix);
-
-			// インスタンシングデータの設定
-			if (group.second.instanceCount < kNumMaxInstance)
-			{
-				group.second.instancingDataPtr[group.second.instanceCount].WVP = worldviewProjectionMatrix;
-				group.second.instancingDataPtr[group.second.instanceCount].World = worldMatrix;
-
-				// カラーを設定し、アルファ値を減衰
-				group.second.instancingDataPtr[group.second.instanceCount].color = particle.color;
-				group.second.instancingDataPtr[group.second.instanceCount].color.w = 1.0f - (particle.currentTime / particle.lifeTime);
-				group.second.instancingDataPtr[group.second.instanceCount].flipY = group.second.flipY ? 1.0f : 0.0f;
-				if (group.second.instancingDataPtr[group.second.instanceCount].color.w < 0.0f)
-				{
-					group.second.instancingDataPtr[group.second.instanceCount].color.w = 0.0f;
-				}
-
-				++group.second.instanceCount;
-			}
-
-			++it;
+	// 1) System を更新（Emitter の Play/Stop タイミング制御だけ）
+	for (auto& system : systems_) {
+		if (system) {
+			system->Update(dt);
 		}
 	}
+
+	// 2) すべての EmitterInstance を更新（シミュレーション）
+	UpdateEmitters(dt);
+
+	// 3) EmitterInstance → particleGroups のインスタンスバッファに詰める
+	PopulateInstancesFromEmitters(viewProjectionMatrix, billboardMatrix);
+
 }
+
 
 
 void ParticleManager::Draw()
 {
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList().Get();
 
-	// ルートシグネチャを設定
+	// ルートシグネチャは一回だけ
 	commandList->SetGraphicsRootSignature(rootSignature_.Get());
 
-	// キャッシュ内に指定されたブレンドモードのPSOが存在するか確認
-	auto it = pipelineStateCache_.find(blendMode_);
-	if (it == pipelineStateCache_.end() || !it->second) {
-		Logger::Log("PSO for blend mode not found, defaulting to normal blend mode.");
-		it = pipelineStateCache_.find(kBlendModeNormal);
-		if (it == pipelineStateCache_.end() || !it->second) {
-			Logger::Log("Default PSO not found. Aborting draw call.");
-			return;
-		}
-	}
-
-
-
-	commandList->SetPipelineState(it->second.Get());
-
-	// プリミティブトポロジ（描画形状）を設定
+	// プリミティブトポロジ & VBV は共通
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	// VBV (Vertex Buffer View)を設定
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 
-	// SrvManagerのインスタンスを取得
 	SrvManager* srvManager = SrvManager::GetInstance();
 
-	// 全てのパーティクルグループについて処理を行う
-	for (auto& group : particleGroups) {
-		if (group.second.instanceCount == 0) continue; // インスタンスが無い場合はスキップ
-
-		Vector2 textureLeftTop = group.second.textureLeftTop;
-		Vector2 textureSize = group.second.textureSize;
-
-		for (auto& particle : group.second.particleList)
-		{
-			// UV座標の計算
-			float uStart = textureLeftTop.x / textureSize.x;
-			float uEnd = (textureLeftTop.x + textureSize.x) / textureSize.x;
-			float vStart = textureLeftTop.y / textureSize.y;
-			float vEnd = (textureLeftTop.y + textureSize.y) / textureSize.y;
-
-			// 必要であればUV座標を設定する処理を追加
+	// 全てのパーティクルグループ
+	for (auto& pair : particleGroups) {
+		auto& group = pair.second;
+		if (group.instanceCount == 0) {
+			continue;
 		}
 
-		//マテリアルCBufferの場所を設定
+		// ★ このグループ専用のブレンドモードから PSO を取得
+		auto psoIt = pipelineStateCache_.find(group.blendMode);
+		if (psoIt == pipelineStateCache_.end() || !psoIt->second) {
+			// 念のため、無ければノーマルにフォールバック
+			Logger::Log("PSO for group blend mode not found, fallback to normal.");
+			psoIt = pipelineStateCache_.find(kBlendModeNormal);
+			if (psoIt == pipelineStateCache_.end() || !psoIt->second) {
+				Logger::Log("Default PSO not found. Skip this group.");
+				continue;
+			}
+		}
+
+		// ★ グループごとに PSO をセット
+		commandList->SetPipelineState(psoIt->second.Get());
+
+		// （ここから下は今と同じでOK）
+		Vector2 textureLeftTop = group.textureLeftTop;
+		Vector2 textureSize = group.textureSize;
+
+		for (auto& particle : group.particleList) {
+			// 必要ならUV計算の処理など
+		}
+
 		commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootDescriptorTable(2, srvManager->GetGPUDescriptorHandle(group.srvIndex));
+		commandList->SetGraphicsRootDescriptorTable(1, srvManager->GetGPUDescriptorHandle(group.instancingSrvIndex));
 
-		// テクスチャのSRVのDescriptorTableを設定
-		commandList->SetGraphicsRootDescriptorTable(2, srvManager->GetGPUDescriptorHandle(group.second.srvIndex));
+		commandList->DrawInstanced(group.vertexCount, group.instanceCount, 0, 0);
 
-		// インスタンシングデータのSRVのDescriptorTableを設定
-		commandList->SetGraphicsRootDescriptorTable(1, srvManager->GetGPUDescriptorHandle(group.second.instancingSrvIndex));
-
-		// Draw Call (インスタンシング描画)
-		commandList->DrawInstanced(group.second.vertexCount, group.second.instanceCount, 0, 0);
-
-		// インスタンスカウントをリセット
-		group.second.instanceCount = 0;
+		group.instanceCount = 0;
 	}
 }
+
 
 void ParticleManager::DrawImGuiParticlePresetEditor()
 {
@@ -367,24 +608,24 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 	if (!initialized) {
 		// 初期値
 		preset.name = "NewParticle";
-		preset.vertexType = VertexDataType::Plane;
-		preset.textureFilePath = "";
-		preset.blendMode = kBlendModeNormal;
-		preset.count = 10;
-		preset.frequency = 1.0f;
-		preset.repeat = false;
-		preset.useRandomPosition = true;
-		preset.flipY = false;
-		preset.lifeTime = 1.0f;
-		preset.initialScale = { 1.0f, 1.0f, 1.0f };
-		preset.initialRotate = { 0.0f, 0.0f, 0.0f };
-		preset.initialOffset = { 0.0f, 0.0f, 0.0f };
-		preset.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-		preset.useBillboard = true;
-		preset.velocity = { 0.0f, 0.0f, 0.0f };
-		preset.rotationSpeed = { 0.0f, 0.0f, 0.0f };
-		preset.scaleSpeed = { 0.0f, 0.0f, 0.0f };
-		preset.useGravity = false;
+		preset.emitterSettings.vertexType = VertexDataType::Plane;
+		preset.emitterSettings.textureFilePath = "";
+		preset.emitterSettings.blendMode = kBlendModeNormal;
+		preset.emitterSpawn.count = 10;
+		preset.emitterSpawn.frequency = 1.0f;
+		preset.emitterSpawn.repeat = false;
+		preset.emitterSpawn.useRandomPosition = true;
+		preset.particleSpawn.initialScale = { 1.0f, 1.0f, 1.0f };
+		preset.particleSpawn.initialRotate = { 0.0f, 0.0f, 0.0f };
+		preset.particleSpawn.initialOffset = { 0.0f, 0.0f, 0.0f };
+		preset.particleUpdate.lifeTime = 1.0f;
+		preset.particleUpdate.velocity = { 0.0f, 0.0f, 0.0f };
+		preset.particleUpdate.rotationSpeed = { 0.0f, 0.0f, 0.0f };
+		preset.particleUpdate.scaleSpeed = { 0.0f, 0.0f, 0.0f };
+		preset.particleUpdate.useGravity = false;
+		preset.render.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+		preset.render.useBillboard = true;
+		preset.render.flipY = false;
 
 		// Resources 以下からテクスチャ候補を列挙
 		textureList.clear();
@@ -404,7 +645,7 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 		if (!textureList.empty()) {
 			currentTextureIndex = 0;
 			// JSON に保存するパスは必ず Resources/ParticleTexture/ から始める
-			preset.textureFilePath = "Resources/ParticleTexture/" + textureList[0];
+			preset.emitterSettings.textureFilePath = "Resources/ParticleTexture/" + textureList[0];
 		}
 
 		initialized = true;
@@ -421,33 +662,32 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 	//==========================
 	if (ImGui::Button("新しいParticleの作成")) {
 		// デフォルト値でリセット
-		preset = ParticlePreset{};
 		preset.name = "NewParticle";
-		preset.vertexType = VertexDataType::Plane;
-		preset.blendMode = kBlendModeNormal;
-		preset.count = 10;
-		preset.frequency = 1.0f;
-		preset.repeat = false;
-		preset.useRandomPosition = true;
-		preset.flipY = false;
-		preset.lifeTime = 1.0f;
-		preset.initialScale = { 1.0f, 1.0f, 1.0f };
-		preset.initialRotate = { 0.0f, 0.0f, 0.0f };
-		preset.initialOffset = { 0.0f, 0.0f, 0.0f };
-		preset.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-		preset.useBillboard = true;
-		preset.velocity = { 0.0f, 0.0f, 0.0f };
-		preset.rotationSpeed = { 0.0f, 0.0f, 0.0f };
-		preset.scaleSpeed = { 0.0f, 0.0f, 0.0f };
-		preset.useGravity = false;
+		preset.emitterSettings.vertexType = VertexDataType::Plane;
+		preset.emitterSettings.blendMode = kBlendModeNormal;
+		preset.emitterSpawn.count = 10;
+		preset.emitterSpawn.frequency = 1.0f;
+		preset.emitterSpawn.repeat = false;
+		preset.emitterSpawn.useRandomPosition = true;
+		preset.particleSpawn.initialScale = { 1.0f, 1.0f, 1.0f };
+		preset.particleSpawn.initialRotate = { 0.0f, 0.0f, 0.0f };
+		preset.particleSpawn.initialOffset = { 0.0f, 0.0f, 0.0f };
+		preset.particleUpdate.lifeTime = 1.0f;
+		preset.particleUpdate.velocity = { 0.0f, 0.0f, 0.0f };
+		preset.particleUpdate.rotationSpeed = { 0.0f, 0.0f, 0.0f };
+		preset.particleUpdate.scaleSpeed = { 0.0f, 0.0f, 0.0f };
+		preset.particleUpdate.useGravity = false;
+		preset.render.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+		preset.render.useBillboard = true;
+		preset.render.flipY = false;
 
 		if (!textureList.empty()) {
 			currentTextureIndex = 0;
-			preset.textureFilePath = "Resources/ParticleTexture/" + textureList[0];
+			preset.emitterSettings.textureFilePath = "Resources/ParticleTexture/" + textureList[0];
 		}
 		else {
 			currentTextureIndex = -1;
-			preset.textureFilePath.clear();
+			preset.emitterSettings.textureFilePath.clear();
 		}
 	}
 	SameLine();
@@ -472,8 +712,8 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 
 					// テクスチャ名から currentTextureIndex を合わせる
 					currentTextureIndex = -1;
-					if (!preset.textureFilePath.empty()) {
-						std::string fileName = fs::path(preset.textureFilePath).filename().string();
+					if (!preset.emitterSettings.textureFilePath.empty()) {
+						std::string fileName = fs::path(preset.emitterSettings.textureFilePath).filename().string();
 						for (int i = 0; i < (int)textureList.size(); ++i) {
 							if (textureList[i] == fileName) {
 								currentTextureIndex = i;
@@ -504,9 +744,9 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 	// --- 形状（メッシュ）選択 ---
 	{
 		const char* items[] = { "板(Plane)", "リング(Ring)", "円柱(Cylinder)" };
-		int current = static_cast<int>(preset.vertexType);
+		int current = static_cast<int>(preset.emitterSettings.vertexType);
 		if (Combo("形状タイプ", &current, items, IM_ARRAYSIZE(items))) {
-			preset.vertexType = static_cast<VertexDataType>(current);
+			preset.emitterSettings.vertexType = static_cast<VertexDataType>(current);
 		}
 	}
 
@@ -520,9 +760,9 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 			"乗算(Multiply)",
 			"スクリーン(Screen)"
 		};
-		int current = static_cast<int>(preset.blendMode);
+		int current = static_cast<int>(preset.emitterSettings.blendMode);
 		if (Combo("ブレンドモード", &current, blendItems, IM_ARRAYSIZE(blendItems))) {
-			preset.blendMode = static_cast<BlendMode>(current);
+			preset.emitterSettings.blendMode = static_cast<BlendMode>(current);
 		}
 	}
 
@@ -546,7 +786,7 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 					currentTextureIndex = i;
 
 					// JSON 用のパスを更新
-					preset.textureFilePath = "Resources/ParticleTexture/" + fileName;
+					preset.emitterSettings.textureFilePath = "Resources/ParticleTexture/" + fileName;
 				}
 
 				// 選択中項目のチェックマーク
@@ -587,29 +827,29 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 	// --- エミッター設定 ---
 	Separator();
 	Text("エミッタ設定");
-	DragInt("発生数", (int*)&preset.count, 1, 1, 1000);
-	DragFloat("発生間隔(秒)", &preset.frequency, 0.01f, 0.0f, 60.0f);
-	Checkbox("繰り返し再生", &preset.repeat);
-	Checkbox("ランダム位置を使用", &preset.useRandomPosition);
+	DragInt("発生数", (int*)&preset.emitterSpawn.count, 1, 1, 1000);
+	DragFloat("発生間隔(秒)", &preset.emitterSpawn.frequency, 0.01f, 0.0f, 60.0f);
+	Checkbox("繰り返し再生", &preset.emitterSpawn.repeat);
+	Checkbox("ランダム位置を使用", &preset.emitterSpawn.useRandomPosition);
 
 	// --- パーティクル共通 ---
 	Separator();
 	Text("パーティクル共通設定");
-	DragFloat3("初期スケール(scale)", &preset.initialScale.x, 0.01f, 0.0f, 100.0f);
-	DragFloat3("初期回転(rotate)", &preset.initialRotate.x, 0.01f, -6.28f, 6.28f);
-	DragFloat3("初期場所(translate)", &preset.initialOffset.x, 0.01f, -1000.0f, 1000.0f);
-	DragFloat3("初期速度 (Velocity)", &preset.velocity.x, 0.01f, -1000.0f, 1000.0f);
-	DragFloat3("回転速度(rad/秒)", &preset.rotationSpeed.x, 0.01f, -10.0f, 10.0f);
-	DragFloat3("スケール速度(/秒)", &preset.scaleSpeed.x, 0.01f, -10.0f, 10.0f);
+	DragFloat3("初期スケール(scale)", &preset.particleSpawn.initialScale.x, 0.01f, 0.0f, 100.0f);
+	DragFloat3("初期回転(rotate)", &preset.particleSpawn.initialRotate.x, 0.01f, -6.28f, 6.28f);
+	DragFloat3("初期場所(translate)", &preset.particleSpawn.initialOffset.x, 0.01f, -1000.0f, 1000.0f);
+	DragFloat3("初期速度 (Velocity)", &preset.particleUpdate.velocity.x, 0.01f, -1000.0f, 1000.0f);
+	DragFloat3("回転速度(rad/秒)", &preset.particleUpdate.rotationSpeed.x, 0.01f, -10.0f, 10.0f);
+	DragFloat3("スケール速度(/秒)", &preset.particleUpdate.scaleSpeed.x, 0.01f, -10.0f, 10.0f);
 
 	// 色(RGBA)
-	ColorEdit4("カラー (RGBA)", &preset.color.x);
+	ColorEdit4("カラー (RGBA)", &preset.render.color.x);
 	// ビルボードON/OFF
-	Checkbox("常にカメラ目線(ビルボード)", &preset.useBillboard);
-	Checkbox("上下反転(Flip Y)", &preset.flipY);
-	DragFloat("寿命(秒)", &preset.lifeTime, 0.01f, 0.0f, 100.0f);
+	Checkbox("常にカメラ目線(ビルボード)", &preset.render.useBillboard);
+	Checkbox("上下反転(Flip Y)", &preset.render.flipY);
+	DragFloat("寿命(秒)", &preset.particleUpdate.lifeTime, 0.01f, 0.0f, 100.0f);
 	// 重力
-	Checkbox("重力を使用する", &preset.useGravity);
+	Checkbox("重力を使用する", &preset.particleUpdate.useGravity);
 
 	// --- 保存ボタン ---
 	Separator();
@@ -670,19 +910,19 @@ bool ParticleManager::SavePresetToJson(const ParticlePreset& preset,
 			DeleteParticleGroup(preset.name);
 
 			// 新しいテクスチャ&ブレンドモードで作成し直し
-			CreateParticleGroup(preset.name, preset.textureFilePath, preset.blendMode);
+			CreateParticleGroup(preset.name, preset.emitterSettings.textureFilePath, preset.emitterSettings.blendMode);
 
 			// プリセットの共通設定も反映
-			SetFlipYToGroup(preset.name, preset.flipY);
-			SetLifeTimeToGroup(preset.name, preset.lifeTime);
-			SetColorToGroup(preset.name, preset.color);
+			SetFlipYToGroup(preset.name, preset.render.flipY);
+			SetLifeTimeToGroup(preset.name, preset.particleUpdate.lifeTime);
+			SetColorToGroup(preset.name, preset.render.color);
 
 			// ビルボードは現在マネージャ全体設定
-			SetUseBillboard(preset.useBillboard);
+			SetUseBillboard(preset.render.useBillboard);
 
-			SetVelocityToGroup(preset.name, preset.velocity);
-			SetRotationSpeedToGroup(preset.name, preset.rotationSpeed);
-			SetScaleSpeedToGroup(preset.name, preset.scaleSpeed);
+			SetVelocityToGroup(preset.name, preset.particleUpdate.velocity);
+			SetRotationSpeedToGroup(preset.name, preset.particleUpdate.rotationSpeed);
+			SetScaleSpeedToGroup(preset.name, preset.particleUpdate.scaleSpeed);
 		}
 
 		return true;
@@ -753,10 +993,13 @@ void ParticleManager::LoadAllPresets(const std::string& directory)
 	}
 }
 
+void ParticleManager::SavePreset(const ParticleEmitter& preset)
+{
+}
+
 void ParticleManager::EmitByPresetName(const std::string& presetName,
 	const Transform& emitterTransform)
 {
-
 	// ---- プリセット検索 or 読み込み ----
 	ParticlePreset preset;
 	{
@@ -773,76 +1016,52 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 		}
 	}
 
-	// JSON 側の name が空なら、presetName を使う
+	// JSON 側の name が空なら presetName を使う
 	if (preset.name.empty()) {
 		preset.name = presetName;
 	}
 
-	const std::string groupName = preset.name;
+	// プリセットに対応するグループを準備（新規作成 or 更新）して参照を取得
+	ParticleGroup& group = EnsureGroupForPreset(preset);
 
-	// ---- パーティクルグループが無ければ作成 ----
-	auto itGroup = particleGroups.find(groupName);
-	if (itGroup == particleGroups.end()) {
-		// テクスチャとブレンドモードはプリセットから
-		CreateParticleGroup(groupName, preset.textureFilePath, preset.blendMode);
+	// ここでグループ名をもう一度ローカル変数にしておく
+	const std::string& groupName = preset.name;
 
-		// 新規作成したグループに対して プリセットの設定を反映
-		SetFlipYToGroup(groupName, preset.flipY);
-		SetLifeTimeToGroup(groupName, preset.lifeTime);
-		SetColorToGroup(groupName, preset.color);
-
-		// ビルボードは現在マネージャ全体設定
-		SetUseBillboard(preset.useBillboard);
-
-		// 重力フラグだけグループに反映
-		SetGravityToGroup(groupName, preset.useGravity);
-	}
-	else {
-		// 既にあるグループにも、最新プリセットの値を反映しておく
-		SetFlipYToGroup(groupName, preset.flipY);
-		SetLifeTimeToGroup(groupName, preset.lifeTime);
-		SetColorToGroup(groupName, preset.color);
-		SetUseBillboard(preset.useBillboard);
-		SetGravityToGroup(groupName, preset.useGravity);
-	}
-
-	// グループ参照を取得（ここまでで必ず存在している）
-	ParticleGroup& group = particleGroups[groupName];
 	const size_t beforeCount = group.particleList.size();
 
 	// ---- 呼び出し元の Transform とプリセット値を合成 ----
 	Transform t = emitterTransform;
 
 	// スケールは乗算（呼び出し元の大きさに対して相対的に）
-	t.scale.x *= preset.initialScale.x;
-	t.scale.y *= preset.initialScale.y;
-	t.scale.z *= preset.initialScale.z;
+	t.scale.x *= preset.particleSpawn.initialScale.x;
+	t.scale.y *= preset.particleSpawn.initialScale.y;
+	t.scale.z *= preset.particleSpawn.initialScale.z;
 
 	// 回転は加算
-	t.rotate.x += preset.initialRotate.x;
-	t.rotate.y += preset.initialRotate.y;
-	t.rotate.z += preset.initialRotate.z;
+	t.rotate.x += preset.particleSpawn.initialRotate.x;
+	t.rotate.y += preset.particleSpawn.initialRotate.y;
+	t.rotate.z += preset.particleSpawn.initialRotate.z;
 
 	// 位置はオフセット分だけ足す
-	t.translate.x += preset.initialOffset.x;
-	t.translate.y += preset.initialOffset.y;
-	t.translate.z += preset.initialOffset.z;
+	t.translate.x += preset.particleSpawn.initialOffset.x;
+	t.translate.y += preset.particleSpawn.initialOffset.y;
+	t.translate.z += preset.particleSpawn.initialOffset.z;
 
 	// ---- 形状に応じて既存の Emit 系を呼ぶ ----
-	switch (preset.vertexType) {
+	switch (preset.emitterSettings.vertexType) {
 	case VertexDataType::Plane:
 		// Plane は通常の Emit。count と useRandomPosition をプリセットから。
-		Emit(groupName, t, preset.count, preset.useRandomPosition);
+		Emit(groupName, t, preset.emitterSpawn.count, preset.emitterSpawn.useRandomPosition);
 		break;
 
 	case VertexDataType::Ring:
 		// Ring は 1 個だけの扱いなので count は無視
-		RingEmit(groupName, t, preset.count);
+		RingEmit(groupName, t, preset.emitterSpawn.count);
 		break;
 
 	case VertexDataType::Cylinder:
 		// Cylinder も 1 個だけ
-		CylinderEmit(groupName, t, preset.count);
+		CylinderEmit(groupName, t, preset.emitterSpawn.count);
 		break;
 
 	default:
@@ -851,19 +1070,437 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,
 	}
 
 	// === ここからがポイント ===
-	// Emit によって新しく追加されたパーティクルだけに
-	// presetを適用する
+	// Emit によって新しく追加されたパーティクルだけに preset を適用する
 	const size_t afterCount = group.particleList.size();
 	if (afterCount > beforeCount) {
 		auto it = group.particleList.begin();
 		std::advance(it, static_cast<std::ptrdiff_t>(beforeCount));
 		for (; it != group.particleList.end(); ++it) {
 			Particle& p = *it;
-			p.velocity = preset.velocity;
-			p.rotationSpeed = preset.rotationSpeed;
-			p.scaleSpeed = preset.scaleSpeed;
-			p.color = preset.color;
-			p.lifeTime = preset.lifeTime;
+			p.velocity = preset.particleUpdate.velocity;
+			p.rotationSpeed = preset.particleUpdate.rotationSpeed;
+			p.scaleSpeed = preset.particleUpdate.scaleSpeed;
+			p.color = preset.render.color;
+			p.lifeTime = preset.particleUpdate.lifeTime;
+			// カーブ用の基準値
+			p.initialScale = p.transform.scale;
+			p.initialColor = p.color;
+		}
+	}
+}
+
+ParticlePreset* ParticleManager::FindPreset(const std::string& name)
+{
+	auto it = presets_.find(name);
+	if (it == presets_.end()) {
+		return nullptr;
+	}
+	return &it->second;
+}
+
+const ParticlePreset* ParticleManager::FindPreset(const std::string& name) const
+{
+	auto it = presets_.find(name);
+	if (it == presets_.end()) {
+		return nullptr;
+	}
+	return &it->second;
+}
+
+ParticleEmitterInstance* ParticleManager::CreateEmitterInstanceFromPreset(const std::string& presetName, const Transform& emitterTransform)
+{
+	// プリセットを検索
+	ParticlePreset* preset = FindPreset(presetName);
+	if (!preset) {
+		// 見つからない場合はログを出して nullptr を返す
+		Logger::Log(std::string("ParticleManager::CreateEmitterInstanceFromPreset : preset not found : ")
+			+ presetName + "\n");
+		return nullptr;
+	}
+
+	// 新しいエミッターインスタンスを生成
+	auto instance = std::make_unique<ParticleEmitterInstance>();
+
+	// プリセットを渡して初期化
+	// （現状の ParticleEmitterInstance は ParticlePreset 型を直接参照していない想定なので、
+	//  必要に応じてクラス側の Initialize でプリセットの情報をコピーする形にしておく）
+	instance->Initialize(preset);
+
+	// Transform を設定
+	instance->SetTransform(emitterTransform);
+
+	// 管理コンテナに登録
+	ParticleEmitterInstance* rawPtr = instance.get();
+	emitterInstances_.push_back(std::move(instance));
+
+	return rawPtr;
+}
+
+void ParticleManager::UpdateEmitters(float dt)
+{
+	// 今のところは単純に全エミッターを更新するだけ
+	// 将来的には「再生中フラグ」「自動破棄」などをここに追加する
+	for (auto& emitter : emitterInstances_) {
+		if (emitter) {
+			emitter->Update(dt);  // ← シミュレーションだけ
+		}
+	}
+}
+
+ParticleSystem* ParticleManager::CreateSystem(const std::string& systemName)
+{
+	// すでに同名 System があればそれを返す
+	if (auto* existing = FindSystem(systemName)) {
+		return existing;
+	}
+
+	// 新しく System を作成して登録
+	auto system = std::make_unique<ParticleSystem>(systemName);
+	ParticleSystem* rawPtr = system.get();
+	systems_.push_back(std::move(system));
+	return rawPtr;
+}
+
+ParticleSystem* ParticleManager::FindSystem(const std::string& systemName)
+{
+	for (auto& system : systems_) {
+		if (system && system->GetName() == systemName) {
+			return system.get();
+		}
+	}
+	return nullptr;
+}
+
+ParticleEmitterInstance* ParticleManager::AddEmitterToSystem(const std::string& systemName, const std::string& presetName, const Transform& emitterTransform)
+{
+	// (1) System を確保
+	ParticleSystem* system = FindSystem(systemName);
+	if (!system) {
+		system = CreateSystem(systemName);
+	}
+	if (!system) {
+		Logger::Log("ParticleManager::AddEmitterToSystem : failed to create/find system : "
+			+ systemName + "\n");
+		return nullptr;
+	}
+
+	// (2) プリセットから EmitterInstance を 1つ作成
+	ParticleEmitterInstance* emitter =
+		CreateEmitterInstanceFromPreset(presetName, emitterTransform);
+
+	if (!emitter) {
+		Logger::Log("ParticleManager::AddEmitterToSystem : failed to create emitter from preset : "
+			+ presetName + "\n");
+		return nullptr;
+	}
+
+	// (3) System に登録（所有権は ParticleManager 側に残したまま）
+	system->AddEmitter(emitter);
+
+	return emitter;
+}
+
+void ParticleManager::RegisterSystemPreset(const std::string& systemName, const std::string& presetName)
+{
+	if (systemName.empty() || presetName.empty()) {
+		return;
+	}
+
+	// System を確保（なければ作る）
+	ParticleSystem* system = FindSystem(systemName);
+	if (!system) {
+		system = CreateSystem(systemName);
+	}
+	if (!system) {
+		Logger::Log("ParticleManager::RegisterSystemPreset : failed to create/find system : "
+			+ systemName + "\n");
+		return;
+	}
+
+	// System 側にプリセット名を登録
+	system->AddPresetName(presetName);
+}
+
+const std::vector<std::string>* ParticleManager::GetSystemPresets(const std::string& systemName) const
+{
+	if (systemName.empty()) { return nullptr; }
+
+	// const 関数なので systems_ を const で読む
+	for (const auto& system : systems_) {
+		if (system && system->GetName() == systemName) {
+			return &system->GetPresetNames();
+		}
+	}
+	return nullptr;
+}
+
+std::vector<std::string> ParticleManager::GetAllSystemNames() const
+{
+	std::vector<std::string> result;
+	result.reserve(systems_.size());
+
+	for (const auto& system : systems_) {
+		if (system) {
+			result.push_back(system->GetName());
+		}
+	}
+	return result;
+}
+
+void ParticleManager::ClearAllSystems()
+{
+	systems_.clear();
+}
+
+void ParticleManager::EmitSystemByName(const std::string& systemName, const Transform& emitterTransform)
+{
+	// EmitSystem() に丸投げする
+	EmitSystem(systemName, emitterTransform);
+}
+
+bool ParticleManager::SaveSystemToJson(const std::string& systemName, const std::string& directory)
+{
+	if (systemName.empty()) {
+		return false;
+	}
+
+	ParticleSystem* system = FindSystem(systemName);
+	if (!system) {
+		Logger::Log("SaveSystemToJson : system not found : " + systemName + "\n");
+		return false;
+	}
+
+	namespace fs = std::filesystem;
+
+	// ディレクトリがなければ作る
+	if (!fs::exists(directory)) {
+		fs::create_directories(directory);
+	}
+
+	fs::path path = fs::path(directory) / (systemName + ".json");
+
+	nlohmann::json j;
+
+	// System 名
+	j["name"] = system->GetName();
+
+	// 紐付いているプリセット名一覧
+	const auto& presetNames = system->GetPresetNames();
+	j["presets"] = presetNames; // vector<string> はそのまま入れられる
+
+	std::ofstream ofs(path);
+	if (!ofs) {
+		Logger::Log("SaveSystemToJson : failed to open file : " + path.string() + "\n");
+		return false;
+	}
+
+	ofs << j.dump(4);
+	return true;
+}
+
+bool ParticleManager::LoadSystemFromJson(const std::string& systemName, const std::string& directory)
+{
+	if (systemName.empty()) {
+		return false;
+	}
+
+	namespace fs = std::filesystem;
+	fs::path path = fs::path(directory) / (systemName + ".json");
+
+	if (!fs::exists(path)) {
+		Logger::Log("LoadSystemFromJson : file not found : " + path.string() + "\n");
+		return false;
+	}
+
+	std::ifstream ifs(path);
+	if (!ifs) {
+		Logger::Log("LoadSystemFromJson : failed to open file : " + path.string() + "\n");
+		return false;
+	}
+
+	nlohmann::json j;
+	ifs >> j;
+
+	std::string nameInJson = j.value("name", systemName);
+	if (nameInJson.empty()) {
+		nameInJson = systemName;
+	}
+
+	// System を作成 or 取得
+	ParticleSystem* system = CreateSystem(nameInJson);
+	if (!system) {
+		Logger::Log("LoadSystemFromJson : failed to create system : " + nameInJson + "\n");
+		return false;
+	}
+
+	// いったんプリセット名リストをクリア
+	system->ClearPresetNames();
+
+	auto it = j.find("presets");
+	if (it != j.end() && it->is_array()) {
+		for (auto& elem : *it) {
+			if (elem.is_string()) {
+				std::string presetName = elem.get<std::string>();
+				if (!presetName.empty()) {
+					system->AddPresetName(presetName);
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+void ParticleManager::LoadAllSystems(const std::string& directory)
+{
+	namespace fs = std::filesystem;
+
+	ClearAllSystems();
+
+	if (!fs::exists(directory)) {
+		return;
+	}
+
+	for (auto& entry : fs::directory_iterator(directory)) {
+		if (!entry.is_regular_file()) {
+			continue;
+		}
+
+		fs::path path = entry.path();
+		if (path.extension() != ".json") {
+			continue;
+		}
+
+		// ファイル名(拡張子なし)を systemName として扱う
+		std::string systemName = path.stem().string();
+		LoadSystemFromJson(systemName, directory);
+	}
+}
+
+bool ParticleManager::RenameSystem(const std::string& oldName, const std::string& newName)
+{
+	if (oldName.empty() || newName.empty() || oldName == newName) {
+		return false;
+	}
+
+	ParticleSystem* target = FindSystem(oldName);
+	if (!target) {
+		return false;
+	}
+
+	// 同名チェック
+	for (const auto& sys : systems_) {
+		if (sys && sys.get() != target && sys->GetName() == newName) {
+			Logger::Log("ParticleManager::RenameSystem : name already exists : " + newName + "\n");
+			return false;
+		}
+	}
+
+	target->SetName(newName);
+	return true;
+}
+
+void ParticleManager::EmitSystem(const std::string& systemName, const Transform& transform)
+{
+	if (systemName.empty()) {
+		return;
+	}
+
+	// まず System が存在するかチェック
+	ParticleSystem* system = FindSystem(systemName);
+	if (!system) {
+		// Editor 上では System がまだ登録されていない可能性もあるので、その場合は何もしない
+		return;
+	}
+
+	// この System に紐付いているプリセット名一覧を取得
+	const auto& presetNames = system->GetPresetNames();
+
+	// 各プリセットごとに EmitterInstance を生成して System にぶら下げる
+	for (const std::string& presetName : presetNames) {
+		// ※ AddEmitterToSystem 内で CreateEmitterInstanceFromPreset を呼び、
+		//    emitterInstances_ に push_back ＋ system->AddEmitter(emitter) までやってくれます
+		AddEmitterToSystem(systemName, presetName, transform);
+	}
+}
+
+void ParticleManager::PopulateInstancesFromEmitters(
+	const Matrix4x4& viewProjectionMatrix,
+	const Matrix4x4& billboardMatrix)
+{
+	for (auto& emitterPtr : emitterInstances_) {
+		if (!emitterPtr) {
+			continue;
+		}
+		ParticleEmitterInstance& emitter = *emitterPtr;
+
+		// どのプリセットか取得（※描画設定を見るため）
+		const void* rawPreset = emitter.GetPresetRaw();
+		if (!rawPreset) {
+			continue;
+		}
+		const auto* preset = reinterpret_cast<const ParticlePreset*>(rawPreset);
+
+		// このプリセットに対応する ParticleGroup を準備
+		ParticleGroup& group = EnsureGroupForPreset(*preset);
+
+		// Emitter が持っている粒子を全部読む（読み取り専用）
+		const auto& particles = emitter.GetParticles();
+		for (const auto& p : particles) {
+			if (!p.active) {
+				continue;
+			}
+			if (group.instanceCount >= kNumMaxInstance) {
+				break;
+			}
+
+			// === Transform から World 行列を作る ===
+			Vector3 scale = p.scale;
+			Vector3 rotate = p.rotation;
+			Vector3 position = p.position;
+
+			Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
+
+			Matrix4x4 rotateMatrix = MakeIdentity4x4();
+			if (usebillboardMatrix) {
+				// ビルボード使用時は Z 回転だけ
+				rotateMatrix = MakeRotateZMatrix(rotate.z);
+			}
+			else {
+				Matrix4x4 rotX = MakeRotateXMatrix(rotate.x);
+				Matrix4x4 rotY = MakeRotateYMatrix(rotate.y);
+				Matrix4x4 rotZ = MakeRotateZMatrix(rotate.z);
+				rotateMatrix = Multiply(rotZ, Multiply(rotY, rotX));
+			}
+
+			Matrix4x4 translateMatrix = MakeTranslateMatrix(position);
+
+			Matrix4x4 bbMatrix = usebillboardMatrix ? billboardMatrix : MakeIdentity4x4();
+
+			// world = S * Billboard * R * T
+			Matrix4x4 worldMatrix =
+				Multiply(Multiply(Multiply(scaleMatrix, bbMatrix), rotateMatrix), translateMatrix);
+
+			Matrix4x4 wvp = Multiply(worldMatrix, viewProjectionMatrix);
+
+			// === GPU インスタンスへ書き込み ===
+			ParticleForGPU& gpu = group.instancingDataPtr[group.instanceCount];
+			gpu.WVP = wvp;
+			gpu.World = worldMatrix;
+
+			// 色（Emitter 側で ColorCurve 適用済）
+			Vector4 outColor = p.color;
+
+			// 寿命によるフェードだけここで掛ける
+			float age = (p.maxLife > 0.0f) ? (p.life / p.maxLife) : 0.0f;
+			age = std::clamp(age, 0.0f, 1.0f);
+			outColor.w *= (1.0f - age);
+			if (outColor.w < 0.0f) { outColor.w = 0.0f; }
+
+			gpu.color = outColor;
+			gpu.flipY = emitter.IsFlipY() ? 1.0f : 0.0f;
+
+			++group.instanceCount;
 		}
 	}
 }
@@ -965,77 +1602,84 @@ void ParticleManager::CreateCylinderVertexData() {
 }
 
 
-void ParticleManager::CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode)
+void ParticleManager::CreateParticleGroup(const std::string name,
+	const std::string textureFilePath,
+	BlendMode blendMode)
 {
-	// 登録済みの名前かチェックして assert
-	bool nameExists = false;
-	for (auto it = particleGroups.begin(); it != particleGroups.end(); ++it) {
-		if (it->second.materialFilePath == name) {
-			nameExists = true;
-			break;
-		}
-	}
-	if (nameExists) {
+	// ----------------------------------------
+	// 同名グループの二重登録チェック
+	// ----------------------------------------
+	if (particleGroups.find(name) != particleGroups.end()) {
 		assert(false && "Particle group with this name already exists!");
 	}
 
+	// ----------------------------------------
+	// テクスチャパスの決定（空ならデフォルトを使う）
+	// ----------------------------------------
+	std::string resolvedTexPath = textureFilePath;
+
+	if (resolvedTexPath.empty()) {
+		// ★ここは実際に存在するパーティクル用テクスチャに合わせてください
+		//   さっき Inspector で使っていたパスにしています
+		resolvedTexPath = "Resources/ParticleTexture/smoke.png";
+		Logger::Log(
+			"ParticleManager::CreateParticleGroup : textureFilePath is empty. "
+			"Use default texture -> " + resolvedTexPath);
+	}
+
+	// ----------------------------------------
 	// 新たなパーティクルグループを作成
+	// ----------------------------------------
 	ParticleGroup newGroup;
-	newGroup.materialFilePath = textureFilePath;
+	newGroup.materialFilePath = resolvedTexPath;
 
-	// テクスチャのSRVインデックスを取得して設定
-	TextureManager::GetInstance()->LoadTexture(textureFilePath);
+	// テクスチャ読み込み・SRV取得
+	TextureManager::GetInstance()->LoadTexture(resolvedTexPath);
+	newGroup.srvIndex =
+		TextureManager::GetInstance()->GetTextureIndexByFilePath(resolvedTexPath);
 
-	newGroup.srvIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(textureFilePath);
-
-	// テクスチャサイズを取得
-	const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureFilePath);
-	Vector2 textureSize = { static_cast<float>(metadata.width), static_cast<float>(metadata.height) };
-
-	//// サイズを設定（指定があればそれを使用、なければテクスチャサイズを使用）
-	//if (customSize.x > 0.0f && customSize.y > 0.0f) {
-	//	newGroup.textureSize = customSize;
-	//}
-	//else {
-	//	newGroup.textureSize = textureSize;
-	//}
-
-	//// テクスチャサイズを設定
-	//AdjustTextureSize(newGroup, textureFilePath);
+	// テクスチャサイズを取得（必要なら後で使えるように）
+	const DirectX::TexMetadata& metadata =
+		TextureManager::GetInstance()->GetMetaData(resolvedTexPath);
+	Vector2 textureSize = {
+		static_cast<float>(metadata.width),
+		static_cast<float>(metadata.height)
+	};
+	// 必要なら newGroup.textureSize = textureSize; など
 
 	// 頂点数を取得
 	newGroup.vertexCount = static_cast<UINT>(modelData.vertices.size());
 
 	// インスタンシング用リソースの生成
-	//InstancingResource();
 	newGroup.instancingResource =
 		dxCommon_->CreateBufferResource(sizeof(ParticleForGPU) * kNumMaxInstance);
-	newGroup.instancingResource->Map(0, nullptr, reinterpret_cast<void**>(&newGroup.instancingDataPtr));
-	for (uint32_t index = 0; index < kNumMaxInstance; ++index)
-	{
+	newGroup.instancingResource->Map(
+		0, nullptr, reinterpret_cast<void**>(&newGroup.instancingDataPtr));
+
+	for (uint32_t index = 0; index < kNumMaxInstance; ++index) {
 		newGroup.instancingDataPtr[index].WVP = MakeIdentity4x4();
 		newGroup.instancingDataPtr[index].World = MakeIdentity4x4();
-		//newGroup.instancingDataPtr[index].color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+		// newGroup.instancingDataPtr[index].Color = {1,1,1,1}; // 必要なら
 	}
 
-	// 最大インスタンシング用リソースの生成
-	//InstancingMaxResource();
-
-	// インスタンシング用SRVを確保してSRVインデックスを記録
+	// インスタンシング用 SRV を確保
 	newGroup.instancingSrvIndex = srvManager_->Allocate();
-	srvManager_->CreateSRVforStructuredBuffer(newGroup.instancingSrvIndex, newGroup.instancingResource.Get(), kNumMaxInstance, sizeof(ParticleForGPU));
+	srvManager_->CreateSRVforStructuredBuffer(
+		newGroup.instancingSrvIndex,
+		newGroup.instancingResource.Get(),
+		kNumMaxInstance,
+		sizeof(ParticleForGPU));
 
-	// パーティクルグループをリストに追加
+	// グループごとのブレンドモードを設定
+	newGroup.blendMode = blendMode;
+
+	// マップに登録
 	particleGroups.emplace(name, newGroup);
 
 	// マテリアルデータの初期化
 	CreateMaterialData();
-
-	// 新しいブレンドモードを設定
-	blendMode_ = blendMode;
-	//GraphicsPipelineState(blendMode);  // 再生成
-
 }
+
 
 void ParticleManager::SetFlipYToGroup(const std::string& groupName, bool flip)
 {
@@ -1095,6 +1739,10 @@ ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomE
 	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	particle.lifeTime = 1.0f;
 	particle.currentTime = 0.0f;
+
+	particle.initialScale = particle.transform.scale;
+	particle.initialColor = particle.color;
+
 
 	return particle;
 }
@@ -1161,6 +1809,54 @@ ParticleManager::Particle ParticleManager::CylinderMakeNewParticle(const Vector3
 	p.currentTime = 0;
 
 	return p;
+}
+
+//======================================================================
+// プリセットに対応する ParticleGroup を用意＆更新する共通ヘルパー
+//======================================================================
+ParticleManager::ParticleGroup& ParticleManager::EnsureGroupForPreset(const ParticlePreset& preset)
+{
+	// グループ名はプリセット名と同じにする
+	std::string groupName = preset.name;
+
+	// まだグループが無ければ作成
+	auto itGroup = particleGroups.find(groupName);
+	if (itGroup == particleGroups.end()) {
+		// テクスチャとブレンドモードはプリセットから
+		CreateParticleGroup(
+			groupName,
+			preset.emitterSettings.textureFilePath,
+			preset.emitterSettings.blendMode
+		);
+
+		// 新規作成したグループに対して プリセットの設定を反映
+		SetFlipYToGroup(groupName, preset.render.flipY);
+		SetLifeTimeToGroup(groupName, preset.particleUpdate.lifeTime);
+		SetColorToGroup(groupName, preset.render.color);
+
+		// ビルボードは現在マネージャ全体設定
+		SetUseBillboard(preset.render.useBillboard);
+
+		// 重力フラグをグループに反映
+		SetGravityToGroup(groupName, preset.particleUpdate.useGravity);
+	}
+	else {
+		// 既にあるグループにも、最新プリセットの値を反映しておく
+		SetFlipYToGroup(groupName, preset.render.flipY);
+		SetLifeTimeToGroup(groupName, preset.particleUpdate.lifeTime);
+		SetColorToGroup(groupName, preset.render.color);
+		SetUseBillboard(preset.render.useBillboard);
+		SetGravityToGroup(groupName, preset.particleUpdate.useGravity);
+	}
+
+	// ここで実際のグループ参照を取得
+	ParticleGroup& group = particleGroups[groupName];
+
+	// カーブも常に最新のものをコピー
+	group.scaleCurve = preset.particleUpdate.scaleCurve;
+	group.colorCurve = preset.render.colorCurve;
+
+	return group;
 }
 
 void ParticleManager::Emit(const std::string& name, const Transform& transform, uint32_t count, bool useRandomPosition) {
@@ -1675,41 +2371,3 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> ParticleManager::PSO()
 
 	return pipelineState;
 }
-
-//void ParticleManager::PSO()
-//{
-//	////=========PSOを生成する=========////
-//
-//	/*D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};*/
-//	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();    //RootSignature
-//	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc_;    //InputLayout
-//	graphicsPipelineStateDesc.VS = { vertexShaderBlob_->GetBufferPointer(),
-//	vertexShaderBlob_->GetBufferSize() };    //VertexShader
-//	graphicsPipelineStateDesc.PS = { pixelShaderBlob_->GetBufferPointer(),
-//	pixelShaderBlob_->GetBufferSize() };    //PixelShader
-//	graphicsPipelineStateDesc.BlendState = blendDesc_;    //BlendState
-//	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc_;    //RasterizerState
-//	//書き込むRTVの情報
-//	graphicsPipelineStateDesc.NumRenderTargets = 1;
-//	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-//	//利用するトポロジ(形状)のタイプ。三角形
-//	graphicsPipelineStateDesc.PrimitiveTopologyType =
-//		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-//	//どのように画面に色を打ち込むかの設定(気にしなくて良い)
-//	graphicsPipelineStateDesc.SampleDesc.Count = 1;
-//	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-//	//DepthStencilの設定
-//	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc_;
-//	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-//	//実際に生成
-//	/*Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState = nullptr;*/
-//	HRESULT hr = dxCommon_->GetDevice().Get()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
-//		IID_PPV_ARGS(&graphicsPipelineState));
-//
-//	if (FAILED(hr)) {
-//		Logger::Log("PSO\n");
-//		exit(1);
-//	}
-//
-//	assert(SUCCEEDED(hr));
-//}

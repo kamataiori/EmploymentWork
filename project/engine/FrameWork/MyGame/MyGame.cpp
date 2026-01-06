@@ -1,5 +1,4 @@
 #include "MyGame.h"
-#include <UnityScene.h>
 #include "TimeManager.h"
 
 #ifdef USE_IMGUI
@@ -17,7 +16,7 @@ void MyGame::Initialize()
 	sceneFactory_ = new SceneFactory();
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
 
-	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+	SceneManager::GetInstance()->ChangeScene("TITLE");
 
 #ifdef USE_IMGUI
 

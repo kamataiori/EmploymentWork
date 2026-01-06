@@ -1,16 +1,16 @@
 {
     "emitterSettings": {
         "blendMode": 2,
-        "textureFilePath": "Resources/ParticleTexture/smoke.png",
+        "textureFilePath": "Resources/ParticleTexture/fire.png",
         "vertexType": 0
     },
     "emitterSpawn": {
-        "count": 64,
+        "count": 86,
         "frequency": 1.0,
         "repeat": false,
         "useRandomPosition": true
     },
-    "name": "NewParticle",
+    "name": "NE_22",
     "particleSpawn": {
         "initialOffset": [
             0.0,
@@ -23,16 +23,16 @@
             0.0
         ],
         "initialScale": [
-            1.0,
-            1.0,
-            1.0
+            0.5699999928474426,
+            0.6200000047683716,
+            0.6200000047683716
         ]
     },
     "particleUpdate": {
-        "lifeTime": 2.9000000953674316,
+        "lifeTime": 2.880000114440918,
         "rotationSpeed": [
             0.0,
-            1.2899999618530273,
+            1.059999942779541,
             0.0
         ],
         "scaleSpeed": [
@@ -43,13 +43,13 @@
         "useGravity": false,
         "velocity": [
             0.0,
-            1.1299999952316284,
+            0.9800000190734863,
             0.0
         ]
     },
     "render": {
         "color": [
-            0.6795363426208496,
+            0.49420833587646484,
             0.0,
             1.0,
             1.0

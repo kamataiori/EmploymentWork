@@ -1,16 +1,16 @@
 {
     "emitterSettings": {
         "blendMode": 2,
-        "textureFilePath": "Resources/ParticleTexture/smoke.png",
+        "textureFilePath": "Resources/ParticleTexture/circle.png",
         "vertexType": 0
     },
     "emitterSpawn": {
-        "count": 64,
+        "count": 52,
         "frequency": 1.0,
         "repeat": false,
         "useRandomPosition": true
     },
-    "name": "NewParticle",
+    "name": "NE_2",
     "particleSpawn": {
         "initialOffset": [
             0.0,
@@ -29,10 +29,10 @@
         ]
     },
     "particleUpdate": {
-        "lifeTime": 2.9000000953674316,
+        "lifeTime": 2.380000114440918,
         "rotationSpeed": [
             0.0,
-            1.2899999618530273,
+            0.6899999976158142,
             0.0
         ],
         "scaleSpeed": [
@@ -40,18 +40,18 @@
             0.0,
             0.0
         ],
-        "useGravity": false,
+        "useGravity": true,
         "velocity": [
             0.0,
-            1.1299999952316284,
+            1.0199999809265137,
             0.0
         ]
     },
     "render": {
         "color": [
-            0.6795363426208496,
             0.0,
             1.0,
+            0.4324324131011963,
             1.0
         ],
         "flipY": false,

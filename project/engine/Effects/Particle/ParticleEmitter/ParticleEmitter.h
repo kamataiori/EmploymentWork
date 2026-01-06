@@ -1,89 +1,59 @@
 #pragma once
-#include "Transform.h"
 #include <string>
+#include <vector>
+#include <memory>
 
-// 前方宣言：実装側で定義されるParticleManagerクラス
-class ParticleManager;
+#include "Transform.h"
+#include "MathFunctions.h"
+#include "ParticleModule.h"
 
-/// エミッターが生成するパーティクルの形状タイプ
-enum class ShapeType {
-    Plane,      // 通常の板状パーティクル
-    Primitive,  // ランダムな長さの直線型パーティクル
-    Ring,       // リング形状（円形配置）
-    Cylinder    // 円柱状パーティクル
+// ===============================================
+// エミッターのプリセット（静的データ）
+// 今 ParticleManager が JSON に保存している
+// 「SpawnSettings / UpdateSettings / RenderSettings」
+// をこのクラスに移動させる
+// 実行時にはコピーされず、EmitterInstance が参照する
+// ===============================================
+
+// ---------- Spawn ----------
+struct SpawnSettings {
+    uint32_t count = 1;       // Emit 時に生成される粒子数
+    float    frequency = 0.1f; // 連続発生するときの間隔
+    bool     repeat = true;   // ループ発生するか
+    bool     randomOffset = false; // 位置にランダム性を持たせる
 };
 
-/// パーティクルエミッターの設定構造体
-struct EmitterConfig {
-    ShapeType shapeType = ShapeType::Plane;  // 使用する形状タイプ
-    uint32_t count = 10;                     // 発生数（Ring, Cylinder は未使用）
-    float frequency = 1.0f;                  // 発生間隔（秒）
-    bool repeat = false;                     // 繰り返し発生させるか
-    //float lifeTime = 0.3f;                   // 寿命（デフォルトは 0.3秒）
+// ---------- Update ----------
+struct UpdateSettings {
+    Vector3 velocity{};       // 初速
+    Vector3 rotationSpeed{};  // 回転速度
+    Vector3 scaleSpeed{};     // スケールの増減
+    float   lifeTime = 1.0f;  // 粒子の寿命
+    bool    useGravity = false; // 重力を使うか
+};
+
+// ---------- Render ----------
+struct RenderSettings {
+    // ★ Vector4 が見えないとき構文エラーになるので MathFunctions.h が必須
+    Vector4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; // 色（float明示のほうが安全）
+    bool billboard = true;                 // ビルボード
+    bool flipY = false;                    // 上下反転
+    std::string textureFilePath;          // 使用するテクスチャ
 };
 
 class ParticleEmitter {
 public:
-    // デフォルトコンストラクタ（必ず Initialize を呼び出すこと）
-    ParticleEmitter() = default;
+    std::string name;  // プリセット名（JSONのファイル名にもなる）
 
-    /// 初期化particleManager 使用するParticleManagerのポインタ
-    /// name パーティクルグループ名
-    /// transform エミッターの位置・回転・スケール
-    /// config パーティクルの設定
-    void Initialize(ParticleManager* particleManager, const std::string& name, const Transform& transform, const EmitterConfig& config);
+    SpawnSettings  spawn;
+    UpdateSettings update;
+    RenderSettings render;
 
-    /// フレーム毎の更新処理（repeat=true時のみEmitを発生）
-    void Update();
+    // ここに「ColorOverLifeModule」などを入れる
+    std::vector<std::unique_ptr<ParticleModule>> modules;
 
-    /// 外部から明示的にEmitを発生させたい場合に使用
-    void Emit();
-
-    // ----- Setter -----
-
-    /// 繰り返しのON/OFF設定
-    void SetRepeat(bool repeat);
-
-    /// パーティクルの発生数を設定
-    void SetCount(uint32_t count);
-
-    /// パーティクルの発生間隔を設定
-    void SetFrequency(float frequency);
-
-    /// エミッターのTransformを設定
-    void SetTransform(const Transform& transform);
-
-    /// エミッターの位置を変更
-    void SetPosition(const Vector3& position);
-
-    /// エミッターの回転を変更
-    void SetRotation(const Vector3& rotation);
-
-    /// エミッターのスケールを変更
-    void SetScale(const Vector3& scale);
-
-    // ランダム発生フラグの設定
-    void SetUseRandom(bool flag);
-
-
-    // ----- Getter -----
-
-    /// Transform（const参照版）
-    const Transform& GetTransform() const;
-
-    /// Transform（書き換え可能版）
-    Transform& GetTransform();
-
-    /// 形状タイプに応じて正しいEmitを呼び分ける
-    void EmitByShape();
-
-private:
-    ParticleManager* particleManager_ = nullptr;  // パーティクルマネージャ
-    std::string name_;                            // グループ名（識別子）
-    Transform transform_{};                       // エミッターの位置・回転・拡縮
-    EmitterConfig config_{};                      // パーティクル設定
-    float elapsedTime_ = 0.0f;                    // 発生時間の蓄積
-    bool isInitialized_ = false;                  // 初期化済みフラグ
-    bool useRandom_ = true;
-
+public:
+    // JSON の読み込み＆保存（ステップ1では空 or 既存コードを移植）
+    void LoadFromJson(const std::string& filePath);
+    void SaveToJson(const std::string& filePath);
 };

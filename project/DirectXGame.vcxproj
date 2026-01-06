@@ -137,7 +137,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\FrameWork\input\Input.cpp" />
     <ClCompile Include="engine\logger\Logger.cpp" />
     <ClCompile Include="engine\FrameWork\Framework.cpp" />
-    <ClCompile Include="engine\Scene\UnityScene.cpp" />
     <ClCompile Include="application\Scene\GameScene\GamePlayScene.cpp" />
     <ClCompile Include="application\Camera\FollowCamera\FollowCamera.cpp" />
     <ClCompile Include="application\Camera\FPSCamera\FPSCamera.cpp" />
@@ -180,9 +179,13 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerIWeapon.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.cpp" />
     <ClCompile Include="engine\Collision\ShapeIntersect.cpp" />
+    <ClCompile Include="ParticleEmitterInstance.cpp" />
+    <ClCompile Include="ParticleModule.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="TimeManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BlendMode.h" />
     <ClInclude Include="engine\3d\Camera\CameraEffectController.h" />
     <ClInclude Include="engine\3d\Camera\CameraMove.h" />
     <ClInclude Include="engine\3d\Camera\CameraShake.h" />
@@ -212,7 +215,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\Camera\Camera.h" />
     <ClInclude Include="engine\check\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\directx\DirectXCommon.h" />
-    <ClInclude Include="engine\Scene\UnityScene.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui.h" />
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
@@ -266,6 +268,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerBullet.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerIWeapon.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.h" />
+    <ClInclude Include="Particle.h" />
+    <ClInclude Include="ParticleEmitterInstance.h" />
+    <ClInclude Include="ParticleModule.h" />
+    <ClInclude Include="ParticlePreset.h" />
+    <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
     <ClInclude Include="engine\3d\StructAnimation.h" />

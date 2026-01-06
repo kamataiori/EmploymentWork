@@ -64,18 +64,6 @@ private:
 	//3Dカメラの初期化
 	std::unique_ptr<Camera> camera1 = std::make_unique<Camera>();
 
-	std::unique_ptr<ParticleManager> particle = std::make_unique<ParticleManager>();
-	std::vector<std::unique_ptr<ParticleEmitter>> emitters;
-
-	std::unique_ptr<ParticleManager> primitiveParticle = std::make_unique<ParticleManager>();
-	std::vector<std::unique_ptr<ParticleEmitter>> primitiveEmitters;
-
-	std::unique_ptr<ParticleManager> ringParticle = std::make_unique<ParticleManager>();
-	std::vector<std::unique_ptr<ParticleEmitter>> ringEmitters;
-
-	std::unique_ptr<ParticleManager> cyrinderParticle = std::make_unique<ParticleManager>();
-	std::vector<std::unique_ptr<ParticleEmitter>> cyrinderEmitters;
-
 	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
 
 	AABB aabb;

@@ -1,0 +1,146 @@
+{
+    "emitterSettings": {
+        "blendMode": 2,
+        "textureFilePath": "",
+        "vertexType": 0
+    },
+    "emitterSpawn": {
+        "count": 50,
+        "frequency": 1.0,
+        "repeat": false,
+        "useRandomPosition": true
+    },
+    "name": "random",
+    "particleSpawn": {
+        "initialOffset": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialOffsetRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "initialRotate": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialRotateRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "initialScale": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "initialScaleRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        }
+    },
+    "particleUpdate": {
+        "lifeTime": 3.25,
+        "rotationRandom": {
+            "max": [
+                3.690000057220459,
+                4.320000171661377,
+                4.21999979019165
+            ],
+            "min": [
+                -3.7799999713897705,
+                -3.759999990463257,
+                -4.309999942779541
+            ],
+            "useRandom": true
+        },
+        "rotationSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scaleCurve": {
+            "enabled": false,
+            "keys": []
+        },
+        "scaleRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "scaleSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "useGravity": false,
+        "velocity": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "velocityRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        }
+    },
+    "render": {
+        "color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "colorCurve": {
+            "enabled": false,
+            "keys": []
+        },
+        "flipY": false,
+        "useBillboard": true
+    }
+}
