@@ -137,11 +137,6 @@ private:
 	Vector3 explosionPos = {};
 
 	// 死亡エフェクト用パーティクル
-	std::unique_ptr<ParticleManager> deathParticle_ = std::make_unique<ParticleManager>();
-	std::unique_ptr<ParticleManager> smokeParticle_ = std::make_unique<ParticleManager>();
-	std::unique_ptr<ParticleManager> ex1Particle_ = std::make_unique<ParticleManager>();
-	std::unique_ptr<ParticleManager> poweder = std::make_unique<ParticleManager>();
-	std::unique_ptr<ParticleManager> test = std::make_unique<ParticleManager>();
 	Transform deathParticleTransform_{}; // Emit位置用
 
 	std::unique_ptr<ParticleManager> deathSystem_ = std::make_unique<ParticleManager>();

@@ -108,33 +108,6 @@ void Enemy::Initialize()
 	// -------------------------
 	// 死亡エフェクト用パーティクル（プリセット "fire" を使用）
 	// -------------------------
-	deathParticle_ = std::make_unique<ParticleManager>();
-	deathParticle_->Initialize(VertexDataType::Plane);
-
-	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
-	deathParticle_->LoadAllPresets();
-
-	smokeParticle_ = std::make_unique<ParticleManager>();
-	smokeParticle_->Initialize(VertexDataType::Plane);
-
-	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
-	smokeParticle_->LoadAllPresets();
-
-	ex1Particle_ = std::make_unique<ParticleManager>();
-	ex1Particle_->Initialize(VertexDataType::Plane);
-
-	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
-	ex1Particle_->LoadAllPresets();
-
-	poweder = std::make_unique<ParticleManager>();
-	poweder->Initialize(VertexDataType::Plane);
-
-	// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
-	poweder->LoadAllPresets();
-
-	test->Initialize(VertexDataType::Plane);
-	test->LoadAllPresets();
-
 	deathSystem_ = std::make_unique<ParticleManager>();
 	deathSystem_->Initialize(VertexDataType::Plane);
 
@@ -300,33 +273,6 @@ void Enemy::Update()
 				deathParticleTransform_.translate.y += 3.5f;
 				deathSystem_->EmitSystemByName("ADE", deathParticleTransform_);
 
-				 // fire プリセットをこの位置で Emit
-				if (deathParticle_) {
-					deathParticleTransform_.translate = explosionPos;
-					deathParticleTransform_.translate.y += 3.5f;
-					deathParticle_->EmitByPresetName("fire", deathParticleTransform_);
-				}
-				if (smokeParticle_) {
-					deathParticleTransform_.translate = explosionPos;
-					deathParticleTransform_.translate.y += 2.5f;
-					smokeParticle_->EmitByPresetName("smoke", deathParticleTransform_);
-				}
-				if (ex1Particle_) {
-					deathParticleTransform_.translate = explosionPos;
-					deathParticleTransform_.translate.y += 3.5f;
-					ex1Particle_->EmitByPresetName("ex1", deathParticleTransform_);
-				}
-				if (poweder) {
-					deathParticleTransform_.translate = explosionPos;
-					deathParticleTransform_.translate.y += 2.5f;
-					poweder->EmitByPresetName("powder", deathParticleTransform_);
-				}
-				if (test) {
-					deathParticleTransform_.translate = explosionPos;
-					deathParticleTransform_.translate.y += 2.5f;
-					test->EmitByPresetName("NewParticle", deathParticleTransform_);
-				}
-
 				hasSpawnedExplosion_ = true;
 
 
@@ -346,26 +292,6 @@ void Enemy::Update()
 		if (transform.scale.z < 0.0f) transform.scale.z = 0.0f;
 
 		// 毎フレームパーティクルを更新（Emitter は今のまま Update() 引数なし）
-		if (deathParticle_) {
-			deathParticle_->Update();
-		}
-
-		if (smokeParticle_) {
-			smokeParticle_->Update();
-		}
-
-		if (ex1Particle_) {
-			ex1Particle_->Update();
-		}
-
-		if (poweder) {
-			poweder->Update();
-		}
-
-		if (test) {
-			test->Update();
-		}
-
 		if (deathSystem_) {
 			deathSystem_->Update();
 		}
@@ -429,17 +355,8 @@ void Enemy::AnimationDraw()
 
 void Enemy::ParticleDraw()
 {
-	if (isDead_ && deathParticle_) {
-		//deathParticle_->Draw();
+	if (isDead_) {
 		deathSystem_->Draw();
-	}
-
-	/*if (isDead_ && smokeParticle_) {
-		smokeParticle_->Draw();
-	}*/
-
-	if (isDead_ && test) {
-		//test->Draw();
 	}
 
 }
@@ -487,11 +404,6 @@ void Enemy::SetCamera(Camera* camera)
 	ObjectBase::SetCamera(camera);
 
 	// パーティクル側にも同じカメラを渡す
-	deathParticle_->SetCamera(camera);
-	smokeParticle_->SetCamera(camera);
-	ex1Particle_->SetCamera(camera);
-	poweder->SetCamera(camera);
-	test->SetCamera(camera);
 	deathSystem_->SetCamera(camera);
 
 	// 必要なら武器や他のオブジェクトにもここで渡せる
