@@ -106,6 +106,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="EnemyAIController.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraEffectController.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraMove.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraShake.cpp" />
@@ -185,7 +186,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="TimeManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BehaviorTree.h" />
     <ClInclude Include="BlendMode.h" />
+    <ClInclude Include="EnemyAIController.h" />
     <ClInclude Include="engine\3d\Camera\CameraEffectController.h" />
     <ClInclude Include="engine\3d\Camera\CameraMove.h" />
     <ClInclude Include="engine\3d\Camera\CameraShake.h" />

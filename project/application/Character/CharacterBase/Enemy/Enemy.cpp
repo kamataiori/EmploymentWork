@@ -1,4 +1,5 @@
 #include "Enemy.h"
+#include "EnemyAIController.h"
 #include <CollisionTypeIdDef.h>
 #include <SceneManager.h>
 #include "TimeManager.h"
@@ -26,6 +27,13 @@ static float LerpAngleRad(float from, float to, float t) {
 	return from + d * t;
 }
 
+Enemy::Enemy(BaseScene* baseScene_)
+	: ObjectBase(baseScene_)
+{
+}
+
+Enemy::~Enemy() = default;
+
 void Enemy::Initialize()
 {
 	object3d_->Initialize();
@@ -49,6 +57,12 @@ void Enemy::Initialize()
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
 	object3d_->SetAnimation(animation_.Idle);
+
+	// -------------------------
+	// AI(BT) 初期化
+	// -------------------------
+	aiController_ = std::make_unique<EnemyAIController>();
+	aiController_->Initialize(this);
 
 	// ---- OBB コライダー初期化 ----
 	colliderCenter_ = transform.translate + colliderOffset_;
@@ -128,67 +142,15 @@ void Enemy::Update()
 	// ====== Δt（スローモーション対応） ======
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-	// ====== 簡易AI：Idle → Dash → Cooldown ループ ======
-   // ターゲットがいれば計算
-	Vector3 toTargetXZ{ 0,0,0 };
-	float desiredYaw = transform.rotate.y;
-
-	if (target_) {
-		Vector3 to = target_->translate - transform.translate;
-		to.y = 0.0f;
-		if (Length(to) > 1e-6f) {
-			toTargetXZ = Normalize(to);
-			// forward = (sinYaw, 0, cosYaw) の想定
-			desiredYaw = std::atan2(toTargetXZ.x, toTargetXZ.z);
-		}
-	}
-
 	if (!isDead_) {
 
-		switch (state_) {
-		case RushState::Idle:
-			// 常にプレイヤーへ向く（スムーズ）
-			transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_);
-			stateTimer_ -= dt;
-			if (stateTimer_ <= 0.0f) {
-				// ダッシュへ移行：向いている方向を固定
-				if (target_) {
-					dashDir_ = toTargetXZ;                 // 方向確定（XZ）
-					transform.rotate.y = desiredYaw;       // 顔をピタッと正面へ
-				}
-				else {
-					// ターゲットが無い場合は今の向きで前進
-					dashDir_ = { std::sin(transform.rotate.y), 0.0f, std::cos(transform.rotate.y) };
-				}
-				state_ = RushState::Dash;
-				stateTimer_ = dashTime_;
-				SetAnimationIfChanged(animation_.Run);
+		// -------------------------
+		// AI（BT）で制御
+		// -------------------------
+		if (!isDead_) {
+			if (aiController_) {
+				aiController_->Update(dt);
 			}
-			break;
-
-		case RushState::Dash:
-			// 突進（※ 突進中はプレイヤーへ向き直ししない）
-			transform.translate.x += dashDir_.x * dashSpeed_;
-			transform.translate.z += dashDir_.z * dashSpeed_;
-
-			stateTimer_ -= dt;
-			if (stateTimer_ <= 0.0f) {
-				state_ = RushState::Cooldown;
-				stateTimer_ = cooldownTime_;
-				SetAnimationIfChanged(animation_.Idle);
-			}
-			break;
-
-		case RushState::Cooldown:
-			// 向きだけは緩やかにターゲットへ（次のダッシュ準備）
-			transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_ * 0.6f);
-			stateTimer_ -= dt;
-			if (stateTimer_ <= 0.0f) {
-				state_ = RushState::Idle;
-				stateTimer_ = idleTime_;
-				SetAnimationIfChanged(animation_.Idle);
-			}
-			break;
 		}
 
 	}
@@ -281,9 +243,9 @@ void Enemy::Update()
 
 #ifdef USE_IMGUI
 
-				ImGui::Begin("explosionPos");
-				ImGui::DragFloat3("translate", &explosionPos.x, 0.01f);
-				ImGui::End();
+		ImGui::Begin("explosionPos");
+		ImGui::DragFloat3("translate", &explosionPos.x, 0.01f);
+		ImGui::End();
 #endif // USE_IMGUI
 
 		// マイナススケールに落ち込まないようにクランプ

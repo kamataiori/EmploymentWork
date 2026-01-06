@@ -3,6 +3,8 @@
 #include "MultiCollider.h"
 #include <memory>
 
+class EnemyAIController;
+
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
 	std::string Duck = "Duck";
@@ -25,7 +27,8 @@ class Enemy : public ObjectBase
 {
 public:
 
-	Enemy(BaseScene* baseScene_) : ObjectBase(baseScene_) {}
+	Enemy(BaseScene* baseScene_);
+	~Enemy();
 
 	/// <summary>
 	/// 初期化処理
@@ -82,7 +85,11 @@ public:
 
 	bool IsDead() const { return isDead_; }
 
+	// BT側が target_ を参照できるように getter を追加
+	const Transform* GetTargetTransform() const { return target_; }
 
+	// BT側がアニメ名を参照できるように getter を追加
+	const SkeltonAnimationSet& GetAnimSet() const { return animation_; }
 
 private:
 
@@ -95,6 +102,9 @@ private:
 
 	float hitReactTimer_ = 0.0f;
 	static inline constexpr float kHitReactDuration_ = 0.2f; // 秒
+
+	// AIはここに閉じ込める
+	std::unique_ptr<EnemyAIController> aiController_;
 
 
 	// ====== 追尾＆突進AI ======
