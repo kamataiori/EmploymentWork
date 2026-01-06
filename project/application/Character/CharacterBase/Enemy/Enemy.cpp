@@ -64,6 +64,10 @@ void Enemy::Initialize()
 	aiController_ = std::make_unique<EnemyAIController>();
 	aiController_->Initialize(this);
 
+	aiController_->SetTargetGetter([this]() -> const Transform* {
+		return this->GetTargetTransform();
+		});
+
 	// ---- OBB コライダー初期化 ----
 	colliderCenter_ = transform.translate + colliderOffset_;
 

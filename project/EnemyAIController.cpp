@@ -1,185 +1,94 @@
 #include "EnemyAIController.h"
 #include "Enemy/Enemy.h"
-#include "MathFunctions.h"
 
-// Enemyにあった角度ラップ補助をここにも用意
-static float WrapDeltaRad(float a) {
-    while (a > 3.1415926535f) a -= 6.283185307f;
-    while (a < -3.1415926535f) a += 6.283185307f;
-    return a;
-}
-static float LerpAngleRad(float from, float to, float t) {
-    const float d = WrapDeltaRad(to - from);
-    return from + d * t;
-}
+// Composite（あなたが作ったやつ）
+#include "SequenceNode.h"
+#include "SelectorNode.h"
 
-//======================================================
-// Initialize
-// ・Enemyと紐付け
-// ・BehaviorTreeを構築
-//======================================================
+// Leaf（今回追加したやつ）
+#include "FindTargetLeaf.h"
+#include "IsTargetFarLeaf.h"
+#include "ChaseTargetLeaf.h"
+#include "NearIdleLeaf.h"
+
 void EnemyAIController::Initialize(Enemy* owner)
 {
     owner_ = owner;
+
+    // Blackboard作成
+    blackboard_ = std::make_unique<BlackBoard>();
+
+    // Leafが参照できるように Enemy を登録
+    blackboard_->set_value<Enemy*>("enemy", owner_);
+
     BuildTree();
 }
 
-//======================================================
-// Update
-// ・毎フレーム呼ばれる
-// ・BTを1ステップ進める
-//======================================================
 void EnemyAIController::Update(float dt)
 {
-    if (!owner_) { return; }
+    if (!owner_ || !root_ || !blackboard_) { return; }
 
-    BT::Context ctx{};
-    ctx.owner = owner_;
-    ctx.dt = dt;
+    // 必要なら dt をBlackBoardに入れておく（将来Wait/Cooldown等で使える）
+    blackboard_->set_value<float>("dt", dt);
 
-    // BT実行
-    tree_.Tick(ctx);
+    // ツリー実行
+    root_->execute();
 }
 
-//======================================================
-// BuildTree
-//
-// 現在の構成：
-//   Root
-//    └ Sequence
-//       ├ FindTarget
-//       └ Selector
-//          ├ Sequence（遠い）
-//          │   ├ IsTargetFar
-//          │   └ Chase
-//          └ Near（何もしない）
-//
-// ※ Near 部分は将来 AttackSelector に差し替える
-//======================================================
 void EnemyAIController::BuildTree()
 {
-    using namespace BT;
+    // ヒステリシス修正
+    FixHysteresis();
 
-    auto root = std::make_unique<Sequence>();
-    root->SetName("Root");
+    // Root: Sequence
+    auto rootSeq = std::make_unique<SequenceNode>(blackboard_.get());
 
-    root->AddChild(std::make_unique<Condition>(
-        [this](Context& ctx) { return FindTarget(ctx); },
-        "FindTarget"
-    ));
+    // 1) FindTarget（getter優先、無ければEnemy側のtargetを使う作りにする）
+    //    → getterが無い場合に備え、owner_->GetTargetTransform() を fallback させる
+    auto find = std::make_unique<FindTargetLeaf>(
+        blackboard_.get(),
+        [this]() -> const Transform*
+        {
+            // Scene注入getter
+            if (targetGetter_) {
+                const Transform* t = targetGetter_();
+                if (t) return t;
+            }
+            // Enemyが保持しているtarget
+            return owner_ ? owner_->GetTargetTransform() : nullptr;
+        }
+    );
 
-    auto selector = std::make_unique<Selector>();
-    selector->SetName("NearOrChase");
+    rootSeq->add_node(std::move(find));
 
-    auto chaseSeq = std::make_unique<Sequence>();
-    chaseSeq->SetName("ChaseSeq");
+    // 2) Selector: Far->Chase / Near->Idle
+    auto selector = std::make_unique<SelectorNode>(blackboard_.get());
 
-    chaseSeq->AddChild(std::make_unique<Condition>(
-        [this](Context& ctx) { return IsTargetFar(ctx); },
-        "IsTargetFar"
-    ));
+    // Far branch: Sequence( IsFar -> Chase )
+    auto chaseSeq = std::make_unique<SequenceNode>(blackboard_.get());
+    chaseSeq->add_node(std::make_unique<IsTargetFarLeaf>(blackboard_.get(), chaseStartDist_));
+    chaseSeq->add_node(std::make_unique<ChaseTargetLeaf>(blackboard_.get(), stopDist_, chaseSpeed_, turnLerp_));
 
-    chaseSeq->AddChild(std::make_unique<Action>(
-        [this](Context& ctx) { return Chase(ctx); },
-        "Chase"
-    ));
+    selector->add_node(std::move(chaseSeq));
 
-    selector->AddChild(std::move(chaseSeq));
+    // Near branch: Idle
+    selector->add_node(std::make_unique<NearIdleLeaf>(blackboard_.get()));
 
-    // 近い時：将来Attackへ置き換えポイント
-    selector->AddChild(std::make_unique<Action>(
-        [](Context&) { return Status::Success; },
-        "Near(IdleOrAttackLater)"
-    ));
+    rootSeq->add_node(std::move(selector));
 
-    root->AddChild(std::move(selector));
-    tree_.SetRoot(std::move(root));
+    root_ = std::move(rootSeq);
 }
 
-//======================================================
-// FindTarget
-// ・Playerなどのターゲットを取得
-// ・ctx.target にセットして次ノードへ渡す
-//======================================================
-bool EnemyAIController::FindTarget(BT::Context& ctx)
+void EnemyAIController::FixHysteresis()
 {
-    const Transform* t = nullptr;
+    // 追跡開始 > 停止 を必ず守る（最小マージン）
+    const float kMinGap = 0.5f;
 
-    // Scene側から注入された getter があれば使用
-    if (targetGetter_) {
-        t = targetGetter_();
+    if (chaseStartDist_ <= stopDist_ + kMinGap) {
+        chaseStartDist_ = stopDist_ + kMinGap;
     }
 
-    // なければ Enemy が保持している target を使用
-    if (!t) {
-        t = owner_->GetTargetTransform();
-    }
-
-    ctx.target = t;
-    return (t != nullptr);
-}
-
-//======================================================
-// IsTargetFar
-// ・距離判定専用
-// ・BTでは「条件」だけに責務を限定
-//======================================================
-bool EnemyAIController::IsTargetFar(BT::Context& ctx) const
-{
-    auto* enemy = static_cast<Enemy*>(ctx.owner);
-    const Transform* target = static_cast<const Transform*>(ctx.target);
-    if (!enemy || !target) { return false; }
-
-    Vector3 to = target->translate - enemy->GetTransform().translate;
-    to.y = 0.0f;
-
-    float dist = Length(to);
-    return dist > chaseStartDist_;
-}
-
-//======================================================
-// Chase
-// - 追跡：向きをターゲットに合わせて、前進
-// - stopDist_ より近いなら Success（追跡終了）
-// - 基本は Running（追跡継続）
-//
-// ※「リアルさ」を上げたくなったら：
-//   - 加速/減速（速度カーブ）
-//   - 回転速度制限
-//   - 障害物回避（NavMesh）
-//   - “追跡→攻撃→離脱” のコンボをBTで組む
-//======================================================
-BT::Status EnemyAIController::Chase(BT::Context& ctx)
-{
-    auto* enemy = static_cast<Enemy*>(ctx.owner);
-    const Transform* target = static_cast<const Transform*>(ctx.target);
-    if (!enemy || !target) { return BT::Status::Failure; }
-
-    Transform e = enemy->GetTransform();
-
-    Vector3 to = target->translate - e.translate;
-    to.y = 0.0f;
-
-    float dist = Length(to);
-    if (dist < stopDist_) {
-        // 近い：追跡終了（将来 Attack をするならここを Attack に回すのもOK）
-        enemy->SetAnimationIfChanged(enemy->GetAnimSet().Idle);
-        return BT::Status::Success;
-    }
-
-    // 方向
-    Vector3 dir = (dist > 1e-6f) ? Normalize(to) : Vector3{ 0,0,1 };
-
-    // 向き（Yaw）
-    float desiredYaw = std::atan2(dir.x, dir.z);
-    e.rotate.y = LerpAngleRad(e.rotate.y, desiredYaw, turnLerp_);
-
-    // 前進（TimeManagerのdtが入っているので dt スケール）
-    e.translate.x += dir.x * chaseSpeed_;
-    e.translate.z += dir.z * chaseSpeed_;
-
-    enemy->SetTarnsform(e);
-    enemy->SetAnimationIfChanged(enemy->GetAnimSet().Run);
-
-    return BT::Status::Running;
+    // ついでにマイナス防止
+    if (stopDist_ < 0.0f) stopDist_ = 0.0f;
+    if (chaseStartDist_ < 0.0f) chaseStartDist_ = 0.0f;
 }
