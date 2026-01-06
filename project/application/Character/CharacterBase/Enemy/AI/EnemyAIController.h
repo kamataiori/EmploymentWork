@@ -3,8 +3,8 @@
 #include <functional>
 
 // Node方式 BT基盤
-#include "BlackBoard.h"
-#include "INode.h"
+#include "application/AI/BehaviorTree/Core/BlackBoard.h"
+#include "application/AI/BehaviorTree/Core/INode.h"
 
 // Forward
 class Enemy;

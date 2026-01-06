@@ -1,15 +1,15 @@
 #include "EnemyAIController.h"
 #include "Enemy/Enemy.h"
 
-// Composite（あなたが作ったやつ）
-#include "SequenceNode.h"
-#include "SelectorNode.h"
+// Composite
+#include "application/AI/BehaviorTree/Nodes/Composite/SequenceNode.h"
+#include "application/AI/BehaviorTree/Nodes/Composite/SelectorNode.h"
 
-// Leaf（今回追加したやつ）
-#include "FindTargetLeaf.h"
-#include "IsTargetFarLeaf.h"
-#include "ChaseTargetLeaf.h"
-#include "NearIdleLeaf.h"
+// Leaf
+#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/FindTargetLeaf.h"
+#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsTargetFarLeaf.h"
+#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/ChaseTargetLeaf.h"
+#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/NearIdleLeaf.h"
 
 void EnemyAIController::Initialize(Enemy* owner)
 {

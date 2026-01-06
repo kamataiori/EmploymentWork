@@ -1,6 +1,6 @@
 #pragma once
-#include "LeafNodeBase.h"
-#include "BlackBoard.h"
+#include "application/AI/BehaviorTree/Nodes/Leaf/LeafNodeBase.h"
+#include "application/AI/BehaviorTree/Core/BlackBoard.h"
 #include <functional>
 
 // 前方宣言

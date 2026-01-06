@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include "NodeBase.h"
+#include "application/AI/BehaviorTree/Core/NodeBase.h"
 
 //======================================================
 // BranchNodeBase
