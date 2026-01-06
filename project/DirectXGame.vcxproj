@@ -180,14 +180,14 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerIWeapon.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.cpp" />
     <ClCompile Include="engine\Collision\ShapeIntersect.cpp" />
-    <ClCompile Include="ParticleEmitterInstance.cpp" />
-    <ClCompile Include="ParticleModule.cpp" />
-    <ClCompile Include="ParticleSystem.cpp" />
-    <ClCompile Include="TimeManager.cpp" />
+    <ClCompile Include="engine\Effects\Particle\ParticleEmitterInstance.cpp" />
+    <ClCompile Include="engine\Effects\Particle\ParticleModule.cpp" />
+    <ClCompile Include="engine\Effects\Particle\ParticleSystem.cpp" />
+    <ClCompile Include="engine\TimeManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BehaviorTree.h" />
-    <ClInclude Include="BlendMode.h" />
+    <ClInclude Include="engine\BlendMode.h" />
     <ClInclude Include="EnemyAIController.h" />
     <ClInclude Include="engine\3d\Camera\CameraEffectController.h" />
     <ClInclude Include="engine\3d\Camera\CameraMove.h" />
@@ -271,17 +271,17 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerBullet.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerIWeapon.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.h" />
-    <ClInclude Include="Particle.h" />
-    <ClInclude Include="ParticleEmitterInstance.h" />
-    <ClInclude Include="ParticleModule.h" />
-    <ClInclude Include="ParticlePreset.h" />
-    <ClInclude Include="ParticleSystem.h" />
+    <ClInclude Include="engine\Effects\Particle\Particle.h" />
+    <ClInclude Include="engine\Effects\Particle\ParticleEmitterInstance.h" />
+    <ClInclude Include="engine\Effects\Particle\ParticleModule.h" />
+    <ClInclude Include="engine\Effects\Particle\ParticlePreset.h" />
+    <ClInclude Include="engine\Effects\Particle\ParticleSystem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
     <ClInclude Include="engine\3d\StructAnimation.h" />
     <ClInclude Include="engine\Collision\ShapeIntersect.h" />
     <ClInclude Include="engine\TweenEasing.h" />
-    <ClInclude Include="TimeManager.h" />
+    <ClInclude Include="engine\TimeManager.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />

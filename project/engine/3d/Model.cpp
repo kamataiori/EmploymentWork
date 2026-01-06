@@ -2,7 +2,7 @@
 #include "MathFunctions.h"
 #include "TextureManager.h"
 #include <Object3d.h>
-#include "TimeManager.h"
+#include "engine/TimeManager.h"
 #include <iostream>
 
 void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypath, const std::string& filename)

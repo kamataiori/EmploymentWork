@@ -2,7 +2,7 @@
 #include <Input.h>
 #include <PlayerAnimKey.h>
 #include "PlayerBase.h"
-#include "TimeManager.h"
+#include "engine/TimeManager.h"
 
 
 // Yaw(=Y回転)から OBB の3軸を作るヘルパ

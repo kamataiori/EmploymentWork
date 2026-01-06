@@ -1,7 +1,7 @@
 #pragma once
 #include "DirectXCommon.h"
 #include "Camera/Camera.h"
-#include "BlendMode.h"
+#include "engine/BlendMode.h"
 
 class Object3dCommon
 {
