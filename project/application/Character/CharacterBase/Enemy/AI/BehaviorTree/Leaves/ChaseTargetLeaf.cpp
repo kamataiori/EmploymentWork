@@ -85,18 +85,27 @@ void ChaseTargetLeaf::tick()
     // 現在Yaw → 目標Yaw を補間（最短回転で）
     e.rotate.y = LerpAngleRad(e.rotate.y, desiredYaw, turnLerp_);
 
+    Logger::Log("chaseSpeed_=" + std::to_string(chaseSpeed_) +
+        " dt=" + std::to_string(TimeManager::GetInstance()->GetDeltaTime()) + "\n");
+
+
     //==================================================
     // 7) 前進（追跡移動）
     //==================================================
-    // 既存EnemyAIControllerと同じ運用
-    // dtを掛けず「1フレームあたりの移動量」として chaseSpeed_ を使う
-    // もし TimeManager の dt を使う方針にするなら
-    //   chaseSpeed_ を units/sec にして「* dt」を掛けるように変更する
-    e.translate.x += dir.x * chaseSpeed_;
-    e.translate.z += dir.z * chaseSpeed_;
+    float dt = TimeManager::GetInstance()->GetDeltaTime();
+    e.translate.x += dir.x * chaseSpeed_ * dt;
+    e.translate.z += dir.z * chaseSpeed_ * dt;
+
 
     // 変更した Transform を Enemy に反映
     enemy->SetTarnsform(e);
+
+   /* Logger::Log(
+        "enemy=(" + std::to_string(e.translate.x) + "," + std::to_string(e.translate.z) + ") "
+        "target=(" + std::to_string(target->translate.x) + "," + std::to_string(target->translate.z) + ") "
+        "dist=" + std::to_string(dist) + "\n"
+    );*/
+
 
     //==================================================
     // 8) 追跡中アニメーション

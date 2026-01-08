@@ -10,6 +10,8 @@
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsTargetFarLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/ChaseTargetLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/NearIdleLeaf.h"
+#include <PunchAttackLeaf.h>
+#include <IsTargetNearLeaf.h>
 
 void EnemyAIController::Initialize(Enemy* owner)
 {
@@ -37,41 +39,66 @@ void EnemyAIController::Update(float dt)
 
 void EnemyAIController::BuildTree()
 {
-    // ヒステリシス修正
+    // ヒステリシス修正（距離の整合性を保つ）
     FixHysteresis();
 
     // Root: Sequence
     auto rootSeq = std::make_unique<SequenceNode>(blackboard_.get());
 
-    // 1) FindTarget（getter優先、無ければEnemy側のtargetを使う作りにする）
-    //    → getterが無い場合に備え、owner_->GetTargetTransform() を fallback させる
+    //==================================================
+    // 1) FindTarget（ターゲットTransformを黒板へ）
+    //==================================================
     auto find = std::make_unique<FindTargetLeaf>(
         blackboard_.get(),
         [this]() -> const Transform*
         {
-            // Scene注入getter
+            // Scene注入getterがあれば優先
             if (targetGetter_) {
                 const Transform* t = targetGetter_();
                 if (t) return t;
             }
-            // Enemyが保持しているtarget
+            // Enemyが保持しているtargetをfallback
             return owner_ ? owner_->GetTargetTransform() : nullptr;
         }
     );
-
     rootSeq->add_node(std::move(find));
 
-    // 2) Selector: Far->Chase / Near->Idle
+    //==================================================
+    // 2) Selector: Near->Punch / Far->Chase / Idle
+    //==================================================
     auto selector = std::make_unique<SelectorNode>(blackboard_.get());
 
+    // -----------------------------------------------
+    // Near branch: Sequence( IsNear -> Punch )
+    // ※Selectorは「上から順に試す」ので、近接攻撃を先に置く
+    // -----------------------------------------------
+    {
+        // 攻撃開始距離（例：stopDist_ を攻撃距離として使う）
+        const float attackDist = stopDist_;
+
+        auto punchSeq = std::make_unique<SequenceNode>(blackboard_.get());
+        punchSeq->add_node(std::make_unique<IsTargetNearLeaf>(blackboard_.get(), attackDist));
+
+        // パンチ：duration=0.6秒 / hit=0.15秒 / cooldown=0.5秒
+        punchSeq->add_node(std::make_unique<PunchAttackLeaf>(blackboard_.get(), 0.6f, 0.15f, 0.5f));
+
+        selector->add_node(std::move(punchSeq));
+    }
+
+    // -----------------------------------------------
     // Far branch: Sequence( IsFar -> Chase )
-    auto chaseSeq = std::make_unique<SequenceNode>(blackboard_.get());
-    chaseSeq->add_node(std::make_unique<IsTargetFarLeaf>(blackboard_.get(), chaseStartDist_));
-    chaseSeq->add_node(std::make_unique<ChaseTargetLeaf>(blackboard_.get(), stopDist_, chaseSpeed_, turnLerp_));
+    // -----------------------------------------------
+    {
+        auto chaseSeq = std::make_unique<SequenceNode>(blackboard_.get());
+        chaseSeq->add_node(std::make_unique<IsTargetFarLeaf>(blackboard_.get(), chaseStartDist_));
+        chaseSeq->add_node(std::make_unique<ChaseTargetLeaf>(blackboard_.get(), stopDist_, chaseSpeed_, turnLerp_));
 
-    selector->add_node(std::move(chaseSeq));
+        selector->add_node(std::move(chaseSeq));
+    }
 
-    // Near branch: Idle
+    // -----------------------------------------------
+    // Fallback: Idle（どちらでもない時）
+    // -----------------------------------------------
     selector->add_node(std::make_unique<NearIdleLeaf>(blackboard_.get()));
 
     rootSeq->add_node(std::move(selector));
@@ -79,16 +106,16 @@ void EnemyAIController::BuildTree()
     root_ = std::move(rootSeq);
 }
 
+
 void EnemyAIController::FixHysteresis()
 {
-    // 追跡開始 > 停止 を必ず守る（最小マージン）
-    const float kMinGap = 0.5f;
+    // 追跡開始 > 攻撃開始 > 追跡停止（例）
+    const float kGap = 0.5f;
 
-    if (chaseStartDist_ <= stopDist_ + kMinGap) {
-        chaseStartDist_ = stopDist_ + kMinGap;
+    if (attackDist_ < stopDist_) {
+        attackDist_ = stopDist_; // 追跡停止より攻撃開始が短いと変になる
     }
-
-    // ついでにマイナス防止
-    if (stopDist_ < 0.0f) stopDist_ = 0.0f;
-    if (chaseStartDist_ < 0.0f) chaseStartDist_ = 0.0f;
+    if (chaseStartDist_ <= attackDist_ + kGap) {
+        chaseStartDist_ = attackDist_ + kGap;
+    }
 }

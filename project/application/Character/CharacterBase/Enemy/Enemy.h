@@ -150,5 +150,6 @@ private:
 	Transform deathParticleTransform_{}; // Emit位置用
 
 	std::unique_ptr<ParticleManager> deathSystem_ = std::make_unique<ParticleManager>();
+
 };
 

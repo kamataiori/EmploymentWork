@@ -49,7 +49,7 @@ private:
     // 追跡速度（1フレームの移動量）
     // dtを掛けるなら「units/sec」になる
     // dtを掛けないなら「units/frame」になる（現状は後者運用）
-    float chaseSpeed_ = 0.22f;
+    float chaseSpeed_ = 15.0f;
 
     // 旋回の滑らかさ（Yaw補間率）
     // 0.0f だと一切回らない

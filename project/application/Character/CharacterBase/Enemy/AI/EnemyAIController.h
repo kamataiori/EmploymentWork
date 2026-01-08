@@ -47,6 +47,9 @@ public:
     // 向き補間率（旋回の滑らかさ）
     void SetTurnLerp(float t) { turnLerp_ = t; }
 
+    void SetAttackDistance(float d) { attackDist_ = d; }
+
+
 private:
     void BuildTree();
 
@@ -67,6 +70,8 @@ private:
     // パラメータ
     float chaseStartDist_ = 12.0f;
     float stopDist_ = 3.0f;
-    float chaseSpeed_ = 0.22f;
+    float chaseSpeed_ = 15.0f;
     float turnLerp_ = 0.18f;
+    float attackDist_ = 3.0f; // パンチ開始距離（追跡停止距離とは分ける）
+
 };

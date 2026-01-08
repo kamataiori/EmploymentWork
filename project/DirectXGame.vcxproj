@@ -153,6 +153,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Decorator\InverterDecorator.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.cpp" />
+    <ClCompile Include="IsTargetNearLeaf.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\math\MathFunctions.cpp" />
     <ClCompile Include="engine\3d\Model.cpp" />
@@ -198,6 +199,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Core\NodeBase.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.cpp" />
+    <ClCompile Include="PunchAttackLeaf.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\AI\BehaviorTree\BehaviorTree.h" />
@@ -259,6 +261,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Decorator\InverterDecorator.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.h" />
+    <ClInclude Include="IsTargetNearLeaf.h" />
     <ClInclude Include="matrix\Matrix3x3.h" />
     <ClInclude Include="matrix\Matrix4x4.h" />
     <ClInclude Include="engine\3d\Model.h" />
@@ -303,6 +306,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NearIdleLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeBase.h" />
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeResult.h" />
+    <ClInclude Include="PunchAttackLeaf.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
     <ClInclude Include="engine\3d\StructAnimation.h" />
