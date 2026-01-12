@@ -73,8 +73,8 @@ void EnemyAIController::BuildTree()
     // ※Selectorは「上から順に試す」ので、近接攻撃を先に置く
     // -----------------------------------------------
     {
-        // 攻撃開始距離（例：stopDist_ を攻撃距離として使う）
-        const float attackDist = stopDist_;
+        // 攻撃開始距離（例：attackDist_ を攻撃距離として使う）
+        const float attackDist = attackDist_;
 
         auto punchSeq = std::make_unique<SequenceNode>(blackboard_.get());
         punchSeq->add_node(std::make_unique<IsTargetNearLeaf>(blackboard_.get(), attackDist));

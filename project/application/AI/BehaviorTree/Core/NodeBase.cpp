@@ -9,9 +9,11 @@ NodeBase::~NodeBase() = default;
 
 void NodeBase::execute()
 {
-    // 初回
+    // 初回（未実行なら init）
     if (mNodeResult == NodeResult::Idle) {
         init();
+
+        // init側で結果を決めなかった場合、最低でもRunningにする
         if (mNodeResult == NodeResult::Idle) {
             mNodeResult = NodeResult::Running;
         }
@@ -22,13 +24,13 @@ void NodeBase::execute()
         tick();
     }
 
-    // 終了時
+    // 終了時（Success/Fail）
     if (mNodeResult == NodeResult::Success ||
         mNodeResult == NodeResult::Fail) {
         finalize();
 
-        // これが無いと「一回成功したら止まる」現象になる
-        mNodeResult = NodeResult::Idle;
+        // 直書きせず Reset 経由で戻す（将来拡張に強い）
+        Reset();
     }
 }
 

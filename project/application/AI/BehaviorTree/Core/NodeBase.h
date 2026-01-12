@@ -16,12 +16,12 @@ public:
 
     // BT実行の入口
     void execute() override;
-    // BT実行の入口
+    // ノードの状態取得
     NodeResult get_node_result() const override;
 
     // このノードを未実行状態へ戻す
-    //  - Composite/Decorator/Branch が子ノードを安全にリセットできる
-    virtual void Reset();
+    // ※ 派生Leafが内部状態を持つ場合は override してOK
+    void Reset() override;
 
 protected:
     // デフォルト挙動（派生で override）

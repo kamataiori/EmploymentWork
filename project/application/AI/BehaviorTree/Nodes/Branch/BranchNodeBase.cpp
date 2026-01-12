@@ -37,12 +37,10 @@ void BranchNodeBase::tick()
 void BranchNodeBase::finalize()
 {
     // 両方Reset（次回分岐が変わっても大丈夫にする）
-        for (int i = 0; i < 2; ++i) {
-            if (!mpBranchNodes[i]) continue;
-            if (auto* nb = dynamic_cast<NodeBase*>(mpBranchNodes[i].get())) {
-                nb->Reset();
-            }
-        }
+    for (int i = 0; i < 2; ++i) {
+        if (!mpBranchNodes[i]) continue;
+        mpBranchNodes[i]->Reset();
+    }
 
     // 分岐結果も初期化
     mSatisfyIndex = -1;
