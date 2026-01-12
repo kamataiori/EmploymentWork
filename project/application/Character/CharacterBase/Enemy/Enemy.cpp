@@ -1,8 +1,7 @@
 #include "Enemy.h"
-#include "EnemyAIController.h"
+#include "application/Character/CharacterBase/Enemy/AI/EnemyAIController.h"
 #include <CollisionTypeIdDef.h>
 #include <SceneManager.h>
-#include "TimeManager.h"
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
@@ -63,6 +62,10 @@ void Enemy::Initialize()
 	// -------------------------
 	aiController_ = std::make_unique<EnemyAIController>();
 	aiController_->Initialize(this);
+
+	aiController_->SetTargetGetter([this]() -> const Transform* {
+		return this->GetTargetTransform();
+		});
 
 	// ---- OBB コライダー初期化 ----
 	colliderCenter_ = transform.translate + colliderOffset_;
@@ -296,7 +299,7 @@ void Enemy::Draw()
 	// コライダーの描画
 	multiCollider_->Draw();
 
-
+	
 }
 
 void Enemy::ForeGroundDraw()
@@ -320,6 +323,7 @@ void Enemy::ParticleDraw()
 	if (isDead_) {
 		deathSystem_->Draw();
 	}
+
 
 }
 
@@ -367,6 +371,7 @@ void Enemy::SetCamera(Camera* camera)
 
 	// パーティクル側にも同じカメラを渡す
 	deathSystem_->SetCamera(camera);
+
 
 	// 必要なら武器や他のオブジェクトにもここで渡せる
 	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能

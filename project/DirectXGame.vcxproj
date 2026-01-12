@@ -106,7 +106,12 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="EnemyAIController.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Core\BlackBoard.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Branch\BranchNodeBase.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChaseTargetLeaf.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\CompositeNodeBase.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Decorator\DecoratorNodeBase.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\EnemyAIController.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraEffectController.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraMove.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraShake.cpp" />
@@ -143,6 +148,12 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Camera\FPSCamera\FPSCamera.cpp" />
     <ClCompile Include="engine\Debug\GlobalVariables.cpp" />
     <ClCompile Include="engine\3d\Light.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\FindTargetLeaf.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Core\INode.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Decorator\InverterDecorator.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.cpp" />
+    <ClCompile Include="IsTargetNearLeaf.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\math\MathFunctions.cpp" />
     <ClCompile Include="engine\3d\Model.cpp" />
@@ -180,15 +191,25 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerIWeapon.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.cpp" />
     <ClCompile Include="engine\Collision\ShapeIntersect.cpp" />
-    <ClCompile Include="ParticleEmitterInstance.cpp" />
-    <ClCompile Include="ParticleModule.cpp" />
-    <ClCompile Include="ParticleSystem.cpp" />
-    <ClCompile Include="TimeManager.cpp" />
+    <ClCompile Include="engine\Effects\Particle\ParticleEmitterInstance.cpp" />
+    <ClCompile Include="engine\Effects\Particle\ParticleModule.cpp" />
+    <ClCompile Include="engine\Effects\Particle\ParticleSystem.cpp" />
+    <ClCompile Include="engine\TimeManager.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NearIdleLeaf.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Core\NodeBase.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.cpp" />
+    <ClCompile Include="PunchAttackLeaf.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BehaviorTree.h" />
-    <ClInclude Include="BlendMode.h" />
-    <ClInclude Include="EnemyAIController.h" />
+    <ClInclude Include="application\AI\BehaviorTree\BehaviorTree.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Core\BlackBoard.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Branch\BranchNodeBase.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChaseTargetLeaf.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\CompositeNodeBase.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Decorator\DecoratorNodeBase.h" />
+    <ClInclude Include="engine\BlendMode.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\EnemyAIController.h" />
     <ClInclude Include="engine\3d\Camera\CameraEffectController.h" />
     <ClInclude Include="engine\3d\Camera\CameraMove.h" />
     <ClInclude Include="engine\3d\Camera\CameraShake.h" />
@@ -235,6 +256,12 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Camera\FPSCamera\FPSCamera.h" />
     <ClInclude Include="engine\Debug\GlobalVariables.h" />
     <ClInclude Include="engine\3d\Light.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\FindTargetLeaf.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Core\INode.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Decorator\InverterDecorator.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.h" />
+    <ClInclude Include="IsTargetNearLeaf.h" />
     <ClInclude Include="matrix\Matrix3x3.h" />
     <ClInclude Include="matrix\Matrix4x4.h" />
     <ClInclude Include="engine\3d\Model.h" />
@@ -271,17 +298,23 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerBullet.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerIWeapon.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerWeaponOBB.h" />
-    <ClInclude Include="Particle.h" />
-    <ClInclude Include="ParticleEmitterInstance.h" />
-    <ClInclude Include="ParticleModule.h" />
-    <ClInclude Include="ParticlePreset.h" />
-    <ClInclude Include="ParticleSystem.h" />
+    <ClInclude Include="engine\Effects\Particle\Particle.h" />
+    <ClInclude Include="engine\Effects\Particle\ParticleEmitterInstance.h" />
+    <ClInclude Include="engine\Effects\Particle\ParticleModule.h" />
+    <ClInclude Include="engine\Effects\Particle\ParticlePreset.h" />
+    <ClInclude Include="engine\Effects\Particle\ParticleSystem.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NearIdleLeaf.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Core\NodeBase.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Core\NodeResult.h" />
+    <ClInclude Include="PunchAttackLeaf.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
     <ClInclude Include="engine\3d\StructAnimation.h" />
     <ClInclude Include="engine\Collision\ShapeIntersect.h" />
     <ClInclude Include="engine\TweenEasing.h" />
-    <ClInclude Include="TimeManager.h" />
+    <ClInclude Include="engine\TimeManager.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />

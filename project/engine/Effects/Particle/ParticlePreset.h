@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "MathFunctions.h"
-#include "BlendMode.h"
+#include "engine/BlendMode.h"
 
 // ===============================================
 // 共通で使う列挙型

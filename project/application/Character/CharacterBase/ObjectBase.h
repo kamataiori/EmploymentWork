@@ -8,6 +8,7 @@
 #include <CollisionTypeIdDef.h>
 #include "ParticleManager.h"
 #include "ParticleEmitter.h"
+#include "engine/TimeManager.h"
 
 class ObjectBase
 {
@@ -22,7 +23,7 @@ public:
         multiCollider_ = std::make_unique<MultiCollider>();
     }
 
-    ~ObjectBase() = default;
+    virtual ~ObjectBase() = default;
 
     /// <summary>
     /// 初期化処理
