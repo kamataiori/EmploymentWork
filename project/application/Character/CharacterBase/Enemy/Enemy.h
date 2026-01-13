@@ -4,6 +4,7 @@
 #include <memory>
 
 class EnemyAIController;
+class UIManager;
 
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
@@ -128,12 +129,13 @@ private:
 	const int kDamagePerHit_ = 10;   // 被弾時のダメージ量
 
 	// === HPバー表示用 ===
-	std::unique_ptr<Sprite> hpBarBG_;    // 背景（薄い色）
-	std::unique_ptr<Sprite> hpBarFill_;  // 本体（現在HPに応じて伸縮）
-	// 配置とサイズ（1280x720想定）
-	float hpBarMaxWidth_ = 420.0f;       // 最大幅
-	float hpBarHeight_ = 20.0f;        // 高さ
-	float hpBarTop_ = 20.0f;        // 画面上端からのオフセット
+	//std::unique_ptr<Sprite> hpBarBG_;    // 背景（薄い色）
+	//std::unique_ptr<Sprite> hpBarFill_;  // 本体（現在HPに応じて伸縮）
+	//// 配置とサイズ（1280x720想定）
+	//float hpBarMaxWidth_ = 420.0f;       // 最大幅
+	//float hpBarHeight_ = 20.0f;        // 高さ
+	//float hpBarTop_ = 20.0f;        // 画面上端からのオフセット
+	std::unique_ptr<UIManager> uiManager_;
 
 	bool isDead_ = false;        // 死亡状態かどうか
 	float deathTimer_ = 0.0f;    // 死亡経過時間

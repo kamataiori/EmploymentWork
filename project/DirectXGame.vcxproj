@@ -200,6 +200,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.cpp" />
     <ClCompile Include="PunchAttackLeaf.cpp" />
+    <ClCompile Include="UIElement.cpp" />
+    <ClCompile Include="UIHpBar.cpp" />
+    <ClCompile Include="UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\AI\BehaviorTree\BehaviorTree.h" />
@@ -315,6 +318,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\TimeManager.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.h" />
+    <ClInclude Include="UIElement.h" />
+    <ClInclude Include="UIHpBar.h" />
+    <ClInclude Include="UIManager.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />
