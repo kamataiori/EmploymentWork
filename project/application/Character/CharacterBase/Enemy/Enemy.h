@@ -106,21 +106,6 @@ private:
 
 	// AIはここに閉じ込める
 	std::unique_ptr<EnemyAIController> aiController_;
-
-
-	// ====== 追尾＆突進AI ======
-	enum class RushState { Idle, Dash, Cooldown };
-	RushState state_ = RushState::Idle;
-	float stateTimer_ = 0.0f;
-
-	// パラメータ
-	float idleTime_ = 0.60f;  // プレイヤーへ向き直る時間
-	float dashTime_ = 1.75f;  // 突進継続時間
-	float cooldownTime_ = 4.70f;  // 硬直
-	float dashSpeed_ = 0.35f;  // 突進速度（毎フレ加算）
-	float turnLerp_ = 0.18f;  // Idle/Cooldown 中の向き直りスムージング0..1
-
-	Vector3 dashDir_ = { 0,0,0 }; // ダッシュ開始時に確定（XZ）
 	const Transform* target_ = nullptr; // Player の Transform を参照
 
 	// HP
@@ -129,12 +114,6 @@ private:
 	const int kDamagePerHit_ = 10;   // 被弾時のダメージ量
 
 	// === HPバー表示用 ===
-	//std::unique_ptr<Sprite> hpBarBG_;    // 背景（薄い色）
-	//std::unique_ptr<Sprite> hpBarFill_;  // 本体（現在HPに応じて伸縮）
-	//// 配置とサイズ（1280x720想定）
-	//float hpBarMaxWidth_ = 420.0f;       // 最大幅
-	//float hpBarHeight_ = 20.0f;        // 高さ
-	//float hpBarTop_ = 20.0f;        // 画面上端からのオフセット
 	std::unique_ptr<UIManager> uiManager_;
 
 	bool isDead_ = false;        // 死亡状態かどうか

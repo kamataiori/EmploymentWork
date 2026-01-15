@@ -37,15 +37,10 @@ Enemy::~Enemy() = default;
 
 void Enemy::Initialize()
 {
-	object3d_->Initialize();
-
 	// モデル読み込み
-	/*ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");*/
-	ModelManager::GetInstance()->LoadModel("matest.obj");
 	ModelManager::GetInstance()->LoadModel("Skeleton.gltf");
-	ModelManager::GetInstance()->LoadModel("Sam.gltf");
 
+	object3d_->Initialize();
 	object3d_->SetModel("Skeleton.gltf");
 
 	// 初期Transform設定
@@ -91,47 +86,14 @@ void Enemy::Initialize()
 	// ヒットを Enemy::OnCollision に橋渡し
 	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
 
-	// AI初期
-	state_ = RushState::Idle;
-	stateTimer_ = idleTime_;
-
-
 	// === HPバー初期化 ===
-	//hpBarBG_ = std::make_unique<Sprite>();
-	//hpBarFill_ = std::make_unique<Sprite>();
-
-	//// テクスチャは 2x2 の "hp"
-	//hpBarBG_->Initialize("Resources/hp.png");
-	//hpBarFill_->Initialize("Resources/hp.png");
-
-	//// 背景は少し暗め
-	//hpBarBG_->SetColor({ 0.2f, 0.2f, 0.2f, 0.8f });
-	//// 本体は赤系
-	//hpBarFill_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
-
-	//// 初期サイズと位置（中央上）を一旦設定
-	//const float winW = 1280.0f;
-	//const float centerX = winW * 0.5f;
-	//const float left = centerX - hpBarMaxWidth_ * 0.5f;
-
-	//hpBarBG_->SetSize({ hpBarMaxWidth_, hpBarHeight_ });
-	//hpBarBG_->SetPosition({ left, hpBarTop_ });
-
-	//// fill は後で Update で現在HPに合わせて幅を更新
-	//hpBarFill_->SetSize({ hpBarMaxWidth_, hpBarHeight_ });
-	//hpBarFill_->SetPosition({ left, hpBarTop_ });
-
-	//hpBarBG_->SetAnchorPoint({ 0.0f, 0.5f });
-	//hpBarFill_->SetAnchorPoint({ 0.0f, 0.5f });
 
 	uiManager_ = std::make_unique<UIManager>();
-
-	// 画面上中央（今までと同じ）
+	// 画面上中央
 	const float winW = 1280.0f;
 	const float barW = 420.0f;
 	const float barH = 20.0f;
 	const float top = 20.0f;
-
 	UIHpBar::CreateDesc desc{};
 	desc.bgTexPath = "Resources/hp.png";
 	desc.fillTexPath = "Resources/hp.png";
@@ -141,7 +103,6 @@ void Enemy::Initialize()
 	desc.layer = 100;
 	desc.bgColor = { 0.2f, 0.2f, 0.2f, 0.8f };
 	desc.fillColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-
 
 	uiManager_->Add(UIHpBar::Create(desc));
 
@@ -157,9 +118,6 @@ void Enemy::Initialize()
 
 	// Emit 時に使う Transform の初期値
 	deathParticleTransform_ = transform;
-	/*deathParticleTransform_.scale = { 1.0f, 1.0f, 1.0f };
-	deathParticleTransform_.rotate = { 0.0f, 0.0f, 0.0f };
-	deathParticleTransform_.translate = { 0.0f, 0.0f, 0.0f };*/
 
 }
 
@@ -322,13 +280,6 @@ void Enemy::ForeGroundDraw()
 	if (uiManager_) {
 		uiManager_->Draw();
 	}
-
-	//if (hpBarBG_ && hpBarFill_) {
-
-	//	// 背景 → 本体の順で描画
-	//	hpBarBG_->Draw();
-	//	hpBarFill_->Draw();
-	//}
 }
 
 void Enemy::AnimationDraw()
@@ -341,8 +292,6 @@ void Enemy::ParticleDraw()
 	if (isDead_) {
 		deathSystem_->Draw();
 	}
-
-
 }
 
 void Enemy::OnCollision()
@@ -350,12 +299,6 @@ void Enemy::OnCollision()
 	// ===== HP減少 =====
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
-
-	/*if (poweder) {
-		deathParticleTransform_.translate = explosionPos;
-		deathParticleTransform_.translate.y += 2.5f;
-		poweder->EmitByPresetName("powder", deathParticleTransform_);
-	}*/
 
 	// ===== HPチェック =====
 	if (hp_ <= 0 && !isDead_) {
