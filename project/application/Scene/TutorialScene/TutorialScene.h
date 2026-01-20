@@ -11,7 +11,7 @@
 #include <CollisionManager.h>
 #include <FollowCamera.h>
 #include <Player.h>
-#include "TutorialController.h"
+#include "application/Scene/TutorialScene/TutorialController.h"
 #include <memory>
 
 class TutorialScene : public BaseScene

@@ -2,7 +2,7 @@
 #include "TitleScene.h"
 #include "GamePlayScene.h"
 #include "ParticleEditorScene.h"
-#include "TutorialScene.h"
+#include "application/Scene/TutorialScene/TutorialScene.h"
 
 BaseScene* SceneFactory::CreateScene(const std::string& sceneName)
 {
