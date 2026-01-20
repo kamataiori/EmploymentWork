@@ -23,15 +23,10 @@ public:
 
 private:
     // 衝突判定を無視すべきタイプの組み合わせを確認
-    bool ShouldIgnoreCollision(CollisionTypeIdDef type1, CollisionTypeIdDef type2);
+    bool ShouldIgnoreCollision(uint32_t type1, uint32_t type2);
 
-    // pairをハッシュ可能にするための構造体（unordered_setで使う）
-    struct pair_hash {
-        template <class T1, class T2>
-        std::size_t operator()(const std::pair<T1, T2>& p) const {
-            return std::hash<T1>{}(p.first) ^ std::hash<T2>{}(p.second);
-        }
-    };
+    // 例外：同グループ内でも「当てたい」ペア
+    bool IsForceCollide(uint32_t type1, uint32_t type2) const;
 
 private:
     // 登録されたコライダーのリスト

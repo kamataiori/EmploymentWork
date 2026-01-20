@@ -72,6 +72,11 @@ public:
 	void OnCollision() override;
 
 	/// <summary>
+	/// 当たり判定の呼出し
+	/// </summary>
+	void OnCollision(const CollisionInfo& info) override;
+
+	/// <summary>
 	/// カメラをセット
 	/// </summary>
 	void SetCamera(Camera* camera) override;

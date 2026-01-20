@@ -325,6 +325,20 @@ void Enemy::OnCollision()
 	}
 }
 
+void Enemy::OnCollision(const CollisionInfo& info)
+{
+	// 相手のタイプIDを enum に戻す
+	const auto otherType = static_cast<CollisionTypeIdDef>(info.otherType);
+
+	// ★要件：kPlayerWeapon と Enemy が当たった時にHP減少
+	// Enemy側なので「相手が kPlayerWeapon」ならダメージを入れる
+	if (otherType == CollisionTypeIdDef::kPlayerWeapon)
+	{
+		OnCollision();  // 既存のHP減少・死亡・被弾アニメ処理を使う
+		return;
+	}
+}
+
 void Enemy::SetCamera(Camera* camera)
 {
 	// まずは ObjectBase 側の処理（camera_ と object3d_ にセット）
