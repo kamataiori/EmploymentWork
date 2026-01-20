@@ -2,6 +2,7 @@
 #include "Collider.h"
 #include "ShapeIntersect.h"
 #include <unordered_set>
+#include <engine/TimeManager.h>
 
 // --------------------------
 // 内部ユーティリティ
@@ -36,60 +37,111 @@ void CollisionManager::Reset() {
 }
 
 // 登録された全てのコライダーの組み合わせで衝突チェック
-void CollisionManager::CheckAllCollisions() {
-	for (auto it1 = colliders.begin(); it1 != colliders.end(); ++it1)
-	{
-		auto it2 = it1;
-		++it2;
+void CollisionManager::CheckAllCollisions()
+{
+    // 時間を進める（TimeManagerの関数名はあなたの実装に合わせて）
+    const float dt = TimeManager::GetInstance()->GetDeltaTime(); // ←違う名前ならここだけ置換
+    nowSec_ += dt;
 
-		for (; it2 != colliders.end(); ++it2)
-		{
-			auto* c1 = *it1;
-			auto* c2 = *it2;
+    currContacts_.clear();
 
-			const uint32_t type1 = c1->GetTypeID();
-			const uint32_t type2 = c2->GetTypeID();
+    for (auto it1 = colliders.begin(); it1 != colliders.end(); ++it1) {
+        auto it2 = it1; ++it2;
+        for (; it2 != colliders.end(); ++it2) {
 
-			if (ShouldIgnoreCollision(type1, type2)) { continue; }
+            auto* c1 = *it1;
+            auto* c2 = *it2;
 
-			const auto& s1 = c1->GetShapes();
-			const auto& s2 = c2->GetShapes();
+            auto id1 = static_cast<CollisionTypeIdDef>(c1->GetTypeID());
+            auto id2 = static_cast<CollisionTypeIdDef>(c2->GetTypeID());
 
-			bool hit = false;
-			for (const auto& a : s1) {
-				for (const auto& b : s2) {
-					if (Intersects(a, b)) { hit = true; break; }
-				}
-				if (hit) break;
-			}
+            if (ShouldIgnoreCollision(id1, id2)) { continue; }
 
-			if (hit)
-			{
-				// 相手情報つき通知（Collider側が未対応なら OnCollision() にフォールバックする作りにしておく）
-				CollisionInfo info1{};
-				info1.self = c1;
-				info1.other = c2;
-				info1.selfType = type1;
-				info1.otherType = type2;
+            // ナローフェーズ
+            const auto& s1 = c1->GetShapes();
+            const auto& s2 = c2->GetShapes();
 
-				CollisionInfo info2{};
-				info2.self = c2;
-				info2.other = c1;
-				info2.selfType = type2;
-				info2.otherType = type1;
+            bool hit = false;
+            for (const auto& a : s1) {
+                for (const auto& b : s2) {
+                    if (Intersects(a, b)) { hit = true; break; }
+                }
+                if (hit) break;
+            }
+            if (!hit) continue;
 
-				c1->OnCollision(info1);
-				c2->OnCollision(info2);
-			}
-		}
-	}
+            // ---- 多段ヒット抑止（Enter + StayCooldown）----
+            const uint64_t key = MakePairKey(c1->GetInstanceId(), c2->GetInstanceId());
+            currContacts_.insert(key);
 
-	// あなたの現行設計：毎フレーム登録を消す
-	Reset();
+            // 新規接触か？
+            const bool isNewContact = (prevContacts_.find(key) == prevContacts_.end());
+
+            // このTypeペアは“接触継続で再ヒット”を許可する？
+            const float stayCd = GetStayCooldown(id1, id2);
+
+            // 最後にヒットした時刻を取得（無ければ -inf 扱い）
+            float last = -1e9f;
+            auto itLast = lastHitTime_.find(key);
+            if (itLast != lastHitTime_.end()) {
+                last = itLast->second;
+            }
+
+            bool shouldFire = false;
+
+            if (isNewContact)
+            {
+                // Enter：常に1回は当てる
+                shouldFire = true;
+            }
+            else
+            {
+                // Stay：登録されているペアだけ、cooldown秒ごとに当てる
+                if (stayCd > 0.0f)
+                {
+                    if ((nowSec_ - last) >= stayCd)
+                    {
+                        shouldFire = true;
+                    }
+                }
+            }
+
+            if (!shouldFire) {
+                continue;
+            }
+
+            // ヒット時刻更新
+            lastHitTime_[key] = nowSec_;
+
+            // 新規/再ヒットのみ OnCollision
+            CollisionInfo i1{ c1, c2, (uint32_t)id1, (uint32_t)id2 };
+            CollisionInfo i2{ c2, c1, (uint32_t)id2, (uint32_t)id1 };
+            c1->OnCollision(i1);
+            c2->OnCollision(i2);
+
+        }
+    }
+
+    // 次フレーム用
+    prevContacts_.swap(currContacts_);
+
+    // 接触が終わったペアの履歴を掃除（不要なら増え続けるので重要）
+    for (auto it = lastHitTime_.begin(); it != lastHitTime_.end(); )
+    {
+        if (prevContacts_.find(it->first) == prevContacts_.end()) {
+            it = lastHitTime_.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    // 毎フレーム登録を消す
+    Reset();
 }
 
 // 衝突を無視するペアをチェック
-bool CollisionManager::ShouldIgnoreCollision(uint32_t type1, uint32_t type2) {
+bool CollisionManager::ShouldIgnoreCollision(CollisionTypeIdDef type1, CollisionTypeIdDef type2) {
 	// 例外（当てたい）なら無視しない
 	if (IsForceCollide(type1, type2)) {
 		return false;
@@ -106,22 +158,39 @@ bool CollisionManager::ShouldIgnoreCollision(uint32_t type1, uint32_t type2) {
 	return false;
 }
 
-bool CollisionManager::IsForceCollide(uint32_t type1, uint32_t type2) const
+bool CollisionManager::IsForceCollide(CollisionTypeIdDef type1, CollisionTypeIdDef type2) const
 {
-	// ここだけが「追加で書く場所」になる
-	// - 同グループ内は基本無視だが、ここに入れたペアだけ衝突させる
-	// - NormalizeU32Pair なので片方向1行だけでOK
-	//
-	// 例：
-	//  - Playerの弾が Playerの設置物 に当たる
-	//  - Enemy弾が Enemyのバリア に当たる
-	//
-	// static const uint32_t PlayerTurret = MakeType(CollisionGroup::Player, 100); // 例
-	// NormalizeU32Pair((uint32_t)CollisionTypeIdDef::PlayerBullet, PlayerTurret),
+    // ここだけが「追加で書く場所」になる（同グループでも当てたい例外）
+    static const std::unordered_set<std::pair<uint32_t, uint32_t>, u32pair_hash> forcePairs = {
+        // 例：
+        // NormalizeU32Pair((uint32_t)CollisionTypeIdDef::PlayerBullet, (uint32_t)CollisionTypeIdDef::kPlayerWeapon),
+    };
 
-	static const std::unordered_set<std::pair<uint32_t, uint32_t>, u32pair_hash> forcePairs = {
-		// いまは空でOK（＝同グループ内は全部無視）
-	};
+    const uint32_t a = static_cast<uint32_t>(type1);
+    const uint32_t b = static_cast<uint32_t>(type2);
+    return forcePairs.find(NormalizeU32Pair(a, b)) != forcePairs.end();
+}
 
-	return forcePairs.find(NormalizeU32Pair(type1, type2)) != forcePairs.end();
+float CollisionManager::GetStayCooldown(CollisionTypeIdDef a, CollisionTypeIdDef b) const
+{
+    // Normalize（順序違いを吸収）
+    const uint32_t ua = static_cast<uint32_t>(a);
+    const uint32_t ub = static_cast<uint32_t>(b);
+    const auto key = (ua < ub) ? std::make_pair(ua, ub) : std::make_pair(ub, ua);
+
+    // ここに「接触継続でも一定間隔で当てたい」ものだけ登録
+    // 例：敵の範囲攻撃がプレイヤーに0.2秒ごとにダメージ
+    //     EnemyAreaAttack × Player
+    static const std::unordered_map<std::pair<uint32_t, uint32_t>, float, u32pair_hash> stayCooldown = {
+        { NormalizeU32Pair((uint32_t)CollisionTypeIdDef::EnemyAreaAttack, (uint32_t)CollisionTypeIdDef::kPlayer), 0.20f },
+
+        // 例：レーザー(仮) × Player を 0.10秒ごと
+        // { NormalizeU32Pair((uint32_t)CollisionTypeIdDef::EnemyLaser, (uint32_t)CollisionTypeIdDef::kPlayer), 0.10f },
+    };
+
+    auto it = stayCooldown.find(key);
+    if (it == stayCooldown.end()) {
+        return 0.0f; // 0なら“Enterのみ”（再ヒットなし）
+    }
+    return it->second;
 }

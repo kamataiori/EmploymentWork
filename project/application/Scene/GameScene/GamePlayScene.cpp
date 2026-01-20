@@ -67,8 +67,6 @@ void GamePlayScene::Initialize()
 
 	collisionManager_ = std::make_unique<CollisionManager>();
 
-	AddRightDockWindow(kWindowName_MonsterControl);
-
 	ex = std::make_unique<Sprite>();
 	ex->Initialize("Resources/exp.png");
 	ex->SetPosition({ 0.0f,100.0f });

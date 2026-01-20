@@ -29,7 +29,12 @@ struct CollisionInfo
 
 class Collider {
 public:
+
+    Collider();
     virtual ~Collider() = default;
+
+    // 多段ヒット回避用
+    uint32_t GetInstanceId() const { return instanceId_; }
 
     // 形状リスト公開（読み取り）
     virtual const std::vector<Shape>& GetShapes() const = 0;
@@ -49,4 +54,5 @@ public:
 
 private:
     uint32_t typeID_ = 0u;
+    uint32_t instanceId_ = 0;
 };

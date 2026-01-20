@@ -178,9 +178,5 @@ private:
 	float hpBarHeight_ = 18.0f;       // 高さ
 	float hpBarMarginLeft_ = 50.0f;     // 左端からのオフセット
 	float hpBarMarginBottom_ = 100.0f;    // 下端からのオフセット
-
-
-
-	/*std::unique_ptr<ParticleManager> poweder = std::make_unique<ParticleManager>();*/
 };
 

@@ -36,3 +36,9 @@ enum class CollisionTypeIdDef : uint32_t
     EnemyBullet = MakeType(CollisionGroup::Enemy, 1),
     EnemyAreaAttack = MakeType(CollisionGroup::Enemy, 2),
 };
+
+// CollisionTypeIdDef からもグループが取れるようにする
+constexpr CollisionGroup GetGroup(CollisionTypeIdDef type)
+{
+    return GetGroup(static_cast<uint32_t>(type));
+}

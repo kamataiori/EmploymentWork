@@ -17,10 +17,6 @@
 #include "Camera/CameraEffectController.h"
 #include "SkyBox.h"
 
-//inline constexpr const char* kWindowName_PlayerControl = "Player Control";
-//inline constexpr const char* kWindowName_EnemyControl = "Enemy Control";
-inline constexpr const char* kWindowName_MonsterControl = "Monster Control";
-
 class GamePlayScene : public BaseScene
 {
 public:
