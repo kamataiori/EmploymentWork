@@ -258,7 +258,7 @@ void TitleScene::Update()
 		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
 			fade_->Start(Fade::Status::FadeOut, 2.0f);
-			nextSceneName_ = "GAMEPLAY";
+			nextSceneName_ = "TUTORIAL";
 		}
 		if (Input::GetInstance()->TriggerKey(DIK_U)) {
 			fade_->Start(Fade::Status::FadeOut, 2.0f);

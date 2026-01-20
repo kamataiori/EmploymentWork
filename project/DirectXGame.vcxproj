@@ -112,6 +112,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\CompositeNodeBase.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Decorator\DecoratorNodeBase.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\EnemyAIController.cpp" />
+    <ClCompile Include="application\Scene\TutorialScene\BaseTutorialState.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraEffectController.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraMove.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraShake.cpp" />
@@ -200,6 +201,18 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.cpp" />
     <ClCompile Include="PunchAttackLeaf.cpp" />
+    <ClCompile Include="application\Scene\TutorialScene\TutorialController.cpp" />
+    <ClCompile Include="application\Scene\TutorialScene\TutorialStateMove.cpp" />
+    <ClCompile Include="application\Scene\TutorialScene\TutorialScene.cpp" />
+    <ClCompile Include="application\Scene\TutorialScene\TutorialStateAttack.cpp" />
+    <ClCompile Include="application\Scene\TutorialScene\TutorialStateJump.cpp" />
+    <ClCompile Include="application\Scene\TutorialScene\TutorialStateRoll.cpp" />
+    <ClCompile Include="application\Scene\TutorialScene\TutorialStateDash.cpp" />
+    <ClCompile Include="application\Scene\TutorialScene\TutorialStateFinal.cpp" />
+    <ClCompile Include="UIElement.cpp" />
+    <ClCompile Include="UIHpBar.cpp" />
+    <ClCompile Include="UIManager.cpp" />
+    <ClCompile Include="UITexture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\AI\BehaviorTree\BehaviorTree.h" />
@@ -208,6 +221,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChaseTargetLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\CompositeNodeBase.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Decorator\DecoratorNodeBase.h" />
+    <ClInclude Include="application\Scene\TutorialScene\BaseTutorialState.h" />
     <ClInclude Include="engine\BlendMode.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\EnemyAIController.h" />
     <ClInclude Include="engine\3d\Camera\CameraEffectController.h" />
@@ -315,6 +329,18 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\TimeManager.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.h" />
+    <ClInclude Include="application\Scene\TutorialScene\TutorialController.h" />
+    <ClInclude Include="application\Scene\TutorialScene\TutorialStateMove.h" />
+    <ClInclude Include="application\Scene\TutorialScene\TutorialScene.h" />
+    <ClInclude Include="application\Scene\TutorialScene\TutorialStateAttack.h" />
+    <ClInclude Include="application\Scene\TutorialScene\TutorialStateJump.h" />
+    <ClInclude Include="application\Scene\TutorialScene\TutorialStateRoll.h" />
+    <ClInclude Include="application\Scene\TutorialScene\TutorialStateDash.h" />
+    <ClInclude Include="application\Scene\TutorialScene\TutorialStateFinal.h" />
+    <ClInclude Include="UIElement.h" />
+    <ClInclude Include="UIHpBar.h" />
+    <ClInclude Include="UIManager.h" />
+    <ClInclude Include="UITexture.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />

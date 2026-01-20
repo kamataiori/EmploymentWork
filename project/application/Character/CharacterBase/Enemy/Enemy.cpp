@@ -2,6 +2,8 @@
 #include "application/Character/CharacterBase/Enemy/AI/EnemyAIController.h"
 #include <CollisionTypeIdDef.h>
 #include <SceneManager.h>
+#include "UIManager.h"
+#include <UIHpBar.h>
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
@@ -35,15 +37,10 @@ Enemy::~Enemy() = default;
 
 void Enemy::Initialize()
 {
-	object3d_->Initialize();
-
 	// モデル読み込み
-	/*ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");*/
-	ModelManager::GetInstance()->LoadModel("matest.obj");
 	ModelManager::GetInstance()->LoadModel("Skeleton.gltf");
-	ModelManager::GetInstance()->LoadModel("Sam.gltf");
 
+	object3d_->Initialize();
 	object3d_->SetModel("Skeleton.gltf");
 
 	// 初期Transform設定
@@ -89,38 +86,25 @@ void Enemy::Initialize()
 	// ヒットを Enemy::OnCollision に橋渡し
 	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
 
-	// AI初期
-	state_ = RushState::Idle;
-	stateTimer_ = idleTime_;
-
-
 	// === HPバー初期化 ===
-	hpBarBG_ = std::make_unique<Sprite>();
-	hpBarFill_ = std::make_unique<Sprite>();
 
-	// テクスチャは 2x2 の "hp"
-	hpBarBG_->Initialize("Resources/hp.png");
-	hpBarFill_->Initialize("Resources/hp.png");
-
-	// 背景は少し暗め
-	hpBarBG_->SetColor({ 0.2f, 0.2f, 0.2f, 0.8f });
-	// 本体は赤系
-	hpBarFill_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
-
-	// 初期サイズと位置（中央上）を一旦設定
+	uiManager_ = std::make_unique<UIManager>();
+	// 画面上中央
 	const float winW = 1280.0f;
-	const float centerX = winW * 0.5f;
-	const float left = centerX - hpBarMaxWidth_ * 0.5f;
+	const float barW = 420.0f;
+	const float barH = 20.0f;
+	const float top = 20.0f;
+	UIHpBar::CreateDesc desc{};
+	desc.bgTexPath = "Resources/hp.png";
+	desc.fillTexPath = "Resources/hp.png";
+	desc.pos = { winW * 0.5f - barW * 0.5f, top };
+	desc.size = { barW, barH };
+	desc.anchor = { 0.0f, 0.5f };
+	desc.layer = 100;
+	desc.bgColor = { 0.2f, 0.2f, 0.2f, 0.8f };
+	desc.fillColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-	hpBarBG_->SetSize({ hpBarMaxWidth_, hpBarHeight_ });
-	hpBarBG_->SetPosition({ left, hpBarTop_ });
-
-	// fill は後で Update で現在HPに合わせて幅を更新
-	hpBarFill_->SetSize({ hpBarMaxWidth_, hpBarHeight_ });
-	hpBarFill_->SetPosition({ left, hpBarTop_ });
-
-	hpBarBG_->SetAnchorPoint({ 0.0f, 0.5f });
-	hpBarFill_->SetAnchorPoint({ 0.0f, 0.5f });
+	uiManager_->Add(UIHpBar::Create(desc));
 
 	// -------------------------
 	// 死亡エフェクト用パーティクル（プリセット "fire" を使用）
@@ -134,9 +118,6 @@ void Enemy::Initialize()
 
 	// Emit 時に使う Transform の初期値
 	deathParticleTransform_ = transform;
-	/*deathParticleTransform_.scale = { 1.0f, 1.0f, 1.0f };
-	deathParticleTransform_.rotate = { 0.0f, 0.0f, 0.0f };
-	deathParticleTransform_.translate = { 0.0f, 0.0f, 0.0f };*/
 
 }
 
@@ -270,24 +251,13 @@ void Enemy::Update()
 	}
 
 
-	const float ratio = (kMaxHP_ > 0) ? std::clamp(hp_ / float(kMaxHP_), 0.0f, 1.0f) : 0.0f;
+	// HP を UI に反映
+	UIElement::UIData data{};
+	data.hp = static_cast<float>(hp_);
+	data.maxHp = static_cast<float>(kMaxHP_);
 
-	const float winW = 1280.0f;
-	const float centerX = winW * 0.5f;
-	const float maxW = hpBarMaxWidth_;
-	const float curW = maxW * ratio;
-	const float leftBG = centerX - maxW * 0.5f;
-	const float leftFill = leftBG;
-
-	// 背景は常に最大幅
-	hpBarBG_->SetSize({ maxW, hpBarHeight_ });
-	hpBarBG_->SetPosition({ leftBG, hpBarTop_ });
-	hpBarBG_->Update();
-
-	// 本体は現在幅
-	hpBarFill_->SetSize({ curW, hpBarHeight_ });
-	hpBarFill_->SetPosition({ leftFill, hpBarTop_ });
-	hpBarFill_->Update();
+	uiManager_->ApplyDataToAll(data);
+	uiManager_->Update();
 }
 
 void Enemy::BackGroundDraw()
@@ -304,12 +274,11 @@ void Enemy::Draw()
 
 void Enemy::ForeGroundDraw()
 {
-	// === HPバー描画 ===
-	if (hpBarBG_ && hpBarFill_) {
+	OutputDebugStringA("Enemy::ForeGroundDraw called\n");
 
-		// 背景 → 本体の順で描画
-		hpBarBG_->Draw();
-		hpBarFill_->Draw();
+	// === HPバー描画 ===
+	if (uiManager_) {
+		uiManager_->Draw();
 	}
 }
 
@@ -323,8 +292,6 @@ void Enemy::ParticleDraw()
 	if (isDead_) {
 		deathSystem_->Draw();
 	}
-
-
 }
 
 void Enemy::OnCollision()
@@ -332,12 +299,6 @@ void Enemy::OnCollision()
 	// ===== HP減少 =====
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
-
-	/*if (poweder) {
-		deathParticleTransform_.translate = explosionPos;
-		deathParticleTransform_.translate.y += 2.5f;
-		poweder->EmitByPresetName("powder", deathParticleTransform_);
-	}*/
 
 	// ===== HPチェック =====
 	if (hp_ <= 0 && !isDead_) {
