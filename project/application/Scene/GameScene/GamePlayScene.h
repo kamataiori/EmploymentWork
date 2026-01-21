@@ -104,9 +104,6 @@ private:
 	std::unique_ptr<Enemy> enemy_;
 	bool enemyWasDead_ = false;   // 前フレームの死亡状態
 
-
-	
-
 	std::unique_ptr<CollisionManager> collisionManager_;
 
 	std::unique_ptr<SceneController> stage_;
