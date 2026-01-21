@@ -73,7 +73,7 @@ public:
 	/// <summary>
 	/// 衝突判定と応答
 	/// </summary>
-	void CheckAllColisions();
+	void CheckAllCollisions();
 
 
 private:

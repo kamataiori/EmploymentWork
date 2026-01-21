@@ -271,7 +271,7 @@ void GamePlayScene::Update()
 
 
 	// 衝突判定と応答
-	CheckAllColisions();
+	CheckAllCollisions();
 
 	Debug();
 
@@ -397,7 +397,7 @@ void GamePlayScene::Debug()
 #endif
 }
 
-void GamePlayScene::CheckAllColisions()
+void GamePlayScene::CheckAllCollisions()
 {
 	collisionManager_->CheckAllCollisions();
 }
