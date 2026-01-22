@@ -67,7 +67,7 @@ void TitleScene::Initialize()
 	orbitAngle_ = 0.0f;
 	orbitRadius_ = 40.0f;
 	orbitHeight_ = 3.0f;
-	orbitSpeed_ = 0.5f;
+	orbitSpeed_ = -0.5f;
 
 
 	// カメラのセット
