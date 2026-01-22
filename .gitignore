@@ -333,6 +333,9 @@ imgui.ini
 *.iobj
 *.ilk
 *.obj
+# Keep asset .obj under Resources (do not ignore)
+!Resources/**/*.obj
+!project/Resources/**/*.obj
 *.pch
 *.idb
 *.tlog
