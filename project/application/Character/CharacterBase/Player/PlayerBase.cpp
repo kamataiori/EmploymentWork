@@ -212,8 +212,8 @@ void PlayerBase::OnCollision()
 	}*/
 
 	// ====== HP減少処理 ======
-	hp_ -= kDamagePerHit_;
-	if (hp_ < 0) hp_ = 0;
+	/*hp_ -= kDamagePerHit_;
+	if (hp_ < 0) hp_ = 0;*/
 
 	/*poweder->EmitByPresetName("powder", transform);
 	poweder->Update();*/

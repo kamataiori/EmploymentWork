@@ -57,41 +57,26 @@ public:
 private:
 
 	// 3Dオブジェクトの初期化
-	std::unique_ptr<Object3d> plane = nullptr;
-	std::unique_ptr<Object3d> animationCube = nullptr;
 	std::unique_ptr<Object3d> sneak = nullptr;
+	Transform transform{};
+
+	std::unique_ptr<Object3d> ground;
+	std::unique_ptr<Object3d> sky;
 
 	//3Dカメラの初期化
 	std::unique_ptr<Camera> camera1 = std::make_unique<Camera>();
+	// オービットカメラ用
+	float orbitAngle_ = 0.0f;          // 現在角度（ラジアン）
+	float orbitSpeed_ = 0.5f;          // 回転速度（rad/sec）
+	float orbitRadius_ = 20.0f;        // 半径
+	float orbitHeight_ = 3.0f;         // 高さ（Y）
+	Vector3 orbitTargetOffset_ = { 0.0f, 1.0f, 0.0f }; // 注視点オフセット（頭あたり）
+
 
 	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
 
-	AABB aabb;
-	Sphere sphere;
-	Plane ground;
-	Capsule capsule;
-	OBB obb;
-
-	DrawTriangle* drawTriangle_ = nullptr;
-	// 追加するメンバ変数
-	Vector3 triangleP1 = { -1.0f, 0.0f, 0.0f };
-	Vector3 triangleP2 = { 1.0f, 0.0f, 0.0f };
-	Vector3 triangleP3 = { 0.0f, 1.0f, 0.0f };
-	Color triangleColor = Color::BLUE;
-	// 透過度（0.0f = 完全透明, 1.0f = 不透明）
-	float triangleAlpha = 0.3f;
-
-
-	// 最後の private: 内などに追加
-	bool changeSpeed_ = false;
-
 	std::unique_ptr<Fade> fade_ = nullptr;
 	std::string nextSceneName_ = "";
-
-	float sliderValue = 0.0f;
-	bool isDissolve = false;
-
-	std::unique_ptr<SceneController> sceneController_;
 
 	std::unique_ptr<Sprite> title = std::make_unique<Sprite>();
 };

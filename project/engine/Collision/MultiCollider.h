@@ -14,8 +14,18 @@ public:
     // ヒット時に呼ぶコールバックを登録
     void SetHitCallback(std::function<void()> cb) { onHit_ = std::move(cb); }
 
+    // 相手情報付き
+    void SetHitCallbackEx(std::function<void(const CollisionInfo&)> cb) { onHitEx_ = std::move(cb); }
+
     // 橋渡し
     void OnCollision() override { if (onHit_) onHit_(); }
+
+    // 相手情報付き（優先してExを呼ぶ → 無ければ旧へ）
+    void OnCollision(const CollisionInfo& info) override
+    {
+        if (onHitEx_) { onHitEx_(info); return; }
+        OnCollision();
+    }
 
     // 追加API（任意タイミングで形状を足せる）
     void Add(const Shape& s) { shapes_.push_back(s); }
@@ -46,5 +56,6 @@ public:
 private:
     std::vector<Shape> shapes_;
     std::function<void()> onHit_;
+    std::function<void(const CollisionInfo&)> onHitEx_;
 };
 
