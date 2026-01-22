@@ -17,10 +17,6 @@
 #include "Camera/CameraEffectController.h"
 #include "SkyBox.h"
 
-//inline constexpr const char* kWindowName_PlayerControl = "Player Control";
-//inline constexpr const char* kWindowName_EnemyControl = "Enemy Control";
-inline constexpr const char* kWindowName_MonsterControl = "Monster Control";
-
 class GamePlayScene : public BaseScene
 {
 public:
@@ -77,7 +73,7 @@ public:
 	/// <summary>
 	/// 衝突判定と応答
 	/// </summary>
-	void CheckAllColisions();
+	void CheckAllCollisions();
 
 
 private:
@@ -107,9 +103,6 @@ private:
 	std::unique_ptr<Player> player_;
 	std::unique_ptr<Enemy> enemy_;
 	bool enemyWasDead_ = false;   // 前フレームの死亡状態
-
-
-	
 
 	std::unique_ptr<CollisionManager> collisionManager_;
 

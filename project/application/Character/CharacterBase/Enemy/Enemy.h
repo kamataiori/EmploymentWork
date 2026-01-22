@@ -72,6 +72,11 @@ public:
 	void OnCollision() override;
 
 	/// <summary>
+	/// 当たり判定の呼出し
+	/// </summary>
+	void OnCollision(const CollisionInfo& info) override;
+
+	/// <summary>
 	/// カメラをセット
 	/// </summary>
 	void SetCamera(Camera* camera) override;
@@ -109,9 +114,9 @@ private:
 	const Transform* target_ = nullptr; // Player の Transform を参照
 
 	// HP
-	int hp_ = 1000;                   // 現在HP
-	const int kMaxHP_ = 1000;         // 最大HP
-	const int kDamagePerHit_ = 10;   // 被弾時のダメージ量
+	int hp_ = 250;                   // 現在HP
+	const int kMaxHP_ = 250;         // 最大HP
+	const int kDamagePerHit_ = 30;   // 被弾時のダメージ量
 
 	// === HPバー表示用 ===
 	std::unique_ptr<UIManager> uiManager_;

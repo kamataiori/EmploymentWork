@@ -167,7 +167,7 @@ private:
 	// HP関連
 	int hp_ = 10000;                     // 現在HP
 	const int kMaxHP_ = 10000;           // 最大HP
-	const int kDamagePerHit_ = 1;     // 1回の衝突ダメージ
+	const int kDamagePerHit_ = 10;     // 1回の衝突ダメージ
 
 	// === HPバー表示用 ===（Player用 左下）
 	std::unique_ptr<Sprite> hpBarBG_;    // 背景
@@ -178,9 +178,5 @@ private:
 	float hpBarHeight_ = 18.0f;       // 高さ
 	float hpBarMarginLeft_ = 50.0f;     // 左端からのオフセット
 	float hpBarMarginBottom_ = 100.0f;    // 下端からのオフセット
-
-
-
-	/*std::unique_ptr<ParticleManager> poweder = std::make_unique<ParticleManager>();*/
 };
 

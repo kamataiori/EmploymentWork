@@ -768,6 +768,7 @@
     <None Include="Resources\shaders\Sprite.hlsli" />
     <None Include="Resources\shaders\SkinningObject3d.hlsli" />
     <None Include="Resources\shaders\Skybox.hlsli" />
+    <None Include="..\..\..\..\Downloads\exclusion.dic" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Resources\shaders\Particle.VS.hlsl" />

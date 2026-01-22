@@ -13,99 +13,110 @@
 class ObjectBase
 {
 public:
-    /// <summary>
-    /// コンストラクタ
-    /// </summary>
-    /// <param name="baseScene"></param>
-    ObjectBase(BaseScene* baseScene) : baseScene_(baseScene)
-    {
-        object3d_ = std::make_unique<Object3d>(baseScene_);
-        multiCollider_ = std::make_unique<MultiCollider>();
-    }
+	/// <summary>
+	/// コンストラクタ
+	/// </summary>
+	/// <param name="baseScene"></param>
+	ObjectBase(BaseScene* baseScene) : baseScene_(baseScene)
+	{
+		object3d_ = std::make_unique<Object3d>(baseScene_);
+		multiCollider_ = std::make_unique<MultiCollider>();
+	}
 
-    virtual ~ObjectBase() = default;
+	virtual ~ObjectBase() = default;
 
-    /// <summary>
-    /// 初期化処理
-    /// </summary>
-    virtual void Initialize() = 0;
+	/// <summary>
+	/// 初期化処理
+	/// </summary>
+	virtual void Initialize() = 0;
 
-    /// <summary>
-    /// 更新処理
-    /// </summary>
-    virtual void Update() = 0;
+	/// <summary>
+	/// 更新処理
+	/// </summary>
+	virtual void Update() = 0;
 
-    /// <summary>
-    /// 背景スプライト描画処理
-    /// </summary>
-    virtual void BackGroundDraw() = 0;
+	/// <summary>
+	/// 背景スプライト描画処理
+	/// </summary>
+	virtual void BackGroundDraw() = 0;
 
-    /// <summary>
-    /// 通常のObject専用の描画処理
-    /// </summary>
-    virtual void Draw() = 0;
+	/// <summary>
+	/// 通常のObject専用の描画処理
+	/// </summary>
+	virtual void Draw() = 0;
 
-    /// <summary>
-    /// 前景スプライト描画
-    /// </summary>
-    virtual void ForeGroundDraw() = 0;
+	/// <summary>
+	/// 前景スプライト描画
+	/// </summary>
+	virtual void ForeGroundDraw() = 0;
 
-    /// <summary>
-    /// パーティクル専用の描画処理
-    /// </summary>
-    virtual void ParticleDraw() = 0;
+	/// <summary>
+	/// パーティクル専用の描画処理
+	/// </summary>
+	virtual void ParticleDraw() = 0;
 
-    /// <summary>
-    /// Skiningのモデル専用の描画処理
-    /// </summary>
-    virtual void AnimationDraw() = 0;
+	/// <summary>
+	/// Skiningのモデル専用の描画処理
+	/// </summary>
+	virtual void AnimationDraw() = 0;
 
-    /// <summary>
-    /// 当たり判定の呼出し
-    /// </summary>
-    virtual void OnCollision() = 0;
+	/// <summary>
+	/// 当たり判定の呼出し
+	/// </summary>
+	virtual void OnCollision() = 0;
 
-    // Sceneを取得
-    BaseScene* GetBaseScene() const { return baseScene_; }
+	/// <summary>
+	/// 当たり判定の呼出し（相手情報付き）
+	/// </summary>
+	virtual void OnCollision(const CollisionInfo& info)
+	{
+		// 互換：従来の OnCollision() を呼ぶ
+		(void)info;
+		OnCollision();
+	}
 
-    /// Transformを取得
-    const Transform& GetTransform() const { return transform; }
 
-    void SetTarnsform(const Transform& transform_) { transform = transform_;  }
+	// Sceneを取得
+	BaseScene* GetBaseScene() const { return baseScene_; }
 
-    // Transformをセット
-    void SetTranslate(const Vector3& t) { transform.translate = t; }
-    void SetRotate(const Vector3& t) { transform.rotate = t; }
-    void SetScale(const Vector3& t) { transform.scale = t; }
+	/// Transformを取得
+	const Transform& GetTransform() const { return transform; }
 
-    // Cameraをセット
-    virtual void SetCamera(Camera* camera) {
-        camera_ = camera;
-        object3d_->SetCamera(camera);
-    }
+	void SetTarnsform(const Transform& transform_) { transform = transform_; }
 
-    Camera* GetCamera() const { return camera_; }
+	// Transformをセット
+	void SetTranslate(const Vector3& t) { transform.translate = t; }
+	void SetRotate(const Vector3& t) { transform.rotate = t; }
+	void SetScale(const Vector3& t) { transform.scale = t; }
 
-    // SetColliderをセット
-    //void SetCollider(MultiCollider* collider) { multiCollider_.get() = collider; }
+	// Cameraをセット
+	virtual void SetCamera(Camera* camera) {
+		camera_ = camera;
+		object3d_->SetCamera(camera);
+	}
 
-    // GetColliderをゲット
-    MultiCollider* GetMultiCollider() const { return multiCollider_.get(); }
+	Camera* GetCamera() const { return camera_; }
+
+	// SetColliderをセット
+	//void SetCollider(MultiCollider* collider) { multiCollider_.get() = collider; }
+
+	// GetColliderをゲット
+	MultiCollider* GetMultiCollider() const { return multiCollider_.get(); }
 
 protected:
-    // カメラを共通保持
-    Camera* camera_ = nullptr;
+	// カメラを共通保持
+	Camera* camera_ = nullptr;
 
-    // キャラクターの基本Transform
-    Transform transform;
+	// キャラクターの基本Transform
+	Transform transform;
 
-    // シーンの宣言
-    BaseScene* baseScene_;
+	// シーンの宣言
+	BaseScene* baseScene_;
 
-    // オブジェクトの宣言
-    std::unique_ptr<Object3d> object3d_;
+	// オブジェクトの宣言
+	std::unique_ptr<Object3d> object3d_;
 
-    // コライダーを管理
-    std::unique_ptr<MultiCollider> multiCollider_;
+	// コライダーを管理
+	std::unique_ptr<MultiCollider> multiCollider_;
 
 };
