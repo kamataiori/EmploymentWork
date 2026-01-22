@@ -351,3 +351,13 @@ Release/
 externals/**/Debug/
 externals/**/Release/
 externals/DirectXTex/Shaders/Compiled/
+
+# ===== Safety net for "project/" path comments =====
+project/x64/
+project/x86/
+project/Debug/
+project/Release/
+project/externals/**/Debug/
+project/externals/**/Release/
+project/externals/DirectXTex/Shaders/Compiled/
+
