@@ -326,3 +326,25 @@ MigrationBackup/
 FodyWeavers.xsd
 
 imgui.ini
+
+# ===== C++ / MSVC build artifacts =====
+*.pdb
+*.ipdb
+*.iobj
+*.ilk
+*.obj
+*.pch
+*.idb
+*.tlog
+*.log
+
+# VS build output dirs (C++ projects often generate these)
+x64/
+x86/
+Debug/
+Release/
+
+# ===== Your project externals / shader compiled outputs =====
+externals/**/Debug/
+externals/**/Release/
+externals/DirectXTex/Shaders/Compiled/
