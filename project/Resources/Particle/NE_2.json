@@ -1,0 +1,60 @@
+{
+    "emitterSettings": {
+        "blendMode": 2,
+        "textureFilePath": "Resources/ParticleTexture/circle.png",
+        "vertexType": 0
+    },
+    "emitterSpawn": {
+        "count": 52,
+        "frequency": 1.0,
+        "repeat": false,
+        "useRandomPosition": true
+    },
+    "name": "NE_2",
+    "particleSpawn": {
+        "initialOffset": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialRotate": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialScale": [
+            1.0,
+            1.0,
+            1.0
+        ]
+    },
+    "particleUpdate": {
+        "lifeTime": 2.380000114440918,
+        "rotationSpeed": [
+            0.0,
+            0.6899999976158142,
+            0.0
+        ],
+        "scaleSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "useGravity": true,
+        "velocity": [
+            0.0,
+            1.0199999809265137,
+            0.0
+        ]
+    },
+    "render": {
+        "color": [
+            0.0,
+            1.0,
+            0.4324324131011963,
+            1.0
+        ],
+        "flipY": false,
+        "useBillboard": true
+    }
+}

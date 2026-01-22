@@ -1,5 +1,13 @@
 #include "Collider.h"
+#include <atomic>
 
-void Collider::OnCollision()
+static std::atomic<uint32_t> gColliderSerial{ 1 };
+
+Collider::Collider()
 {
+    instanceId_ = gColliderSerial.fetch_add(1);
 }
+
+//void Collider::OnCollision()
+//{
+//}

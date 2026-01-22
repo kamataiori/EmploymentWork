@@ -1,6 +1,11 @@
 #include "MyGame.h"
-#include <UnityScene.h>
+#include "engine/TimeManager.h"
+
+#ifdef USE_IMGUI
+
 #include <externals/imgui/imgui_internal.h>
+
+#endif // USE_IMGUI
 
 void MyGame::Initialize()
 {
@@ -11,11 +16,15 @@ void MyGame::Initialize()
 	sceneFactory_ = new SceneFactory();
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
 
-	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+	SceneManager::GetInstance()->ChangeScene("TITLE");
+
+#ifdef USE_IMGUI
 
 	// ImGuiManagerの初期化
 	imGuiManager_ = std::make_unique<ImGuiManager>();
 	imGuiManager_->Initialize(winApp.get(), DirectXCommon::GetInstance());
+
+#endif // USE_IMGUI
 
 	//offscreenRendering->Initialize(PostEffectType::Normal);
 	//postEffect->Initialize(PostEffectType::Normal);
@@ -27,8 +36,12 @@ void MyGame::Initialize()
 
 void MyGame::Finalize()
 {
+#ifdef USE_IMGUI
+
 	// ImGuiの終了処理
 	imGuiManager_->Finalize();
+
+#endif // USE_IMGUI
 
 	// 基底クラスの終了処理
 	Framework::Finalize();
@@ -36,11 +49,24 @@ void MyGame::Finalize()
 
 void MyGame::Update()
 {
+#ifdef USE_IMGUI
+
 	// ImGuiのフレーム開始を宣言
 	imGuiManager_->Update();
+	ImGui::Begin("Performance");
+	ImGui::Text("FPS: %.2f", GetFPS());
+	ImGui::Text("Frame Time: %.2f ms", GetFrameTimeMs());
+	ImGui::Text("Average FPS: %.2f", GetAverageFPS());
+	ImGui::End();
 
-	ApplyImGuiStyle();
-#ifdef _DEBUG
+#endif // USE_IMGUI
+
+#ifdef USE_IMGUI
+
+
+
+	//ApplyImGuiStyle();
+
 	//// Unity風レイアウトの表示
 	//if (useUnityLayout_) {
 	//	DrawUnityLayout();
@@ -89,14 +115,23 @@ void MyGame::Update()
 
 	//GlobalVariables::GetInstance()->Update();
 
+#ifdef USE_IMGUI
+
 	// ImGuiの内部コマンドを生成する
 	ImGui::Render();
 
+#endif // USE_IMGUI
+
+	// ===== FPS & 時間計測 =====
 	auto now = std::chrono::steady_clock::now();
 	std::chrono::duration<float> delta = now - lastFrameTime_;
 	lastFrameTime_ = now;
 
 	float deltaSec = delta.count();
+	if (deltaSec <= 0.0f) {
+		deltaSec = 1.0f / 60.0f; // 万が一0になった時の保険
+	}
+
 	fps_ = 1.0f / deltaSec;
 	frameTimeMs_ = deltaSec * 1000.0f;
 
@@ -106,20 +141,18 @@ void MyGame::Update()
 		fpsHistory_.pop_front();
 	}
 
-	// 平均計算
 	float sum = 0.0f;
 	for (float f : fpsHistory_) sum += f;
 	averageFps_ = sum / static_cast<float>(fpsHistory_.size());
 
-	using namespace std::chrono;
 
-	// 時間の差分計算
-	auto randomNow = steady_clock::now();
-	deltaTime_ = duration<float>(randomNow - prevTime_).count();
-	prevTime_ = randomNow;
 
-	// PostEffectManagerにdeltaTimeを渡す
-	PostEffectManager::GetInstance()->RandomUpdate(deltaTime_);
+	// ===== TimeManager に生のΔtを渡す（ここが重要） =====
+	TimeManager::GetInstance()->Update(deltaSec);
+
+	// ===== PostEffect 側には「スケールなし」のΔtを渡す =====
+	float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
+	PostEffectManager::GetInstance()->RandomUpdate(unscaledDt);
 }
 
 void MyGame::Draw()
@@ -159,14 +192,23 @@ void MyGame::Draw()
 	//postEffect->Draw();
 	PostEffectManager::GetInstance()->Draw();
 
+#ifdef USE_IMGUI
+
 	// ImGuiの描画 (スワップチェーンに対して)
 	imGuiManager_->Draw();
+
+#endif // USE_IMGUI
 
 	// スワップチェーンの描画後処理
 	dxCommon->PostDraw();
 }
 
 void MyGame::ApplyImGuiStyle() {
+
+#ifdef USE_IMGUI
+
+
+
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImVec4* colors = style.Colors;
 
@@ -182,10 +224,15 @@ void MyGame::ApplyImGuiStyle() {
 	colors[ImGuiCol_Button] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
 	colors[ImGuiCol_ButtonHovered] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
 	colors[ImGuiCol_ButtonActive] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+#endif // USE_IMGUI
 }
 
 void MyGame::DrawUnityLayout()
 {
+#ifdef USE_IMGUI
+
+
+
 	ImGuiWindowFlags windowFlags =
 		ImGuiWindowFlags_MenuBar |
 		ImGuiWindowFlags_NoTitleBar |
@@ -296,19 +343,25 @@ void MyGame::DrawUnityLayout()
 	DrawLeftPanels();
 	DrawRightPanels();
 	DrawBottomPanel();
+#endif // USE_IMGUI
 }
 
 void MyGame::DrawCenterPanel()
 {
+#ifdef USE_IMGUI
+
 	ImGui::Begin("SceneView");
 	ImTextureID textureID = (ImTextureID)SrvManager::GetInstance()
 		->GetGPUDescriptorHandle(PostEffectManager::GetInstance()->GetSrvIndex()).ptr;
 	ImGui::Image(textureID, ImGui::GetContentRegionAvail());
 	ImGui::End();
+
+#endif // USE_IMGUI
 }
 
 void MyGame::DrawLeftPanels()
 {
+#ifdef USE_IMGUI
 
 	if (!useUnityLayout_) return;
 
@@ -325,10 +378,14 @@ void MyGame::DrawLeftPanels()
 	//ImGui::Begin("Hierarchy");
 	//ImGui::Text("Hierarchy内容");
 	//ImGui::End();
+
+#endif // USE_IMGUI
 }
 
 void MyGame::DrawRightPanels()
 {
+#ifdef USE_IMGUI
+
 	if (!useUnityLayout_) return;
 
 	/*ImGui::Begin("Inspector");
@@ -338,23 +395,18 @@ void MyGame::DrawRightPanels()
 	/*ImGui::Begin("Debug Info");
 	ImGui::Text("デバッグ情報やFPS");
 	ImGui::End();*/
+
+#endif // USE_IMGUI
 }
 
 void MyGame::DrawBottomPanel()
 {
+#ifdef USE_IMGUI
+
 	if (!useUnityLayout_) return;
 
 	ImGui::Begin("Project / Console");
 	ImGui::Text("プロジェクト・コンソール表示");
 	ImGui::End();
+#endif // USE_IMGUI
 }
-
-
-
-
-
-
-
-
-
-

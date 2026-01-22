@@ -14,11 +14,8 @@
 #include "CollisionManager.h"
 #include <Enemy/Enemy.h>
 #include <FollowCamera.h>
+#include "Camera/CameraEffectController.h"
 #include "SkyBox.h"
-
-//inline constexpr const char* kWindowName_PlayerControl = "Player Control";
-//inline constexpr const char* kWindowName_EnemyControl = "Enemy Control";
-inline constexpr const char* kWindowName_MonsterControl = "Monster Control";
 
 class GamePlayScene : public BaseScene
 {
@@ -76,7 +73,7 @@ public:
 	/// <summary>
 	/// 衝突判定と応答
 	/// </summary>
-	void CheckAllColisions();
+	void CheckAllCollisions();
 
 
 private:
@@ -85,6 +82,19 @@ private:
 	std::unique_ptr<Camera> camera1 = std::make_unique<Camera>();
 	std::unique_ptr<FollowCamera> followCamera;
 
+	// カメラ演出用コントローラ
+	std::unique_ptr<CameraEffectController> cameraEffect_;
+	// フォローカメラを止めるかどうか
+	bool followCameraLocked_ = false;
+	// 撃破演出用：ズームを何秒後に開始するかのタイマー
+	float defeatZoomTimer_ = -1.0f;   // < 0 なら未使用
+	bool  defeatZoomStarted_ = false; // ズーム開始済みかどうか
+	bool slowMotionStarted_ = false;  // スローモーションの開始時間
+	// ズームが「進行中」かどうか＆残り時間
+	bool  zoomActive_ = false;
+	float zoomTimer_ = 0.0f;
+	float zoomDuration_ = 0.0f;   // ズームの総時間を保存
+
 	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
 	std::unique_ptr<Object3d> ground;
 
@@ -92,12 +102,13 @@ private:
 
 	std::unique_ptr<Player> player_;
 	std::unique_ptr<Enemy> enemy_;
+	bool enemyWasDead_ = false;   // 前フレームの死亡状態
 
-	
-
-	std::unique_ptr<CollisionManager> collisionMAnager_;
+	std::unique_ptr<CollisionManager> collisionManager_;
 
 	std::unique_ptr<SceneController> stage_;
+
+	std::unique_ptr<Sprite> ex;
 
 };
 

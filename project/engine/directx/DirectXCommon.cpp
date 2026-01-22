@@ -62,7 +62,7 @@ void DirectXCommon::Device()
 	HRESULT hr;
 
 	//////=========デバックレイヤー=========////
-//#ifndef _DEBUG
+#ifndef _DEBUG
 
 	Microsoft::WRL::ComPtr<ID3D12Debug1> debugController = nullptr;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
@@ -72,7 +72,7 @@ void DirectXCommon::Device()
 		debugController->SetEnableGPUBasedValidation(TRUE);
 	}
 
-//#endif
+#endif
 
 
 	//////=========DXGIファクトリーの生成=========////
@@ -478,6 +478,8 @@ void DirectXCommon::PostDraw()
 
 	//GPU画面の交換を通知
 	swapChain->Present(1, 0);
+	// fpsの制限を無くす場合以下にする
+	//swapChain->Present(0, 0);
 
 	//Fenceの値を更新
 	fenceValue++;

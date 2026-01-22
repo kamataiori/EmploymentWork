@@ -160,6 +160,8 @@ public:
 
 	void SetAnimation(const std::string& name);
 
+	void SetAnimationOneShot(const std::string& name);
+
 	/// <summary>
 	/// NodeからJointを作る関数
 	/// </summary>
@@ -279,6 +281,6 @@ private:
 	std::map<std::string, AnimationData> animationMap_;
 	AnimationData* currentAnimation_ = nullptr;
 
-
+	bool isOneShot_ = false;  // このアニメは一回だけ再生
 };
 

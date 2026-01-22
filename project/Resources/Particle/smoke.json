@@ -1,0 +1,49 @@
+{
+    "blendMode": 2,
+    "color": [
+        0.2857142686843872,
+        0.2857142686843872,
+        0.2857142686843872,
+        1.0
+    ],
+    "count": 195,
+    "flipY": false,
+    "frequency": 1.0,
+    "initialOffset": [
+        0.0,
+        0.0,
+        0.0
+    ],
+    "initialRotate": [
+        0.0,
+        0.0,
+        0.0
+    ],
+    "initialScale": [
+        1.0,
+        1.0,
+        1.0
+    ],
+    "lifeTime": 2.6500000953674316,
+    "name": "smoke",
+    "repeat": false,
+    "rotationSpeed": [
+        0.0,
+        0.0,
+        0.0
+    ],
+    "scaleSpeed": [
+        0.0,
+        0.0,
+        0.0
+    ],
+    "textureFilePath": "Resources/ParticleTexture/smoke.png",
+    "useBillboard": true,
+    "useRandomPosition": true,
+    "velocity": [
+        0.0,
+        0.5299999713897705,
+        0.0
+    ],
+    "vertexType": 0
+}

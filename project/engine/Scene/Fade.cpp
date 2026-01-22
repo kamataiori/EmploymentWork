@@ -1,4 +1,6 @@
 #include "Fade.h"
+#include "engine/TimeManager.h"
+
 
 void Fade::Initialize() {
     sprite_ = std::make_unique<Sprite>();
@@ -20,7 +22,8 @@ void Fade::Stop() {
 void Fade::Update() {
     if (status_ == Status::None) return;
 
-    counter_ += 1.0f / 60.0f;
+    float dt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
+    counter_ += dt;
     counter_ = (counter_ < duration_) ? counter_ : duration_;
 
     if (status_ == Status::FadeIn) {

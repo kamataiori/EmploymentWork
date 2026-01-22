@@ -2,6 +2,7 @@
 #include "MathFunctions.h"
 #include "TextureManager.h"
 #include <Object3d.h>
+#include "engine/TimeManager.h"
 #include <iostream>
 
 void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypath, const std::string& filename)
@@ -43,7 +44,31 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypat
 
 void Model::Update()
 {
+	// Δt を取得（スロー演出の影響を受ける）
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
 	if (currentAnimation_) {
+		animationTime += dt;
+
+		if (isOneShot_) {
+			// 一回だけ：duration でクランプして止める（最後のポーズ保持）
+			if (animationTime >= currentAnimation_->duration) {
+				animationTime = currentAnimation_->duration; // クランプ
+			}
+		}
+		else {
+			// ループ再生
+			animationTime = std::fmod(animationTime, currentAnimation_->duration);
+		}
+
+		AppAnimation(skeleton, *currentAnimation_, animationTime);
+		Update(skeleton);
+		for (auto& instance : meshInstances_) {
+			Update(instance.skinCluster, skeleton);
+		}
+	}
+
+	/*if (currentAnimation_) {
 		animationTime += 1.0f / 60.0f;
 		animationTime = std::fmod(animationTime, currentAnimation_->duration);
 		AppAnimation(skeleton, *currentAnimation_, animationTime);
@@ -51,7 +76,7 @@ void Model::Update()
 		for (auto& instance : meshInstances_) {
 			Update(instance.skinCluster, skeleton);
 		}
-	}
+	}*/
 
 	//animationTime += 1.0f / 60.0f;  // 時間を進める
 	//animationTime = std::fmod(animationTime, animation.duration);  // 繰り返し再生
@@ -563,6 +588,12 @@ void Model::SetAnimation(const std::string& name)
 	}
 }
 
+void Model::SetAnimationOneShot(const std::string& name)
+{
+	SetAnimation(name);   // 既存の切替を使う
+	isOneShot_ = true;    // 1回のみ再生に切替
+}
+
 int32_t Model::CreateJoint(const Node& node, const std::optional<int32_t>& parent, std::vector<Joint>& joints)
 {
 	Joint joint;
@@ -653,7 +684,12 @@ void Model::AppAnimation(Skeleton& skeleton, const AnimationData& animation, flo
 
 	// 補間時間を更新
 	if (blendTime_ < blendDuration_) {
-		blendTime_ += 1.0f / 60.0f;
+		float dt = TimeManager::GetInstance()->GetDeltaTime();
+		blendTime_ += dt;
+		if (blendTime_ >= blendDuration_) {
+			blendTime_ = blendDuration_;
+			prevAnimation_ = nullptr; // ブレンド終了
+		}
 	}
 	else {
 		prevAnimation_ = nullptr;

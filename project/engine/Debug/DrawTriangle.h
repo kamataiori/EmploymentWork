@@ -4,7 +4,7 @@
 #include "Color.h"
 #include <vector>
 #include "Struct.h"
-#include "Camera.h"
+#include "Camera/Camera.h"
 
 class DrawTriangle
 {

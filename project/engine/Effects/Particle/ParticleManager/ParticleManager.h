@@ -1,46 +1,31 @@
 #pragma once
 #include "DirectXCommon.h"
 #include "SrvManager.h"
-#include <random>
-#include <string>
-#include <d3d12.h>
-#include <Camera.h>
+#include <Camera/Camera.h>
 #include <Model.h>
 #include "TextureManager.h"
 #include "WinApp.h"
-#include <CameraManager.h>
+#include <Camera/CameraManager.h>
 #include "MathFunctions.h"
+#include "engine/TimeManager.h"
+
+#include "ParticleEmitter.h"
+#include "ParticleEmitterInstance.h"
+#include "ParticleSystem.h"
+#include "ParticlePreset.h"
+
+#include <random>
+#include <string>
 #include <algorithm>
+#include <unordered_map>
+#include <vector>
+#include <filesystem>
+#include <json.hpp>
+#include <d3d12.h>
 
 class ParticleManager
 {
 public:
-
-	// メッシュの選択
-	enum class VertexDataType {
-		Plane,
-		Ring,
-		Cylinder,
-		// 今後追加予定の形状もここに列挙
-	};
-
-	//BlendMode
-	enum BlendMode {
-		//!< ブレンドなし
-		kBlendModeNone,
-		//!< 通常αブレンド。デフォルト。Src * SrcA + Dest * (1 - SrcA)
-		kBlendModeNormal,
-		//!< 加算。Src * SrcA + Dest * 1
-		kBlendModeAdd,
-		//!< 減算。Dest * 1 - Src * SrcA
-		kBlendModeSubtract,
-		//!< 乗算。Src * 0 + Dest * Src
-		kBlendModeMultiply,
-		//!< スクリーン。Src * (1 - Dest) + Dest * 1
-		kBlendModeScreen,
-		// 利用してはいけない
-		kCountOfBlendMode,
-	};
 
 	//ParticleのEmitter構造体
 	struct Emitter {
@@ -50,10 +35,10 @@ public:
 		float frequencyTime;  //頻度用時刻
 	};
 
-    /// <summary>
-    /// 初期化
-    /// </summary>
-    void Initialize(VertexDataType type);
+	/// <summary>
+	/// 初期化
+	/// </summary>
+	void Initialize(VertexDataType type);
 
 	/// <summary>
 	/// 更新
@@ -68,7 +53,7 @@ public:
 	/// <summary>
 	/// パーティクルグループの生成
 	/// </summary>
-	void CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode = kBlendModeNormal);
+	void CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode  = kBlendModeNormal);
 
 	// カメラの設定
 	void SetCamera(Camera* camera) { this->camera_ = camera; }
@@ -76,7 +61,120 @@ public:
 	// cylinderの反転
 	void SetFlipYToGroup(const std::string& groupName, bool flip);
 
+	/// ImGui 上でプリセットを編集＆保存するエディタ
+	void DrawImGuiParticlePresetEditor();
+
+	/// プリセットを JSON に保存する（直接呼んでもOK）
+	bool SavePresetToJson(const ParticlePreset& preset,
+		const std::string& directory = "Resources/Particle");
+
+	/// JSON からプリセットを読み込む（name.json を読む）
+	bool LoadPresetFromJson(const std::string& presetName,
+		ParticlePreset& outPreset,
+		const std::string& directory = "Resources/Particle");
+
+	/// ディレクトリ内のすべてのプリセットを読み込む（今後のため）
+	void LoadAllPresets(const std::string& directory = "Resources/Particle");
+	void SavePreset(const ParticleEmitter& preset);
+
+	/// <summary>
+	/// JSON プリセット名からパーティクルを発生させる
+	/// </summary>
+	/// <param name="presetName">JSON ファイル名と同じプリセット名</param>
+	/// <param name="emitterTransform">発生元の Transform（位置/回転/スケール）</param>
+	void EmitByPresetName(const std::string& presetName, const Transform& emitterTransform);
+
+	const std::string& GetCurrentEditingPresetName() const { return currentEditingPresetName_; }
+
+	// setter
+	void SetCurrentEditingPresetName(const std::string& name) { currentEditingPresetName_ = name; }
+
+	// プリセット取得（編集用）
+	ParticlePreset* FindPreset(const std::string& name);
+	const ParticlePreset* FindPreset(const std::string& name) const;
+
+	/// </summary>
+	/// <param name="presetName">ParticlePreset 名</param>
+	/// <param name="emitterTransform">発生位置・回転・スケール</param>
+	/// <returns>生成されたエミッターインスタンス（nullptr の場合は失敗）</returns>
+	ParticleEmitterInstance* CreateEmitterInstanceFromPreset(
+		const std::string& presetName,
+		const Transform& emitterTransform);
+
+	/// <summary>
+	/// 新システム用エミッターの更新処理
+	/// （内部から Update() の最後で呼び出す）
+	/// </summary>
+	void UpdateEmitters(float dt);
+
+	// ---- System 管理用API（新規） ----
+
+    // System を 1 つ作成してコンテナに登録
+	ParticleSystem* CreateSystem(const std::string& systemName);
+
+	// 既に存在する System を名前で取得（なければ nullptr）
+	ParticleSystem* FindSystem(const std::string& systemName);
+
+	// 指定 System に、新しいエミッターを 1 つ追加
+	// （どのプリセットを使うか、Transform はここで渡す）
+	ParticleEmitterInstance* AddEmitterToSystem(
+		const std::string& systemName,
+		const std::string& presetName,
+		const Transform& emitterTransform);
+
+	// ----------------------------------------
+    // Systemにプリセットを登録する簡易API
+    // （JSONは変えず、コード／エディタ側から設定する用）
+    // ----------------------------------------
+	void RegisterSystemPreset(const std::string& systemName,
+		const std::string& presetName);
+
+	// Systemに登録されているプリセット一覧を取得（エディタ用）
+	const std::vector<std::string>* GetSystemPresets(const std::string& systemName) const;
+
+	// System名一覧（プルダウン表示用など）
+	std::vector<std::string> GetAllSystemNames() const;
+
+	// Systemを一括削除したいとき用
+	void ClearAllSystems();
+
+	// System名を指定して、登録されている全プリセットを一括Emitする
+	void EmitSystemByName(const std::string& systemName, const Transform& emitterTransform);
+
+	// --- System JSON 保存/読み込み ---
+	bool SaveSystemToJson(const std::string& systemName,const std::string& directory = "Resources/ParticleSystem");
+
+	bool LoadSystemFromJson(const std::string& systemName,const std::string& directory = "Resources/ParticleSystem");
+
+	void LoadAllSystems(const std::string& directory = "Resources/ParticleSystem");
+
+	// System 名変更（Editor のリネーム用）
+	bool RenameSystem(const std::string& oldName, const std::string& newName);
+
+
 private:
+
+	std::unordered_map<std::string, ParticlePreset> presets_;  // name -> プリセット
+
+	// プリセットエディタで最後に触っていたプリセット名
+	std::string currentEditingPresetName_;
+
+	// ===== 新しいエミッター / システム管理用コンテナ =====
+
+	// 新しいエミッターインスタンス（Niagara でいう Emitter Instance）
+	std::vector<std::unique_ptr<ParticleEmitterInstance>> emitterInstances_;
+
+	// 将来的に複数エミッターをまとめる ParticleSystem（Niagara System 相当）
+	std::vector<std::unique_ptr<ParticleSystem>> systems_;
+
+	// System を使った Emit（ステップ2で実装）
+	void EmitSystem(const std::string& systemName, const Transform& transform);
+
+	// ループ処理（EmitterInstance / System の Update）
+	void Update(float dt);
+
+	// 新EmitterInstanceのパーティクルをインスタンシングバッファへ書き込む
+	void PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix,const Matrix4x4& billboardMatrix);
 
 	/// <summary>
 	/// 頂点リソースの生成、バッファービューの作成
@@ -156,9 +254,15 @@ private:
 	struct Particle {
 		Transform transform;
 		Vector3 velocity;
-		Vector4 color;
+		Vector3   rotationSpeed{ 0.0f, 0.0f, 0.0f };   // 回転速度(rad/秒)
+		Vector3   scaleSpeed{ 0.0f, 0.0f, 0.0f };      // スケール変化速度(/秒)
+		Vector4   color{ 1.0f, 1.0f, 1.0f, 1.0f };
 		float lifeTime;
 		float currentTime;
+
+		// カーブ用の基準値
+		Vector3 initialScale{ 1.0f, 1.0f, 1.0f };
+		Vector4 initialColor{ 1.0f, 1.0f, 1.0f, 1.0f };
 	};
 
 	struct ParticleForGPU
@@ -197,6 +301,15 @@ private:
 		Vector2 textureSize = { 0.0f, 0.0f }; // テクスチャサイズを追加
 
 		bool flipY = false; // デフォルトは反転しない
+
+		bool useGravity = false;
+
+		BlendMode blendMode = kBlendModeNormal;
+
+		// このグループに適用するカーブ
+		Curve1D scaleCurve;
+		Curve1D colorCurve;
+
 	};
 
 	/// <summary>
@@ -231,6 +344,10 @@ private:
 
 public:
 
+	// プリセットの内容に合わせて ParticleGroup を準備し、
+    // カーブやフラグ類を反映したうえで参照を返す共通ヘルパー
+	ParticleGroup& EnsureGroupForPreset(const ParticlePreset& preset);
+
 	/// <summary>
 	/// エミッター
 	/// </summary>
@@ -241,9 +358,9 @@ public:
 
 	void PrimitiveEmit(const std::string name, const Transform& transform, uint32_t count);
 
-	void RingEmit(const std::string name, const Transform& transform);
+	void RingEmit(const std::string& name, const Transform& transform, uint32_t count);
 
-	void CylinderEmit(const std::string& name, const Transform& transform);
+	void CylinderEmit(const std::string& name, const Transform& transform, uint32_t count);
 
 	// スケール
 	void SetScaleToGroup(const std::string& groupName, const Vector3& scale);
@@ -257,11 +374,20 @@ public:
 	// 速度
 	void SetVelocityToGroup(const std::string& groupName, const Vector3& velocity);
 
+	// 回転速度
+	void SetRotationSpeedToGroup(const std::string& groupName, const Vector3& rotationSpeed);
+
+	// スケール速度
+	void SetScaleSpeedToGroup(const std::string& groupName, const Vector3& scaleSpeed);
+
 	// 色
 	void SetColorToGroup(const std::string& groupName, const Vector4& color);
 
 	// 寿命（LifeTime）を一括設定
 	void SetLifeTimeToGroup(const std::string& groupName, float lifeTime);
+
+	// 重力
+	void SetGravityToGroup(const std::string& groupName, bool useGravity);
 
 	// 初期時間（CurrentTime）を一括設定
 	void SetCurrentTimeToGroup(const std::string& groupName, float currentTime);
@@ -296,8 +422,6 @@ private:
 
 	// パーティクルの最大出力数
 	const uint32_t kNumMaxInstance = 10000;
-	//とりあえず60fps固定してあるが、実時間を計測して可変fpsで動かせるようにしておくとなおよい
-	const float kDeltaTime = 1.0f / 60.0f;
 
 private:
 	static const int kWindowWidth = 1280;
@@ -308,7 +432,7 @@ private:
 	// Cameraの初期化
 	Camera* camera_ = nullptr;
 	//常にカメラ目線
-	Transform cameraTransform{ {1.0f,1.0f,1.0f},{1.0f,1.0f,1.0f},{0.0f,23.0f,10.0f}};
+	Transform cameraTransform{ {1.0f,1.0f,1.0f},{1.0f,1.0f,1.0f},{0.0f,23.0f,10.0f} };
 
 	Matrix4x4 worldviewProjectionMatrix;
 
@@ -368,11 +492,11 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO();
 
 private:
-    DirectXCommon* dxCommon_ = nullptr;
-    SrvManager* srvManager_ = nullptr;
+	DirectXCommon* dxCommon_ = nullptr;
+	SrvManager* srvManager_ = nullptr;
 	// Modelの初期化
 	Model* model_ = nullptr;
-   
+
 	//--------RootSignature部分--------//
 
 	//DescriptorRange

@@ -3,6 +3,7 @@
 #include "SceneManager.h"
 #include <OffscreenRendering.h>
 #include <MyGame.h>
+#include "engine/TimeManager.h"
 
 void GamePlayScene::Initialize()
 {
@@ -24,6 +25,8 @@ void GamePlayScene::Initialize()
 	// 3Dカメラの初期化
 	camera1->SetTranslate({ 0.0f, 0.0f, -20.0f });
 
+	cameraEffect_ = std::make_unique<CameraEffectController>();
+
 	player_ = std::make_unique<Player>(this);
 	enemy_ = std::make_unique<Enemy>(this);
 
@@ -31,9 +34,12 @@ void GamePlayScene::Initialize()
 	followCamera->SetFarClip(2000.0f);
 
 	player_->Initialize(followCamera.get());
+	player_->Get()->SetCamera(followCamera.get());
 	/*followCamera->SetTarget(player_->Get());*/
 
 	enemy_->Initialize();
+	enemy_->SetCamera(followCamera.get());
+	enemy_->SetTargetTransform(&player_->Get()->GetTransform());
 	enemy_->SetCamera(followCamera.get());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
@@ -41,7 +47,7 @@ void GamePlayScene::Initialize()
 	ground = std::make_unique<Object3d>(this);
 	ground->Initialize();
 	ground->SetModel("ground.obj");
-	ground->SetTranslate({ 0.0f,-1.0f,0.0f });
+	ground->SetTranslate({ 0.0f,0.0f,0.0f });
 
 	sky = std::make_unique<Object3d>(this);
 	sky->Initialize();
@@ -59,10 +65,11 @@ void GamePlayScene::Initialize()
 
 
 
-	collisionMAnager_ = std::make_unique<CollisionManager>();
+	collisionManager_ = std::make_unique<CollisionManager>();
 
-	AddRightDockWindow(kWindowName_MonsterControl);
-
+	ex = std::make_unique<Sprite>();
+	ex->Initialize("Resources/exp.png");
+	ex->SetPosition({ 0.0f,100.0f });
 }
 
 void GamePlayScene::Finalize()
@@ -80,16 +87,176 @@ void GamePlayScene::Update()
 	player_->Update();
 	enemy_->Update();
 
+	ex->Update();
+
 	// カメラの更新
 	camera1->Update();
-	followCamera->Update();
+	// ロックされていないときだけ followCamera を更新する
+	if (!followCameraLocked_) {
+		followCamera->Update();
+	}
+
+	// ========= ここからカメラ演出入力 =========
+	Input* input = Input::GetInstance();
+
+	using ShakeMode = CameraEffectController::ShakeMode;
+	using ZoomParams = CameraEffectController::ZoomParams;
+	using MoveParams = CameraEffectController::MoveParams;
+
+	// --- Z キー：全方向シェイク ---
+	if (input->TriggerKey(DIK_Z)) {
+		CameraEffectController::ShakeParams params{};
+		params
+			.Duration(0.1f)
+			.AmpPos(0.5f)
+			.AmpRot(0.0f)
+			.Frequency(14.0f)
+			.Damping(2.0f)
+			.AffectRot(true)
+			.Mode(ShakeMode::All); // 全方向
+
+		cameraEffect_->StartShake(params);
+	}
+
+	// --- X キー：横揺れだけシェイク ---
+	if (input->TriggerKey(DIK_X)) {
+		cameraEffect_->StartSimpleShake(0.2f, 0.05f, ShakeMode::Horizontal);
+	}
+
+	// --- C キー：縦揺れだけシェイク ---
+	if (input->TriggerKey(DIK_C)) {
+		cameraEffect_->StartSimpleShake(0.2f, 0.4f, ShakeMode::Vertical);
+	}
+
+	// --- V キー：一瞬ズームイン（FOV を小さくして寄る） ---
+	if (input->TriggerKey(DIK_V)) {
+		ZoomParams z{};
+		z.Duration(0.2f)            // 0.2 秒かけて
+			.ToFov(0.25f)           // FOV を 0.25 に（小さいほどアップ）
+			.UseCurrentFov(true);   // 今の FOV からスタート
+
+		cameraEffect_->StartZoom(z);
+	}
+
+	// O キー：撃破カメラテスト（回り込み）
+	// 敵死亡 → 撃破カメラ開始
+	bool enemyDeadNow = enemy_->IsDead();  // 今の状態
+
+	if (!enemyWasDead_ && enemyDeadNow)
+	{
+		// カメラ追従を止める
+		followCameraLocked_ = true;
+
+		// 回り込みの中心はプレイヤー位置
+		const Transform& playerTf = player_->Get()->GetTransform();
+		Vector3 center = playerTf.translate;
+
+		// 回り込み用パラメータを組み立てる
+		CameraEffectController::OrbitParams orbit{};
+		float angleRad = std::numbers::pi_v<float> / 1.5f;
+
+		orbit
+			.Center(center)                 // どこを中心に回り込むか
+			.Angle(angleRad)                // 回り込む角度
+			.Duration(0.6f)                 // 1秒かけて
+			.Easing(Tween::Easing::EaseInExpo); // 急激に加速するカーブ
+
+		// これ1行で「回り込み＋プレイヤー注視」まで全部やってくれる
+		cameraEffect_->StartOrbitMove(
+			followCamera.get(),
+			orbit
+		);
+
+		// ここでスローモーション開始（回り込みと同時スタート）
+		TimeManager::GetInstance()->SetTimeScale(0.1f); // 1/10 速度など好みで
+		slowMotionStarted_ = true;
+
+		// ズームは少し遅らせて開始したいので、ここではタイマーだけセット
+		defeatZoomTimer_ = 0.9f;    // 0.9秒後にズーム開始（好みで調整）
+		defeatZoomStarted_ = false;   // 念のためリセット
+
+		// ズーム状態もリセット
+		zoomActive_ = false;
+		zoomTimer_ = 0.0f;
+	}
+
+
+	// 次フレームの比較用
+	enemyWasDead_ = enemyDeadNow;
+
+	// ===== TimeManager から時間を取得 =====
+	float dt = TimeManager::GetInstance()->GetDeltaTime();         // スケール後
+	float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime(); // スケール無し（今は未使用でもOK）
+
+	// ===============================
+	//  撃破ズームの遅延開始
+	// ===============================
+	if (defeatZoomTimer_ > 0.0f && !defeatZoomStarted_)
+	{
+		// カメラ演出と同じ「ゲーム内時間」で減らす
+		defeatZoomTimer_ -= dt;
+
+		if (defeatZoomTimer_ <= 0.0f)
+		{
+			using ZoomParams = CameraEffectController::ZoomParams;
+
+			ZoomParams zoom{};
+			constexpr float kZoomDuration = 0.5f; // ズームにかける時間（ゲーム内時間）
+
+			zoom
+				.UseCurrentFov(true)
+				.ToFov(std::numbers::pi_v<float> / 8.0f)
+				.Duration(kZoomDuration)
+				.Easing(Tween::Easing::EaseOutExpo);
+
+			cameraEffect_->StartZoom(zoom);
+
+			defeatZoomStarted_ = true;
+
+			// ズーム中フラグ＆残り時間セット
+			zoomActive_ = true;
+			zoomTimer_ = kZoomDuration;
+		}
+	}
+
+	// ===============================
+	//  ズーム終了を監視してスロー解除
+	// ===============================
+	if (zoomActive_)
+	{
+		// ここも dt に変更
+		zoomTimer_ -= dt;
+
+		if (zoomTimer_ <= 0.0f)
+		{
+			zoomActive_ = false;
+
+			// ここでスローモーションを元に戻す
+			if (slowMotionStarted_)
+			{
+				TimeManager::GetInstance()->SetTimeScale(1.0f); // 通常速度に戻す
+				slowMotionStarted_ = false;
+			}
+		}
+	}
+
+
+	// カメラ演出の更新
+	cameraEffect_->Update(followCamera.get(), dt);
+
+
+	// ==========================================
 
 	if (Input::GetInstance()->TriggerKey(DIK_K)) {
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
-
-	collisionMAnager_->RegisterCollider(player_->Get());
+	collisionManager_->RegisterCollider(player_->Get()->GetMultiCollider());
+	if (auto* wcol = player_->Get()->GetWeaponCollider()) {
+		collisionManager_->RegisterCollider(wcol);
+	}
+	collisionManager_->RegisterCollider(enemy_->GetMultiCollider());
+	//collisionMAnager_->RegisterCollider(player_->Get()->GetCollider());
 	//collisionMAnager_->RegisterCollider(enemy_.get());
 	/*if (player_->GetBullet()) {
 		auto bullet = player_->GetBullet();
@@ -104,7 +271,7 @@ void GamePlayScene::Update()
 
 
 	// 衝突判定と応答
-	CheckAllColisions();
+	CheckAllCollisions();
 
 	Debug();
 
@@ -117,7 +284,7 @@ void GamePlayScene::Update()
 		// シーン切り替え
 		SceneManager::GetInstance()->ChangeScene("Unity");
 	}
-	
+
 }
 
 void GamePlayScene::BackGroundDraw()
@@ -129,7 +296,8 @@ void GamePlayScene::BackGroundDraw()
 	// ここからSprite個々の背景描画
 	// ================================================
 
-	
+	player_->BackGroundDraw();
+	enemy_->BackGroundDraw();
 
 	// ================================================
 	// ここまでSprite個々の背景描画
@@ -149,10 +317,11 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	sky->Draw();
+	//sky->Draw();
 	ground->Draw();
 	player_->Draw();
 	enemy_->Draw();
+
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
@@ -166,9 +335,9 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	player_->SkinningDraw();
-	enemy_->DrawModel();
-	
+	player_->AnimationDraw();
+	enemy_->AnimationDraw();
+
 
 	// ================================================
 	// ここまでアニメーションオブジェクトの個々の描画
@@ -178,7 +347,7 @@ void GamePlayScene::Draw()
 	// ここからDrawLine個々の描画
 	// ================================================
 
-	
+
 
 	// ================================================
 	// ここまでDrawLine個々の描画
@@ -194,7 +363,9 @@ void GamePlayScene::ForeGroundDraw()
 	// ここからSprite個々の前景描画(UIなど)
 	// ================================================
 
-	
+	ex->Draw();
+	player_->ForeGroundDraw();
+	enemy_->ForeGroundDraw();
 
 	// ================================================
 	// ここまでSprite個々の前景描画(UIなど)
@@ -205,6 +376,7 @@ void GamePlayScene::ForeGroundDraw()
 	// ================================================
 
 	player_->ParticlDraw();
+	enemy_->ParticleDraw();
 
 	// ================================================
 	// ここまでparticle個々の描画
@@ -219,13 +391,16 @@ void GamePlayScene::Debug()
 
 	// ↓ ここから ImGui::Begin(...) など
 
-	
+
+
 
 #endif
 }
 
-void GamePlayScene::CheckAllColisions()
+void GamePlayScene::CheckAllCollisions()
 {
-	collisionMAnager_->CheckAllCollisions();
+	collisionManager_->CheckAllCollisions();
 }
+
+
 

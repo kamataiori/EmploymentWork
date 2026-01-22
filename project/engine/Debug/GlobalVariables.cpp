@@ -4,7 +4,12 @@
 #include <filesystem>
 #include <fstream>
 
+#ifdef USE_IMGUI
+
 #include <externals/imgui/imgui.h>
+
+#endif // USE_IMGUI
+
 
 GlobalVariables* GlobalVariables::instance_ = nullptr;
 
@@ -181,7 +186,7 @@ GlobalVariables* GlobalVariables::GetInstance()
 
 void GlobalVariables::Update()
 {
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 
     static char searchBuffer[128] = ""; // 検索文字列用バッファ
 
@@ -243,7 +248,7 @@ void GlobalVariables::Update()
     }
     ImGui::End();
 
-#endif // _DEBUG
+#endif // USE_IMGUI
 }
 
 void GlobalVariables::CreateGroup(const std::string& groupName)

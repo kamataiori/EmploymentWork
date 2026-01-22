@@ -1,5 +1,20 @@
 #include "PlayerBase.h"
 #include "PlayerWeaponOBB.h"
+#include <FollowCamera.h>
+#include "engine/TimeManager.h"
+
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
+
+static float WrapPi(float a) {
+	while (a > std::numbers::pi_v<float>) a -= 2.0f * std::numbers::pi_v<float>;
+	while (a < -std::numbers::pi_v<float>) a += 2.0f * std::numbers::pi_v<float>;
+	return a;
+}
 
 void PlayerBase::Initialize()
 {
@@ -12,7 +27,8 @@ void PlayerBase::Initialize()
 
 	// ここを毎回実行しない
 	if (isFirstInitialize_) {
-		transform.translate = { 0.0f, 0.0f, -10.0f };
+		//const float halfH = 1.0f; // = playerOBB.size.y と同じ値
+		transform.translate = { 0.0f, 0.0f, -10.0f }; // 底がちょうどy=0に来る
 		transform.rotate = { 0.0f, 0.0f,  0.0f };
 		transform.scale = { 1.0f, 1.0f,  1.0f };
 		isFirstInitialize_ = false;
@@ -28,17 +44,57 @@ void PlayerBase::Initialize()
 	weapon_->SetPlayerTransform(&transform);
 	weapon_->Initialize();
 
-	SetCollider(this);
-	SetPosition(transform.translate);
-	sphere.radius = 2.0f;
-	SphereCollider::SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
+	// コライダーを生成
+	// --- 原点が足元 → 股下(例: 上方向0.9f) にオフセット ---
+	colliderOffset_ = { 0.0f, 1.0f, 0.0f };
+	colliderTranslate_ = transform.translate + colliderOffset_;
+
+	Sphere playerSp{};
+	playerSp.center = colliderTranslate_;
+	playerSp.radius = sphereRadius_;
+
+	Shape first{};
+	first.kind = ShapeKind::Sphere;
+	first.sphere = playerSp;
+
+	*multiCollider_ = MultiCollider(first);
+	// 種別登録
+	multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
+	// コールバック登録
+	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
+
+	// === HPバー初期化（Player 左下） ===
+	hpBarBG_ = std::make_unique<Sprite>();
+	hpBarFill_ = std::make_unique<Sprite>();
+
+	hpBarBG_->Initialize("Resources/hp.png");
+	hpBarFill_->Initialize("Resources/hp.png");
+
+	// 背景は少し暗め
+	hpBarBG_->SetColor({ 0.2f, 0.2f, 0.2f, 0.8f });
+	// 本体は白（テクスチャ色そのまま）
+	hpBarFill_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+
+	// 左下に固定したいのでアンカーポイントを「左下 (0,1)」にしておく
+	hpBarBG_->SetAnchorPoint({ 0.0f, 1.0f });
+	hpBarFill_->SetAnchorPoint({ 0.0f, 1.0f });
+
+
+	//poweder = std::make_unique<ParticleManager>();
+	//poweder->Initialize(ParticleManager::VertexDataType::Plane);
+
+	//// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
+	//poweder->LoadAllPresets();
 }
 
 void PlayerBase::Update()
 {
+	// ===== Δt（スロー対応） =====
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
 	// ロックの減衰
 	if (animLockTimer_ > 0.0f) {
-		animLockTimer_ -= 1.0f / 60.0f;
+		animLockTimer_ -= dt;
 		if (animLockTimer_ <= 0.0f) {
 			animLockTimer_ = 0.0f;
 			currentAnimPriority_ = 0;
@@ -54,7 +110,25 @@ void PlayerBase::Update()
 		weapon_->Update();
 		weapon_->NormalAttack();
 		weapon_->Skill();
+		weapon_->Ultimate();
 	}
+
+	//ImGui::Begin("player");
+	//ImGui::DragFloat3("translate", &transform.translate.x);
+	//ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
+	//ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 10.0f);
+
+	//// 当たり判定の可視化
+	//if (isCollided_) {
+	//	ImGui::TextColored(ImVec4(1, 0, 0, 1), "Hit! (Collision Detected)");
+	//}
+	//else {
+	//	ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No Collision");
+	//}
+	//ImGui::End();
+
+	// --- 当たり判定の中心を更新 ---
+	colliderTranslate_ = transform.translate + colliderOffset_;
 
 	// ------------------------
 	// オブジェクト更新処理
@@ -65,62 +139,111 @@ void PlayerBase::Update()
 	object3d_->Update();
 
 	// コライダー位置を更新
-	SetPosition(transform.translate);
+	// OBB をプレイヤーTransformに追従させる
+	// 今回は最初の形状(0)を更新する想定
+	isCollided_ = false;
+	Sphere& sp = multiCollider_->MutableSphere(0); // MultiCollider 側に MutableSphere(index) がある前提
+	sp.center = colliderTranslate_;
+	sp.radius = sphereRadius_;
 
-	sphere.color = static_cast<int>(Color::WHITE);
+
+	// === HPバー更新 ===
+	if (hpBarBG_ && hpBarFill_) {
+		const float ratio =
+			(kMaxHP_ > 0) ? std::clamp(hp_ / float(kMaxHP_), 0.0f, 1.0f) : 0.0f;
+
+		const float winW = 1280.0f;
+		const float winH = 720.0f;
+
+		const float maxW = hpBarMaxWidth_;
+		const float curW = maxW * ratio;
+		const float left = hpBarMarginLeft_;
+		const float bottom = winH - hpBarMarginBottom_;
+
+		// 背景は常に最大幅
+		hpBarBG_->SetSize({ maxW, hpBarHeight_ });
+		hpBarBG_->SetPosition({ left, bottom });
+		hpBarBG_->Update();
+
+		// 本体は現在HPに応じた幅
+		hpBarFill_->SetSize({ curW, hpBarHeight_ });
+		hpBarFill_->SetPosition({ left, bottom });
+		hpBarFill_->Update();
+	}
+
+
+	/*poweder->Update();*/
+}
+
+void PlayerBase::BackGroundDraw()
+{
 }
 
 void PlayerBase::Draw()
 {
-	// SphereCollider の描画
-	//SphereCollider::Draw();
+	multiCollider_->Draw();
+	weapon_->Draw();
 }
 
-void PlayerBase::SkinningDraw()
+void PlayerBase::ForeGroundDraw()
+{
+	// === HPバー描画（左下） ===
+	if (hpBarBG_ && hpBarFill_) {
+		hpBarBG_->Draw();
+		hpBarFill_->Draw();
+	}
+}
+
+void PlayerBase::AnimationDraw()
 {
 	object3d_->Draw();
 }
 
 void PlayerBase::ParticleDraw()
 {
+	/*poweder->Draw();*/
 }
 
 void PlayerBase::OnCollision()
 {
-	sphere.color = static_cast<int>(Color::RED);
+	// 相手が敵でなければ何もしない（武器や弾との衝突を無視）
+	/*if (other->GetTypeID() != (uint32_t)CollisionTypeIdDef::kEnemy) {
+		return;
+	}*/
+
+	// ====== HP減少処理 ======
+	/*hp_ -= kDamagePerHit_;
+	if (hp_ < 0) hp_ = 0;*/
+
+	/*poweder->EmitByPresetName("powder", transform);
+	poweder->Update();*/
+
+	// ====== HPチェック ======
+	if (hp_ <= 0) {
+		// 死亡アニメーション
+		//PlayAnimKey(PlayerAnimKey::Death);
+
+		object3d_->SetAnimationOneShot("Death");
+
+		//// デバッグ出力
+		//ImGui::Begin("Player HP");
+		//ImGui::TextColored(ImVec4(1, 0, 0, 1), "Player Died! HP = 0");
+		//ImGui::End();
+
+		return; // 死亡時はここで抜けて以降の処理を止める
+	}
+
+	// ====== 被弾時アニメーション（生存時のみ） ======
+	PlayAnimKey(PlayerAnimKey::Hit2);
+
+	// 当たった時にフラグON
+	isCollided_ = true;
 }
 
 void PlayerBase::Move()
 {
-	// -------------------------------
-	// ダッシュ制御：1回だけ発動可能
-	// -------------------------------
-	// Bキーを初めて押した瞬間だけダッシュ許可（空中でも可）
-	if (!move_.isDashKeyHeld_ && Input::GetInstance()->PushKey(DIK_B) && !move_.hasDashed_) {
-		move_.isDashing = true;
-		move_.dashTimer = move_.kDashDuration;
-		move_.hasDashed_ = true;
-		move_.isDashKeyHeld_ = true;
-	}
-
-	// Bキーを離したら、次の押下を受付可能にする
-	if (!Input::GetInstance()->PushKey(DIK_B)) {
-		move_.isDashKeyHeld_ = false;
-	}
-
-	// ダッシュ中タイマー処理
-	if (move_.isDashing) {
-		//SetAnimationIfChanged(animation_.Roll);
-		move_.dashTimer -= 1.0f / 60.0f; // フレーム単位で減算（60FPS想定）
-		if (move_.dashTimer <= 0.0f) {
-			move_.isDashing = false;
-			move_.dashTimer = 0.0f;
-		}
-		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
-	}
-	else {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
-	}
+	// ===== Δt（回転のスムージング用） =====
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
 	// -------------------------------
 	// 入力による左右・前後移動処理
@@ -128,63 +251,53 @@ void PlayerBase::Move()
 	// -------------------------------
 	// WASD入力による方向ベクトル計算
 	// -------------------------------
-	move_.direction = { 0.0f, 0.0f, 0.0f };
-
-	bool isMoving = false;
-
-	if (Input::GetInstance()->PushKey(DIK_W)) {
-		move_.direction.z += 1.0f;
-		isMoving = true;
+	
+	// 1) カメラのヨー角（FollowCamera想定）
+	float camYaw = 0.0f;
+	if (auto fc = dynamic_cast<FollowCamera*>(camera_)) {
+		camYaw = fc->GetAngle(); // カメラの“後ろ向き”角
 	}
-	if (Input::GetInstance()->PushKey(DIK_S)) {
-		move_.direction.z -= 1.0f;
-		isMoving = true;
-	}
-	if (Input::GetInstance()->PushKey(DIK_A)) {
-		move_.direction.x -= 1.0f;
-		isMoving = true;
-	}
-	if (Input::GetInstance()->PushKey(DIK_D)) {
-		move_.direction.x += 1.0f;
-		isMoving = true;
-	}
+	// カメラ正面（プレイヤーが向くべき前）は angle + π
+	const float playerFaceYaw = camYaw + std::numbers::pi_v<float>;
 
-	// 正規化してプレイヤーの向きに合わせた移動に変換
-	if (Length(move_.direction) > 0.0f) {
-		move_.direction = Normalize(move_.direction);
-		float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
+	// 2) カメラ基底ベクトル（XZ）
+	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
+	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f, std::sin(camYaw) };
 
-		// Y軸の回転行列を生成（プレイヤーの向きに応じた回転）
-		Matrix4x4 rotY = MakeRotateYMatrix(transform.rotate.y);
+	// 3) WASDをカメラ相対で合成（D=+Right / A=-Right）
+	Vector3 wishDir = { 0,0,0 };
+	if (Input::GetInstance()->PushKey(DIK_W)) wishDir += cameraForwardXZ;
+	if (Input::GetInstance()->PushKey(DIK_S)) wishDir -= cameraForwardXZ;
+	if (Input::GetInstance()->PushKey(DIK_D)) wishDir += cameraRightXZ;
+	if (Input::GetInstance()->PushKey(DIK_A)) wishDir -= cameraRightXZ;
 
-		// 入力方向ベクトルをプレイヤーの向きに回転
-		Vector3 rotatedDir = TransformVector(move_.direction, rotY);
+	bool isMoving = (Length(wishDir) > 0.0001f);
+	if (isMoving) wishDir = Normalize(wishDir);
 
-		// 回転後の方向に沿って移動
-		transform.translate.x += rotatedDir.x * currentSpeed;
-		transform.translate.z += rotatedDir.z * currentSpeed;
-	}
-
-	/*const auto& anim = GetAnimation();
-
+	// 4) 移動
+	const float currentSpeed = move_.isDashing ? move_.dashSpeed : move_.speed;
 	if (isMoving) {
-		SetAnimationIfChanged(anim.Run_Weapon);
+		transform.translate.x += wishDir.x * currentSpeed;
+		transform.translate.z += wishDir.z * currentSpeed;
 	}
-	else {
-		SetAnimationIfChanged(anim.Idle);
-	}*/
 
-	//if (animCtrl_) {
-	//	if (!IsAnimLocked()) { // ★攻撃などでロック中は移動アニメを出さない
-	//		if (isMoving) {
-	//			RequestAnimKey(PlayerAnimKey::RunWeapon, 0);   // 優先度0
-	//		}
-	//		else {
-	//			RequestAnimKey(PlayerAnimKey::Idle, 0);        // 優先度0
-	//		}
-	//	}
-	//}
+	// 5) 目標ヨー角：移動中は移動方向、停止中はカメラ正面
+	const float targetYaw = isMoving
+		? std::atan2(wishDir.x, wishDir.z)
+		: playerFaceYaw;
 
+	// 6) スムーズ回転（最短角＆角速度クランプ）
+	const float curYaw = transform.rotate.y;
+	float deltaYaw = WrapPi(targetYaw - curYaw);
+	const float turnSpeed = 2.5f;
+	const float turnRate = std::numbers::pi_v<float> * turnSpeed; // 180deg/s（好みで調整可）
+	const float maxStep = turnRate * dt;
+
+	if (deltaYaw > maxStep) deltaYaw = maxStep;
+	if (deltaYaw < -maxStep) deltaYaw = -maxStep;
+	transform.rotate.y = curYaw + deltaYaw;
+
+	// 7) アニメ（ロック中は移動アニメ出さない）
 	if (animCtrl_) {
 		if (!IsAnimLocked()) {
 			if (isMoving)  RequestAnimKey(PlayerAnimKey::RunWeapon, 0);
@@ -192,54 +305,167 @@ void PlayerBase::Move()
 		}
 	}
 
+	// -------------------------------
+	// ジャンプ処理呼出し
+	// -------------------------------
 
+	Jump();
+
+	// -------------------------------
+	// ブリンク(ダッシュ)処理呼出し
+	// -------------------------------
+
+	Blink();
+
+
+}
+
+void PlayerBase::Jump()
+{
 	// ----------------
 	// 二段ジャンプ処理
 	// ----------------
 	// -------------------------------
-	// 地面に接地していたらリセット
-	// -------------------------------
-	if (transform.translate.y <= jump_.kGroundHeight) {
-		transform.translate.y = jump_.kGroundHeight;
+	// 有効半径（スケール対応：最大軸で拡大）
+	const float effectiveRadius =
+		sphereRadius_ * std::max({ transform.scale.x, transform.scale.y, transform.scale.z });
+
+	// 現在の当たり中心Y（足元原点 + オフセット）
+	const float colliderCenterY = transform.translate.y + colliderOffset_.y;
+
+	// 現在の足底Y
+	const float bottomNow = colliderCenterY - effectiveRadius;
+
+	// 1 接地クランプ（非ジャンプ時の保険）
+	if (!jump_.isJumping && bottomNow < jump_.kGroundHeight) {
+		const float targetCenterY = jump_.kGroundHeight + effectiveRadius;    // 当たり中心Y
+		transform.translate.y = targetCenterY - colliderOffset_.y;            // モデル原点Yに戻す
+		// リセット
 		jump_.isJumping = false;
 		jump_.velocity = 0.0f;
 		jump_.jumpCount = 0;
-		jump_.canJump_ = true;  // 接地時に再ジャンプを許可
-		move_.hasDashed_ = false; // 接地時にダッシュ再許可
+		jump_.canJump_ = true;
+		move_.hasDashed_ = false;
 	}
 
-	// -------------------------------
-	// Spaceキーを押した → ジャンプ条件確認
-	// -------------------------------
+	// 2 ジャンプ入力（2段まで）
 	if (jump_.canJump_ && Input::GetInstance()->PushKey(DIK_SPACE) &&
 		jump_.jumpCount < jump_.kMaxJumpCount) {
 
-		// ジャンプ開始
 		jump_.velocity = jump_.kInitialVelocity;
 		jump_.isJumping = true;
 		jump_.jumpCount++;
-
-		// 今はジャンプ許可しない（離されるまで）
-		jump_.canJump_ = false;
+		jump_.canJump_ = false; // 離すまで再ジャンプ禁止
 	}
-
-	// Spaceキーが離されたらジャンプを再許可
 	if (!Input::GetInstance()->PushKey(DIK_SPACE)) {
 		jump_.canJump_ = true;
 	}
 
-	// -------------------------------
-	// ジャンプ中のY移動＆重力
-	// -------------------------------
+	// 3 速度反映（予測→着地判定→クランプ）
 	if (jump_.isJumping) {
-		transform.translate.y += jump_.velocity;
-		jump_.velocity -= jump_.kGravity;
+		// 次フレームの原点Yを予測
+		const float nextY = transform.translate.y + jump_.velocity;
+
+		// 次フレームの当たり中心と足底
+		const float nextCenterY = nextY + colliderOffset_.y;
+		const float bottomNext = nextCenterY - effectiveRadius;
+
+		if (jump_.velocity <= 0.0f && bottomNext < jump_.kGroundHeight) {
+			// 下向き移動中に地面をまたぐ → ちょうど着地位置へクランプ
+			const float targetCenterY = jump_.kGroundHeight + effectiveRadius;
+			transform.translate.y = targetCenterY - colliderOffset_.y;
+
+			// 着地リセット
+			jump_.isJumping = false;
+			jump_.velocity = 0.0f;
+			jump_.jumpCount = 0;
+			jump_.canJump_ = true;
+			move_.hasDashed_ = false;
+		}
+		else {
+			// まだ空中：位置更新＆重力
+			transform.translate.y = nextY;
+			jump_.velocity -= jump_.kGravity;
+		}
 	}
+}
+
+void PlayerBase::Blink()
+{
+	// ===== Δt（クールダウン・ダッシュ時間用） =====
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
+	// -------------------------------
+	// ダッシュ制御：1回だけ発動可能
+	// -------------------------------
+	// クールダウンを減算
+	if (move_.dashCooldown > 0.0f) {
+		move_.dashCooldown -= dt;
+		if (move_.dashCooldown < 0.0f) move_.dashCooldown = 0.0f;
+	}
+
+	// 押下・解放状態
+	const bool dashHeld = Input::GetInstance()->PushMouseButton(1);
+
+	// 接地判定
+	const float groundEps = 0.001f;
+	const bool isGrounded = (!jump_.isJumping) && (transform.translate.y <= jump_.kGroundHeight + groundEps);
+
+	// ---- 起動条件：押した・ダッシュ中でない・クールダウン終わり ----
+	if (!move_.isDashing && dashHeld && !move_.isDashKeyHeld_ && move_.dashCooldown <= 0.0f) {
+		move_.isDashing = true;
+		move_.dashTimer = move_.kDashDuration;
+		move_.hasDashed_ = true;
+		move_.isDashKeyHeld_ = true;
+
+		const float yaw = transform.rotate.y;
+		move_.dashDir = Normalize(Vector3{ std::sin(yaw), 0.0f, std::cos(yaw) });
+
+		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
+	}
+
+	// 右クリック解放を検出（次の押下のためのエッジ作り）
+	if (!dashHeld) {
+		move_.isDashKeyHeld_ = false;
+	}
+
+	// ---- ダッシュ中の処理 ----
+	if (move_.isDashing) {
+		move_.dashTimer -= dt;
+		transform.translate.x += move_.dashDir.x * move_.dashSpeed;
+		transform.translate.z += move_.dashDir.z * move_.dashSpeed;
+
+		if (move_.dashTimer <= 0.0f) {
+			move_.isDashing = false;
+			move_.dashTimer = 0.0f;
+			move_.dashCooldown = move_.kDashCooldown;      // 終了後にクールダウン開始
+			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
+		}
+	}
+	else {
+		// ---- 再装填条件：クールダウン終了 ＆ 右クリック離している ＆（できれば接地）----
+		if (move_.dashCooldown <= 0.0f && !dashHeld && isGrounded) {
+			move_.hasDashed_ = false;  // これで2回目以降も使える
+		}
+	}
+}
+
+void PlayerBase::SetCamera(Camera* camera)
+{
+	// まずは ObjectBase 側の処理（camera_ と object3d_ にセット）
+	ObjectBase::SetCamera(camera);
+
+	// パーティクル側にも同じカメラを渡す
+	/*if (poweder) {
+		poweder->SetCamera(camera);
+	}*/
+
+	// 必要なら武器や他のオブジェクトにもここで渡せる
+	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能
 }
 
 void PlayerBase::ChangeModel(const char* modelName)
 {
-	//ModelManager::GetInstance()->LoadModel(modelName);
 	object3d_->SetModel(modelName);
 }
 

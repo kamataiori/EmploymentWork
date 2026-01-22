@@ -26,11 +26,6 @@ void TitleScene::Initialize()
 	BaseScene::GetLight()->SetSpotLightIntensity({ 4.0f });*/
 
 	// 3Dオブジェクトの初期化
-	plane = std::make_unique<Object3d>(this);
-	plane->Initialize();
-
-	animationCube = std::make_unique<Object3d>(this);
-	animationCube->Initialize();
 
 	sneak = std::make_unique<Object3d>(this);
 	sneak->Initialize();
@@ -38,139 +33,54 @@ void TitleScene::Initialize()
 	// モデル読み込み
 	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");
 	ModelManager::GetInstance()->LoadModel("human/walk.gltf");
-	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-	ModelManager::GetInstance()->LoadModel("axis.obj");
-	ModelManager::GetInstance()->LoadModel("test.obj");
-	plane->SetModel("uvChecker.gltf");
-	animationCube->SetModel("human/walk.gltf");
-	sneak->SetModel("human/sneakWalk.gltf");
+	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
+	ModelManager::GetInstance()->LoadModel("ground.obj");
+	ModelManager::GetInstance()->LoadModel("skydome.obj");
+	sneak->SetModel("Warrior.gltf");
 
 	// モデルにSRTを設定
-	plane->SetScale({ 1.0f, 1.0f, 1.0f });
-	plane->SetRotate({ 0.0f, 3.14f, 0.0f });
-	plane->SetTranslate({ 0.0f, 0.0f, 6.0f });
+	transform.scale = { 1,1,1 };
+	transform.rotate = { 0.0f,3.14f,0.0f };
+	transform.translate = { 0.0f,-1.0f,10.0f };
+	sneak->SetTranslate(transform.translate);
+	sneak->SetRotate(transform.rotate);
+	sneak->SetScale(transform.scale);
+	sneak->SetAnimation("Idle");
 
-	sneak->SetTranslate({ 1.0f,0.0f,0.0f });
+	ground = std::make_unique<Object3d>(this);
+	ground->Initialize();
+	ground->SetModel("ground.obj");
+	ground->SetTranslate({ 0.0f,-2.0f,0.0f });
+
+	sky = std::make_unique<Object3d>(this);
+	sky->Initialize();
+	sky->SetModel("skydome.obj");
+	sky->SetTranslate({ 0.0f,0.0f,0.0f });
+
 
 	// 3Dカメラの初期化
 	camera1 = std::make_unique<Camera>();
-	camera1->SetTranslate({ 0.0f, 0.0f, -15.0f });
+	camera1->SetTranslate({ 0.0f, 1.0f, -20.0f });
 	camera1->SetRotate({ 0.0f, 0.0f, 0.0f });
 	camera1->SetFarClip(2000.0f);
+	// 初期角度を「今のカメラ位置」から合わせたい場合（任意）
+	orbitAngle_ = 0.0f;
+	orbitRadius_ = 40.0f;
+	orbitHeight_ = 3.0f;
+	orbitSpeed_ = -0.5f;
+
 
 	// カメラのセット
-	plane->SetCamera(camera1.get());
-	particle->SetCamera(camera1.get());
-	animationCube->SetCamera(camera1.get());
 	sneak->SetCamera(camera1.get());
-	primitiveParticle->SetCamera(camera1.get());
-	ringParticle->SetCamera(camera1.get());
-	cyrinderParticle->SetCamera(camera1.get());
+	ground->SetCamera(camera1.get());
+	sky->SetCamera(camera1.get());
 
-	// ---- 各パーティクルマネージャの初期化とグループ作成 ----
-
-// Plane
-	particle->Initialize(ParticleManager::VertexDataType::Plane);
-	particle->CreateParticleGroup("particle", "Resources/circle.png", ParticleManager::BlendMode::kBlendModeAdd);
-	auto emitter = std::make_unique<ParticleEmitter>();
-	emitter->Initialize(
-		particle.get(),
-		"particle",
-		Transform{ {1.0f, 1.0f, -4.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
-		EmitterConfig{ ShapeType::Plane, 10, 0.5f, true }
-	);
-	emitters.push_back(std::move(emitter));
-
-	// Primitive
-	primitiveParticle->Initialize(ParticleManager::VertexDataType::Plane);
-	primitiveParticle->CreateParticleGroup("primitive", "Resources/circle2.png");
-	auto primitiveEmitter = std::make_unique<ParticleEmitter>();
-	primitiveEmitter->Initialize(
-		primitiveParticle.get(),
-		"primitive",
-		Transform{ {1.0f, 1.0f, -4.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
-		EmitterConfig{ ShapeType::Primitive, 8, 0.5f, true }
-	);
-	primitiveEmitters.push_back(std::move(primitiveEmitter));
-
-	// Ring
-	ringParticle->Initialize(ParticleManager::VertexDataType::Ring);
-	ringParticle->CreateParticleGroup("ring", "Resources/gradationLine.png");
-	auto ringEmitter = std::make_unique<ParticleEmitter>();
-	ringEmitter->Initialize(
-		ringParticle.get(),
-		"ring",
-		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
-		EmitterConfig{ ShapeType::Ring }
-	);
-	ringEmitters.push_back(std::move(ringEmitter));
-
-	// Cylinder
-	cyrinderParticle->Initialize(ParticleManager::VertexDataType::Cylinder);
-	cyrinderParticle->CreateParticleGroup("cyrinder", "Resources/gradationLine.png");
-	auto cyrinderEmitter = std::make_unique<ParticleEmitter>();
-	cyrinderEmitter->Initialize(
-		cyrinderParticle.get(),
-		"cyrinder",
-		Transform{ {1.0f, 1.0f, 1.0f}, {0.0f,0.0f,0.0f}, {1.0f,1.0f,1.0f} },
-		EmitterConfig{ ShapeType::Cylinder }
-	);
-	cyrinderEmitters.push_back(std::move(cyrinderEmitter));
-	cyrinderParticle->SetFlipYToGroup("cyrinder", true);
-
-
-	DrawLine::GetInstance()->SetCamera(camera1.get());
-	aabb.min = { -1.8f, 2.2f, 3.0f }; // AABB の最小点を少し下げる
-	aabb.max = { 1.8f, 1.1f, 0.5f };  // AABB の最大点を少し上げる
-	aabb.color = static_cast<int>(Color::WHITE); // AABBの色を赤に設定
-	sphere = { {-4.0f, -1.2f, 0.0f}, 1.0f, static_cast<int>(Color::WHITE) };
-	ground.normal = { 0.0f, 1.0f, 0.0f }; // Y軸方向を法線とする平面
-	ground.distance = -2.0f;             // 原点を通る平面
-	ground.size = 6.0f;        // 平面のサイズ
-	ground.divisions = 10;     // グリッドの分割数
-	// カプセルの初期値
-	capsule.start = { 1.6f, 0.0f, 0.0f };
-	capsule.end = { 1.6f, -1.5f, 0.0f };
-	capsule.radius = 0.5f;
-	capsule.color = static_cast<int>(Color::WHITE);
-	capsule.segments = 16; // 円周を構成する分割数
-	capsule.rings = 8;     // 球部分を構成する分割数
-	// OBB の初期化
-	obb.center = { -1.9f, -0.3f, 0.0f };
-	obb.orientations[0] = { 1.0f, 0.0f, 0.0f }; // X軸
-	obb.orientations[1] = { 0.0f, 1.0f, 0.0f }; // Y軸
-	obb.orientations[2] = { 0.0f, 0.0f, 1.0f }; // Z軸
-	obb.size = { 1.0f, 1.0f, 0.5f }; // 各軸方向の半サイズ
-	obb.color = static_cast<int>(Color::WHITE); // 色の初期値
-
-	// DrawTriangleの初期化
-	drawTriangle_ = DrawTriangle::GetInstance();
-	//drawTriangle_->Initialize();
-	drawTriangle_->SetCamera(camera1.get());
-
-	GlobalVariables::GetInstance()->AddValue<Vector3>("Camera", "position", camera1->GetTranslate());
-	GlobalVariables::GetInstance()->AddValue<Vector3>("Camera", "rotate", camera1->GetRotate());
-
-	GlobalVariables::GetInstance()->AddValue<Vector3>("Animation", "position", animationCube->GetTranslate());
-	GlobalVariables::GetInstance()->AddValue<Vector3>("Animation", "rotate", animationCube->GetRotate());
-
-	// ---- Dock配置登録（BaseSceneの機能） ----
-	AddBottomDockWindow(kWindowName_ParticleControl);
-
-	AddRightDockWindow(kWindowName_AABBControl);
-	AddRightDockWindow(kWindowName_OBBControl);
-	AddRightDockWindow(kWindowName_SphereControl);
-	AddLeftDockWindow(kWindowName_DebugInfo);
-
+	
 	fade_ = std::make_unique<Fade>();
 	fade_->Initialize();
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 	skybox->SetCamera(camera1.get());
-
-	sceneController_ = std::make_unique<SceneController>(this);
-	sceneController_->LoadScene("test"); // Resources/Json/test.json を読み込む
-	sceneController_->SetCamera(camera1.get());
 
 	title = std::make_unique<Sprite>();
 	title->Initialize("Resources/title.png");
@@ -183,148 +93,48 @@ void TitleScene::Finalize()
 void TitleScene::Update()
 {
 	title->Update();
-	//// アルファ値を減少させる
-	//Vector4 color = plane->GetMaterialColor();
-	////color.w = 0.5f;
-	//color.w -= 0.01f; // アルファ値を減少
-	//if (color.w < 0.0f) {
-	//	color.w = 0.0f; // 最小値を0に制限
-	//}
-	//plane->SetMaterialColor(color);
-
+	
 	// 各3Dオブジェクトの更新
-	plane->Update();
-
-	/*animationCube->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "position"));
-	animationCube->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Animation", "rotate"));
-	camera1->SetTranslate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "position"));
-	camera1->SetRotate(GlobalVariables::GetInstance()->GetValue<Vector3>("Camera", "rotate"));*/
-
-	animationCube->Update();
+	sneak->SetTranslate(transform.translate);
+	sneak->SetRotate(transform.rotate);
+	sneak->SetScale(transform.scale);
 	sneak->Update();
 	// カメラの更新
+	// ===== オービットカメラ：sneak を中心に回す =====
+	{
+		// Δt（TimeManager があるならそっちを使うのがおすすめ）
+		const float dt = TimeManager::GetInstance()->GetDeltaTime();
+
+		orbitAngle_ += orbitSpeed_ * dt;
+
+		// 追従ターゲット（sneakの位置 + 少し上を見る）
+		const Vector3 target = transform.translate + orbitTargetOffset_;
+
+		// カメラ位置（XZで円運動）
+		const float x = target.x + std::sin(orbitAngle_) * orbitRadius_;
+		const float z = target.z + std::cos(orbitAngle_) * orbitRadius_;
+		const float y = target.y + orbitHeight_;
+
+		camera1->SetTranslate({ x, y, z });
+
+		// カメラを常にターゲットへ向ける（LookAt的に回転を計算）
+		// エンジンが rotate(yaw,pitch,roll) を使う前提で計算
+		Vector3 to = target - Vector3{ x, y, z };
+		to = Normalize(to);
+
+		const float yaw = std::atan2(to.x, to.z);            // Y回転
+		const float pitch = std::atan2(-to.y, std::sqrt(to.x * to.x + to.z * to.z)); // X回転
+
+		camera1->SetRotate({ pitch, yaw, 0.0f });
+	}
+
 	camera1->Update();
-
-	for (auto& emitter : emitters)
-	{
-		emitter->Update();
-	}
-
-	if (changeSpeed_) {
-		particle->SetVelocityToGroup("particle", { 0.0f, 1.5f, 0.0f }); // 速い速度
-	}
-	else {
-		particle->SetVelocityToGroup("particle", { 0.0f, 0.1f, 0.0f }); // 遅い速度
-	}
-	for (auto& PrimitiveEmitter : primitiveEmitters)
-	{
-		PrimitiveEmitter->Update();
-	}
-
-	for (auto& ringEmitter : ringEmitters)
-	{
-		ringEmitter->Update();
-	}
-
-	for (auto& cyrinderEmitter : cyrinderEmitters)
-	{
-		cyrinderEmitter->Update();
-	}
-
-	particle->Update();
-	primitiveParticle->Update();
-	ringParticle->Update();
-	cyrinderParticle->Update();
-
-	if (Input::GetInstance()->TriggerKey(DIK_K)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_I)) {
-		PostEffectManager::GetInstance()->SetGrayscaleWeights({ 0.299f, 0.587f, 0.114f });
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_L)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_O)) {
-		PostEffectManager::GetInstance()->SetVignetteColor({ 1.0f,0.85f,0.3f });
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_J)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Sepia);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_M)) {
-		PostEffectManager::GetInstance()->SetSepiaColor({ 0.4f, 0.3f, 0.9f });
-		PostEffectManager::GetInstance()->SetSepiaStrength(0.9f);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_B)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_G)) {
-		//PostEffectManager::GetInstance()->SetRadialBlurCenter({ 0.2f,0.2f });
-		PostEffectManager::GetInstance()->SetRadialBlurWidth(0.05f);
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_R)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Random);
-		//PostEffectManager::GetInstance()->Set
-	}
-	if (Input::GetInstance()->TriggerKey(DIK_E)) {
-		// 元画像にちらつくノイズを乗せる
-		PostEffectManager::GetInstance()->SetRandomUseImage(true);
-
-	}
-
-	if (Input::GetInstance()->TriggerKey(DIK_D)) {
-		isDissolve = true;
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Dissolve);
-		PostEffectManager::GetInstance()->DissolveInitialize(0.3f, 0.03f, { 1.0f, 0.4f, 0.3f });
-		// 使用するテクスチャを指定
-		PostEffectManager::GetInstance()->SetDissolveTextures(
-			"Resources/noise1.png",     // 通常シーンの画像（gTexture）
-			"Resources/noise0.png"            // マスク画像（gMaskTexture）
-		);
-
-		// しきい値を ImGuiなどでリアルタイム制御も可能
-		PostEffectManager::GetInstance()->SetDissolveThreshold(sliderValue);
-	}
-
-	if (isDissolve = true)
-	{
-		//ImGui::Begin("PostEffect Controller");
-
-		//// Dissolve 関連 UI
-
-		//static float threshold = 0.4f;
-		//static float edgeWidth = 0.03f;
-		//static Vector3 edgeColor = { 1.0f, 0.4f, 0.3f };
-
-		//ImGui::SliderFloat("Threshold", &threshold, 0.0f, 1.0f);
-		//ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0f, 0.1f);
-		//ImGui::ColorEdit3("Edge Color", &edgeColor.x);
-
-		//PostEffectManager::GetInstance()->SetDissolveThreshold(threshold);
-		//PostEffectManager::GetInstance()->SetDissolveEdgeWidth(edgeWidth);
-		//PostEffectManager::GetInstance()->SetDissolveEdgeColor(edgeColor);
-
-		//ImGui::End();
-	}
-
-
+	ground->Update();
+	sky->Update();
 	skybox->Update();
 
 	// デバッグ
 	//Debug();
-
-	sceneController_->Update();
-
-
-	//if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
-	//	// シーン切り替え
-	//	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
-	//}
-
-	//if (Input::GetInstance()->TriggerKey(DIK_U)) {
-	//	// シーン切り替え
-	//	SceneManager::GetInstance()->ChangeScene("Unity");
-	//}
 
 	// フェード処理
 	if (fade_) {
@@ -342,23 +152,17 @@ void TitleScene::Update()
 		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
 			fade_->Start(Fade::Status::FadeOut, 2.0f);
-			nextSceneName_ = "GAMEPLAY";
+			nextSceneName_ = "TUTORIAL";
 		}
-		if (Input::GetInstance()->TriggerKey(DIK_U)) {
+		/*if (Input::GetInstance()->TriggerKey(DIK_U)) {
 			fade_->Start(Fade::Status::FadeOut, 2.0f);
 			nextSceneName_ = "Unity";
 		}
 		if (Input::GetInstance()->TriggerKey(DIK_P)) {
 			fade_->Start(Fade::Status::FadeOut, 2.0f);
 			nextSceneName_ = "PARTICLE";
-		}
+		}*/
 	}
-
-	// TitleScene::Update() に強制起動テスト
-	if (Input::GetInstance()->TriggerKey(DIK_F)) {
-		fade_->Start(Fade::Status::FadeOut, 1.0f);
-	}
-
 
 }
 
@@ -379,7 +183,7 @@ void TitleScene::BackGroundDraw()
 
 void TitleScene::Draw()
 {
-	skybox->Draw();
+	//skybox->Draw();
 
 	// 3Dオブジェクトの描画前処理。3Dオブジェクトの描画設定に共通のグラフィックスコマンドを積む
 	Object3dCommon::GetInstance()->CommonSetting();
@@ -389,9 +193,8 @@ void TitleScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	//plane->Draw();
-
-	sceneController_->Draw();
+	sky->Draw();
+	ground->Draw();
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
@@ -405,7 +208,6 @@ void TitleScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	animationCube->Draw();
 	sneak->Draw();
 
 	// ================================================
@@ -416,24 +218,7 @@ void TitleScene::Draw()
 	// ここからDrawLine個々の描画
 	// ================================================
 
-	/*DrawLine::GetInstance()->AddLine(
-		{ 0.0f, 0.0f, 0.0f },
-		{ 0.5f, 0.5f, 0.0f },
-		Color::WHITE,
-		Color::WHITE
-	);*/
-	// DrawTriangleの描画
-	// 初期三角形を追加
-	//drawTriangle_->AddTriangle(triangleP1, triangleP2, triangleP3, triangleColor, triangleAlpha);
-
-	//DrawLine::GetInstance()->DrawAABB(aabb);
-	//DrawLine::GetInstance()->DrawSphere(sphere);
-	//// 平面の描画
-	//DrawLine::GetInstance()->DrawPlane(ground);
-	//// カプセルの描画
-	//DrawLine::GetInstance()->DrawCapsule(capsule);
-	//// OBB を描画
-	//DrawLine::GetInstance()->DrawOBB(obb);
+	
 
 	// ================================================
 	// ここまでDrawLine個々の描画
@@ -449,7 +234,7 @@ void TitleScene::ForeGroundDraw()
 	// ここからSprite個々の前景描画(UIなど)
 	// ================================================
 
-	title->Draw();
+	//title->Draw();
 
 	if (fade_) {
 		fade_->Draw();
@@ -464,10 +249,7 @@ void TitleScene::ForeGroundDraw()
 	// ここからparticle個々の描画
 	// ================================================
 
-	/*particle->Draw();
-	primitiveParticle->Draw();
-	ringParticle->Draw();
-	cyrinderParticle->Draw();*/
+	
 
 	// ================================================
 	// ここまでparticle個々の描画
@@ -476,7 +258,7 @@ void TitleScene::ForeGroundDraw()
 
 void TitleScene::Debug()
 {
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 
 	if (!IsDockedImGuiEnabled()) return;
 
@@ -484,72 +266,6 @@ void TitleScene::Debug()
 	//BaseScene::ShowFPS();
 
 
-	ImGui::Begin(kWindowName_ParticleControl);
-	ImGui::Checkbox("Change Speed", &changeSpeed_);
-	ImGui::End();
-
-	ImGui::Begin(kWindowName_DebugInfo); // デバッグ情報用ウィンドウ
-	ImGui::Text("Number of Lines: %zu", DrawLine::GetInstance()->GetLineCount());
-	ImGui::End();
-
-	// AABB の編集
-	ImGui::Begin(kWindowName_AABBControl);
-	ImGui::Text("Adjust AABB parameters:");
-	ImGui::DragFloat3("Min", &aabb.min.x, 0.1f); // AABB の最小点を調整
-	ImGui::DragFloat3("Max", &aabb.max.x, 0.1f); // AABB の最大点を調整
-	ImGui::End();
-
-	// OBB の調整
-	ImGui::Begin(kWindowName_OBBControl);
-	ImGui::DragFloat3("Center", &obb.center.x, 0.1f); // 中心点
-	ImGui::DragFloat3("Size", &obb.size.x, 0.1f, 0.1f, 10.0f); // 各軸方向の半サイズ
-	ImGui::DragFloat3("Orientation X", &obb.orientations[0].x, 0.1f); // X軸方向
-	ImGui::DragFloat3("Orientation Y", &obb.orientations[1].x, 0.1f); // Y軸方向
-	ImGui::DragFloat3("Orientation Z", &obb.orientations[2].x, 0.1f); // Z軸方向
-	ImGui::End();
-
-	// Sphere の編集
-	ImGui::Begin(kWindowName_SphereControl);
-	ImGui::Text("Adjust Sphere parameters:");
-	ImGui::DragFloat3("Center", &sphere.center.x, 0.1f); // Sphere の中心点を調整
-	ImGui::DragFloat("Radius", &sphere.radius, 0.1f, 0.1f, 100.0f); // Sphere の半径を調整
-	ImGui::End();
-
-	// Plane の調整
-	//ImGui::Begin("Ground Control");
-	//ImGui::Text("Adjust Plane parameters:");
-	//ImGui::DragFloat3("Normal", &ground.normal.x, 0.1f); // 法線を調整
-	//ImGui::DragFloat("Distance", &ground.distance, 0.1f); // 距離を調整
-	//ImGui::DragFloat("Size", &ground.size, 0.1f, 1.0f, 20.0f); // サイズを調整
-	//ImGui::DragInt("Divisions", &ground.divisions, 1, 1, 50); // グリッド分割数を調整
-	//ImGui::End();
-
-	// Capsule の編集
-	//ImGui::Begin("Capsule Control");
-	//ImGui::DragFloat3("Start", &capsule.start.x, 0.1f); // 開始点を調整
-	//ImGui::DragFloat3("End", &capsule.end.x, 0.1f);     // 終了点を調整
-	//ImGui::DragFloat("Radius", &capsule.radius, 0.1f, 0.1f, 10.0f); // 半径を調整
-	//ImGui::DragInt("Segments", &capsule.segments, 1, 4, 64); // 円周分割数を調整
-	//ImGui::DragInt("Rings", &capsule.rings, 1, 2, 32);       // 球部分分割数を調整
-	//ImGui::End();
-
-	// DrawTriangleの更新
-	//drawTriangle_->Update();
-
-	// ImGui ウィンドウ
-	//ImGui::Begin("Triangle Control");
-
-	//// 頂点座標の変更
-	//ImGui::DragFloat3("Vertex 1", &triangleP1.x, 0.1f);
-	//ImGui::DragFloat3("Vertex 2", &triangleP2.x, 0.1f);
-	//ImGui::DragFloat3("Vertex 3", &triangleP3.x, 0.1f);
-
-	//// 変更を適用
-	//if (ImGui::Button("Apply Changes")) {
-	//	drawTriangle_->ResetData(); // データをクリア
-	//	drawTriangle_->AddTriangle(triangleP1, triangleP2, triangleP3, triangleColor, triangleAlpha);
-	//}
-
-	//ImGui::End();
+	
 #endif
 }

@@ -56,6 +56,8 @@ void Object3d::Update()
 
 }
 
+#ifdef DEBUG
+
 void Object3d::ImGuiUpdate(const std::string& Name)
 {
     ImGui::Begin("object3d");
@@ -68,6 +70,7 @@ void Object3d::ImGuiUpdate(const std::string& Name)
     }
     ImGui::End();
 }
+#endif // DEBUG
 
 void Object3d::Draw()
 {
@@ -88,7 +91,7 @@ void Object3d::Draw()
     }
 
     // 骨（スケルトン）を描画
-    DrawSkeleton();
+    //DrawSkeleton();
 }
 
 void Object3d::DrawSkeleton()

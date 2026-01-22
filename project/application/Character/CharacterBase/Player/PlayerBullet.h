@@ -1,48 +1,40 @@
 #pragma once
 #include "ObjectBase.h"
-#include "SphereCollider.h"
 
-class PlayerBullet : public ObjectBase, public SphereCollider
+class PlayerBullet : public ObjectBase
 {
 public:
-	// 明示的に CharacterBase を初期化するコンストラクタ
-	PlayerBullet(BaseScene* baseScene);
+    PlayerBullet(BaseScene* scene) : ObjectBase(baseScene_) {};
+    
+    // ====== ObjectBase override ======
+    void Initialize() override;
+    void Update() override;
+    /// <summary>
+    /// 背景スプライト処理
+    /// </summary>
+    void BackGroundDraw() override;
+    void Draw() override;
+    /// <summary>
+    /// 前景スプライト処理
+    /// </summary>
+    void ForeGroundDraw() override;
+    void AnimationDraw() override;
+    void ParticleDraw() override;
+    void OnCollision() override;
 
-	~PlayerBullet();
+    // 弾の発射初期化
+    void Fire(const Vector3& start, const Vector3& dir, float speed = 0.6f, float lifeSec = 3.0f);
 
-	// 初期化
-	void Initialize() override;
-
-	// 更新（移動処理）
-	void Update() override;
-
-	// 描画
-	void Draw() override;
-
-	void SkinningDraw() override;
-
-	void ParticleDraw() override;
-
-	void OnCollision() override;
-
-	// 速度設定
-	void SetVelocity(const Vector3& velocity) { velocity_ = velocity; }
-
-	const Vector3& GetVelocity() const { return velocity_; }
-
-	// 初期位置設定（オプション）
-	void SetTranslate(const Vector3& pos) { transform.translate = pos; }
-
-	void SetCamera(Camera* camera) {
-		camera_ = camera;
-		object3d_->SetCamera(camera);
-	}
-
-	bool IsDead() const { return isDead_ || lifeTimer_ >= maxLifeTime_; }
+    bool IsDead() const { return life_ <= 0.0f; }
 
 private:
-	Vector3 velocity_ = { 0.0f, 0.0f, 2.0f }; // デフォルト前進速度
-	float lifeTimer_ = 0.0f;
-	const float maxLifeTime_ = 4.0f;
-	bool isDead_ = false;  // 弾が消えるかどうか
+    Vector3 velocity_{};
+    float life_ = 0.0f;
+
+    // コライダー情報
+    float colliderRadius_ = 0.3f;
+
+    // 衝突フラグ（ImGui確認用）
+    bool isCollided_ = false;
 };
+
