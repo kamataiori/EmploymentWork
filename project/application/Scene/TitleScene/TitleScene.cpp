@@ -139,12 +139,18 @@ void TitleScene::Update()
 		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
 
-			TransitionRequest req{};
+			/*TransitionRequest req{};
 			req.type = TransitionType::Fade;
 			req.fadeOutSec = 2.0f;
-			req.fadeInSec = 1.0f;
+			req.fadeInSec = 1.0f;*/
+
+			TransitionRequest req{};
+			req.type = TransitionType::Shutter;
+			req.fadeOutSec = 2.0f;  // 閉じる
+			req.fadeInSec = 2.5f;  // 開く
 
 			SceneManager::GetInstance()->RequestChangeScene("TUTORIAL", req);
+
 		}
 	}
 

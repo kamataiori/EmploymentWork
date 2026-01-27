@@ -5,6 +5,7 @@
 enum class TransitionType {
     None,
     Fade,
+    Shutter,
 };
 
 // 遷移要求パラメータ

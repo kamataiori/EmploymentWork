@@ -38,6 +38,13 @@ private:
         std::function<void()> onFinishOnce
     );
 
+    // 上下シャッター
+    void CreateAndEnqueueShutter(
+        const TransitionRequest& req,
+        std::function<void()> onSwitchOnce,
+        std::function<void()> onFinishOnce
+    );
+
 private:
     UIManager* uiManager_ = nullptr;
     bool isTransitioning_ = false;

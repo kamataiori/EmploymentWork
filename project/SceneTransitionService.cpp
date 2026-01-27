@@ -2,6 +2,7 @@
 #include "UIManager.h"
 #include "FadeTransition.h"
 #include <cassert>
+#include <ShutterTransition.h>
 
 void SceneTransitionService::StartTransition(
     const std::string& nextSceneName,
@@ -40,6 +41,11 @@ void SceneTransitionService::StartTransition(
         CreateAndEnqueueFade(req, onSwitchOnce, onFinishOnce);
         break;
 
+    case TransitionType::Shutter:
+        CreateAndEnqueueShutter(req, onSwitchOnce, onFinishOnce);
+        break;
+
+
     default:
         // 演出なしなら即切替して即終了
         onSwitchOnce();
@@ -63,4 +69,22 @@ void SceneTransitionService::CreateAndEnqueueFade(
     fade->Start(req.fadeOutSec, req.fadeInSec);
 
     uiManager_->Add(std::move(fade));
+}
+
+void SceneTransitionService::CreateAndEnqueueShutter(const TransitionRequest& req, std::function<void()> onSwitchOnce, std::function<void()> onFinishOnce)
+{
+    auto shutter = std::make_unique<ShutterTransition>();
+
+    shutter->Initialize(
+        "Resources/Black.png",
+        { 1280.0f, 720.0f },
+        100000
+    );
+
+    shutter->SetOnSwitch(std::move(onSwitchOnce));
+    shutter->SetOnFinish(std::move(onFinishOnce));
+
+    shutter->Start(req.fadeOutSec, req.fadeInSec);
+
+    uiManager_->Add(std::move(shutter));
 }

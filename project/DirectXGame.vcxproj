@@ -212,6 +212,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateFinal.cpp" />
     <ClCompile Include="SceneTransitionBase.cpp" />
     <ClCompile Include="SceneTransitionService.cpp" />
+    <ClCompile Include="ShutterTransition.cpp" />
     <ClCompile Include="UIElement.cpp" />
     <ClCompile Include="UIHpBar.cpp" />
     <ClCompile Include="UIManager.cpp" />
@@ -344,6 +345,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="SceneTransitionBase.h" />
     <ClInclude Include="SceneTransitionService.h" />
     <ClInclude Include="SceneTransitionTypes.h" />
+    <ClInclude Include="ShutterTransition.h" />
     <ClInclude Include="UIElement.h" />
     <ClInclude Include="UIHpBar.h" />
     <ClInclude Include="UIManager.h" />
