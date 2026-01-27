@@ -4,6 +4,7 @@
 #include "ImGuiManager.h"
 #include "GlobalVariables.h"
 #include <PostEffectManager.h>
+#include "SceneTransitionTypes.h"
 
 void TitleScene::Initialize()
 {
@@ -75,9 +76,6 @@ void TitleScene::Initialize()
 	ground->SetCamera(camera1.get());
 	sky->SetCamera(camera1.get());
 
-	
-	fade_ = std::make_unique<Fade>();
-	fade_->Initialize();
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 	skybox->SetCamera(camera1.get());
@@ -136,32 +134,18 @@ void TitleScene::Update()
 	// デバッグ
 	//Debug();
 
-	// フェード処理
-	if (fade_) {
-		fade_->Update();
-
-		// フェードアウト完了後にシーン遷移
-		if (!nextSceneName_.empty() && !fade_->IsFinish()) {
-			SceneManager::GetInstance()->ChangeScene(nextSceneName_);
-			nextSceneName_.clear(); // 一度きりでリセット
-		}
-	}
-
-	// キー入力でフェード開始（シーン遷移予約）
-	if (!fade_->IsActive()) {
+	// 遷移中でなければ入力受付
+	if (!SceneManager::GetInstance()->IsTransitioning()) {
 		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
-			fade_->Start(Fade::Status::FadeOut, 2.0f);
-			nextSceneName_ = "TUTORIAL";
+
+			TransitionRequest req{};
+			req.type = TransitionType::Fade;
+			req.fadeOutSec = 2.0f;
+			req.fadeInSec = 1.0f;
+
+			SceneManager::GetInstance()->RequestChangeScene("TUTORIAL", req);
 		}
-		/*if (Input::GetInstance()->TriggerKey(DIK_U)) {
-			fade_->Start(Fade::Status::FadeOut, 2.0f);
-			nextSceneName_ = "Unity";
-		}
-		if (Input::GetInstance()->TriggerKey(DIK_P)) {
-			fade_->Start(Fade::Status::FadeOut, 2.0f);
-			nextSceneName_ = "PARTICLE";
-		}*/
 	}
 
 }
@@ -236,10 +220,7 @@ void TitleScene::ForeGroundDraw()
 
 	//title->Draw();
 
-	if (fade_) {
-		fade_->Draw();
-	}
-
+	
 
 	// ================================================
 	// ここまでSprite個々の前景描画(UIなど)

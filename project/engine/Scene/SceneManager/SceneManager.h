@@ -2,6 +2,10 @@
 #include "BaseScene.h"
 #include "TitleScene.h"
 #include "AbstractSceneFactory.h"
+#include <string>
+
+struct TransitionRequest;
+class SceneTransitionService;
 
 class SceneManager
 {
@@ -59,6 +63,16 @@ public:
 	/// <param name="sceneName"></param>
 	void ChangeScene(const std::string& sceneName);
 
+	// -----Scene切り替え演出----- // 
+
+	// 遷移要求の窓口（Sceneから呼ぶのは基本これ）
+	// SceneManagerは演出の生成を知らず、Serviceに委譲する
+	void SetTransitionService(SceneTransitionService* service) { transitionService_ = service; }
+
+	void RequestChangeScene(const std::string& nextSceneName, const TransitionRequest& req);
+
+	bool IsTransitioning() const;
+
 private:
 
 	// 今のシーン (実行中シーン)
@@ -69,5 +83,8 @@ private:
 
 	// シーンファクトリー (借りてくる)
 	AbstractSceneFactory* sceneFactory_ = nullptr;
+
+	// 遷移実行はここに委譲する（所有はしない）
+	SceneTransitionService* transitionService_ = nullptr;
 };
 

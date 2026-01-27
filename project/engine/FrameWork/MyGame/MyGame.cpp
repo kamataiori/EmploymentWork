@@ -16,6 +16,17 @@ void MyGame::Initialize()
 	sceneFactory_ = new SceneFactory();
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
 
+	// UIManager生成
+	uiManager_ = std::make_unique<UIManager>();
+
+	// 遷移サービス生成
+	transitionService_ = std::make_unique<SceneTransitionService>();
+
+	// 注入
+	transitionService_->SetUIManager(uiManager_.get());
+	SceneManager::GetInstance()->SetTransitionService(transitionService_.get());
+
+
 	SceneManager::GetInstance()->ChangeScene("TITLE");
 
 #ifdef USE_IMGUI
@@ -61,57 +72,11 @@ void MyGame::Update()
 
 #endif // USE_IMGUI
 
-#ifdef USE_IMGUI
-
-
-
-	//ApplyImGuiStyle();
-
-	//// Unity風レイアウトの表示
-	//if (useUnityLayout_) {
-	//	DrawUnityLayout();
-	//}
-
-	//// レイアウト切り替えUI
-	//if (!useUnityLayout_) {
-	//	ImGui::Begin("レイアウト切替");
-	//	if (ImGui::Button("Unity風レイアウトに戻す")) {
-	//		useUnityLayout_ = true;
-	//		unityDockInitialized_ = false;
-	//	}
-	//	ImGui::End();
-	//}
-
-	////// Unityレイアウトの有効状態をSceneに通知
-	////auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
-	////if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
-	////	base->SetEnableDockedImGui(useUnityLayout_);
-	////	unityDockInitialized_ = false;
-	////	if (!useUnityLayout_) {
-	////		unityDockInitialized_ = false;
-	////		dockLayoutDelay_ = 0;
-	////	}
-	////}
-
-	////======= ✅ Sceneが切り替わったときだけ Dock再初期化 =======
-	//static BaseScene* lastScene = nullptr;
-	//auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
-
-	//if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
-	//	base->SetEnableDockedImGui(useUnityLayout_);
-
-	//	if (base != lastScene) {
-	//		unityDockInitialized_ = false;
-	//		dockLayoutDelay_ = 0;
-	//		lastScene = base;
-	//	}
-	//}
-
-#endif
-
-
 	// 基底クラスの更新処理
 	Framework::Update();
+
+	// UI更新（遷移演出含む）
+	uiManager_->Update();
 
 	//GlobalVariables::GetInstance()->Update();
 
@@ -180,6 +145,9 @@ void MyGame::Draw()
 	DrawTriangleCommon::GetInstance()->CommonSetting();
 	DrawTriangle::GetInstance()->Draw();
 
+	SpriteCommon::GetInstance()->CommonSetting();
+	uiManager_->Draw();
+
 	// スワップチェーンへの描画前処理
 	dxCommon->PreDraw();
 
@@ -201,212 +169,4 @@ void MyGame::Draw()
 
 	// スワップチェーンの描画後処理
 	dxCommon->PostDraw();
-}
-
-void MyGame::ApplyImGuiStyle() {
-
-#ifdef USE_IMGUI
-
-
-
-	ImGuiStyle& style = ImGui::GetStyle();
-	ImVec4* colors = style.Colors;
-
-	colors[ImGuiCol_WindowBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
-	colors[ImGuiCol_ChildBg] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
-	colors[ImGuiCol_Border] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
-	colors[ImGuiCol_TitleBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
-	colors[ImGuiCol_TitleBgActive] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
-	colors[ImGuiCol_FrameBg] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
-	colors[ImGuiCol_Header] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
-	colors[ImGuiCol_HeaderHovered] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-	colors[ImGuiCol_HeaderActive] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
-	colors[ImGuiCol_Button] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
-	colors[ImGuiCol_ButtonHovered] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-	colors[ImGuiCol_ButtonActive] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
-#endif // USE_IMGUI
-}
-
-void MyGame::DrawUnityLayout()
-{
-#ifdef USE_IMGUI
-
-
-
-	ImGuiWindowFlags windowFlags =
-		ImGuiWindowFlags_MenuBar |
-		ImGuiWindowFlags_NoTitleBar |
-		ImGuiWindowFlags_NoCollapse |
-		ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoBringToFrontOnFocus |
-		ImGuiWindowFlags_NoNavFocus;
-
-	const ImGuiViewport* viewport = ImGui::GetMainViewport();
-	ImGui::SetNextWindowPos(viewport->Pos);
-	ImGui::SetNextWindowSize(viewport->Size);
-	ImGui::SetNextWindowViewport(viewport->ID);
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-	ImGui::Begin("DockSpaceUnity", nullptr, windowFlags);
-	ImGui::PopStyleVar(3);
-
-	if (ImGui::BeginMenuBar()) {
-		if (ImGui::BeginMenu("menu")) {
-			if (ImGui::MenuItem("Unity風レイアウトを無効にする")) {
-				useUnityLayout_ = false;
-				unityDockInitialized_ = false;
-			}
-			ImGui::EndMenu();
-		}
-		ImGui::EndMenuBar();
-	}
-
-	ImGuiID dockspaceID = ImGui::GetID("MyDockSpace");
-
-	if (!unityDockInitialized_) {
-		if (dockLayoutDelay_ < 1) {
-			dockLayoutDelay_++;  // 1フレーム遅延させる
-		}
-		else {
-			unityDockInitialized_ = true;
-			dockLayoutDelay_ = 0;
-
-			ImGui::DockBuilderRemoveNode(dockspaceID);
-			ImGui::DockBuilderAddNode(dockspaceID, ImGuiDockNodeFlags_DockSpace);
-			ImGui::DockBuilderSetNodeSize(dockspaceID, viewport->Size);
-
-			ImGuiID dock_main_id = dockspaceID;
-			ImGuiID dock_left, dock_right, dock_bottom, dock_center;
-			ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, &dock_left, &dock_main_id);
-			ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, &dock_right, &dock_center);
-			ImGui::DockBuilderSplitNode(dock_center, ImGuiDir_Down, 0.25f, &dock_bottom, &dock_center);
-
-			ImGuiID dock_left_top, dock_left_bottom;
-			ImGui::DockBuilderSplitNode(dock_left, ImGuiDir_Up, 0.6f, &dock_left_top, &dock_left_bottom);
-
-			ImGuiID dock_right_top, dock_right_bottom;
-			ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Up, 0.6f, &dock_right_top, &dock_right_bottom);
-
-			ImGui::DockBuilderDockWindow("SceneView", dock_center);
-			ImGui::DockBuilderDockWindow("Hierarchy", dock_left_top);
-			ImGui::DockBuilderDockWindow("Performance", dock_left_top);
-			ImGui::DockBuilderDockWindow("Particle Control", dock_left_bottom);
-			ImGui::DockBuilderDockWindow("Inspector", dock_right_top);
-			ImGui::DockBuilderDockWindow("Debug Info", dock_right_bottom);
-			ImGui::DockBuilderDockWindow("Project / Console", dock_bottom);
-
-			// 仮にウィンドウを1フレームだけ出す（表示はされないが、存在はさせる）
-			/*auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
-			if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
-				for (const auto& name : base->GetLeftDockWindows()) {
-					ImGui::Begin(name.c_str());
-					ImGui::End();
-				}
-				for (const auto& name : base->GetRightDockWindows()) {
-					ImGui::Begin(name.c_str());
-					ImGui::End();
-				}
-				for (const auto& name : base->GetBottomDockWindows()) {
-					ImGui::Begin(name.c_str());
-					ImGui::End();
-				}
-			}*/
-
-			auto* currentScene = SceneManager::GetInstance()->GetCurrentScene();
-			if (auto* base = dynamic_cast<BaseScene*>(currentScene)) {
-				for (const auto& name : base->GetLeftDockWindows()) {
-					ImGui::DockBuilderDockWindow(name.c_str(), dock_left_bottom);
-				}
-				for (const auto& name : base->GetRightDockWindows()) {
-					ImGui::DockBuilderDockWindow(name.c_str(), dock_right_bottom);
-				}
-				for (const auto& name : base->GetBottomDockWindows()) {
-					ImGui::DockBuilderDockWindow(name.c_str(), dock_bottom);
-				}
-
-			}
-
-			ImGui::DockBuilderFinish(dockspaceID);
-		}
-	}
-
-
-	ImGui::DockSpace(dockspaceID, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
-	ImGui::End();
-
-	// 分割した描画関数を呼び出す
-	DrawCenterPanel();
-	DrawLeftPanels();
-	DrawRightPanels();
-	DrawBottomPanel();
-#endif // USE_IMGUI
-}
-
-void MyGame::DrawCenterPanel()
-{
-#ifdef USE_IMGUI
-
-	ImGui::Begin("SceneView");
-	ImTextureID textureID = (ImTextureID)SrvManager::GetInstance()
-		->GetGPUDescriptorHandle(PostEffectManager::GetInstance()->GetSrvIndex()).ptr;
-	ImGui::Image(textureID, ImGui::GetContentRegionAvail());
-	ImGui::End();
-
-#endif // USE_IMGUI
-}
-
-void MyGame::DrawLeftPanels()
-{
-#ifdef USE_IMGUI
-
-	if (!useUnityLayout_) return;
-
-	// FPS情報パネル（固定左側）
-	ImGui::Begin("Performance");
-
-	ImGui::Text("FPS: %.2f", GetFPS());
-	ImGui::Text("Frame Time: %.2f ms", GetFrameTimeMs());
-	ImGui::Text("Average FPS: %.2f", GetAverageFPS());
-
-	ImGui::End();
-
-	//// 既存の左パネル内容
-	//ImGui::Begin("Hierarchy");
-	//ImGui::Text("Hierarchy内容");
-	//ImGui::End();
-
-#endif // USE_IMGUI
-}
-
-void MyGame::DrawRightPanels()
-{
-#ifdef USE_IMGUI
-
-	if (!useUnityLayout_) return;
-
-	/*ImGui::Begin("Inspector");
-	ImGui::Text("インスペクター表示");
-	ImGui::End();*/
-
-	/*ImGui::Begin("Debug Info");
-	ImGui::Text("デバッグ情報やFPS");
-	ImGui::End();*/
-
-#endif // USE_IMGUI
-}
-
-void MyGame::DrawBottomPanel()
-{
-#ifdef USE_IMGUI
-
-	if (!useUnityLayout_) return;
-
-	ImGui::Begin("Project / Console");
-	ImGui::Text("プロジェクト・コンソール表示");
-	ImGui::End();
-#endif // USE_IMGUI
 }

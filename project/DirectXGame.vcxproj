@@ -154,6 +154,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Decorator\InverterDecorator.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.cpp" />
+    <ClCompile Include="FadeTransition.cpp" />
     <ClCompile Include="IsTargetNearLeaf.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\math\MathFunctions.cpp" />
@@ -209,6 +210,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateRoll.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateDash.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateFinal.cpp" />
+    <ClCompile Include="SceneTransitionBase.cpp" />
+    <ClCompile Include="SceneTransitionService.cpp" />
     <ClCompile Include="UIElement.cpp" />
     <ClCompile Include="UIHpBar.cpp" />
     <ClCompile Include="UIManager.cpp" />
@@ -275,6 +278,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Decorator\InverterDecorator.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.h" />
+    <ClInclude Include="FadeTransition.h" />
     <ClInclude Include="IsTargetNearLeaf.h" />
     <ClInclude Include="matrix\Matrix3x3.h" />
     <ClInclude Include="matrix\Matrix4x4.h" />
@@ -337,6 +341,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Scene\TutorialScene\TutorialStateRoll.h" />
     <ClInclude Include="application\Scene\TutorialScene\TutorialStateDash.h" />
     <ClInclude Include="application\Scene\TutorialScene\TutorialStateFinal.h" />
+    <ClInclude Include="SceneTransitionBase.h" />
+    <ClInclude Include="SceneTransitionService.h" />
+    <ClInclude Include="SceneTransitionTypes.h" />
     <ClInclude Include="UIElement.h" />
     <ClInclude Include="UIHpBar.h" />
     <ClInclude Include="UIManager.h" />
