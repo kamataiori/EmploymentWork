@@ -88,8 +88,8 @@ private:
     Object3dCommon* object3dCommon_ = nullptr;
 
     // ライト関連のバッファリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource;   // 平行光源用
-    Microsoft::WRL::ComPtr<ID3D12Resource> cameraLightResource;        // カメラ位置用
-    Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource;         // ポイントライト用
-    Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource;          // スポットライト用
+    Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource{};   // 平行光源用
+    Microsoft::WRL::ComPtr<ID3D12Resource> cameraLightResource{};        // カメラ位置用
+    Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource{};         // ポイントライト用
+    Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource{};          // スポットライト用
 };

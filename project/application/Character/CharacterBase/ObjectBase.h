@@ -56,7 +56,7 @@ public:
 	virtual void ParticleDraw() = 0;
 
 	/// <summary>
-	/// Skiningのモデル専用の描画処理
+	/// Skinningのモデル専用の描画処理
 	/// </summary>
 	virtual void AnimationDraw() = 0;
 
@@ -82,7 +82,7 @@ public:
 	/// Transformを取得
 	const Transform& GetTransform() const { return transform; }
 
-	void SetTarnsform(const Transform& transform_) { transform = transform_; }
+	void SetTransform(const Transform& transform_) { transform = transform_; }
 
 	// Transformをセット
 	void SetTranslate(const Vector3& t) { transform.translate = t; }
