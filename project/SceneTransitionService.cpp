@@ -81,6 +81,8 @@ void SceneTransitionService::CreateAndEnqueueShutter(const TransitionRequest& re
         100000
     );
 
+    shutter->SetHoldSeconds(0.1f);
+
     shutter->SetOnSwitch(std::move(onSwitchOnce));
     shutter->SetOnFinish(std::move(onFinishOnce));
 

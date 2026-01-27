@@ -1,6 +1,13 @@
 #include "SceneTransitionBase.h"
 #include "engine/TimeManager.h"
 
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
+
 SceneTransitionBase::SceneTransitionBase()
 {
     timeManager_ = TimeManager::GetInstance();
@@ -51,6 +58,28 @@ void SceneTransitionBase::Update()
 
         if (timer_ >= fadeOutSec_) {
             timer_ = 0.0f;
+
+            // HoldがあるならHoldへ
+            if (holdSec_ > 0.0f) {
+                phase_ = Phase::Hold;
+            }
+            else {
+                phase_ = Phase::Switch;
+            }
+        }
+        break;
+    }
+
+    case Phase::Hold:
+    {
+        timer_ += dt;
+
+        // 暗転状態は保持したいので、見た目は完全暗転側に固定
+        // ここは派生の実装が「FadeOut=1.0」が暗転完了状態になる想定
+        OnFadeOut(1.0f);
+
+        if (timer_ >= holdSec_) {
+            timer_ = 0.0f;
             phase_ = Phase::Switch;
         }
         break;
@@ -91,6 +120,11 @@ void SceneTransitionBase::Update()
     default:
         break;
     }
+}
+
+void SceneTransitionBase::SetHoldSeconds(float sec)
+{
+    holdSec_ = std::max(0.0f, sec);
 }
 
 float SceneTransitionBase::GetDeltaTime() const

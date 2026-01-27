@@ -13,6 +13,7 @@ public:
     enum class Phase {
         None,     // 未開始
         FadeOut,  // 暗転中
+        Hold,     // 暗転完了後の停止
         Switch,   // シーン切替の実行タイミング
         FadeIn,   // 明転中
         Done,     // 完了
@@ -42,6 +43,9 @@ public:
     // UIElement
     void Update() override;
 
+    // 暗転完了後に止める秒数（0なら停止なし）
+    void SetHoldSeconds(float sec);
+
 protected:
     // FadeOut: 0.0f -> 1.0f の進行度
     virtual void OnFadeOut(float progress01) = 0;
@@ -61,6 +65,7 @@ protected:
     float fadeOutSec_ = 0.0f;
     float fadeInSec_ = 0.0f;
     float timer_ = 0.0f;
+    float holdSec_ = 0.0f;
 
     bool hasSwitched_ = false;
 
