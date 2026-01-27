@@ -1,14 +1,12 @@
 #include "Framework.h"
 #include "SceneFactory.h"
 #include "GlobalVariables.h"
-#include "UIManager.h"
-#include "SceneTransitionService.h"
-#include "SceneTransitionTypes.h"
+#include "engine/UI/UIManager.h"
+#include "engine/Scene/ChangeEffect/SceneTransitionService.h"
+#include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
 
 #ifdef USE_IMGUI
-
 #include "ImGuiManager.h"
-
 #endif // USE_IMGUI
 
 #include <deque>

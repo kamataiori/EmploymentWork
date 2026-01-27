@@ -1,8 +1,8 @@
 #include "SceneTransitionService.h"
-#include "UIManager.h"
-#include "FadeTransition.h"
+#include "engine/UI/UIManager.h"
+#include "engine/Scene/ChangeEffect/Fade/FadeTransition.h"
+#include <engine/Scene/ChangeEffect/Shutter/ShutterTransition.h>
 #include <cassert>
-#include <ShutterTransition.h>
 
 void SceneTransitionService::StartTransition(
     const std::string& nextSceneName,

@@ -327,16 +327,16 @@
     <ClCompile Include="PunchAttackLeaf.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="UIElement.cpp">
+    <ClCompile Include="engine\UI\UIElement.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="UIManager.cpp">
+    <ClCompile Include="engine\UI\UIManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="UIHpBar.cpp">
+    <ClCompile Include="engine\UI\UIHpBar.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="UITexture.cpp">
+    <ClCompile Include="engine\UI\UITexture.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="application\Scene\TutorialScene\TutorialScene.cpp">
@@ -366,16 +366,16 @@
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateFinal.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="SceneTransitionBase.cpp">
+    <ClCompile Include="engine\Scene\ChangeEffect\SceneTransitionBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="FadeTransition.cpp">
+    <ClCompile Include="engine\Scene\ChangeEffect\Fade\FadeTransition.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="SceneTransitionService.cpp">
+    <ClCompile Include="engine\Scene\ChangeEffect\SceneTransitionService.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="ShutterTransition.cpp">
+    <ClCompile Include="engine\Scene\ChangeEffect\Shutter\ShutterTransition.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -731,16 +731,16 @@
     <ClInclude Include="PunchAttackLeaf.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="UIElement.h">
+    <ClInclude Include="engine\UI\UIElement.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="UIManager.h">
+    <ClInclude Include="engine\UI\UIManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="UIHpBar.h">
+    <ClInclude Include="engine\UI\UIHpBar.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="UITexture.h">
+    <ClInclude Include="engine\UI\UITexture.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Scene\TutorialScene\TutorialScene.h">
@@ -770,19 +770,19 @@
     <ClInclude Include="application\Scene\TutorialScene\TutorialStateFinal.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="SceneTransitionBase.h">
+    <ClInclude Include="engine\Scene\ChangeEffect\SceneTransitionBase.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="FadeTransition.h">
+    <ClInclude Include="engine\Scene\ChangeEffect\Fade\FadeTransition.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="SceneTransitionTypes.h">
+    <ClInclude Include="engine\Scene\ChangeEffect\SceneTransitionTypes.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="SceneTransitionService.h">
+    <ClInclude Include="engine\Scene\ChangeEffect\SceneTransitionService.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ShutterTransition.h">
+    <ClInclude Include="engine\Scene\ChangeEffect\Shutter\ShutterTransition.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

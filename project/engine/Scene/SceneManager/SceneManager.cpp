@@ -1,7 +1,7 @@
 #include "SceneManager.h"
 #include <PostEffectManager.h>
-#include "SceneTransitionService.h"
-#include "SceneTransitionTypes.h"
+#include "engine/Scene/ChangeEffect/SceneTransitionService.h"
+#include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
 
 SceneManager* SceneManager::instance = nullptr;
 

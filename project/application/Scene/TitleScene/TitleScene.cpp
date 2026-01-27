@@ -4,7 +4,7 @@
 #include "ImGuiManager.h"
 #include "GlobalVariables.h"
 #include <PostEffectManager.h>
-#include "SceneTransitionTypes.h"
+#include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
 
 void TitleScene::Initialize()
 {

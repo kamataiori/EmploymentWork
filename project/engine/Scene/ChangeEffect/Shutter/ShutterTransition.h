@@ -1,5 +1,5 @@
 #pragma once
-#include "SceneTransitionBase.h"
+#include "engine/Scene/ChangeEffect/SceneTransitionBase.h"
 #include "Sprite.h"
 #include <memory>
 #include <string>
