@@ -149,7 +149,7 @@ void TitleScene::Update()
 			req.fadeOutSec = 2.0f;  // 閉じる
 			req.fadeInSec = 2.5f;  // 開く
 
-			SceneManager::GetInstance()->RequestChangeScene("MENU", req);
+			SceneManager::GetInstance()->RequestChangeScene("GAMEPLAY", req);
 
 		}
 	}

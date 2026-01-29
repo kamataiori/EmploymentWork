@@ -5,6 +5,13 @@
 #include <MyGame.h>
 #include "engine/TimeManager.h"
 
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
+
 void GamePlayScene::Initialize()
 {
 	// ライト
@@ -70,6 +77,69 @@ void GamePlayScene::Initialize()
 	ex = std::make_unique<Sprite>();
 	ex->Initialize("Resources/exp.png");
 	ex->SetPosition({ 0.0f,100.0f });
+
+
+	// =========================
+// Pause UI 初期化
+// =========================
+	pauseBlack_ = std::make_unique<Sprite>();
+	pauseBlack_->Initialize("Resources/Black.png");
+	pauseBlack_->SetAnchorPoint({ 0.0f, 0.0f });
+	pauseBlack_->SetPosition({ 0.0f, 0.0f });
+	pauseBlack_->SetSize({ 1280.0f, 720.0f });
+	// 半透明黒（αは好みで調整）
+	pauseBlack_->SetColor({ 0.0f, 0.0f, 0.0f, 0.8f });
+	pauseBlack_->Update();
+
+	pauseMenu_ = std::make_unique<Sprite>();
+	pauseMenu_->Initialize("Resources/menu.png");
+	pauseMenu_->SetAnchorPoint({ 0.5f, 0.5f });
+	pauseMenu_->SetSize({ 256.0f, 128.0f });
+
+	pauseOpe_ = std::make_unique<Sprite>();
+	pauseOpe_->Initialize("Resources/ope.png");
+	pauseOpe_->SetAnchorPoint({ 0.5f, 0.5f });
+	pauseOpe_->SetSize({ 256.0f, 64.0f });
+
+	pauseBackTitle_ = std::make_unique<Sprite>();
+	pauseBackTitle_->Initialize("Resources/backTitle.png");
+	pauseBackTitle_->SetAnchorPoint({ 0.5f, 0.5f });
+	pauseBackTitle_->SetSize({ 256.0f, 64.0f });
+
+	// 位置決めしてUpdate（ポーズ時だけでもいいけど、初期で一度作っておく）
+	UpdatePauseSprites();
+
+	pauseExp_ = std::make_unique<Sprite>();
+	pauseExp_->Initialize("Resources/exp.png");
+	pauseExp_->SetAnchorPoint({ 0.5f, 0.5f });
+	pauseExp_->SetSize({ 256.0f, 256.0f });
+	pauseExp_->SetPosition({ 1280.0f * 0.5f, 220.0f + 64.0f + 24.0f + 32.0f }); // opeと同じ位置に出す
+	pauseExp_->Update();
+
+	// 初期はオプション表示（ope/backTitle表示）
+	pauseShowOptions_ = true;
+
+	pauseEsc_ = std::make_unique<Sprite>();
+	pauseEsc_->Initialize("Resources/esc.png");
+	pauseEsc_->SetAnchorPoint({ 1.0f, 1.0f }); // 右下基準
+	pauseEsc_->SetSize(escSize_);
+
+	// 右下に配置（少し余白）
+	pauseEsc_->SetPosition({ 1280.0f - 16.0f, 720.0f - 16.0f });
+	pauseEsc_->Update();
+	pauseEsc_->SetSize(escBaseSize_);
+	pauseEsc_->SetAnchorPoint({ 1.0f, 1.0f });
+	pauseEsc_->SetPosition({ 1280.0f - 16.0f, 720.0f - 16.0f });
+	pauseEsc_->Update();
+
+	// ゲーム中に表示するESCヒント
+	escHint_ = std::make_unique<Sprite>();
+	escHint_->Initialize("Resources/escBase.png");
+	escHint_->SetAnchorPoint({ 1.0f, 1.0f }); // 右下基準
+	escHint_->SetSize(escHintSize_);
+	escHint_->SetPosition({ 1280.0f - 16.0f, 720.0f - 16.0f }); // 右下に少し余白
+	escHint_->Update();
+
 }
 
 void GamePlayScene::Finalize()
@@ -79,6 +149,56 @@ void GamePlayScene::Finalize()
 
 void GamePlayScene::Update()
 {
+	// =========================
+// Pause トグル（ESC）
+// =========================
+	if (Input::GetInstance()->PushKey(DIK_ESCAPE)) {
+		if (!escLock_) {
+			escLock_ = true;
+
+			// ここが重要：状態に応じて分岐
+			if (!isPaused_) {
+				// ゲーム中 -> ポーズ開始
+				EnterPause();
+				pauseView_ = PauseView::Menu;
+			}
+			else {
+				// ポーズ中
+				if (!isPaused_) {
+					EnterPause();
+					pauseView_ = PauseView::Menu;
+				}
+				else {
+					HandlePauseBack(); // ここに統一
+				}
+
+			}
+		}
+	}
+	else {
+		escLock_ = false;
+	}
+
+	// ポーズ中はゲーム更新停止、UIだけ更新
+	if (isPaused_) {
+
+		// アニメは時間停止の影響を受けないように unscaled を使う
+		const float udt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
+
+		// Enter/Exit中はアニメだけ進める（クリック受付はしない方が安全）
+		if (pauseAnimState_ == PauseAnimState::Entering || pauseAnimState_ == PauseAnimState::Exiting) {
+			UpdatePauseEnterExitAnim(udt);
+			return;
+		}
+
+		// Idleなら通常のポーズUI操作
+		UpdatePauseMouseUI();
+		return;
+	}
+
+
+
+
 	// 各3Dオブジェクトの更新
 	stage_->Update();
 	skybox->Update();
@@ -103,40 +223,6 @@ void GamePlayScene::Update()
 	using ZoomParams = CameraEffectController::ZoomParams;
 	using MoveParams = CameraEffectController::MoveParams;
 
-	// --- Z キー：全方向シェイク ---
-	if (input->TriggerKey(DIK_Z)) {
-		CameraEffectController::ShakeParams params{};
-		params
-			.Duration(0.1f)
-			.AmpPos(0.5f)
-			.AmpRot(0.0f)
-			.Frequency(14.0f)
-			.Damping(2.0f)
-			.AffectRot(true)
-			.Mode(ShakeMode::All); // 全方向
-
-		cameraEffect_->StartShake(params);
-	}
-
-	// --- X キー：横揺れだけシェイク ---
-	if (input->TriggerKey(DIK_X)) {
-		cameraEffect_->StartSimpleShake(0.2f, 0.05f, ShakeMode::Horizontal);
-	}
-
-	// --- C キー：縦揺れだけシェイク ---
-	if (input->TriggerKey(DIK_C)) {
-		cameraEffect_->StartSimpleShake(0.2f, 0.4f, ShakeMode::Vertical);
-	}
-
-	// --- V キー：一瞬ズームイン（FOV を小さくして寄る） ---
-	if (input->TriggerKey(DIK_V)) {
-		ZoomParams z{};
-		z.Duration(0.2f)            // 0.2 秒かけて
-			.ToFov(0.25f)           // FOV を 0.25 に（小さいほどアップ）
-			.UseCurrentFov(true);   // 今の FOV からスタート
-
-		cameraEffect_->StartZoom(z);
-	}
 
 	// O キー：撃破カメラテスト（回り込み）
 	// 敵死亡 → 撃破カメラ開始
@@ -367,6 +453,37 @@ void GamePlayScene::ForeGroundDraw()
 	player_->ForeGroundDraw();
 	enemy_->ForeGroundDraw();
 
+	// =========================
+	// Pause 画面（ForeGroundDrawで描画してOK）
+	// =========================
+	// まずゲーム中のESCヒント（操作不可）
+	if (!isPaused_) {
+		if (escHint_) {
+			escHint_->Draw();
+		}
+	}
+
+	// ポーズ中UI
+	if (isPaused_) {
+		pauseBlack_->Draw();
+		pauseMenu_->Draw();
+
+		if (pauseView_ == PauseView::Menu) {
+			pauseOpe_->Draw();
+			pauseBackTitle_->Draw();
+		}
+		else {
+			pauseExp_->Draw();
+		}
+
+		// ポーズ中は操作可能なesc（ホバー/クリック）を出す
+		pauseEsc_->Draw();
+	}
+
+
+
+
+
 	// ================================================
 	// ここまでSprite個々の前景描画(UIなど)
 	// ================================================
@@ -401,6 +518,286 @@ void GamePlayScene::CheckAllCollisions()
 {
 	collisionManager_->CheckAllCollisions();
 }
+
+void GamePlayScene::EnterPause()
+{
+	if (isPaused_) return;
+	isPaused_ = true;
+
+	// ゲーム時間を止める
+	TimeManager::GetInstance()->SetTimeScale(0.0f);
+
+	pauseView_ = PauseView::Menu;
+	BeginPauseEnterAnim();
+
+
+	// 見た目更新（1回でOK）
+	UpdatePauseSprites();
+}
+
+void GamePlayScene::ExitPause()
+{
+	if (!isPaused_) return;
+	isPaused_ = false;
+
+	// ゲーム時間を戻す
+	TimeManager::GetInstance()->SetTimeScale(1.0f);
+}
+
+void GamePlayScene::UpdatePauseSprites()
+{
+	// 真ん中ちょい上（好みで調整）
+	const float centerX = 1280.0f * 0.5f;
+	const float menuY = 220.0f;
+
+	// menu: 256x128
+	pauseMenu_->SetPosition({ centerX, menuY });
+
+	// ope: menuの下
+	// menu半分(64) + 間隔(24) + ope半分(32) = 120
+	const float opeY = menuY + 64.0f + 24.0f + 32.0f;
+	pauseOpe_->SetPosition({ centerX, opeY });
+
+	// backTitle: opeの下
+	// ope半分(32) + 間隔(16) + back半分(32) = 80
+	const float backY = opeY + 32.0f + 16.0f + 32.0f;
+	pauseBackTitle_->SetPosition({ centerX, backY });
+
+	// 目標位置（中央）を保存
+	menuTargetPos_ = pauseMenu_->GetPosition();
+	opeTargetPos_ = pauseOpe_->GetPosition();
+	backTargetPos_ = pauseBackTitle_->GetPosition();
+
+	// 開始位置（左から中央へ）
+	// 画面外から来る感じにしたいので、Xをマイナス側へ
+	menuStartPos_ = { -256.0f, menuTargetPos_.y };
+	opeStartPos_ = { -256.0f, opeTargetPos_.y };
+	backStartPos_ = { -256.0f, backTargetPos_.y };
+
+
+	pauseMenu_->Update();
+	pauseOpe_->Update();
+	pauseBackTitle_->Update();
+}
+
+bool GamePlayScene::HitTestSprite(const Sprite* sp, const POINT& mouse) const
+{
+	if (!sp) return false;
+
+	const Vector2 pos = sp->GetPosition();
+	const Vector2 size = sp->GetSize();
+	const Vector2 anchor = sp->GetAnchorPoint();
+
+	const float left = pos.x - size.x * anchor.x;
+	const float top = pos.y - size.y * anchor.y;
+	const float right = left + size.x;
+	const float bottom = top + size.y;
+
+	const float mx = static_cast<float>(mouse.x);
+	const float my = static_cast<float>(mouse.y);
+
+	return (mx >= left && mx <= right && my >= top && my <= bottom);
+}
+
+void GamePlayScene::UpdatePauseMouseUI()
+{
+	const POINT m = Input::GetInstance()->GetMousePosition();
+
+	// -------------------------
+	// ESC（右下）ホバー＆クリック：どの画面でも有効
+	// -------------------------
+	const bool hoverEsc = HitTestSprite(pauseEsc_.get(), m);
+	pauseEsc_->SetSize(hoverEsc ? escHoverSize_ : escBaseSize_);
+	pauseEsc_->Update();
+
+	if (hoverEsc && Input::GetInstance()->TriggerMouseButton(0)) {
+		HandlePauseBack(); // ★クリックで戻る/再開
+		return;
+	}
+
+	// -------------------------
+	// ここから下は「ポーズメニュー中」だけの処理
+	// -------------------------
+	if (pauseView_ == PauseView::Menu) {
+
+		const bool hoverOpe = HitTestSprite(pauseOpe_.get(), m);
+		const bool hoverBack = HitTestSprite(pauseBackTitle_.get(), m);
+
+		pauseOpe_->SetSize(hoverOpe ? hoverSize_ : opeBaseSize_);
+		pauseBackTitle_->SetSize(hoverBack ? hoverSize_ : backBaseSize_);
+		pauseOpe_->Update();
+		pauseBackTitle_->Update();
+
+		if (Input::GetInstance()->TriggerMouseButton(0)) {
+
+			if (hoverBack) {
+				ExitPause();
+				pauseView_ = PauseView::Menu;
+
+				TransitionRequest req{};
+				req.type = TransitionType::Fade;
+				req.fadeOutSec = 0.3f;
+				req.fadeInSec = 0.3f;
+
+				SceneManager::GetInstance()->RequestChangeScene("TITLE", req);
+				return;
+			}
+
+			if (hoverOpe) {
+				pauseView_ = PauseView::Explain;
+				return;
+			}
+		}
+	}
+	else {
+		// Explain中：ESC/escクリックで戻るので、ここは何もしなくてOK
+	}
+}
+
+
+void GamePlayScene::HandlePauseBack()
+{
+	if (!isPaused_) return;
+
+	if (pauseView_ == PauseView::Explain) {
+		// 操作説明中 -> ポーズメニューへ
+		pauseView_ = PauseView::Menu;
+		return;
+	}
+
+	// ポーズメニュー中 -> 退出アニメ開始（即ExitPauseしない）
+	BeginPauseExitAnim();
+}
+
+
+void GamePlayScene::BeginPauseEnterAnim()
+{
+	pauseAnimState_ = PauseAnimState::Entering;
+	pauseAnimTime_ = 0.0f;
+
+	// まず左側（開始位置）に置く
+	pauseMenu_->SetPosition(menuStartPos_);
+	pauseOpe_->SetPosition(opeStartPos_);
+	pauseBackTitle_->SetPosition(backStartPos_);
+
+	pauseMenu_->Update();
+	pauseOpe_->Update();
+	pauseBackTitle_->Update();
+}
+
+void GamePlayScene::BeginPauseExitAnim()
+{
+	// すでに退出中なら二重開始しない
+	if (pauseAnimState_ == PauseAnimState::Exiting) return;
+
+	pauseAnimState_ = PauseAnimState::Exiting;
+	pauseAnimTime_ = 0.0f;
+}
+
+// entering=true: 左→中央
+// entering=false: 中央→左
+void GamePlayScene::ApplySlideAnimToSprites(float t, bool entering)
+{
+	// TweenEasing.h を使う（あなたが持ってるやつ）
+	t = Tween::Easing::EaseInOutCubic(std::clamp(t, 0.0f, 1.0f));
+
+	auto lerpVec2 = [](const Vector2& a, const Vector2& b, float tt) -> Vector2 {
+		return { a.x + (b.x - a.x) * tt, a.y + (b.y - a.y) * tt };
+		};
+
+	// entering時：start→target
+	// exiting時：target→start
+	const Vector2 menuA = entering ? menuStartPos_ : menuTargetPos_;
+	const Vector2 menuB = entering ? menuTargetPos_ : menuStartPos_;
+
+	const Vector2 opeA = entering ? opeStartPos_ : opeTargetPos_;
+	const Vector2 opeB = entering ? opeTargetPos_ : opeStartPos_;
+
+	const Vector2 backA = entering ? backStartPos_ : backTargetPos_;
+	const Vector2 backB = entering ? backTargetPos_ : backStartPos_;
+
+	pauseMenu_->SetPosition(lerpVec2(menuA, menuB, t));
+	pauseOpe_->SetPosition(lerpVec2(opeA, opeB, t));
+	pauseBackTitle_->SetPosition(lerpVec2(backA, backB, t));
+
+	pauseMenu_->Update();
+	pauseOpe_->Update();
+	pauseBackTitle_->Update();
+}
+
+void GamePlayScene::UpdatePauseEnterExitAnim(float unscaledDt)
+{
+	// 3つが順番に出るように、stagger（遅延）を入れる
+	pauseAnimTime_ += unscaledDt;
+
+	const bool entering = (pauseAnimState_ == PauseAnimState::Entering);
+	const float dur = entering ? pauseEnterSec_ : pauseExitSec_;
+
+	// それぞれの開始時刻（上から順）
+	const float tMenuStart = 0.0f;
+	const float tOpeStart = pauseStaggerSec_;
+	const float tBackStart = pauseStaggerSec_ * 2.0f;
+
+	auto localT = [&](float start) -> float {
+		const float x = (pauseAnimTime_ - start) / std::max(dur, 0.0001f);
+		return std::clamp(x, 0.0f, 1.0f);
+		};
+
+	// 個別に補間するため、Applyを3回に分ける（簡単＆確実）
+	// menu
+	{
+		float t = Tween::Easing::EaseInOutCubic(localT(tMenuStart));
+		auto lerp = [](const Vector2& a, const Vector2& b, float tt) -> Vector2 {
+			return { a.x + (b.x - a.x) * tt, a.y + (b.y - a.y) * tt };
+			};
+		const Vector2 a = entering ? menuStartPos_ : menuTargetPos_;
+		const Vector2 b = entering ? menuTargetPos_ : menuStartPos_;
+		pauseMenu_->SetPosition(lerp(a, b, t));
+	}
+	// ope
+	{
+		float t = Tween::Easing::EaseInOutCubic(localT(tOpeStart));
+		auto lerp = [](const Vector2& a, const Vector2& b, float tt) -> Vector2 {
+			return { a.x + (b.x - a.x) * tt, a.y + (b.y - a.y) * tt };
+			};
+		const Vector2 a = entering ? opeStartPos_ : opeTargetPos_;
+		const Vector2 b = entering ? opeTargetPos_ : opeStartPos_;
+		pauseOpe_->SetPosition(lerp(a, b, t));
+	}
+	// backTitle
+	{
+		float t = Tween::Easing::EaseInOutCubic(localT(tBackStart));
+		auto lerp = [](const Vector2& a, const Vector2& b, float tt) -> Vector2 {
+			return { a.x + (b.x - a.x) * tt, a.y + (b.y - a.y) * tt };
+			};
+		const Vector2 a = entering ? backStartPos_ : backTargetPos_;
+		const Vector2 b = entering ? backTargetPos_ : backStartPos_;
+		pauseBackTitle_->SetPosition(lerp(a, b, t));
+	}
+
+	pauseMenu_->Update();
+	pauseOpe_->Update();
+	pauseBackTitle_->Update();
+
+	// アニメ完了判定（最後の要素が終わる時間）
+	const float endTime = tBackStart + dur;
+
+	if (pauseAnimTime_ >= endTime) {
+		if (pauseAnimState_ == PauseAnimState::Entering) {
+			pauseAnimState_ = PauseAnimState::Idle;
+		}
+		else if (pauseAnimState_ == PauseAnimState::Exiting) {
+			// 退出アニメが終わったらゲーム再開
+			pauseAnimState_ = PauseAnimState::Idle;
+			ExitPause();
+		}
+	}
+}
+
+
+
+
+
 
 
 

@@ -110,5 +110,95 @@ private:
 
 	std::unique_ptr<Sprite> ex;
 
+
+	// =========================
+	// Pause（ポーズ）関連
+	// =========================
+	bool isPaused_ = false;
+
+	// ポーズ画面のスプライト
+	std::unique_ptr<Sprite> pauseBlack_;    // Black.png（半透明背景）
+	std::unique_ptr<Sprite> pauseMenu_;     // menu.png (256x128)
+	std::unique_ptr<Sprite> pauseOpe_;      // ope.png  (256x64)
+	std::unique_ptr<Sprite> pauseBackTitle_; // backTitle.png (256x64)
+	bool escLock_ = false;
+
+	// ポーズ開始/終了
+	void EnterPause();
+	void ExitPause();
+
+	// ポーズUI更新（必要なときだけUpdateする）
+	void UpdatePauseSprites();
+
+	// ===============
+// Pause UI 追加
+// ===============
+	std::unique_ptr<Sprite> pauseExp_;     // exp.png
+
+	bool pauseShowOptions_ = true;         // true: ope/backTitle表示, false: exp表示
+	Vector2 opeBaseSize_{ 256.0f, 64.0f };
+	Vector2 backBaseSize_{ 256.0f, 64.0f };
+	Vector2 hoverSize_{ 288.0f, 72.0f };   // ホバー時の拡大（好みで調整）
+
+	// マウス判定
+	bool HitTestSprite(const Sprite* sp, const POINT& mouse) const;
+
+	// ポーズ中のマウスUI処理
+	void UpdatePauseMouseUI();
+
+	// ポーズ画面内の状態
+	enum class PauseView {
+		Menu,     // menu + ope + backTitle
+		Explain,  // menu + exp
+	};
+
+	PauseView pauseView_ = PauseView::Menu;
+
+	// esc表示
+	std::unique_ptr<Sprite> pauseEsc_;
+	Vector2 escSize_{ 128.0f, 64.0f };
+	Vector2 escBaseSize_{ 128.0f, 64.0f };
+	Vector2 escHoverSize_{ 144.0f, 72.0f }; // 好みで調整
+
+
+	void HandlePauseBack(); // ESC/escクリック共通
+
+	// ゲーム中に表示するESCヒント（操作不可）
+	std::unique_ptr<Sprite> escHint_;
+	Vector2 escHintSize_{ 128.0f, 64.0f };
+
+	// ポーズUIのアニメ状態
+	enum class PauseAnimState {
+		Entering,
+		Idle,
+		Exiting,
+	};
+
+	PauseAnimState pauseAnimState_ = PauseAnimState::Idle;
+
+	// アニメ用タイマー（unscaledで進める）
+	float pauseAnimTime_ = 0.0f;
+
+	// アニメ設定
+	float pauseEnterSec_ = 0.25f;   // 1個あたりの出る時間
+	float pauseExitSec_ = 0.20f;   // 1個あたりの戻る時間
+	float pauseStaggerSec_ = 0.08f; // 上から順の遅延
+
+	// 目標位置（中央）と開始位置（左）
+	Vector2 menuTargetPos_{};
+	Vector2 opeTargetPos_{};
+	Vector2 backTargetPos_{};
+
+	Vector2 menuStartPos_{};
+	Vector2 opeStartPos_{};
+	Vector2 backStartPos_{};
+
+	// アニメ更新
+	void BeginPauseEnterAnim();
+	void BeginPauseExitAnim();
+	void UpdatePauseEnterExitAnim(float unscaledDt);
+	void ApplySlideAnimToSprites(float t, bool entering);
+
+
 };
 
