@@ -18,14 +18,9 @@ public:
         }
     }
 
-    // ポーズ中か？
-    bool IsPaused() const { return isPaused_; }
-
-    // PauseScreen から呼ばれる
-    void SetPaused(bool paused) { isPaused_ = paused; }
+    // モーダルUIが有効か？
+    bool IsModalActive() const;
 
 private:
     std::vector<std::unique_ptr<UIElement>> uiList_;
-
-    bool isPaused_ = false;
 };

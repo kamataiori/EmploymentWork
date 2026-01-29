@@ -16,7 +16,7 @@ public:
     ~PauseScreen() override = default;
 
     // 初期化
-    // titleSceneName : タイトルへ戻る時のシーン名（あなたのプロジェクトに合わせて "TITLE" 等）
+    // titleSceneName : タイトルへ戻る時のシーン名（プロジェクトに合わせて "TITLE" 等）
     void Initialize(
         const Vector2& screenSize = { 1280.0f, 720.0f },
         const std::string& titleSceneName = "TITLE"
@@ -26,10 +26,8 @@ public:
     void Update() override;
     void Draw() override;
 
-    // GamePlayScene 側が「ゲーム更新を止める」ために参照
-    bool IsPaused() const { return isPaused_; }
-
-    void SetUIManager(UIManager* ui) { uiManager_ = ui; }
+    // ポーズ中だけモーダル扱い（ゲーム更新を止めたい）
+    bool IsModal() const override { return isPaused_; }
 
 private:
     // ポーズ画面内の表示状態
@@ -60,9 +58,9 @@ private:
     void SetupPauseLayout();
 
     // アニメ制御
-    void BeginPauseEnterAnim();
-    void BeginPauseExitAnim();
-    void UpdatePauseEnterExitAnim(float unscaledDt);
+    void BeginPauseEnterAnima();
+    void BeginPauseExitAnima();
+    void UpdatePauseEnterExitAnima(float unscaledDt);
 
     // 当たり判定
     bool HitTestSprite(const Sprite* sp, const POINT& mouse) const;
@@ -80,10 +78,10 @@ private:
     bool escLock_ = false;
 
     PauseView pauseView_ = PauseView::Menu;
-    PauseAnimState pauseAnimState_ = PauseAnimState::Idle;
+    PauseAnimState pauseAnimaState_ = PauseAnimState::Idle;
 
     // アニメタイム
-    float pauseAnimTime_ = 0.0f;
+    float pauseAnimaTime_ = 0.0f;
     float pauseEnterSec_ = 0.25f;     // 1枚あたりの出る時間
     float pauseExitSec_ = 0.20f;     // 1枚あたりの戻る時間
     float pauseStaggerSec_ = 0.08f;   // 上から順に遅延

@@ -37,10 +37,10 @@ public:
         float padding[2];  //!< パディング
     };
 
-    DirectionalLight* directionalLightData;
-    CameraForGPU* cameraLightData;
-    PointLight* pointLightData;
-    SpotLight* spotLightData;
+    DirectionalLight* directionalLightData{};
+    CameraForGPU* cameraLightData{};
+    PointLight* pointLightData{};
+    SpotLight* spotLightData{};
 
     ~Light() = default;
 

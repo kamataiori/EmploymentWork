@@ -157,8 +157,8 @@ private:
 	uint32_t* indexData = nullptr;
 
 	// バッファリソースの使い道を補完するビュー
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite;
-	D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite;
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
+	D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite{};
 
 	//テクスチャ番号
 	uint32_t textureIndex = 0;

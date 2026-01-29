@@ -21,6 +21,13 @@ public:
     void SetLayer(int layer) { layer_ = layer; }
     int GetLayer() const { return layer_; }
 
+    // =========================
+    // モーダルUI（ゲームを止めたいUI）用
+    // true を返すUIが表示中なら、UIManagerは「そのUIだけUpdate」できる
+    // GamePlayScene は UIManager::IsModalActive() で「ゲーム更新停止」を判断できる
+    // =========================
+    virtual bool IsModal() const { return false; }
+
 protected:
     bool isActive_ = true;
     int layer_ = 0;

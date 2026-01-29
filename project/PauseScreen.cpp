@@ -36,7 +36,7 @@ void PauseScreen::Initialize(const Vector2& screenSize, const std::string& title
     pauseBlack_->SetColor({ 0.0f, 0.0f, 0.0f, 0.55f });
     pauseBlack_->Update();
 
-    // メニュー画像
+    // UI画像
     pauseMenu_ = std::make_unique<Sprite>();
     pauseMenu_->Initialize("Resources/menu.png");
     pauseMenu_->SetAnchorPoint({ 0.5f, 0.5f });
@@ -57,7 +57,6 @@ void PauseScreen::Initialize(const Vector2& screenSize, const std::string& title
     pauseExp_->SetAnchorPoint({ 0.5f, 0.5f });
     pauseExp_->SetSize({ 256.0f, 64.0f });
 
-    // ポーズ中のESC（操作可能）
     pauseEsc_ = std::make_unique<Sprite>();
     pauseEsc_->Initialize("Resources/esc.png");
     pauseEsc_->SetAnchorPoint({ 1.0f, 1.0f });
@@ -65,10 +64,9 @@ void PauseScreen::Initialize(const Vector2& screenSize, const std::string& title
     pauseEsc_->SetPosition({ screenSize_.x - 16.0f, screenSize_.y - 16.0f });
     pauseEsc_->Update();
 
-    // 目標位置を作る
     SetupPauseLayout();
 
-    // UIElementとして最前面
+    // UI最前面
     SetLayer(100000);
 }
 
@@ -76,7 +74,7 @@ void PauseScreen::Update()
 {
     Input* input = Input::GetInstance();
 
-    // ESC長押しで点滅しないロック方式
+    // ESC長押しで点滅しないロック
     if (input->PushKey(DIK_ESCAPE)) {
         if (!escLock_) {
             escLock_ = true;
@@ -85,7 +83,6 @@ void PauseScreen::Update()
                 EnterPause();
             }
             else {
-                // ポーズ中は「戻る」挙動（説明中ならメニューへ、メニューなら退出アニメ）
                 HandlePauseBack();
             }
         }
@@ -94,30 +91,27 @@ void PauseScreen::Update()
         escLock_ = false;
     }
 
-    // ポーズ中だけUI操作・アニメ
     if (!isPaused_) return;
 
     const float udt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
 
-    // Enter/Exit中はアニメのみ（クリック受付しない方が事故が少ない）
-    if (pauseAnimState_ == PauseAnimState::Entering || pauseAnimState_ == PauseAnimState::Exiting) {
-        UpdatePauseEnterExitAnim(udt);
+    if (pauseAnimaState_ == PauseAnimState::Entering || pauseAnimaState_ == PauseAnimState::Exiting) {
+        UpdatePauseEnterExitAnima(udt);
         return;
     }
 
-    // Idle のときだけ操作受付
     UpdatePauseMouseUI();
 }
 
 void PauseScreen::Draw()
 {
-    // ゲーム中は右下に escBase.png（操作不可）
+    // ゲーム中は右下に escBase（操作不可）
     if (!isPaused_) {
         if (escHint_) escHint_->Draw();
         return;
     }
 
-    // ポーズ中描画
+    // ポーズ中
     pauseBlack_->Draw();
     pauseMenu_->Draw();
 
@@ -129,7 +123,6 @@ void PauseScreen::Draw()
         pauseExp_->Draw();
     }
 
-    // どの画面でも右下ESC
     pauseEsc_->Draw();
 }
 
@@ -138,12 +131,12 @@ void PauseScreen::EnterPause()
     if (isPaused_) return;
     isPaused_ = true;
 
-    TimeManager::GetInstance()->SetTimeScale(0.0f);
-    if (uiManager_) {
-        uiManager_->SetPaused(true);
-    }
+    pauseView_ = PauseView::Menu;
 
-    BeginPauseEnterAnim();
+    // ゲーム停止
+    TimeManager::GetInstance()->SetTimeScale(0.0f);
+
+    BeginPauseEnterAnima();
 }
 
 void PauseScreen::ExitPause()
@@ -151,24 +144,28 @@ void PauseScreen::ExitPause()
     if (!isPaused_) return;
     isPaused_ = false;
 
+    pauseView_ = PauseView::Menu;
+
+    // ゲーム再開
     TimeManager::GetInstance()->SetTimeScale(1.0f);
-    if (uiManager_) {
-        uiManager_->SetPaused(false);
-    }
+
+    // 次回のために戻す
+    pauseEsc_->SetSize(escBaseSize_);
+    pauseEsc_->Update();
 }
 
 void PauseScreen::HandlePauseBack()
 {
     if (!isPaused_) return;
 
+    // 操作説明中はメニューへ戻す
     if (pauseView_ == PauseView::Explain) {
-        // 操作説明中 -> ポーズメニューに戻る
         pauseView_ = PauseView::Menu;
         return;
     }
 
-    // ポーズメニュー中 -> 退出アニメ
-    BeginPauseExitAnim();
+    // ポーズメニュー中は退出アニメ
+    BeginPauseExitAnima();
 }
 
 void PauseScreen::SetupPauseLayout()
@@ -184,7 +181,6 @@ void PauseScreen::SetupPauseLayout()
     const float backY = opeY + 32.0f + 16.0f + 32.0f;
     pauseBackTitle_->SetPosition({ centerX, backY });
 
-    // expはope位置に出す
     pauseExp_->SetPosition({ centerX, opeY });
 
     pauseMenu_->Update();
@@ -192,23 +188,21 @@ void PauseScreen::SetupPauseLayout()
     pauseBackTitle_->Update();
     pauseExp_->Update();
 
-    // 目標位置（中央）を保存
     menuTargetPos_ = pauseMenu_->GetPosition();
     opeTargetPos_ = pauseOpe_->GetPosition();
     backTargetPos_ = pauseBackTitle_->GetPosition();
 
-    // 開始位置（左から中央へ）
+    // 左から中央へ（開始位置）
     menuStartPos_ = { -256.0f, menuTargetPos_.y };
     opeStartPos_ = { -256.0f, opeTargetPos_.y };
     backStartPos_ = { -256.0f, backTargetPos_.y };
 }
 
-void PauseScreen::BeginPauseEnterAnim()
+void PauseScreen::BeginPauseEnterAnima()
 {
-    pauseAnimState_ = PauseAnimState::Entering;
-    pauseAnimTime_ = 0.0f;
+    pauseAnimaState_ = PauseAnimState::Entering;
+    pauseAnimaTime_ = 0.0f;
 
-    // 左からスタート
     pauseMenu_->SetPosition(menuStartPos_);
     pauseOpe_->SetPosition(opeStartPos_);
     pauseBackTitle_->SetPosition(backStartPos_);
@@ -218,19 +212,19 @@ void PauseScreen::BeginPauseEnterAnim()
     pauseBackTitle_->Update();
 }
 
-void PauseScreen::BeginPauseExitAnim()
+void PauseScreen::BeginPauseExitAnima()
 {
-    if (pauseAnimState_ == PauseAnimState::Exiting) return;
+    if (pauseAnimaState_ == PauseAnimState::Exiting) return;
 
-    pauseAnimState_ = PauseAnimState::Exiting;
-    pauseAnimTime_ = 0.0f;
+    pauseAnimaState_ = PauseAnimState::Exiting;
+    pauseAnimaTime_ = 0.0f;
 }
 
-void PauseScreen::UpdatePauseEnterExitAnim(float unscaledDt)
+void PauseScreen::UpdatePauseEnterExitAnima(float unscaledDt)
 {
-    pauseAnimTime_ += unscaledDt;
+    pauseAnimaTime_ += unscaledDt;
 
-    const bool entering = (pauseAnimState_ == PauseAnimState::Entering);
+    const bool entering = (pauseAnimaState_ == PauseAnimState::Entering);
     const float dur = entering ? pauseEnterSec_ : pauseExitSec_;
 
     const float tMenuStart = 0.0f;
@@ -242,7 +236,7 @@ void PauseScreen::UpdatePauseEnterExitAnim(float unscaledDt)
         };
 
     auto localT = [&](float start) -> float {
-        const float x = (pauseAnimTime_ - start) / std::max(dur, 0.0001f);
+        const float x = (pauseAnimaTime_ - start) / std::max(dur, 0.0001f);
         return std::clamp(x, 0.0f, 1.0f);
         };
 
@@ -272,16 +266,15 @@ void PauseScreen::UpdatePauseEnterExitAnim(float unscaledDt)
     pauseOpe_->Update();
     pauseBackTitle_->Update();
 
-    // 完了判定（最後の要素が終わる時間）
     const float endTime = tBackStart + dur;
 
-    if (pauseAnimTime_ >= endTime) {
-        if (pauseAnimState_ == PauseAnimState::Entering) {
-            pauseAnimState_ = PauseAnimState::Idle;
+    if (pauseAnimaTime_ >= endTime) {
+        if (pauseAnimaState_ == PauseAnimState::Entering) {
+            pauseAnimaState_ = PauseAnimState::Idle;
         }
-        else if (pauseAnimState_ == PauseAnimState::Exiting) {
-            pauseAnimState_ = PauseAnimState::Idle;
-            ExitPause(); // アニメ終わってから再開
+        else if (pauseAnimaState_ == PauseAnimState::Exiting) {
+            pauseAnimaState_ = PauseAnimState::Idle;
+            ExitPause();
         }
     }
 }
@@ -320,38 +313,36 @@ void PauseScreen::UpdatePauseMouseUI()
         return;
     }
 
-    // Menu中のみ ope/backTitle を操作
-    if (pauseView_ == PauseView::Menu) {
+    if (pauseView_ != PauseView::Menu) {
+        return; // Explain中はescで戻る
+    }
 
-        const bool hoverOpe = HitTestSprite(pauseOpe_.get(), m);
-        const bool hoverBack = HitTestSprite(pauseBackTitle_.get(), m);
+    const bool hoverOpe = HitTestSprite(pauseOpe_.get(), m);
+    const bool hoverBack = HitTestSprite(pauseBackTitle_.get(), m);
 
-        pauseOpe_->SetSize(hoverOpe ? hoverSize_ : opeBaseSize_);
-        pauseBackTitle_->SetSize(hoverBack ? hoverSize_ : backBaseSize_);
-        pauseOpe_->Update();
-        pauseBackTitle_->Update();
+    pauseOpe_->SetSize(hoverOpe ? hoverSize_ : opeBaseSize_);
+    pauseBackTitle_->SetSize(hoverBack ? hoverSize_ : backBaseSize_);
+    pauseOpe_->Update();
+    pauseBackTitle_->Update();
 
-        if (input->TriggerMouseButton(0)) {
+    if (!input->TriggerMouseButton(0)) return;
 
-            // backTitle：タイトルへ戻る
-            if (hoverBack) {
-                // ポーズ解除してから遷移（時間が0のままだと困るため）
-                ExitPause();
+    // backTitle：タイトルへ戻る
+    if (hoverBack) {
+        ExitPause();
 
-                TransitionRequest req{};
-                req.type = TransitionType::Fade;
-                req.fadeOutSec = 0.3f;
-                req.fadeInSec = 0.3f;
+        TransitionRequest req{};
+        req.type = TransitionType::Fade;
+        req.fadeOutSec = 0.3f;
+        req.fadeInSec = 0.3f;
 
-                SceneManager::GetInstance()->RequestChangeScene(titleSceneName_, req);
-                return;
-            }
+        SceneManager::GetInstance()->RequestChangeScene(titleSceneName_, req);
+        return;
+    }
 
-            // ope：操作説明へ（menuは残す）
-            if (hoverOpe) {
-                pauseView_ = PauseView::Explain;
-                return;
-            }
-        }
+    // ope：操作説明へ
+    if (hoverOpe) {
+        pauseView_ = PauseView::Explain;
+        return;
     }
 }
