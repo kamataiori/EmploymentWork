@@ -1,11 +1,12 @@
 #include "Framework.h"
 #include "SceneFactory.h"
 #include "GlobalVariables.h"
+#include "engine/UI/UIManager.h"
+#include "engine/Scene/ChangeEffect/SceneTransitionService.h"
+#include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
 
 #ifdef USE_IMGUI
-
 #include "ImGuiManager.h"
-
 #endif // USE_IMGUI
 
 #include <deque>
@@ -83,5 +84,9 @@ private:
 	float deltaTime_ = 0.0f;  // 毎フレームの経過秒数
 	std::chrono::steady_clock::time_point prevTime_;
 
+	// UIはアプリ全体で1つ
+	std::unique_ptr<UIManager> uiManager_;
 
+	// 遷移演出の生成・管理（SceneManagerは所有しない）
+	std::unique_ptr<SceneTransitionService> transitionService_;
 };

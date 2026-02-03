@@ -5,6 +5,13 @@
 #include <MyGame.h>
 #include "engine/TimeManager.h"
 
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
+
 void GamePlayScene::Initialize()
 {
 	// ライト
@@ -70,6 +77,13 @@ void GamePlayScene::Initialize()
 	ex = std::make_unique<Sprite>();
 	ex->Initialize("Resources/exp.png");
 	ex->SetPosition({ 0.0f,100.0f });
+
+	uiManager_ = std::make_unique<UIManager>();
+
+	auto pause = std::make_unique<PauseScreen>();
+	pause->Initialize({ 1280.0f, 720.0f }, "TITLE");
+	uiManager_->Add(std::move(pause));
+
 }
 
 void GamePlayScene::Finalize()
@@ -79,7 +93,19 @@ void GamePlayScene::Finalize()
 
 void GamePlayScene::Update()
 {
-	// 各3Dオブジェクトの更新
+	// =========================
+    // UI 更新（ESC入力・ポーズ判定含む）
+    // =========================
+	uiManager_->Update();
+
+	// =========================
+	// ポーズ中ならゲーム更新しない
+	// =========================
+	if (uiManager_->IsModalActive()) {
+		return;
+	}
+
+		// 各3Dオブジェクトの更新
 	stage_->Update();
 	skybox->Update();
 	ground->Update();
@@ -103,40 +129,6 @@ void GamePlayScene::Update()
 	using ZoomParams = CameraEffectController::ZoomParams;
 	using MoveParams = CameraEffectController::MoveParams;
 
-	// --- Z キー：全方向シェイク ---
-	if (input->TriggerKey(DIK_Z)) {
-		CameraEffectController::ShakeParams params{};
-		params
-			.Duration(0.1f)
-			.AmpPos(0.5f)
-			.AmpRot(0.0f)
-			.Frequency(14.0f)
-			.Damping(2.0f)
-			.AffectRot(true)
-			.Mode(ShakeMode::All); // 全方向
-
-		cameraEffect_->StartShake(params);
-	}
-
-	// --- X キー：横揺れだけシェイク ---
-	if (input->TriggerKey(DIK_X)) {
-		cameraEffect_->StartSimpleShake(0.2f, 0.05f, ShakeMode::Horizontal);
-	}
-
-	// --- C キー：縦揺れだけシェイク ---
-	if (input->TriggerKey(DIK_C)) {
-		cameraEffect_->StartSimpleShake(0.2f, 0.4f, ShakeMode::Vertical);
-	}
-
-	// --- V キー：一瞬ズームイン（FOV を小さくして寄る） ---
-	if (input->TriggerKey(DIK_V)) {
-		ZoomParams z{};
-		z.Duration(0.2f)            // 0.2 秒かけて
-			.ToFov(0.25f)           // FOV を 0.25 に（小さいほどアップ）
-			.UseCurrentFov(true);   // 今の FOV からスタート
-
-		cameraEffect_->StartZoom(z);
-	}
 
 	// O キー：撃破カメラテスト（回り込み）
 	// 敵死亡 → 撃破カメラ開始
@@ -256,17 +248,17 @@ void GamePlayScene::Update()
 		collisionManager_->RegisterCollider(wcol);
 	}
 	collisionManager_->RegisterCollider(enemy_->GetMultiCollider());
-	//collisionMAnager_->RegisterCollider(player_->Get()->GetCollider());
-	//collisionMAnager_->RegisterCollider(enemy_.get());
+	//collisionMManager_->RegisterCollider(player_->Get()->GetCollider());
+	//collisionMManager_->RegisterCollider(enemy_.get());
 	/*if (player_->GetBullet()) {
 		auto bullet = player_->GetBullet();
-		collisionMAnager_->RegisterCollider(bullet);
+		collisionMManager_->RegisterCollider(bullet);
 	}*/
 	/*for (const auto& areaAttack : enemy_->GetAreaAttacks()) {
-		collisionMAnager_->RegisterCollider(areaAttack.get());
+		collisionMManager_->RegisterCollider(areaAttack.get());
 	}
-	for (const auto& bulletAttack : enemy_->GetAttackBulets()) {
-		collisionMAnager_->RegisterCollider(bulletAttack.get());
+	for (const auto& bulletAttack : enemy_->GetAttackBullets()) {
+		collisionMManager_->RegisterCollider(bulletAttack.get());
 	}*/
 
 
@@ -367,6 +359,9 @@ void GamePlayScene::ForeGroundDraw()
 	player_->ForeGroundDraw();
 	enemy_->ForeGroundDraw();
 
+
+	uiManager_->Draw();
+	
 	// ================================================
 	// ここまでSprite個々の前景描画(UIなど)
 	// ================================================
@@ -401,6 +396,3 @@ void GamePlayScene::CheckAllCollisions()
 {
 	collisionManager_->CheckAllCollisions();
 }
-
-
-

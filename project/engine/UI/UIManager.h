@@ -18,6 +18,9 @@ public:
         }
     }
 
+    // モーダルUIが有効か？
+    bool IsModalActive() const;
+
 private:
     std::vector<std::unique_ptr<UIElement>> uiList_;
 };

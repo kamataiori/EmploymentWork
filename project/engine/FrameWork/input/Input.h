@@ -70,6 +70,10 @@ public:
 	int GetMouseWheel() const;
 	POINT GetMouseDelta() const;
 
+	// マウス座標（クライアント座標）取得
+	POINT GetMousePosition() const;
+
+
 
 private:
 

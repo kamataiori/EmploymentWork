@@ -16,6 +16,8 @@
 #include <FollowCamera.h>
 #include "Camera/CameraEffectController.h"
 #include "SkyBox.h"
+#include "engine/UI/UIManager.h"
+#include "PauseScreen.h"
 
 class GamePlayScene : public BaseScene
 {
@@ -110,5 +112,7 @@ private:
 
 	std::unique_ptr<Sprite> ex;
 
+
+	std::unique_ptr<UIManager> uiManager_;
 };
 

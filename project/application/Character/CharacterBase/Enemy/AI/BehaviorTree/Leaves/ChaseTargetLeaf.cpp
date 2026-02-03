@@ -98,7 +98,7 @@ void ChaseTargetLeaf::tick()
 
 
     // 変更した Transform を Enemy に反映
-    enemy->SetTarnsform(e);
+    enemy->SetTransform(e);
 
    /* Logger::Log(
         "enemy=(" + std::to_string(e.translate.x) + "," + std::to_string(e.translate.z) + ") "

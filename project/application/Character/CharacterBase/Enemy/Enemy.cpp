@@ -2,8 +2,8 @@
 #include "application/Character/CharacterBase/Enemy/AI/EnemyAIController.h"
 #include <CollisionTypeIdDef.h>
 #include <SceneManager.h>
-#include "UIManager.h"
-#include <UIHpBar.h>
+#include "engine/UI/UIManager.h"
+#include <engine/UI/UIHpBar.h>
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {

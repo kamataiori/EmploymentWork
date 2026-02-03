@@ -3,6 +3,7 @@
 #include "GamePlayScene.h"
 #include "ParticleEditorScene.h"
 #include "application/Scene/TutorialScene/TutorialScene.h"
+#include "MenuScene.h"
 
 BaseScene* SceneFactory::CreateScene(const std::string& sceneName)
 {
@@ -24,6 +25,10 @@ BaseScene* SceneFactory::CreateScene(const std::string& sceneName)
 	else if (sceneName == "TUTORIAL")
 	{
 		newScene = new TutorialScene();
+	}
+	else if (sceneName == "MENU")
+	{
+		newScene = new MenuScene();
 	}
 	
 	return newScene;
