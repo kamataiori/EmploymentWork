@@ -37,7 +37,9 @@ void TitleScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
 	ModelManager::GetInstance()->LoadModel("ground.obj");
 	ModelManager::GetInstance()->LoadModel("skydome.obj");
+	ModelManager::GetInstance()->LoadModel("WarriorSword.gltf");
 	sneak->SetModel("Warrior.gltf");
+	//sneak->SetModel("Warrior.gltf");
 
 	// モデルにSRTを設定
 	transform.scale = { 1,1,1 };
@@ -149,7 +151,7 @@ void TitleScene::Update()
 			req.fadeOutSec = 2.0f;  // 閉じる
 			req.fadeInSec = 2.5f;  // 開く
 
-			SceneManager::GetInstance()->RequestChangeScene("GAMEPLAY", req);
+			SceneManager::GetInstance()->RequestChangeScene("TUTORIAL", req);
 
 		}
 	}

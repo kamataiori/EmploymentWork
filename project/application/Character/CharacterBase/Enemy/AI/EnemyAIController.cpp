@@ -10,8 +10,7 @@
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsTargetFarLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/ChaseTargetLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/NearIdleLeaf.h"
-#include <PunchAttackLeaf.h>
-#include <IsTargetNearLeaf.h>
+#include "LookAtTargetLeaf.h"
 
 void EnemyAIController::Initialize(Enemy* owner)
 {
@@ -45,63 +44,24 @@ void EnemyAIController::BuildTree()
     // Root: Sequence
     auto rootSeq = std::make_unique<SequenceNode>(blackboard_.get());
 
-    //==================================================
-    // 1) FindTarget（ターゲットTransformを黒板へ）
-    //==================================================
-    auto find = std::make_unique<FindTargetLeaf>(
+    // 1) FindTarget
+    rootSeq->add_node(std::make_unique<FindTargetLeaf>(
         blackboard_.get(),
         [this]() -> const Transform*
         {
-            // Scene注入getterがあれば優先
             if (targetGetter_) {
                 const Transform* t = targetGetter_();
                 if (t) return t;
             }
-            // Enemyが保持しているtargetをfallback
             return owner_ ? owner_->GetTargetTransform() : nullptr;
         }
-    );
-    rootSeq->add_node(std::move(find));
+    ));
 
-    //==================================================
-    // 2) Selector: Near->Punch / Far->Chase / Idle
-    //==================================================
-    auto selector = std::make_unique<SelectorNode>(blackboard_.get());
+    // 2) LookAt（常に向く）
+    rootSeq->add_node(std::make_unique<LookAtTargetLeaf>(blackboard_.get(), turnLerp_));
 
-    // -----------------------------------------------
-    // Near branch: Sequence( IsNear -> Punch )
-    // ※Selectorは「上から順に試す」ので、近接攻撃を先に置く
-    // -----------------------------------------------
-    {
-        // 攻撃開始距離（例：attackDist_ を攻撃距離として使う）
-        const float attackDist = attackDist_;
-
-        auto punchSeq = std::make_unique<SequenceNode>(blackboard_.get());
-        punchSeq->add_node(std::make_unique<IsTargetNearLeaf>(blackboard_.get(), attackDist));
-
-        // パンチ：duration=0.6秒 / hit=0.15秒 / cooldown=0.5秒
-        punchSeq->add_node(std::make_unique<PunchAttackLeaf>(blackboard_.get(), 0.6f, 0.15f, 0.5f));
-
-        selector->add_node(std::move(punchSeq));
-    }
-
-    // -----------------------------------------------
-    // Far branch: Sequence( IsFar -> Chase )
-    // -----------------------------------------------
-    {
-        auto chaseSeq = std::make_unique<SequenceNode>(blackboard_.get());
-        chaseSeq->add_node(std::make_unique<IsTargetFarLeaf>(blackboard_.get(), chaseStartDist_));
-        chaseSeq->add_node(std::make_unique<ChaseTargetLeaf>(blackboard_.get(), stopDist_, chaseSpeed_, turnLerp_));
-
-        selector->add_node(std::move(chaseSeq));
-    }
-
-    // -----------------------------------------------
-    // Fallback: Idle（どちらでもない時）
-    // -----------------------------------------------
-    selector->add_node(std::make_unique<NearIdleLeaf>(blackboard_.get()));
-
-    rootSeq->add_node(std::move(selector));
+    // 3) 行動（今は最低限 Idle）
+    rootSeq->add_node(std::make_unique<NearIdleLeaf>(blackboard_.get()));
 
     root_ = std::move(rootSeq);
 }

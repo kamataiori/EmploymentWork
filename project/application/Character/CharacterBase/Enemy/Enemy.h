@@ -2,9 +2,11 @@
 #include "ObjectBase.h"
 #include "MultiCollider.h"
 #include <memory>
+#include <list>
 
 class EnemyAIController;
 class UIManager;
+class MinionEnemy;
 
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
@@ -83,6 +85,15 @@ public:
 
 	Camera* GetCamera() const { return camera_; }
 
+	// HP 割合（0.0f ～ 1.0f）
+	float GetHpRate() const
+	{
+		if (kMaxHP_ <= 0) {
+			return 0.0f;
+		}
+		return static_cast<float>(hp_) / static_cast<float>(kMaxHP_);
+	}
+
 	// アニメーションを設定する関数
 	void SetAnimationIfChanged(const std::string& name);
 
@@ -136,6 +147,15 @@ private:
 	Transform deathParticleTransform_{}; // Emit位置用
 
 	std::unique_ptr<ParticleManager> deathSystem_ = std::make_unique<ParticleManager>();
+
+	// ===== 雑魚召喚 =====
+	bool hasSpawnedMinions_ = false;
+	std::list<std::unique_ptr<MinionEnemy>> minions_;
+
+	// 出現数と半径だけ
+	int   minionSpawnCount_ = 12;
+	float minionSpawnRadius_ = 20.0f; // ← ここを広げれば重なりにくい
+
 
 };
 

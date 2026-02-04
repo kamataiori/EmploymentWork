@@ -4,6 +4,8 @@
 #include <SceneManager.h>
 #include "engine/UI/UIManager.h"
 #include <engine/UI/UIHpBar.h>
+#include "MinionEnemy.h"
+
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
@@ -137,6 +139,61 @@ void Enemy::Update()
 			}
 		}
 
+		//==============================================
+ // HP 半分以下で雑魚を召喚（1回だけ）
+ //==============================================
+		if (!hasSpawnedMinions_ && GetHpRate() <= 0.5f)
+		{
+			hasSpawnedMinions_ = true;
+
+			const Transform* target = GetTargetTransform();
+
+			for (int i = 0; i < minionSpawnCount_; ++i)
+			{
+				// 円周上に等間隔で配置
+				const float angle = (6.2831853f * static_cast<float>(i)) /
+					static_cast<float>(minionSpawnCount_);
+
+				Vector3 offset = {
+					std::cos(angle) * minionSpawnRadius_,
+					0.0f,
+					std::sin(angle) * minionSpawnRadius_
+				};
+
+				Vector3 spawnPos = transform.translate + offset;
+
+				// 雑魚生成
+				auto m = std::make_unique<MinionEnemy>(baseScene_);
+				m->Initialize();
+
+				// Enemy と同じようにカメラ（FollowCamera）をセット
+				m->SetCamera(camera_);
+
+				// Player を追跡するようにセット
+				m->SetTargetTransform(target);
+
+				// 出現演出（ゆっくり）
+				m->SetRiseParams(-1.0f, 2.0f, 2.5f);
+				m->SetReadyDuration(0.35f);
+
+				// 追跡
+				m->SetChaseParams(5.0f, 0.15f);
+
+				// 位置セット（y=-1から開始）
+				m->SetSpawnPositionXZ(spawnPos);
+
+				minions_.push_back(std::move(m));
+			}
+		}
+
+		//==============================================
+		// 雑魚更新
+		//==============================================
+		for (auto& m : minions_) {
+			m->Update();
+		}
+
+
 	}
 
 	// 当たり判定中心を更新
@@ -269,7 +326,10 @@ void Enemy::Draw()
 	// コライダーの描画
 	multiCollider_->Draw();
 
-	
+	for (auto& m : minions_) {
+		m->Draw();
+	}
+
 }
 
 void Enemy::ForeGroundDraw()
