@@ -1,8 +1,16 @@
 #include "SceneTransitionService.h"
 #include "engine/UI/UIManager.h"
-#include "engine/Scene/ChangeEffect/Fade/FadeTransition.h"
-#include <engine/Scene/ChangeEffect/Shutter/ShutterTransition.h>
+#include "SceneTransitionStates.h"
 #include <cassert>
+
+SceneTransitionService::SceneTransitionService()
+{
+    factory_[TransitionType::None] = [] { return std::make_unique<NoneTransitionState>(); };
+    factory_[TransitionType::Fade] = [] { return std::make_unique<FadeTransitionState>(); };
+    factory_[TransitionType::Shutter] = [] { return std::make_unique<ShutterTransitionState>(); };
+}
+
+SceneTransitionService::~SceneTransitionService() = default;
 
 void SceneTransitionService::StartTransition(
     const std::string& nextSceneName,
@@ -36,57 +44,15 @@ void SceneTransitionService::StartTransition(
         }
         };
 
-    switch (req.type) {
-    case TransitionType::Fade:
-        CreateAndEnqueueFade(req, onSwitchOnce, onFinishOnce);
-        break;
-
-    case TransitionType::Shutter:
-        CreateAndEnqueueShutter(req, onSwitchOnce, onFinishOnce);
-        break;
-
-
-    default:
-        // 演出なしなら即切替して即終了
-        onSwitchOnce();
-        onFinishOnce();
-        break;
+    //==================================================
+    // type -> state をレジストリから生成
+    //==================================================
+    auto it = factory_.find(req.type);
+    if (it == factory_.end()) {
+        // 未登録なら None 扱い（安全）
+        it = factory_.find(TransitionType::None);
     }
-}
 
-void SceneTransitionService::CreateAndEnqueueFade(
-    const TransitionRequest& req,
-    std::function<void()> onSwitchOnce,
-    std::function<void()> onFinishOnce
-)
-{
-    auto fade = std::make_unique<FadeTransition>();
-    fade->Initialize("Resources/Black.png", { 1280.0f, 720.0f }, 100000);
-
-    fade->SetOnSwitch(std::move(onSwitchOnce));
-    fade->SetOnFinish(std::move(onFinishOnce));
-
-    fade->Start(req.fadeOutSec, req.fadeInSec);
-
-    uiManager_->Add(std::move(fade));
-}
-
-void SceneTransitionService::CreateAndEnqueueShutter(const TransitionRequest& req, std::function<void()> onSwitchOnce, std::function<void()> onFinishOnce)
-{
-    auto shutter = std::make_unique<ShutterTransition>();
-
-    shutter->Initialize(
-        "Resources/Black.png",
-        { 1280.0f, 720.0f },
-        100000
-    );
-
-    shutter->SetHoldSeconds(0.1f);
-
-    shutter->SetOnSwitch(std::move(onSwitchOnce));
-    shutter->SetOnFinish(std::move(onFinishOnce));
-
-    shutter->Start(req.fadeOutSec, req.fadeInSec);
-
-    uiManager_->Add(std::move(shutter));
+    state_ = it->second();
+    state_->Enter(uiManager_, req, std::move(onSwitchOnce), std::move(onFinishOnce));
 }

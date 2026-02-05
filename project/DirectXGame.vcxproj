@@ -219,6 +219,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\UI\UIHpBar.cpp" />
     <ClCompile Include="engine\UI\UIManager.cpp" />
     <ClCompile Include="engine\UI\UITexture.cpp" />
+    <ClCompile Include="SceneTransitionStates.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\AI\BehaviorTree\BehaviorTree.h" />
@@ -354,6 +355,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\UI\UIHpBar.h" />
     <ClInclude Include="engine\UI\UIManager.h" />
     <ClInclude Include="engine\UI\UITexture.h" />
+    <ClInclude Include="SceneTransitionStates.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />
