@@ -2,8 +2,18 @@
 
 void UIManager::Update()
 {
+    const bool modal = IsModalActive();
+
     for (auto& ui : uiList_) {
-        if (ui->IsActive()) {
+        if (!ui->IsActive()) continue;
+
+        // モーダルが居る時は「モーダルUIだけUpdate」
+        if (modal) {
+            if (ui->IsModal()) {
+                ui->Update();
+            }
+        }
+        else {
             ui->Update();
         }
     }
@@ -27,4 +37,14 @@ void UIManager::Draw()
 void UIManager::Add(std::unique_ptr<UIElement> ui)
 {
     uiList_.push_back(std::move(ui));
+}
+
+bool UIManager::IsModalActive() const
+{
+    for (const auto& ui : uiList_) {
+        if (ui->IsActive() && ui->IsModal()) {
+            return true;
+        }
+    }
+    return false;
 }

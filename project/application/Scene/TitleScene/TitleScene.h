@@ -6,16 +6,7 @@
 #include "DrawLine.h"
 #include "DrawTriangle.h"
 #include "Sprite.h"
-#include "Fade.h"
 #include "SkyBox.h"
-
-// TitleScene.h の private より上などに（クラス外）
-inline constexpr const char* kWindowName_ParticleControl = "Particle Control";
-inline constexpr const char* kWindowName_AABBControl = "AABB Control";
-inline constexpr const char* kWindowName_OBBControl = "OBB Control";
-inline constexpr const char* kWindowName_SphereControl = "Sphere Control";
-inline constexpr const char* kWindowName_DebugInfo = "Debug Information";
-inline constexpr const char* kWindowName_TriangleControl = "Triangle Control";
 
 class TitleScene : public BaseScene
 {
@@ -75,7 +66,6 @@ private:
 
 	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
 
-	std::unique_ptr<Fade> fade_ = nullptr;
 	std::string nextSceneName_ = "";
 
 	std::unique_ptr<Sprite> title = std::make_unique<Sprite>();

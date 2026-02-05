@@ -35,8 +35,8 @@ private:
 	// DirectXの初期化
 	DirectXCommon* dxCommon_ = nullptr;
 	// SRV用でスクリプタヒープ
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_;
-	uint32_t srvIndex;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_{};
+	uint32_t srvIndex{};
 };
 
 #endif // USE_IMGUI

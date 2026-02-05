@@ -87,12 +87,14 @@ bool Input::PushKey(BYTE keyNumber)
 
 bool Input::TriggerKey(BYTE keyNumber)
 {
-	if (keyPre[keyNumber])
+	/*if (keyPre[keyNumber])
 	{
 		return true;
 	}
 
-	return false;
+	return false;*/
+
+	return (key[keyNumber] && !keyPre[keyNumber]);
 }
 
 bool Input::PushMouseButton(int button) {
@@ -109,4 +111,12 @@ int Input::GetMouseWheel() const {
 
 POINT Input::GetMouseDelta() const {
 	return mouseDelta_;
+}
+
+POINT Input::GetMousePosition() const
+{
+	POINT p{};
+	GetCursorPos(&p);
+	ScreenToClient(winApp_->GetHwnd(), &p);
+	return p;
 }

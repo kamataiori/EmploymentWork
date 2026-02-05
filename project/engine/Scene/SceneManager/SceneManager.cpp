@@ -1,5 +1,7 @@
 #include "SceneManager.h"
 #include <PostEffectManager.h>
+#include "engine/Scene/ChangeEffect/SceneTransitionService.h"
+#include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
 
 SceneManager* SceneManager::instance = nullptr;
 
@@ -73,4 +75,33 @@ void SceneManager::ChangeScene(const std::string& sceneName)
 
 	// 次シーンを生成
 	nextScene_ = sceneFactory_->CreateScene(sceneName);
+}
+
+void SceneManager::RequestChangeScene(const std::string& nextSceneName, const TransitionRequest& req)
+{
+	assert(transitionService_);
+
+	// すでに次シーンが予約されているなら無視
+	if (nextScene_ != nullptr) {
+		return;
+	}
+
+	// 遷移中なら無視
+	if (transitionService_->IsTransitioning()) {
+		return;
+	}
+
+	// Serviceに委譲（SceneManagerは演出の詳細を知らない）
+	transitionService_->StartTransition(
+		nextSceneName,
+		req,
+		[this](const std::string& name) { this->ChangeScene(name); },
+		[]() {}
+	);
+}
+
+bool SceneManager::IsTransitioning() const
+{
+	if (!transitionService_) return false;
+	return transitionService_->IsTransitioning();
 }

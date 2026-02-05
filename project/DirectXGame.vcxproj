@@ -154,6 +154,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Decorator\InverterDecorator.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.cpp" />
+    <ClCompile Include="engine\Scene\ChangeEffect\Fade\FadeTransition.cpp" />
     <ClCompile Include="IsTargetNearLeaf.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\math\MathFunctions.cpp" />
@@ -200,6 +201,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Core\NodeBase.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.cpp" />
+    <ClCompile Include="MenuScene.cpp" />
+    <ClCompile Include="PauseScreen.cpp" />
     <ClCompile Include="PunchAttackLeaf.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialController.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateMove.cpp" />
@@ -209,10 +212,14 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateRoll.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateDash.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateFinal.cpp" />
-    <ClCompile Include="UIElement.cpp" />
-    <ClCompile Include="UIHpBar.cpp" />
-    <ClCompile Include="UIManager.cpp" />
-    <ClCompile Include="UITexture.cpp" />
+    <ClCompile Include="engine\Scene\ChangeEffect\SceneTransitionBase.cpp" />
+    <ClCompile Include="engine\Scene\ChangeEffect\SceneTransitionService.cpp" />
+    <ClCompile Include="engine\Scene\ChangeEffect\Shutter\ShutterTransition.cpp" />
+    <ClCompile Include="engine\UI\UIElement.cpp" />
+    <ClCompile Include="engine\UI\UIHpBar.cpp" />
+    <ClCompile Include="engine\UI\UIManager.cpp" />
+    <ClCompile Include="engine\UI\UITexture.cpp" />
+    <ClCompile Include="SceneTransitionStates.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\AI\BehaviorTree\BehaviorTree.h" />
@@ -275,6 +282,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Decorator\InverterDecorator.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.h" />
+    <ClInclude Include="engine\Scene\ChangeEffect\Fade\FadeTransition.h" />
     <ClInclude Include="IsTargetNearLeaf.h" />
     <ClInclude Include="matrix\Matrix3x3.h" />
     <ClInclude Include="matrix\Matrix4x4.h" />
@@ -320,6 +328,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NearIdleLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeBase.h" />
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeResult.h" />
+    <ClInclude Include="MenuScene.h" />
+    <ClInclude Include="PauseScreen.h" />
     <ClInclude Include="PunchAttackLeaf.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
@@ -337,10 +347,15 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Scene\TutorialScene\TutorialStateRoll.h" />
     <ClInclude Include="application\Scene\TutorialScene\TutorialStateDash.h" />
     <ClInclude Include="application\Scene\TutorialScene\TutorialStateFinal.h" />
-    <ClInclude Include="UIElement.h" />
-    <ClInclude Include="UIHpBar.h" />
-    <ClInclude Include="UIManager.h" />
-    <ClInclude Include="UITexture.h" />
+    <ClInclude Include="engine\Scene\ChangeEffect\SceneTransitionBase.h" />
+    <ClInclude Include="engine\Scene\ChangeEffect\SceneTransitionService.h" />
+    <ClInclude Include="engine\Scene\ChangeEffect\SceneTransitionTypes.h" />
+    <ClInclude Include="engine\Scene\ChangeEffect\Shutter\ShutterTransition.h" />
+    <ClInclude Include="engine\UI\UIElement.h" />
+    <ClInclude Include="engine\UI\UIHpBar.h" />
+    <ClInclude Include="engine\UI\UIManager.h" />
+    <ClInclude Include="engine\UI\UITexture.h" />
+    <ClInclude Include="SceneTransitionStates.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />
