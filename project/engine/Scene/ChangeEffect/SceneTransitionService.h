@@ -1,16 +1,21 @@
 #pragma once
 #include <functional>
+#include <memory>
 #include <string>
+#include <unordered_map>
+
 #include "SceneTransitionTypes.h"
 #include "SceneManager.h"
 
 class UIManager;
+class ISceneTransitionState;
 
 // 遷移演出の生成と実行を担当するクラス
 // SceneManagerはここに「要求」を投げるだけにする
 class SceneTransitionService {
 public:
-    SceneTransitionService() = default;
+    SceneTransitionService(); // レジストリをここで構築
+    ~SceneTransitionService();
 
     // UIManagerを注入（アプリ起動時に1回でOK）
     void SetUIManager(UIManager* uiManager) { uiManager_ = uiManager; }
@@ -19,10 +24,6 @@ public:
     bool IsTransitioning() const { return isTransitioning_; }
 
     // 遷移開始
-    // nextSceneName : 次シーン名
-    // req           : 演出パラメータ
-    // onSwitch      : 暗転完了で呼ぶ（通常SceneManager::ChangeScene）
-    // onFinish      : 明転完了で呼ぶ（通常フラグ解除）
     void StartTransition(
         const std::string& nextSceneName,
         const TransitionRequest& req,
@@ -31,19 +32,20 @@ public:
     );
 
 private:
-    // 遷移UIを生成してUIManagerにAddする（種類ごとにここを増やす）
-    void CreateAndEnqueueFade(
-        const TransitionRequest& req,
-        std::function<void()> onSwitchOnce,
-        std::function<void()> onFinishOnce
-    );
+    // TransitionType をハッシュに使うためのハッシュ
+    struct EnumHash {
+        template <class T>
+        std::size_t operator()(T v) const noexcept {
+            return static_cast<std::size_t>(v);
+        }
+    };
 
-    // 上下シャッター
-    void CreateAndEnqueueShutter(
-        const TransitionRequest& req,
-        std::function<void()> onSwitchOnce,
-        std::function<void()> onFinishOnce
-    );
+    // type -> state factory
+    using StateFactory = std::function<std::unique_ptr<ISceneTransitionState>()>;
+    std::unordered_map<TransitionType, StateFactory, EnumHash> factory_;
+
+    // 現在のState
+    std::unique_ptr<ISceneTransitionState> state_;
 
 private:
     UIManager* uiManager_ = nullptr;
