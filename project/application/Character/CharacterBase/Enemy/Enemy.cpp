@@ -274,7 +274,7 @@ void Enemy::Draw()
 
 void Enemy::ForeGroundDraw()
 {
-	OutputDebugStringA("Enemy::ForeGroundDraw called\n");
+	//OutputDebugStringA("Enemy::ForeGroundDraw called\n");
 
 	// === HPバー描画 ===
 	if (uiManager_) {

@@ -1,4 +1,6 @@
 #include "TextureManager.h"
+#include <filesystem>
+
 using namespace StringUtility;
 
 TextureManager* TextureManager::instance = nullptr;
@@ -30,117 +32,155 @@ void TextureManager::Initialize()
 
 void TextureManager::LoadTexture(const std::string& filePath)
 {
-	// 読み込み済みテクスチャを検索
-	if (textureDatas.contains(filePath)) {
-		return;
-	}
+    std::string resolvedPath = ResolveTexturePath(filePath);
 
-	assert(SrvManager::GetInstance()->IsBelowMaxCount());
+    // 読み込み済みチェックも resolvedPath で統一
+    if (textureDatas.contains(resolvedPath)) {
+        return;
+    }
 
-	DirectX::ScratchImage image{};
-	std::wstring filePathW = StringUtility::ConvertString(filePath);
-	HRESULT hr = S_FALSE;
+    assert(SrvManager::GetInstance()->IsBelowMaxCount());
 
-	// 拡張子が.ddsならDDSとして読み込み
-	if (filePath.ends_with(".dds")) {
-		hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
-	}
-	else {
-		hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-	}
-	assert(SUCCEEDED(hr));
+    DirectX::ScratchImage image{};
+    std::wstring filePathW = StringUtility::ConvertString(resolvedPath);
+    HRESULT hr = S_FALSE;
 
-	DirectX::ScratchImage mipImages{};
-	if (DirectX::IsCompressed(image.GetMetadata().format)) {
-		// 圧縮フォーマットならそのまま使う
-		mipImages = std::move(image);
-	}
-	else {
-		hr = DirectX::GenerateMipMaps(
-			image.GetImages(), image.GetImageCount(), image.GetMetadata(),
-			DirectX::TEX_FILTER_SRGB, 0, mipImages
-		);
-		assert(SUCCEEDED(hr));
-	}
+    // 拡張子が.ddsならDDSとして読み込み
+    if (resolvedPath.ends_with(".dds")) {
 
-	TextureData& textureData = textureDatas[filePath];
-	textureData.metadata = mipImages.GetMetadata();
-	textureData.resource = dxCommon_->CreateTextureResource(textureData.metadata);
-	textureData.resource->SetName(filePathW.c_str());
+        // DDSロードしたことを Output に出す（VSの出力ウィンドウ）
+        std::string msg = "[TextureManager] Load DDS: " + resolvedPath + "\n";
+        OutputDebugStringA(msg.c_str());
 
-	textureData.intermediateResource = dxCommon_->UploadTextureData(
-		textureData.resource.Get(), mipImages, dxCommon_->GetDevice().Get(), dxCommon_->GetCommandList().Get()
-	);
+        hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
+    }
+    else {
+        hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+    }
 
-	textureData.srvIndex = srvManager_->Allocate();
+    assert(SUCCEEDED(hr));
 
-	textureData.srvHandleCPU = dxCommon_->GetCPUDescriptorHandle(
-		srvManager_->GetSrvDescriptorHeap().Get(), srvManager_->GetDescriptorSizeSRV(), textureData.srvIndex
-	);
-	textureData.srvHandleGPU = dxCommon_->GetGPUDescriptorHandle(
-		srvManager_->GetSrvDescriptorHeap().Get(), srvManager_->GetDescriptorSizeSRV(), textureData.srvIndex
-	);
+    DirectX::ScratchImage mipImages{};
+    if (DirectX::IsCompressed(image.GetMetadata().format)) {
+        // 圧縮フォーマットならそのまま使う
+        mipImages = std::move(image);
+    }
+    else {
+        hr = DirectX::GenerateMipMaps(
+            image.GetImages(), image.GetImageCount(), image.GetMetadata(),
+            DirectX::TEX_FILTER_SRGB, 0, mipImages
+        );
+        assert(SUCCEEDED(hr));
+    }
 
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-	srvDesc.Format = textureData.metadata.format;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    // ★ここも resolvedPath で統一（キーがブレない）
+    TextureData& textureData = textureDatas[resolvedPath];
+    textureData.metadata = mipImages.GetMetadata();
+    textureData.resource = dxCommon_->CreateTextureResource(textureData.metadata);
+    textureData.resource->SetName(filePathW.c_str());
 
-	if (textureData.metadata.IsCubemap()) {
-		// CubemapとしてのSRV設定
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-		srvDesc.TextureCube.MostDetailedMip = 0;
-		srvDesc.TextureCube.MipLevels = UINT(textureData.metadata.mipLevels);
-		srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-	}
-	else {
-		// 通常の2Dテクスチャ設定
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MipLevels = UINT(textureData.metadata.mipLevels);
-	}
+    textureData.intermediateResource = dxCommon_->UploadTextureData(
+        textureData.resource.Get(), mipImages, dxCommon_->GetDevice().Get(), dxCommon_->GetCommandList().Get()
+    );
 
-	dxCommon_->GetDevice()->CreateShaderResourceView(
-		textureData.resource.Get(), &srvDesc, textureData.srvHandleCPU
-	);
+    textureData.srvIndex = srvManager_->Allocate();
+
+    textureData.srvHandleCPU = dxCommon_->GetCPUDescriptorHandle(
+        srvManager_->GetSrvDescriptorHeap().Get(), srvManager_->GetDescriptorSizeSRV(), textureData.srvIndex
+    );
+    textureData.srvHandleGPU = dxCommon_->GetGPUDescriptorHandle(
+        srvManager_->GetSrvDescriptorHeap().Get(), srvManager_->GetDescriptorSizeSRV(), textureData.srvIndex
+    );
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+    srvDesc.Format = textureData.metadata.format;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+    if (textureData.metadata.IsCubemap()) {
+        // CubemapとしてのSRV設定
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+        srvDesc.TextureCube.MostDetailedMip = 0;
+        srvDesc.TextureCube.MipLevels = UINT(textureData.metadata.mipLevels);
+        srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+    }
+    else {
+        // 通常の2Dテクスチャ設定
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MipLevels = UINT(textureData.metadata.mipLevels);
+    }
+
+    dxCommon_->GetDevice()->CreateShaderResourceView(
+        textureData.resource.Get(), &srvDesc, textureData.srvHandleCPU
+    );
 }
-
 
 uint32_t TextureManager::GetTextureIndexByFilePath(const std::string& filePath)
 {
-	// テクスチャが存在するかチェック
-	auto it = textureDatas.find(filePath);
-	assert(it != textureDatas.end() && "テクスチャが存在しません");
+    std::string resolvedPath = ResolveTexturePath(filePath);
 
-	// 読み込み済みならSRVインデックスを返す
-	return it->second.srvIndex;
+    // テクスチャが存在するかチェック
+    auto it = textureDatas.find(resolvedPath);
+    assert(it != textureDatas.end() && "テクスチャが存在しません");
+
+    // 読み込み済みならSRVインデックスを返す
+    return it->second.srvIndex;
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string& filePath)
 {
-	// テクスチャが存在するかチェック
-	assert(textureDatas.contains(filePath) && "テクスチャが存在しません");
+    std::string resolvedPath = ResolveTexturePath(filePath);
 
-	// テクスチャデータを取得
-	TextureData& textureData = textureDatas[filePath];
-	return textureData.srvHandleGPU;
+    // テクスチャが存在するかチェック
+    assert(textureDatas.contains(resolvedPath) && "テクスチャが存在しません");
+
+    // テクスチャデータを取得
+    TextureData& textureData = textureDatas[resolvedPath];
+    return textureData.srvHandleGPU;
 }
 
 const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& filePath)
 {
-	// テクスチャが存在するかチェック
-	assert(textureDatas.contains(filePath) && "テクスチャが存在しません");
+    std::string resolvedPath = ResolveTexturePath(filePath);
 
-	// テクスチャデータを取得
-	TextureData& textureData = textureDatas[filePath];
-	return textureData.metadata;
+    // テクスチャが存在するかチェック
+    assert(textureDatas.contains(resolvedPath) && "テクスチャが存在しません");
+
+    // テクスチャデータを取得
+    TextureData& textureData = textureDatas[resolvedPath];
+    return textureData.metadata;
 }
 
 uint32_t TextureManager::GetSrvIndex(const std::string& filePath)
 {
-	// テクスチャが存在するかチェック
-	assert(textureDatas.contains(filePath) && "テクスチャが存在しません");
+    std::string resolvedPath = ResolveTexturePath(filePath);
 
-	// テクスチャデータを取得
-	TextureData& textureData = textureDatas[filePath];
-	return textureData.srvIndex;
+    // テクスチャが存在するかチェック
+    assert(textureDatas.contains(resolvedPath) && "テクスチャが存在しません");
+
+    // テクスチャデータを取得
+    //TextureData& textureData = textureDatas[resolvedPath];
+    TextureData& textureData = textureDatas.at(resolvedPath);
+    return textureData.srvIndex;
+}
+
+std::string TextureManager::ResolveTexturePath(const std::string& filePath)
+{
+	namespace fs = std::filesystem;
+
+	// すでにdds指定ならそのまま
+	if (filePath.ends_with(".dds")) {
+		return filePath;
+	}
+
+	// xxx.png / xxx.jpg → xxx.dds が存在するならそっちを使う
+	fs::path p(filePath);
+	fs::path ddsPath = p;
+	ddsPath.replace_extension(".dds");
+
+	if (fs::exists(ddsPath)) {
+		return ddsPath.string();
+	}
+
+	return filePath;
 }
 

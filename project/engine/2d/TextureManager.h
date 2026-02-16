@@ -56,6 +56,9 @@ public:
 
 	DirectXCommon* GetDxCommon() const { return dxCommon_; }
 
+	std::string ResolveTexturePath(const std::string& filePath);
+
+
 private:
 	//テクスチャ1枚分のデータ
 	struct TextureData {
