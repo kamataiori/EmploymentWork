@@ -77,7 +77,7 @@ void TitleScene::Initialize()
 	sky->SetCamera(camera1.get());
 
 
-	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
+	//skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 	skybox->SetCamera(camera1.get());
 
 	title = std::make_unique<Sprite>();
@@ -129,7 +129,7 @@ void TitleScene::Update()
 	camera1->Update();
 	ground->Update();
 	sky->Update();
-	skybox->Update();
+	//skybox->Update();
 
 	// デバッグ
 	//Debug();
