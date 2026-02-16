@@ -2,7 +2,7 @@
 #include "Transform.h"
 #include "MultiCollider.h"
 
-class PlayerBase;
+class Player;
 
 class PlayerIWeapon
 {
@@ -36,13 +36,13 @@ public:
 
 	void SetPlayerTransform(Transform* transform) { playerTransform_ = transform; }
 
-	void SetOwner(PlayerBase* owner) { owner_ = owner; }
+	void SetOwner(Player* owner) { owner_ = owner; }
 
 protected:
 
 	Transform* playerTransform_ = {};
 
-	PlayerBase* owner_ = nullptr;
+	Player* owner_ = nullptr;
 
 
 };

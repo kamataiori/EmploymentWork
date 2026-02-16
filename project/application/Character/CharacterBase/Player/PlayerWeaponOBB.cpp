@@ -1,7 +1,7 @@
 #include "PlayerWeaponOBB.h"
 #include <Input.h>
 #include <PlayerAnimKey.h>
-#include "PlayerBase.h"
+#include "Player.h"
 #include "engine/TimeManager.h"
 
 
@@ -132,7 +132,7 @@ void PlayerWeaponOBB::NormalAttack()
 		activeTime_ = activeDuration_; // 一定時間だけ有効
 		if (owner_) {
 			
-			owner_->RequestAnimKey(PlayerAnimKey::SwordAttackFast, 10, activeDuration_);
+			owner_->RequestAnimaKey(PlayerAnimKey::SwordAttackFast, 10, activeDuration_);
 		}
 	}
 }
@@ -142,7 +142,7 @@ void PlayerWeaponOBB::Skill()
 	const bool nowF = Input::GetInstance()->PushKey(DIK_E);
 	if (nowF && !IsSkill_) {                  // 立ち上がりだけ
 		if (owner_) {
-			owner_->RequestAnimKey(PlayerAnimKey::Roll, 10, 0.8f);
+			owner_->RequestAnimaKey(PlayerAnimKey::Roll, 10, 0.8f);
 		}
 	}
 	IsSkill_ = nowF;

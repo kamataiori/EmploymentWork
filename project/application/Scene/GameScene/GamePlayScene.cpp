@@ -37,16 +37,16 @@ void GamePlayScene::Initialize()
 	player_ = std::make_unique<Player>(this);
 	enemy_ = std::make_unique<Enemy>(this);
 
-	followCamera = std::make_unique<FollowCamera>(player_->GetCurrentCharacter(), 30.0f, 8.0f);
+	followCamera = std::make_unique<FollowCamera>(player_.get(), 30.0f, 8.0f);
 	followCamera->SetFarClip(2000.0f);
 
-	player_->Initialize(followCamera.get());
-	player_->Get()->SetCamera(followCamera.get());
+	player_->Initialize();
+	player_->SetCamera(followCamera.get());
 	/*followCamera->SetTarget(player_->Get());*/
 
 	enemy_->Initialize();
 	enemy_->SetCamera(followCamera.get());
-	enemy_->SetTargetTransform(&player_->Get()->GetTransform());
+	enemy_->SetTargetTransform(&player_->GetTransform());
 	enemy_->SetCamera(followCamera.get());
 
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
@@ -140,7 +140,7 @@ void GamePlayScene::Update()
 		followCameraLocked_ = true;
 
 		// 回り込みの中心はプレイヤー位置
-		const Transform& playerTf = player_->Get()->GetTransform();
+		const Transform& playerTf = player_->GetTransform();
 		Vector3 center = playerTf.translate;
 
 		// 回り込み用パラメータを組み立てる
@@ -243,8 +243,8 @@ void GamePlayScene::Update()
 		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
 	}
 
-	collisionManager_->RegisterCollider(player_->Get()->GetMultiCollider());
-	if (auto* wcol = player_->Get()->GetWeaponCollider()) {
+	collisionManager_->RegisterCollider(player_->GetMultiCollider());
+	if (auto* wcol = player_->GetWeaponCollider()) {
 		collisionManager_->RegisterCollider(wcol);
 	}
 	collisionManager_->RegisterCollider(enemy_->GetMultiCollider());
@@ -370,7 +370,7 @@ void GamePlayScene::ForeGroundDraw()
 	// ここからparticle個々の描画
 	// ================================================
 
-	player_->ParticlDraw();
+	player_->ParticleDraw();
 	enemy_->ParticleDraw();
 
 	// ================================================
