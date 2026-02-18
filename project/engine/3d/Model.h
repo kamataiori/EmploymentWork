@@ -120,6 +120,13 @@ public:
     /// <returns>ワールド空間上の位置（存在しない場合は std::nullopt）</returns>
 	std::optional<Vector3> GetJointWorldPosition(const std::string& jointName, const Matrix4x4& modelWorldMatrix) const;
 
+	/// <summary>
+	/// 指定したジョイント名のワールド行列を取得
+	/// </summary>
+	/// <param name="jointName">ボーン名</param>
+	/// <param name="modelWorldMatrix">モデル(=Object3d)のワールド行列</param>
+	/// <returns>ワールド行列（存在しない場合は std::nullopt）</returns>
+	std::optional<Matrix4x4> GetJointWorldMatrix(const std::string& jointName, const Matrix4x4& modelWorldMatrix) const;
 
 	/// <summary>
 	/// 頂点データを作成

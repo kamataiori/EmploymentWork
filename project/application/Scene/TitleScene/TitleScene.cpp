@@ -31,13 +31,18 @@ void TitleScene::Initialize()
 	sneak = std::make_unique<Object3d>(this);
 	sneak->Initialize();
 
+	sword = std::make_unique<Object3d>(this);
+	sword->Initialize();
+
 	// モデル読み込み
 	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");
 	ModelManager::GetInstance()->LoadModel("human/walk.gltf");
 	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
 	ModelManager::GetInstance()->LoadModel("ground.obj");
 	ModelManager::GetInstance()->LoadModel("skydome.obj");
+	ModelManager::GetInstance()->LoadModel("sword.obj");
 	sneak->SetModel("Warrior.gltf");
+
 
 	// モデルにSRTを設定
 	transform.scale = { 1,1,1 };
@@ -47,6 +52,8 @@ void TitleScene::Initialize()
 	sneak->SetRotate(transform.rotate);
 	sneak->SetScale(transform.scale);
 	sneak->SetAnimation("Idle");
+
+	
 
 	ground = std::make_unique<Object3d>(this);
 	ground->Initialize();
@@ -93,10 +100,15 @@ void TitleScene::Update()
 	title->Update();
 	
 	// 各3Dオブジェクトの更新
+
+	sword->SetParentJoint(sneak.get(), "Fist.R");
+
 	sneak->SetTranslate(transform.translate);
 	sneak->SetRotate(transform.rotate);
 	sneak->SetScale(transform.scale);
+
 	sneak->Update();
+
 	// カメラの更新
 	// ===== オービットカメラ：sneak を中心に回す =====
 	{

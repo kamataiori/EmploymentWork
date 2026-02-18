@@ -26,6 +26,10 @@ public:
 	// （必要ならシーン登録用に公開）
 	MultiCollider* GetMultiCollider() const { return mc_.get(); }
 
+	bool IsAttacking() const { return activeTime_ > 0.0f; }
+	bool HasComboReserve() const { return comboReserve_; } // あるなら
+
+
 	//// カメラを切り替えたときに使用する
 	//void SetCameraForProjectiles(Camera* cam) {
 	//	for (auto& b : bullets_) b->SetCamera(cam);
@@ -43,7 +47,7 @@ private:
 	std::unique_ptr<MultiCollider> mc_{};
 
 	// 出現中タイマー（>0の間だけ当たり有効）
-	float activeDuration_ = 0.5f;      // 出現時間（秒）
+	float activeDuration_ = 1.0f;      // 出現時間（秒）
 	float activeTime_ = 0.0f;
 
 	// サイズ（ハーフエクステント）
@@ -56,6 +60,12 @@ private:
 	// 入力エッジ検出用
 	bool IsnormalAttack_ = false;
 	bool IsSkill_ = false;
+
+	// ノーマル攻撃コンボ段数（0,1,2）
+	int normalComboIndex_ = 0;
+	bool comboReserve_ = false;   // 次の攻撃を予約しているか
+	bool wasActive_ = false; // 前フレームで攻撃が出ていたか
+	float comboLeadTime_ = 0.02f; // 20msくらい前に次段へ（好みで調整）
 
 
 	// デバッグ用フラグ

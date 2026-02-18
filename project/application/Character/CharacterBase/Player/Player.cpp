@@ -62,6 +62,13 @@ void Player::Initialize()
 	// コールバック登録
 	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
 
+	sword_ = std::make_unique<Sword>(baseScene_);
+	sword_->Initialize();
+	sword_->SetCamera(camera_); // camera_ が後で入るなら SetCamera() 側でも呼ぶ
+
+	// ボーン名は実際の名前に合わせて修正が必要
+	sword_->AttachTo(object3d_.get(), "Fist.R");
+
 	
 	//poweder = std::make_unique<ParticleManager>();
 	//poweder->Initialize(ParticleManager::VertexDataType::Plane);
@@ -82,7 +89,7 @@ void Player::Update()
 			animaLockTimer_ = 0.0f;
 			currentAnimaPriority_ = 0;
 			// 止まっている場合に備えて一度Idleを要求しておく
-			RequestAnimaKey(PlayerAnimKey::Idle, 0);
+			//RequestAnimaKey(PlayerAnimKey::IdleWeapon, 0);
 		}
 	}
 
@@ -95,6 +102,22 @@ void Player::Update()
 		weapon_->Skill();
 		weapon_->Ultimate();
 	}
+
+	if (sword_) {
+		sword_->Update();
+	}
+
+	bool weaponAttacking = false;
+	if (auto w = dynamic_cast<PlayerWeaponOBB*>(weapon_.get())) {
+		weaponAttacking = w->IsAttacking();
+	}
+
+	if (!IsAnimaLocked() && !weaponAttacking) {
+		if (isMoving_)  RequestAnimaKey(PlayerAnimKey::RunWeapon, 0);
+		else            RequestAnimaKey(PlayerAnimKey::Idle, 0);
+	}
+
+
 
 	//ImGui::Begin("player");
 	//ImGui::DragFloat3("translate", &transform.translate.x);
@@ -140,6 +163,7 @@ void Player::Draw()
 {
 	multiCollider_->Draw();
 	weapon_->Draw();
+	sword_->Draw();
 }
 
 void Player::ForeGroundDraw()
@@ -187,7 +211,7 @@ void Player::OnCollision()
 	}
 
 	// ====== 被弾時アニメーション（生存時のみ） ======
-	PlayAnimaKey(PlayerAnimKey::RecieveHit);
+	//PlayAnimaKey(PlayerAnimKey::RecieveHit);
 
 	// 当たった時にフラグON
 	isCollided_ = true;
@@ -198,24 +222,18 @@ void Player::Move()
 	// ===== Δt（回転のスムージング用） =====
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-	// -------------------------------
-	// 入力による左右・前後移動処理
-	// -------------------------------
-	// -------------------------------
-	// WASD入力による方向ベクトル計算
-	// -------------------------------
-	
 	// 1) カメラのヨー角（FollowCamera想定）
 	float camYaw = 0.0f;
 	if (auto fc = dynamic_cast<FollowCamera*>(camera_)) {
 		camYaw = fc->GetAngle(); // カメラの“後ろ向き”角
 	}
-	// カメラ正面（プレイヤーが向くべき前）は angle + π
+
+	// カメラ正面（プレイヤーが向き続けるべき前）
 	const float playerFaceYaw = camYaw + std::numbers::pi_v<float>;
 
 	// 2) カメラ基底ベクトル（XZ）
 	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
-	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f, std::sin(camYaw) };
+	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f,  std::sin(camYaw) };
 
 	// 3) WASDをカメラ相対で合成（D=+Right / A=-Right）
 	Vector3 wishDir = { 0,0,0 };
@@ -234,49 +252,36 @@ void Player::Move()
 		transform.translate.z += wishDir.z * currentSpeed;
 	}
 
-	// 5) 目標ヨー角：移動中は移動方向、停止中はカメラ正面
-	const float targetYaw = isMoving
-		? std::atan2(wishDir.x, wishDir.z)
-		: playerFaceYaw;
+	// 5) 目標ヨー角：常に「正面固定」（移動方向では回さない！）
+	const float targetYaw = playerFaceYaw;
 
 	// 6) スムーズ回転（最短角＆角速度クランプ）
 	const float curYaw = transform.rotate.y;
 	float deltaYaw = WrapPi(targetYaw - curYaw);
 	const float turnSpeed = 2.5f;
-	const float turnRate = std::numbers::pi_v<float> * turnSpeed; // 180deg/s（好みで調整可）
+	const float turnRate = std::numbers::pi_v<float> *turnSpeed; // 180deg/s
 	const float maxStep = turnRate * dt;
 
 	if (deltaYaw > maxStep) deltaYaw = maxStep;
 	if (deltaYaw < -maxStep) deltaYaw = -maxStep;
 	transform.rotate.y = curYaw + deltaYaw;
 
-	// 7) アニメ（ロック中は移動アニメ出さない）
-	if (!IsAnimaLocked()) {
-		if (isMoving)  RequestAnimaKey(PlayerAnimKey::RunWeapon, 0);
-		else           RequestAnimaKey(PlayerAnimKey::Idle, 0);
-	}
+	isMoving_ = isMoving;
 
-	// -------------------------------
-	// ジャンプ処理呼出し
-	// -------------------------------
+	// 7) アニメ（Wで進む時と同じでOK）
+	// if (!IsAnimaLocked()) {
+	//     if (isMoving) RequestAnimaKey(PlayerAnimKey::RunWeapon, 0);
+	//     else          RequestAnimaKey(PlayerAnimKey::Idle, 0);
+	// }
 
+	// ジャンプ / ブリンク
 	Jump();
-
-	// -------------------------------
-	// ブリンク(ダッシュ)処理呼出し
-	// -------------------------------
-
 	Blink();
-
-
 }
+
 
 void Player::Jump()
 {
-	// ----------------
-	// 二段ジャンプ処理
-	// ----------------
-	// -------------------------------
 	// 有効半径（スケール対応：最大軸で拡大）
 	const float effectiveRadius =
 		sphereRadius_ * std::max({ transform.scale.x, transform.scale.y, transform.scale.z });
@@ -287,11 +292,15 @@ void Player::Jump()
 	// 現在の足底Y
 	const float bottomNow = colliderCenterY - effectiveRadius;
 
+	// 接地判定（ほぼ地面にいるか）
+	const bool isGrounded = (bottomNow <= jump_.kGroundHeight + 0.0001f);
+
 	// 1 接地クランプ（非ジャンプ時の保険）
 	if (!jump_.isJumping && bottomNow < jump_.kGroundHeight) {
-		const float targetCenterY = jump_.kGroundHeight + effectiveRadius;    // 当たり中心Y
-		transform.translate.y = targetCenterY - colliderOffset_.y;            // モデル原点Yに戻す
-		// リセット
+		const float targetCenterY = jump_.kGroundHeight + effectiveRadius;
+		transform.translate.y = targetCenterY - colliderOffset_.y;
+
+		// 着地リセット
 		jump_.isJumping = false;
 		jump_.velocity = 0.0f;
 		jump_.jumpCount = 0;
@@ -299,14 +308,12 @@ void Player::Jump()
 		move_.hasDashed_ = false;
 	}
 
-	// 2 ジャンプ入力（2段まで）
-	if (jump_.canJump_ && Input::GetInstance()->PushKey(DIK_SPACE) &&
-		jump_.jumpCount < jump_.kMaxJumpCount) {
-
+	// 2 ジャンプ入力（★地面にいる時だけ / 1段のみ）
+	if (isGrounded && jump_.canJump_ && Input::GetInstance()->PushKey(DIK_SPACE)) {
 		jump_.velocity = jump_.kInitialVelocity;
 		jump_.isJumping = true;
-		jump_.jumpCount++;
-		jump_.canJump_ = false; // 離すまで再ジャンプ禁止
+		jump_.jumpCount = 1;      // 保持したいなら（なくてもOK）
+		jump_.canJump_ = false;   // 離すまで再ジャンプ禁止
 	}
 	if (!Input::GetInstance()->PushKey(DIK_SPACE)) {
 		jump_.canJump_ = true;
@@ -314,15 +321,12 @@ void Player::Jump()
 
 	// 3 速度反映（予測→着地判定→クランプ）
 	if (jump_.isJumping) {
-		// 次フレームの原点Yを予測
 		const float nextY = transform.translate.y + jump_.velocity;
 
-		// 次フレームの当たり中心と足底
 		const float nextCenterY = nextY + colliderOffset_.y;
 		const float bottomNext = nextCenterY - effectiveRadius;
 
 		if (jump_.velocity <= 0.0f && bottomNext < jump_.kGroundHeight) {
-			// 下向き移動中に地面をまたぐ → ちょうど着地位置へクランプ
 			const float targetCenterY = jump_.kGroundHeight + effectiveRadius;
 			transform.translate.y = targetCenterY - colliderOffset_.y;
 
@@ -334,7 +338,6 @@ void Player::Jump()
 			move_.hasDashed_ = false;
 		}
 		else {
-			// まだ空中：位置更新＆重力
 			transform.translate.y = nextY;
 			jump_.velocity -= jump_.kGravity;
 		}
@@ -405,6 +408,8 @@ void Player::SetCamera(Camera* camera)
 {
 	// まずは ObjectBase 側の処理（camera_ と object3d_ にセット）
 	ObjectBase::SetCamera(camera);
+
+	sword_->SetCamera(camera);
 
 	// パーティクル側にも同じカメラを渡す
 	/*if (poweder) {

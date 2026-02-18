@@ -229,6 +229,24 @@ std::optional<Vector3> Model::GetJointWorldPosition(const std::string& jointName
 	return TransformCoord(joint.skeletonSpaceMatrix.Translation(), modelWorldMatrix);
 }
 
+std::optional<Matrix4x4> Model::GetJointWorldMatrix(const std::string& jointName, const Matrix4x4& modelWorldMatrix) const
+{
+	if (!modelData.isAnimation) return std::nullopt;
+
+	auto it = skeleton.jointMap.find(jointName);
+	if (it == skeleton.jointMap.end()) return std::nullopt;
+
+	int jointIndex = it->second;
+	if (jointIndex < 0 || jointIndex >= static_cast<int>(skeleton.joints.size())) return std::nullopt;
+
+	const Joint& joint = skeleton.joints[jointIndex];
+
+	// joint.skeletonSpaceMatrix は「モデル空間でのジョイント行列」なので
+	// Object3dの worldMatrix_ を掛けてワールドへ
+	Matrix4x4 jointWorld = Multiply(joint.skeletonSpaceMatrix, modelWorldMatrix);
+	return jointWorld;
+}
+
 void Model::CreateVertexData(MeshInstance& instance, const MeshData& data)
 {
 	assert(!data.vertices.empty()); // 追加：空でないかチェック

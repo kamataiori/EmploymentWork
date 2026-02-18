@@ -111,7 +111,7 @@ void GamePlayScene::Update()
 	ground->Update();
 	sky->Update();
 	player_->Update();
-	enemy_->Update();
+	//enemy_->Update();
 
 	ex->Update();
 
@@ -312,7 +312,7 @@ void GamePlayScene::Draw()
 	//sky->Draw();
 	ground->Draw();
 	player_->Draw();
-	enemy_->Draw();
+	//enemy_->Draw();
 
 
 	// ================================================

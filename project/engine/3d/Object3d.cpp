@@ -34,8 +34,38 @@ void Object3d::Update()
         model_->Update();
     }
 
-    // TransformからworldMatrixを作る
-    worldMatrix_ = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+    //// TransformからworldMatrixを作る
+    //worldMatrix_ = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+
+    // 自分のローカル行列
+    Matrix4x4 local = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+
+    // 親がいないなら従来通り
+    if (!parent_) {
+        worldMatrix_ = local;
+    }
+    else {
+        // 親がいる
+        Matrix4x4 parentWorld = parent_->GetWorldMatrix();
+
+        // 親ボーン指定があるなら、親ボーン行列を採用
+        if (parentJointName_.has_value()) {
+            auto jm = parent_->GetJointWorldMatrix(*parentJointName_);
+            if (jm) {
+                parentWorld = *jm;
+            }
+            else {
+                std::string msg = "[Object3d] ParentJoint NOT FOUND: " + *parentJointName_ + "\n";
+                OutputDebugStringA(msg.c_str());
+                // ここで parent_->GetWorldMatrix() に落ちてる = 「親原点に合ってる」現象
+            }
+        }
+
+
+        // 自分のローカル → 親空間へ
+        worldMatrix_ = Multiply(local,parentWorld);
+    }
+
 
     // カメラTransformからカメラ行列を作る
     if (camera_) { 
@@ -47,8 +77,8 @@ void Object3d::Update()
         worldviewProjectionMatrix = worldMatrix_;
     }
 
-    /*transformationMatrixData->WVP = Multiply(modelData.rootNode.localMatrix, worldviewProjectionMatrix);*/
-    transformationMatrixData->WVP = worldviewProjectionMatrix;
+    transformationMatrixData->WVP = Multiply(modelData.rootNode.localMatrix, worldviewProjectionMatrix);
+    //transformationMatrixData->WVP = worldviewProjectionMatrix;
     transformationMatrixData->World = Multiply(modelData.rootNode.localMatrix, worldMatrix_);
     Matrix4x4 world = Multiply(modelData.rootNode.localMatrix, worldMatrix_);
     transformationMatrixData->World = world;
@@ -155,4 +185,10 @@ std::optional<Vector3> Object3d::GetJointWorldPosition(const std::string& jointN
     if (!model_) return std::nullopt;
 
     return model_->GetJointWorldPosition(jointName, worldMatrix_);
+}
+
+std::optional<Matrix4x4> Object3d::GetJointWorldMatrix(const std::string& jointName) const
+{
+    if (!model_) return std::nullopt;
+    return model_->GetJointWorldMatrix(jointName, worldMatrix_);
 }

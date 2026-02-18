@@ -59,6 +59,10 @@ public: // カメラの高さ関係
 	void SetSensitivity(float s) { sensitivity_ = s; }
 	float GetSensitivity() const { return sensitivity_; }
 
+	void SetLockLookY(bool v) { lockLookY_ = v; }
+	void SetLookYSmooth(float v) { lookYSmooth_ = v; }
+
+
 private: // メンバ変数
 
 	ObjectBase* target; // キャラクター（PlayerやEnemyなど）
@@ -66,4 +70,11 @@ private: // メンバ変数
 	float heightOffset;    // カメラの高さオフセット
 	float angle = 3.14f;    // カメラの回転角度（Y軸）
 	float sensitivity_ = 0.001f; // 初期値：感度
+
+	// --- 注視点Yの追従を弱める設定 ---
+	bool  lockLookY_ = true;          // true: 注視点Yを固定（追従しない）
+	float lookY_ = 0.0f;              // 注視点Y（固定/スムーズ用の保持値）
+	float lookYSmooth_ = 8.0f;        // lockLookY_=false時の追従の弱さ（大きいほど追従強）
+	bool  dampPosY_ = true;      // true: カメラ位置Yを弱追従
+	float posYSmooth_ = 6.0f;    // 大きいほど追従が速い
 };

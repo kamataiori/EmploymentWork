@@ -6,6 +6,7 @@
 #include "PlayerAnimKey.h"
 #include "PlayerIWeapon.h"
 #include <PlayerWeaponOBB.h>
+#include "Sword.h"
 
 class Player : public ObjectBase
 {
@@ -122,6 +123,7 @@ private:
 		const float kDashCooldown = 0.25f; // 連打防止の再装填時間
 		float dashCooldown = 0.0f;
 	};
+	bool isMoving_ = false;
 	MoveControl move_;  // 移動制御
 
 	// ジャンプに関するデータ構造体
@@ -129,7 +131,7 @@ private:
 		bool isJumping = false;               // ジャンプ中か
 		float velocity = 0.0f;                // 上下速度
 		int jumpCount = 0;                    // 現在ジャンプ回数
-		const int kMaxJumpCount = 2;          // 最大ジャンプ回数
+		const int kMaxJumpCount = 1;          // 最大ジャンプ回数
 		bool canJump_ = true;                 // Spaceキーが離されたことを確認するフラグ
 		const float kInitialVelocity = 0.45f; // 初速
 		const float kGravity = 0.02f;         // 重力
@@ -156,6 +158,9 @@ private:
 	int hp_ = 10000;                     // 現在HP
 	const int kMaxHP_ = 10000;           // 最大HP
 	const int kDamagePerHit_ = 10;     // 1回の衝突ダメージ
+
+
+	std::unique_ptr<Sword> sword_;
 
 };
 

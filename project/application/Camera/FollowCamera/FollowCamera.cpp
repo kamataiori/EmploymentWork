@@ -10,40 +10,68 @@ void FollowCamera::Update()
 {
     if (!target) return;
 
-    // ← → キーでカメラ回転
-    if (Input::GetInstance()->PushKey(DIK_LEFT)) {
-        angle -= 0.03f;
-    }
-    if (Input::GetInstance()->PushKey(DIK_RIGHT)) {
-        angle += 0.03f;
-    }
+    float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-    // マウス横移動でカメラ回転
+    if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= 0.03f;
+    if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += 0.03f;
+
     angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
 
     const Vector3& targetPos = target->GetTransform().translate;
 
-    // プレイヤーの向きを基準に後ろ側を計算（Y=3.14 で後ろにいるように）
     Vector3 offset = {
         std::sin(angle) * followDistance,
         heightOffset,
         std::cos(angle) * followDistance
     };
-
     Vector3 desiredPos = targetPos + offset;
 
-    // カメラを滑らかに補間移動
-   /* float smoothSpeed = 0.06f;
-    transform.translate = Lerp(transform.translate, desiredPos, smoothSpeed);*/
+    // カメラ位置は一旦そのまま（後でY追従弱めも可能）
+    // transform.translate = desiredPos;
+    // XZは即追従、Yだけ遅らせる
+    transform.translate.x = desiredPos.x;
+    transform.translate.z = desiredPos.z;
 
-    transform.translate = desiredPos;
+    // 遅らせて追従
+    if (dampPosY_) {
+        const float t = 1.0f - std::exp(-posYSmooth_ * dt);
+        transform.translate.y = transform.translate.y + (desiredPos.y - transform.translate.y) * t;
+    }
+    else {
+        transform.translate.y = desiredPos.y;
+    }
 
-    // カメラが常にプレイヤーの方向を向くように回転
-    Vector3 direction = Normalize(targetPos - transform.translate);
-    transform.rotate.y = std::atan2(direction.x, direction.z);
 
-    float lookDownAngle = 0.25f;  // 下に約14度（-0.25rad ≒ -14°）
-    transform.rotate.x = lookDownAngle;
+    // -----------------------------
+    // 注視点Yを固定 or 緩める
+    // -----------------------------
+    Vector3 lookAt = targetPos;
+
+    if (lockLookY_) {
+        // 初回だけ現在の高さを基準に固定（地面基準にしたいなら 0.0f + 任意オフセットでもOK）
+        static bool initialized = false;
+        if (!initialized) {
+            lookY_ = targetPos.y;
+            initialized = true;
+        }
+        lookAt.y = lookY_;
+    }
+    else {
+        // ゆっくり追従（指数補間：dt対応）
+        const float t = 1.0f - std::exp(-lookYSmooth_ * dt);
+        lookY_ = lookY_ + (targetPos.y - lookY_) * t;
+        lookAt.y = lookY_;
+    }
+
+    // 向き：lookAt（Y固定）へ向ける
+    Vector3 dir = Normalize(lookAt - transform.translate);
+    transform.rotate.y = std::atan2(dir.x, dir.z);
+
+    // Pitchも lookAt に合わせたいならこれ（今は固定下向きでもOK）
+    // transform.rotate.x = std::atan2(-dir.y, std::sqrt(dir.x*dir.x + dir.z*dir.z));
+
+    // 固定で下向きにしたいならこれでもOK
+    transform.rotate.x = 0.25f;
 
     Camera::Update();
 }

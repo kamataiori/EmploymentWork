@@ -186,6 +186,7 @@ float CollisionManager::GetStayCooldown(CollisionTypeIdDef a, CollisionTypeIdDef
 
         // 例：レーザー(仮) × Player を 0.10秒ごと
         // { NormalizeU32Pair((uint32_t)CollisionTypeIdDef::EnemyLaser, (uint32_t)CollisionTypeIdDef::kPlayer), 0.10f },
+        { NormalizeU32Pair((uint32_t)CollisionTypeIdDef::kPlayerWeapon, (uint32_t)CollisionTypeIdDef::kEnemy), 1.2f },
     };
 
     auto it = stayCooldown.find(key);

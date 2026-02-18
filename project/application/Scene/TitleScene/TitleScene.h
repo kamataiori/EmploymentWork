@@ -51,6 +51,8 @@ private:
 	std::unique_ptr<Object3d> sneak = nullptr;
 	Transform transform{};
 
+	std::unique_ptr<Object3d> sword = nullptr;
+
 	std::unique_ptr<Object3d> ground;
 	std::unique_ptr<Object3d> sky;
 
