@@ -85,34 +85,8 @@ void PlayerWeaponOBB::Update()
 		if (activeTime_ < 0.0f) activeTime_ = 0.0f;
 	}
 
-	// ===== ここが追加：攻撃が終わった瞬間に予約があれば次段を発動 =====
-	//if (wasActive_ && activeTime_ <= 0.0f) {
-
-	//	if (comboReserve_) {
-
-	//		// 次段開始前に一度リセット（長押しなら次フレームでまたONになる）
-	//		comboReserve_ = false;
-
-	//		// 次段を開始
-	//		activeTime_ = activeDuration_;
-
-	//		if (owner_) {
-	//			static const PlayerAnimKey comboKeys[3] = {
-	//				PlayerAnimKey::Attack01,
-	//				PlayerAnimKey::Attack02,
-	//				PlayerAnimKey::Attack03
-	//			};
-	//			owner_->RequestAnimaKey(comboKeys[normalComboIndex_], 10, activeDuration_);
-	//		}
-
-	//		normalComboIndex_ = (normalComboIndex_ + 1) % 3;
-	//	}
-	//	else {
-	//		normalComboIndex_ = 0;
-	//	}
-	//}
-
-	// 攻撃中に、終わる直前 or 終わった瞬間に次段へ切り替える（Idle挟み防止）
+	// ===== 攻撃が終わった瞬間に予約があれば次段を発動 =====
+	// 攻撃中に、終わる直前 or 終わった瞬間に次段へ切り替える
 	if (comboReserve_) {
 
 		// 早めに繋ぐ条件：残りが少ない

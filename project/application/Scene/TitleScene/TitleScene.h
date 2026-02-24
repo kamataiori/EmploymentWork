@@ -71,4 +71,34 @@ private:
 	std::string nextSceneName_ = "";
 
 	std::unique_ptr<Sprite> title = std::make_unique<Sprite>();
+
+
+	enum class TitlePhase {
+		Idle,
+		TitleCut,
+	};
+
+	TitlePhase phase_ = TitlePhase::Idle;
+
+
+	// TitleCut用（上下分割）
+	std::unique_ptr<Sprite> titleTop_ = nullptr;
+	std::unique_ptr<Sprite> titleBottom_ = nullptr;
+
+	// タイトル画像サイズ（画像自体が 320x180 に変更済み前提）
+	Vector2 titleTexSize_ = { 320.0f, 180.0f };
+
+	// 描画位置（画面中央よりちょい上）
+	Vector2 titleCenterPos_ = { 0.0f, 0.0f };
+
+	// 演出パラメータ
+	float titleCutTimer_ = 0.0f;
+	float titleCutDuration_ = 0.35f;   // 演出時間
+	float titleCutDistance_ = 200.0f;  // 左右に逃がす距離（320幅ならこのくらいが丁度）
+	float titleCutExtraY_ = 18.0f;     // 上下にも少し動かす（裂け感）
+
+	bool requestedShutter_ = false;
+
+	void StartTitleCut();
+	void UpdateTitleCut(float dt);
 };

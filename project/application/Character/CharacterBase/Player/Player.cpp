@@ -308,7 +308,7 @@ void Player::Jump()
 		move_.hasDashed_ = false;
 	}
 
-	// 2 ジャンプ入力（★地面にいる時だけ / 1段のみ）
+	// 2 ジャンプ入力（地面にいる時だけ / 1段のみ）
 	if (isGrounded && jump_.canJump_ && Input::GetInstance()->PushKey(DIK_SPACE)) {
 		jump_.velocity = jump_.kInitialVelocity;
 		jump_.isJumping = true;

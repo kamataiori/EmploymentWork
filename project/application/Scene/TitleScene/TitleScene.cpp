@@ -6,6 +6,13 @@
 #include <PostEffectManager.h>
 #include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
 
+static float EaseOutCubic(float t) {
+	if (t < 0.0f) t = 0.0f;
+	if (t > 1.0f) t = 1.0f;
+	const float u = 1.0f - t;
+	return 1.0f - (u * u * u);
+}
+
 void TitleScene::Initialize()
 {
 	// ==============================================
@@ -87,8 +94,47 @@ void TitleScene::Initialize()
 	//skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 	skybox->SetCamera(camera1.get());
 
-	title = std::make_unique<Sprite>();
-	title->Initialize("Resources/title.png");
+	// ===== タイトル表示位置（中央よりちょい上）=====
+	// 画面中央よりちょい上
+	titleCenterPos_ = {
+		WinApp::kClientWidth * 0.5f,
+		WinApp::kClientHeight * 0.35f
+	};
+
+	// 分割用（TitleCut）
+	titleTop_ = std::make_unique<Sprite>();
+	titleTop_->Initialize("Resources/Title.png");
+	titleTop_->SetAnchorPoint({ 0.5f, 0.5f });
+
+	titleBottom_ = std::make_unique<Sprite>();
+	titleBottom_->Initialize("Resources/Title.png");
+	titleBottom_->SetAnchorPoint({ 0.5f, 0.5f });
+
+	// 画像サイズ取得（必ずメタデータから）
+	const auto& md = TextureManager::GetInstance()->GetMetaData("Resources/Title.png");
+	titleTexSize_ = { (float)md.width, (float)md.height };
+
+	const float halfH = titleTexSize_.y * 0.5f;
+
+	// 上半分（UV）
+	titleTop_->SetTextureLeftTop({ 0.0f, 0.0f });
+	titleTop_->SetTextureSize({ titleTexSize_.x, halfH });
+
+	// 下半分（UV）
+	titleBottom_->SetTextureLeftTop({ 0.0f, halfH });
+	titleBottom_->SetTextureSize({ titleTexSize_.x, halfH });
+
+	// ★ここが重要：表示サイズも半分にする（伸びなくなる）
+	titleTop_->SetSize({ titleTexSize_.x, halfH });
+	titleBottom_->SetSize({ titleTexSize_.x, halfH });
+
+	// ★位置は ± halfH/2（= ±45）にする（今の ±22.5 は半分ズレ）
+	titleTop_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y - halfH * 0.5f });
+	titleBottom_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y + halfH * 0.5f });
+
+	phase_ = TitlePhase::Idle;
+	requestedShutter_ = false;
+	titleCutTimer_ = 0.0f;
 }
 
 void TitleScene::Finalize()
@@ -97,7 +143,9 @@ void TitleScene::Finalize()
 
 void TitleScene::Update()
 {
-	title->Update();
+	// ===== タイトルスプライト更新（フェーズで切替）=====
+	titleTop_->Update();
+	titleBottom_->Update();
 	
 	// 各3Dオブジェクトの更新
 
@@ -146,24 +194,19 @@ void TitleScene::Update()
 	// デバッグ
 	//Debug();
 
-	// 遷移中でなければ入力受付
+	// ===== 入力（Idleのときだけ）=====
 	if (!SceneManager::GetInstance()->IsTransitioning()) {
-		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
-
-			/*TransitionRequest req{};
-			req.type = TransitionType::Fade;
-			req.fadeOutSec = 2.0f;
-			req.fadeInSec = 1.0f;*/
-
-			TransitionRequest req{};
-			req.type = TransitionType::Shutter;
-			req.fadeOutSec = 2.0f;  // 閉じる
-			req.fadeInSec = 2.5f;  // 開く
-
-			SceneManager::GetInstance()->RequestChangeScene("GAMEPLAY", req);
-
+		if (phase_ == TitlePhase::Idle) {
+			if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+				StartTitleCut();
+			}
 		}
+	}
+
+	// ===== TitleCut 更新 =====
+	if (phase_ == TitlePhase::TitleCut) {
+		const float dt = TimeManager::GetInstance()->GetDeltaTime();
+		UpdateTitleCut(dt);
 	}
 
 }
@@ -195,7 +238,7 @@ void TitleScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	sky->Draw();
+	//sky->Draw();
 	ground->Draw();
 
 	// ================================================
@@ -236,7 +279,9 @@ void TitleScene::ForeGroundDraw()
 	// ここからSprite個々の前景描画(UIなど)
 	// ================================================
 
-	//title->Draw();
+	// ===== タイトル描画（フェーズで切替）=====
+	titleTop_->Draw();
+	titleBottom_->Draw();
 
 	
 
@@ -267,4 +312,56 @@ void TitleScene::Debug()
 
 	
 #endif
+}
+
+void TitleScene::StartTitleCut()
+{
+	phase_ = TitlePhase::TitleCut;
+	titleCutTimer_ = 0.0f;
+	requestedShutter_ = false;
+
+	// キャラを攻撃アニメへ
+	sneak->SetAnimation("Attack02");
+
+	// 演出中はカメラ回転止めたいなら
+	orbitSpeed_ = 0.0f;
+
+	// 分割スプライトを初期位置に戻す
+	const float halfH = titleTexSize_.y * 0.5f; // 90
+	titleTop_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y - halfH * 0.25f });
+	titleBottom_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y + halfH * 0.25f });
+
+}
+
+void TitleScene::UpdateTitleCut(float dt)
+{
+	titleCutTimer_ += dt;
+
+	const float t = titleCutTimer_ / titleCutDuration_;
+	const float e = EaseOutCubic(t);
+
+	const float dx = titleCutDistance_ * e;
+	const float dy = titleCutExtraY_ * e;
+
+	const float halfH = titleTexSize_.y * 0.5f; // 90
+	const Vector2 topBase = { titleCenterPos_.x, titleCenterPos_.y - halfH * 0.25f };
+	const Vector2 botBase = { titleCenterPos_.x, titleCenterPos_.y + halfH * 0.25f };
+
+	// 上半分を左上へ、下半分を右下へ（裂けた感じ）
+	titleTop_->SetPosition({ topBase.x - dx, topBase.y - dy });
+	titleBottom_->SetPosition({ botBase.x + dx, botBase.y + dy });
+
+	// 演出終了 → Shutter
+	if (!requestedShutter_ && titleCutTimer_ >= titleCutDuration_) {
+		requestedShutter_ = true;
+
+		PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
+
+		TransitionRequest req{};
+		req.type = TransitionType::Shutter;
+		req.fadeOutSec = 2.0f;  // 閉じる
+		req.fadeInSec = 2.5f;  // 開く
+
+		SceneManager::GetInstance()->RequestChangeScene("GAMEPLAY", req);
+	}
 }
