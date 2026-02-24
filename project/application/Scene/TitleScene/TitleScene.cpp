@@ -40,6 +40,15 @@ void TitleScene::Initialize()
 
 	sword = std::make_unique<Object3d>(this);
 	sword->Initialize();
+	// sword ローカル調整（ボーン基準）
+	swordTransform.scale = { 1.0f, 1.0f, 1.0f };
+	swordTransform.rotate = { 0.0f, 0.0f, 0.0f };
+	swordTransform.translate = { -0.6f, -1.1f, 0.0f };
+
+	// 初期反映
+	sword->SetScale(swordTransform.scale);
+	sword->SetRotate(swordTransform.rotate);
+	sword->SetTranslate(swordTransform.translate);
 
 	// モデル読み込み
 	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");
@@ -49,6 +58,7 @@ void TitleScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("skydome.obj");
 	ModelManager::GetInstance()->LoadModel("sword.obj");
 	sneak->SetModel("Warrior.gltf");
+	sword->SetModel("sword.obj");
 
 
 	// モデルにSRTを設定
@@ -60,7 +70,7 @@ void TitleScene::Initialize()
 	sneak->SetScale(transform.scale);
 	sneak->SetAnimation("Idle");
 
-	
+
 
 	ground = std::make_unique<Object3d>(this);
 	ground->Initialize();
@@ -89,7 +99,7 @@ void TitleScene::Initialize()
 	sneak->SetCamera(camera1.get());
 	ground->SetCamera(camera1.get());
 	sky->SetCamera(camera1.get());
-
+	sword->SetCamera(camera1.get());
 
 	//skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 	skybox->SetCamera(camera1.get());
@@ -98,7 +108,7 @@ void TitleScene::Initialize()
 	// 画面中央よりちょい上
 	titleCenterPos_ = {
 		WinApp::kClientWidth * 0.5f,
-		WinApp::kClientHeight * 0.35f
+		WinApp::kClientHeight * 0.25f
 	};
 
 	// 分割用（TitleCut）
@@ -146,22 +156,13 @@ void TitleScene::Update()
 	// ===== タイトルスプライト更新（フェーズで切替）=====
 	titleTop_->Update();
 	titleBottom_->Update();
-	
-	// 各3Dオブジェクトの更新
 
-	sword->SetParentJoint(sneak.get(), "Fist.R");
-
-	sneak->SetTranslate(transform.translate);
-	sneak->SetRotate(transform.rotate);
-	sneak->SetScale(transform.scale);
-
-	sneak->Update();
+	// Δt（TimeManager があるならそっちを使うのがおすすめ）
+	const float dt = TimeManager::GetInstance()->GetDeltaTime();
 
 	// カメラの更新
 	// ===== オービットカメラ：sneak を中心に回す =====
 	{
-		// Δt（TimeManager があるならそっちを使うのがおすすめ）
-		const float dt = TimeManager::GetInstance()->GetDeltaTime();
 
 		orbitAngle_ += orbitSpeed_ * dt;
 
@@ -190,25 +191,41 @@ void TitleScene::Update()
 	ground->Update();
 	sky->Update();
 	//skybox->Update();
+	// 各3Dオブジェクトの更新
+	sneak->SetTranslate(transform.translate);
+	sneak->SetRotate(transform.rotate);
+	sneak->SetScale(transform.scale);
+	sneak->Update();
+
+	// swordローカルオフセット反映
+	sword->SetScale(swordTransform.scale);
+	sword->SetRotate(swordTransform.rotate);
+	sword->SetTranslate(swordTransform.translate);
+	sword->SetParentJoint(sneak.get(), "Fist.R");
+	sword->Update();
 
 	// デバッグ
-	//Debug();
+	Debug();
 
 	// ===== 入力（Idleのときだけ）=====
 	if (!SceneManager::GetInstance()->IsTransitioning()) {
 		if (phase_ == TitlePhase::Idle) {
 			if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-				StartTitleCut();
+				StartMoveToFront();
 			}
 		}
 	}
 
-	// ===== TitleCut 更新 =====
-	if (phase_ == TitlePhase::TitleCut) {
-		const float dt = TimeManager::GetInstance()->GetDeltaTime();
+	// ===== フェーズ更新 =====
+	if (phase_ == TitlePhase::MoveToFront) {
+		UpdateMoveToFront(dt);
+	}
+	else if (phase_ == TitlePhase::AttackOnce) {
+		UpdateAttackOnce(dt);
+	}
+	else if (phase_ == TitlePhase::TitleCut) {
 		UpdateTitleCut(dt);
 	}
-
 }
 
 void TitleScene::BackGroundDraw()
@@ -238,8 +255,9 @@ void TitleScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	//sky->Draw();
+	sky->Draw();
 	ground->Draw();
+	sword->Draw();
 
 	// ================================================
 	// ここまで3Dオブジェクト個々の描画
@@ -263,7 +281,7 @@ void TitleScene::Draw()
 	// ここからDrawLine個々の描画
 	// ================================================
 
-	
+
 
 	// ================================================
 	// ここまでDrawLine個々の描画
@@ -283,7 +301,7 @@ void TitleScene::ForeGroundDraw()
 	titleTop_->Draw();
 	titleBottom_->Draw();
 
-	
+
 
 	// ================================================
 	// ここまでSprite個々の前景描画(UIなど)
@@ -293,7 +311,7 @@ void TitleScene::ForeGroundDraw()
 	// ここからparticle個々の描画
 	// ================================================
 
-	
+
 
 	// ================================================
 	// ここまでparticle個々の描画
@@ -309,9 +327,91 @@ void TitleScene::Debug()
 	// ↓ ここから ImGui::Begin(...) など Scene UI
 	//BaseScene::ShowFPS();
 
+	ImGui::Begin("TitleScene Sword");
 
-	
+	ImGui::Text("Sword Local Transform (relative to parent joint)");
+	ImGui::Separator();
+
+	ImGui::DragFloat3("Translate", &swordTransform.translate.x, 0.01f);
+	ImGui::DragFloat3("Rotate", &swordTransform.rotate.x, 0.01f);
+	ImGui::DragFloat3("Scale", &swordTransform.scale.x, 0.01f);
+
+	if (ImGui::Button("Reset")) {
+		swordTransform.translate = { 0.0f, 0.0f, 0.0f };
+		swordTransform.rotate = { 0.0f, 0.0f, 0.0f };
+		swordTransform.scale = { 1.0f, 1.0f, 1.0f };
+	}
+
+	ImGui::End();
+
 #endif
+}
+
+void TitleScene::StartMoveToFront()
+{
+	phase_ = TitlePhase::MoveToFront;
+
+	// キャラの正面方向（Yaw）
+	const float yaw = transform.rotate.y;
+
+	// forward（Z前方）
+	const Vector3 forward = { std::sin(yaw), 0.0f, std::cos(yaw) };
+
+	// 正面からキャラを見る = カメラは target - forward*radius に置きたい
+	// orbit式の角度へ変換
+	desiredOrbitAngle_ = std::atan2(forward.x, forward.z);
+}
+
+void TitleScene::UpdateMoveToFront(float dt)
+{
+	// 目標角度へ最短で寄せる
+	const float d = DeltaAngle(orbitAngle_, desiredOrbitAngle_);
+
+	const float maxStep = orbitSpeedAbs_ * dt;
+	float step = d;
+	if (step > maxStep) step = maxStep;
+	if (step < -maxStep) step = -maxStep;
+
+	orbitAngle_ = NormalizeAngle(orbitAngle_ + step);
+
+	// 充分近づいたら停止→Attackへ
+	if (std::fabs(d) <= frontStopEps_) {
+		orbitAngle_ = desiredOrbitAngle_;
+		orbitSpeed_ = 0.0f; // 周回停止
+		StartAttackOnce();
+	}
+}
+
+void TitleScene::StartAttackOnce()
+{
+	phase_ = TitlePhase::AttackOnce;
+	attackTimer_ = 0.0f;
+
+	// 攻撃アニメへ
+	sneak->SetAnimation("Attack02");
+}
+
+void TitleScene::UpdateAttackOnce(float dt)
+{
+	attackTimer_ += dt;
+
+	// ここは実際のAttack02の長さに合わせて調整
+	if (attackTimer_ >= attackDuration_) {
+		sneak->SetAnimation("Idle");
+		StartTitleCut();
+	}
+}
+
+float TitleScene::NormalizeAngle(float a)
+{
+	while (a > 3.14159265f)  a -= 6.2831853f;
+	while (a < -3.14159265f) a += 6.2831853f;
+	return a;
+}
+
+float TitleScene::DeltaAngle(float from, float to)
+{
+	return NormalizeAngle(to - from);
 }
 
 void TitleScene::StartTitleCut()
@@ -320,17 +420,10 @@ void TitleScene::StartTitleCut()
 	titleCutTimer_ = 0.0f;
 	requestedShutter_ = false;
 
-	// キャラを攻撃アニメへ
-	sneak->SetAnimation("Attack02");
-
-	// 演出中はカメラ回転止めたいなら
-	orbitSpeed_ = 0.0f;
-
-	// 分割スプライトを初期位置に戻す
-	const float halfH = titleTexSize_.y * 0.5f; // 90
-	titleTop_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y - halfH * 0.25f });
-	titleBottom_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y + halfH * 0.25f });
-
+	// 分割スプライトを合体位置に戻す
+	const float halfH = titleTexSize_.y * 0.5f;
+	titleTop_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y - halfH * 0.5f });
+	titleBottom_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y + halfH * 0.5f });
 }
 
 void TitleScene::UpdateTitleCut(float dt)
@@ -343,15 +436,15 @@ void TitleScene::UpdateTitleCut(float dt)
 	const float dx = titleCutDistance_ * e;
 	const float dy = titleCutExtraY_ * e;
 
-	const float halfH = titleTexSize_.y * 0.5f; // 90
-	const Vector2 topBase = { titleCenterPos_.x, titleCenterPos_.y - halfH * 0.25f };
-	const Vector2 botBase = { titleCenterPos_.x, titleCenterPos_.y + halfH * 0.25f };
+	const float halfH = titleTexSize_.y * 0.5f;
+	const Vector2 topBase = { titleCenterPos_.x, titleCenterPos_.y - halfH * 0.5f };
+	const Vector2 botBase = { titleCenterPos_.x, titleCenterPos_.y + halfH * 0.5f };
 
-	// 上半分を左上へ、下半分を右下へ（裂けた感じ）
+	// 上を左上、下を右下へ
 	titleTop_->SetPosition({ topBase.x - dx, topBase.y - dy });
 	titleBottom_->SetPosition({ botBase.x + dx, botBase.y + dy });
 
-	// 演出終了 → Shutter
+	// 終わったら Shutter → SceneChange
 	if (!requestedShutter_ && titleCutTimer_ >= titleCutDuration_) {
 		requestedShutter_ = true;
 
@@ -359,8 +452,8 @@ void TitleScene::UpdateTitleCut(float dt)
 
 		TransitionRequest req{};
 		req.type = TransitionType::Shutter;
-		req.fadeOutSec = 2.0f;  // 閉じる
-		req.fadeInSec = 2.5f;  // 開く
+		req.fadeOutSec = 2.0f;
+		req.fadeInSec = 2.5f;
 
 		SceneManager::GetInstance()->RequestChangeScene("GAMEPLAY", req);
 	}

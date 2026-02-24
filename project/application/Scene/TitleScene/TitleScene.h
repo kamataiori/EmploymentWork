@@ -52,6 +52,8 @@ private:
 	Transform transform{};
 
 	std::unique_ptr<Object3d> sword = nullptr;
+	// sword用ローカル調整
+	Transform swordTransform{};
 
 	std::unique_ptr<Object3d> ground;
 	std::unique_ptr<Object3d> sky;
@@ -73,32 +75,59 @@ private:
 	std::unique_ptr<Sprite> title = std::make_unique<Sprite>();
 
 
+	// ============================
+	// タイトル演出
+	// ============================
+
 	enum class TitlePhase {
-		Idle,
-		TitleCut,
+		Idle,         // 通常：周回
+		MoveToFront,  // SPACE後：正面へ回して止める
+		AttackOnce,   // Attack02を1回
+		TitleCut,     // タイトル切断
 	};
 
 	TitlePhase phase_ = TitlePhase::Idle;
-
 
 	// TitleCut用（上下分割）
 	std::unique_ptr<Sprite> titleTop_ = nullptr;
 	std::unique_ptr<Sprite> titleBottom_ = nullptr;
 
-	// タイトル画像サイズ（画像自体が 320x180 に変更済み前提）
+	// タイトル画像サイズ（Initializeでメタデータから入れる）
 	Vector2 titleTexSize_ = { 320.0f, 180.0f };
 
 	// 描画位置（画面中央よりちょい上）
 	Vector2 titleCenterPos_ = { 0.0f, 0.0f };
 
-	// 演出パラメータ
+	// タイトル切断 演出パラメータ
 	float titleCutTimer_ = 0.0f;
-	float titleCutDuration_ = 0.35f;   // 演出時間
-	float titleCutDistance_ = 200.0f;  // 左右に逃がす距離（320幅ならこのくらいが丁度）
-	float titleCutExtraY_ = 18.0f;     // 上下にも少し動かす（裂け感）
+	float titleCutDuration_ = 0.35f;
+	float titleCutDistance_ = 200.0f;
+	float titleCutExtraY_ = 18.0f;
 
 	bool requestedShutter_ = false;
 
+	// ============================
+	// 正面停止 & Attack待ち
+	// ============================
+	float orbitSpeedAbs_ = 3.0f;   // 正面へ寄せる速度（rad/sec）
+	float frontStopEps_ = 0.02f;   // 止める誤差
+	float desiredOrbitAngle_ = 0.0f;
+
+	float attackTimer_ = 0.0f;
+	float attackDuration_ = 0.90f; // Attack02が何秒か（あとで調整）
+
+	// ============================
+	// 内部関数
+	// ============================
+	void StartMoveToFront();
+	void UpdateMoveToFront(float dt);
+
+	void StartAttackOnce();
+	void UpdateAttackOnce(float dt);
+
 	void StartTitleCut();
 	void UpdateTitleCut(float dt);
+
+	static float NormalizeAngle(float a);
+	static float DeltaAngle(float from, float to);
 };

@@ -80,6 +80,14 @@ public:
 		return nullptr;
 	}
 
+	void SetAnimation(const std::string& name)
+	{
+		if (name.empty()) return;              // 安全ガード
+		if (currentAnimationName_ == name) return;
+		object3d_->SetAnimation(name);
+		currentAnimationName_ = name;
+	}
+
 private:
 
 	/// <summary>
@@ -96,6 +104,8 @@ private:
 	/// playerのブリンク(ダッシュ)処理
 	/// </summary>
 	void Blink();
+
+
 
 
 protected:
