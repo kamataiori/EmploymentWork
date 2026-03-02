@@ -81,6 +81,9 @@ public:
 	/// </summary>
 	void SetCamera(Camera* camera) override;
 
+	// 初期位置
+	const Vector3& GetHomePosition() const { return homePosition_; }
+
 	Camera* GetCamera() const { return camera_; }
 
 	// アニメーションを設定する関数
@@ -97,6 +100,9 @@ public:
 	// BT側がアニメ名を参照できるように getter を追加
 	const SkeltonAnimationSet& GetAnimSet() const { return animation_; }
 
+	// 被弾リアクション中か（BTがアニメを上書きしないため）
+	bool IsHitReact() const { return hitReactTimer_ > 0.0f; }
+
 private:
 
 	SkeltonAnimationSet animation_; // アニメーション名セット
@@ -112,6 +118,9 @@ private:
 	// AIはここに閉じ込める
 	std::unique_ptr<EnemyAIController> aiController_;
 	const Transform* target_ = nullptr; // Player の Transform を参照
+
+	// 生成時（Initialize時）の位置を保存しておく
+	Vector3 homePosition_{};
 
 	// HP
 	int hp_ = 250;                   // 現在HP

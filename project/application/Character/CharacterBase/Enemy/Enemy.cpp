@@ -48,6 +48,9 @@ void Enemy::Initialize()
 	transform.rotate = { 0.0f, 3.14f, 0.0f };
 	transform.scale = { 3.0f, 3.0f, 3.0f };
 
+	// 初期位置を保存
+	homePosition_ = transform.translate;
+
 	// object3dにtransformを反映
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetRotate(transform.rotate);

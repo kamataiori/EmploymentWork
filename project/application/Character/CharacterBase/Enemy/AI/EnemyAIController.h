@@ -6,6 +6,8 @@
 #include "application/AI/BehaviorTree/Core/BlackBoard.h"
 #include "application/AI/BehaviorTree/Core/INode.h"
 
+#include "application/Character/CharacterBase/Enemy/AI/ChargeDashParam.h"
+
 // Forward
 class Enemy;
 struct Transform;
@@ -49,6 +51,10 @@ public:
 
     void SetAttackDistance(float d) { attackDist_ = d; }
 
+    // 突撃パラメータsetter
+    void SetChargeDashParam(const ChargeDashParam& p) { chargeDashParam_ = p; }
+    const ChargeDashParam& GetChargeDashParam() const { return chargeDashParam_; }
+
 
 private:
     void BuildTree();
@@ -68,6 +74,8 @@ private:
     std::function<const Transform* ()> targetGetter_{};
 
     // パラメータ
+    ChargeDashParam chargeDashParam_{};  // 突撃パラメータ
+
     float chaseStartDist_ = 12.0f;
     float stopDist_ = 3.0f;
     float chaseSpeed_ = 15.0f;
