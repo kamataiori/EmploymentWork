@@ -324,7 +324,7 @@ Model::MaterialData Model::LoadMaterialTemplateFile(const std::string& directory
 		std::istringstream s(line);
 		s >> identifier;  //先頭の識別子を読む
 
-		//identifierに応じた処理
+		//identifireに応じた処理
 		if (identifier == "map_Kd")
 		{
 			std::string textureFilename;
@@ -593,16 +593,24 @@ void Model::LoadAllAnimations(const std::string& directoryPath, const std::strin
 
 void Model::SetAnimation(const std::string& name)
 {
+	// 通常はループ扱い（攻撃などのワンショットは SetAnimationOneShot を使う）
+	isOneShot_ = false;
+
 	if (animationMap_.count(name)) {
-		if (currentAnimation_ != &animationMap_[name]) {
-			prevAnimation_ = currentAnimation_;  // 前回のアニメ
-			currentAnimation_ = &animationMap_[name];
+		AnimationData* next = &animationMap_[name];
+		if (currentAnimation_ != next) {
+			// 切替直前の状態を退避（この瞬間のポーズからクロスフェードしたい）
+			prevAnimation_ = currentAnimation_;
+			prevAnimationTime_ = animationTime;
+			prevIsOneShot_ = true; // 前のアニメは、切替後にループさせない（自然に終端側へ）
+
+			currentAnimation_ = next;
 			animationTime = 0.0f;
 			blendTime_ = 0.0f; // 補間開始
 		}
 	}
 	else {
-		OutputDebugStringA(("Animation not found: " + name + "\n").c_str());
+		OutputDebugStringA(("Animation not found: " + name + "").c_str());
 	}
 }
 
@@ -659,32 +667,35 @@ Skeleton Model::CreateSkeleton(const Node& rootNode)
 
 void Model::AppAnimation(Skeleton& skeleton, const AnimationData& animation, float animationTime)
 {
-	//for (Joint& joint : skeleton.joints)
-	//{
-	//	// 対象のJointのAnimationがあれば、値の適用を行う。下記のif文はC++17から可能になった初期化付きif文。
-	//	if (auto it = animation.NodeAnimations.find(joint.name); it != animation.NodeAnimations.end())
-	//	{
-	//		const NodeAnimation& rootNodeAnimation = (*it).second;
-	//		joint.transform.translate = CalculateValue(rootNodeAnimation.translate.keyframes, animationTime);
-	//		joint.transform.rotate = CalculateValue(rootNodeAnimation.rotate.keyframes, animationTime);
-	//		joint.transform.scale = CalculateValue(rootNodeAnimation.scale.keyframes, animationTime);
-	//	}
-	//}
+	// ブレンド中は「切替直前のアニメ」と「切替後のアニメ」を同時にサンプルして補間する
+	const bool blending = (prevAnimation_ != nullptr) && (blendDuration_ > 0.0f) && (blendTime_ < blendDuration_);
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
+	// 前のアニメ時間を進める（ブレンド中のみ）
+	if (blending) {
+		prevAnimationTime_ += dt;
+		// 直前アニメは基本ワンショット扱いで終端へ寄せる
+		if (prevIsOneShot_) {
+			if (prevAnimationTime_ > prevAnimation_->duration) prevAnimationTime_ = prevAnimation_->duration;
+		} else {
+			if (prevAnimation_->duration > 0.0f) prevAnimationTime_ = std::fmod(prevAnimationTime_, prevAnimation_->duration);
+		}
+	}
+
 	for (Joint& joint : skeleton.joints) {
+		// 現在（切替後）のアニメをサンプル
 		if (auto it = animation.NodeAnimations.find(joint.name); it != animation.NodeAnimations.end()) {
 			const NodeAnimation& anim = it->second;
-
 			Vector3 newTranslate = CalculateValue(anim.translate.keyframes, animationTime);
 			Quaternion newRotate = CalculateValue(anim.rotate.keyframes, animationTime);
 			Vector3 newScale = CalculateValue(anim.scale.keyframes, animationTime);
 
-			if (prevAnimation_ && blendTime_ < blendDuration_) {
+			if (blending) {
 				if (auto prevIt = prevAnimation_->NodeAnimations.find(joint.name); prevIt != prevAnimation_->NodeAnimations.end()) {
 					const NodeAnimation& prevAnim = prevIt->second;
-
-					Vector3 oldTranslate = CalculateValue(prevAnim.translate.keyframes, animationTime);
-					Quaternion oldRotate = CalculateValue(prevAnim.rotate.keyframes, animationTime);
-					Vector3 oldScale = CalculateValue(prevAnim.scale.keyframes, animationTime);
+					Vector3 oldTranslate = CalculateValue(prevAnim.translate.keyframes, prevAnimationTime_);
+					Quaternion oldRotate = CalculateValue(prevAnim.rotate.keyframes, prevAnimationTime_);
+					Vector3 oldScale = CalculateValue(prevAnim.scale.keyframes, prevAnimationTime_);
 
 					float t = blendTime_ / blendDuration_;
 					joint.transform.translate = Lerp(oldTranslate, newTranslate, t);
@@ -701,8 +712,7 @@ void Model::AppAnimation(Skeleton& skeleton, const AnimationData& animation, flo
 	}
 
 	// 補間時間を更新
-	if (blendTime_ < blendDuration_) {
-		float dt = TimeManager::GetInstance()->GetDeltaTime();
+	if (blending) {
 		blendTime_ += dt;
 		if (blendTime_ >= blendDuration_) {
 			blendTime_ = blendDuration_;

@@ -87,6 +87,9 @@ public:
 
     void SetAnimation(const std::string& name);
 
+    // アニメ切替のブレンド秒数を設定
+    void SetBlendDuration(float sec) { if (model_) model_->SetBlendDuration(sec); }
+
     // 親オブジェクト（通常の親）
     void SetParent(Object3d* parent) { parent_ = parent; parentJointName_.reset(); }
 

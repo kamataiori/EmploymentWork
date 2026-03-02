@@ -23,6 +23,8 @@ void Player::Initialize()
 
 	
 	object3d_->SetModel("Warrior.gltf");
+	// アニメ切替の補間（コンボ用に短め）
+	object3d_->SetBlendDuration(0.10f);
 
 	// ここを毎回実行しない
 	if (isFirstInitialize_) {
@@ -443,6 +445,13 @@ void Player::SetAnimationIfChanged(const std::string& name)
 {
 	if (name.empty()) return;              // 安全ガード
 	if (currentAnimationName_ == name) return;
-	object3d_->SetAnimation(name);
+
+	// 攻撃系はワンショット再生にして、ブレンドで繋ぐ
+	if (name.rfind("Attack", 0) == 0 || name.rfind("Skill", 0) == 0 || name.rfind("Ultimate", 0) == 0) {
+		object3d_->SetAnimationOneShot(name);
+	}
+	else {
+		object3d_->SetAnimation(name);
+	}
 	currentAnimationName_ = name;
 }

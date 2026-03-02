@@ -169,6 +169,10 @@ public:
 
 	void SetAnimationOneShot(const std::string& name);
 
+	// アニメーション切替の補間秒数を設定（0以下は即切替）
+	void SetBlendDuration(float sec) { blendDuration_ = (sec < 0.0f) ? 0.0f : sec; }
+
+
 	/// <summary>
 	/// NodeからJointを作る関数
 	/// </summary>
@@ -274,8 +278,10 @@ private:
 	AnimationData animation;
 	Skeleton skeleton;
 	AnimationData* prevAnimation_ = nullptr;
+	float prevAnimationTime_ = 0.0f;   // 切替直前のアニメ時間（クロスフェード用）
+	bool  prevIsOneShot_ = false;      // 切替直前のループ/ワンショット状態
 	float blendTime_ = 0.0f;
-	float blendDuration_ = 0.4f; // 補間に使う秒数
+	float blendDuration_ = 0.12f; // 補間に使う秒数（デフォルトは短め）
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource;
 	// Viewを作成する
