@@ -324,7 +324,7 @@ Model::MaterialData Model::LoadMaterialTemplateFile(const std::string& directory
 		std::istringstream s(line);
 		s >> identifier;  //先頭の識別子を読む
 
-		//identifireに応じた処理
+		//identifierに応じた処理
 		if (identifier == "map_Kd")
 		{
 			std::string textureFilename;
