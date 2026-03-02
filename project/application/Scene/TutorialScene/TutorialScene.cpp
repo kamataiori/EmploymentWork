@@ -24,11 +24,11 @@ void TutorialScene::Initialize()
 
 	player_ = std::make_unique<Player>(this);
 
-	followCamera = std::make_unique<FollowCamera>(player_->GetCurrentCharacter(), 30.0f, 8.0f);
+	followCamera = std::make_unique<FollowCamera>(player_.get(), 30.0f, 8.0f);
 	followCamera->SetFarClip(2000.0f);
 
-	player_->Initialize(followCamera.get());
-	player_->Get()->SetCamera(followCamera.get());
+	player_->Initialize();
+	player_->SetCamera(followCamera.get());
 
 	ground = std::make_unique<Object3d>(this);
 	ground->Initialize();
@@ -233,7 +233,7 @@ void TutorialScene::ForeGroundDraw()
 	// ここからparticle個々の描画
 	// ================================================
 
-	player_->ParticlDraw();
+	player_->ParticleDraw();
 
 	// ================================================
 	// ここまでparticle個々の描画

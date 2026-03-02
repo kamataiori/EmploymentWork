@@ -159,9 +159,6 @@
     <ClCompile Include="application\Character\CharacterBase\ObjectBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Player\Player.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="application\Camera\FPSCamera\FPSCamera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -201,13 +198,7 @@
     <ClCompile Include="engine\Scene\ParticleEditorScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Player\PlayerBase.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Player\PlayerRogue.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="application\Character\CharacterBase\Player\PlayerWarrior.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\Player.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="engine\3d\Skinning.cpp">
@@ -387,6 +378,9 @@
     <ClCompile Include="SceneTransitionStates.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Sword.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -539,9 +533,6 @@
     <ClInclude Include="application\Character\CharacterBase\ObjectBase.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Player\Player.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="application\Camera\FPSCamera\FPSCamera.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -587,16 +578,7 @@
     <ClInclude Include="engine\Scene\ParticleEditorScene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Player\PlayerBase.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Player\PlayerRogue.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Player\PlayerType.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="application\Character\CharacterBase\Player\PlayerWarrior.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\Player.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\Effects\PostEffect\PostEffectManager.h">
@@ -801,6 +783,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="SceneTransitionStates.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Sword.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

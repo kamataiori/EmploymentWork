@@ -1,7 +1,7 @@
 #include "PlayerWeaponOBB.h"
 #include <Input.h>
 #include <PlayerAnimKey.h>
-#include "PlayerBase.h"
+#include "Player.h"
 #include "engine/TimeManager.h"
 
 
@@ -75,13 +75,52 @@ void PlayerWeaponOBB::Initialize()
 
 void PlayerWeaponOBB::Update()
 {
+	// 前フレームまで攻撃中だったか
+	wasActive_ = (activeTime_ > 0.0f);
+
 	// アクティブ時間の減衰
 	if (activeTime_ > 0.0f) {
 		float dt = TimeManager::GetInstance()->GetDeltaTime();
 		activeTime_ -= dt;
-
 		if (activeTime_ < 0.0f) activeTime_ = 0.0f;
 	}
+
+	// ===== 攻撃が終わった瞬間に予約があれば次段を発動 =====
+	// 攻撃中に、終わる直前 or 終わった瞬間に次段へ切り替える
+	if (comboReserve_) {
+
+		// 早めに繋ぐ条件：残りが少ない
+		const bool nearEnd = (activeTime_ > 0.0f && activeTime_ <= comboLeadTime_);
+
+		// 万が一 0 まで落ちた場合の救済：直前は攻撃中だった
+		const bool justEnded = (wasActive_ && activeTime_ <= 0.0f);
+
+		if (nearEnd || justEnded) {
+
+			comboReserve_ = false;
+
+			// 次段開始（時間をシンプルにリセット）
+			activeTime_ = activeDuration_;
+
+			if (owner_) {
+				static const PlayerAnimKey comboKeys[3] = {
+					PlayerAnimKey::Attack01,
+					PlayerAnimKey::Attack02,
+					PlayerAnimKey::Attack03
+				};
+				owner_->RequestAnimaKey(comboKeys[normalComboIndex_], 10, activeDuration_);
+			}
+
+			normalComboIndex_ = (normalComboIndex_ + 1) % 3;
+		}
+	}
+
+	// 予約がないまま攻撃が終わったら、次は01から
+	if (wasActive_ && activeTime_ <= 0.0f && !comboReserve_) {
+		normalComboIndex_ = 0;
+	}
+
+
 
 	// プレイヤー正面に OBB を配置
 	if (playerTransform_ && mc_) {
@@ -89,31 +128,17 @@ void PlayerWeaponOBB::Update()
 
 		const float yaw = playerTransform_->rotate.y;
 
-		// 中心：足元原点から正面frontDist_、上へheight_
 		obb.center = MakeFrontCenter(playerTransform_->translate, yaw, frontDist_, height_);
 
-		// 姿勢：プレイヤーのYawに追従
 		Vector3 axes[3]; BuildYawAxes(yaw, axes);
 		obb.orientations[0] = axes[0];
 		obb.orientations[1] = axes[1];
 		obb.orientations[2] = axes[2];
 
-		// 出現中だけ実サイズ、それ以外はゼロで無効化
 		obb.size = (activeTime_ > 0.0f) ? obbHalf_ : Vector3{ 0.0f, 0.0f, 0.0f };
 	}
-
-	// === ImGui ===
-	/*if (showDebug_) {
-		ImGui::Begin("Sword OBB (Front)");
-		ImGui::Checkbox("Show Debug", &showDebug_);
-		ImGui::DragFloat3("Half Extents", &obbHalf_.x, 0.01f, 0.0f, 5.0f);
-		ImGui::DragFloat("Front Dist", &frontDist_, 0.01f, 0.0f, 3.0f);
-		ImGui::DragFloat("Height", &height_, 0.01f, 0.0f, 3.0f);
-		ImGui::DragFloat("Active Sec", &activeDuration_, 0.01f, 0.05f, 1.0f);
-		ImGui::Text("Active: %s (%.2fs)", (activeTime_ > 0.0f ? "ON" : "OFF"), activeTime_);
-		ImGui::End();
-	}*/
 }
+
 
 void PlayerWeaponOBB::Draw()
 {
@@ -127,22 +152,45 @@ void PlayerWeaponOBB::Draw()
 
 void PlayerWeaponOBB::NormalAttack()
 {
-	// クリックの立ち上がりで発動
-	if (Input::GetInstance()->TriggerMouseButton(0)) {
-		activeTime_ = activeDuration_; // 一定時間だけ有効
-		if (owner_) {
-			
-			owner_->RequestAnimKey(PlayerAnimKey::SwordAttackFast, 10, activeDuration_);
+	Input* input = Input::GetInstance();
+
+	// ===== 攻撃中：長押しでも次段を予約できる =====
+	if (activeTime_ > 0.0f) {
+		if (input->PushMouseButton(0)) {
+			comboReserve_ = true; // 押されてる間ずっと予約ON
 		}
+		return;
 	}
+
+	// ===== 攻撃してない：開始は「押した瞬間」だけ =====
+	if (!input->TriggerMouseButton(0)) {
+		return;
+	}
+
+	// この段を開始（段開始時に予約をリセット）
+	comboReserve_ = false;
+	activeTime_ = activeDuration_;
+
+	if (owner_) {
+		static const PlayerAnimKey comboKeys[3] = {
+			PlayerAnimKey::Attack01,
+			PlayerAnimKey::Attack02,
+			PlayerAnimKey::Attack03
+		};
+		owner_->RequestAnimaKey(comboKeys[normalComboIndex_], 10, activeDuration_);
+	}
+
+	// 次の段へ
+	normalComboIndex_ = (normalComboIndex_ + 1) % 3;
 }
+
 
 void PlayerWeaponOBB::Skill()
 {
 	const bool nowF = Input::GetInstance()->PushKey(DIK_E);
 	if (nowF && !IsSkill_) {                  // 立ち上がりだけ
 		if (owner_) {
-			owner_->RequestAnimKey(PlayerAnimKey::Roll, 10, 0.8f);
+			owner_->RequestAnimaKey(PlayerAnimKey::Roll, 10, 0.8f);
 		}
 	}
 	IsSkill_ = nowF;
@@ -150,35 +198,5 @@ void PlayerWeaponOBB::Skill()
 
 void PlayerWeaponOBB::Ultimate()
 {
-	//if (!Input::GetInstance()->TriggerKey(DIK_E)) return;
-	//if (!owner_ || !playerTransform_) return;
-
-	//// 発射位置：プレイヤーの頭上あたり
-	//Vector3 start = playerTransform_->translate + Vector3{ 0.0f, 1.2f, 0.0f };
-
-	//// 方向：敵がいれば敵方向、いなければプレイヤーの前方
-	//Vector3 dir{};
-	//bool hasTarget = (enemyTransform_ != nullptr);
-	//if (hasTarget) {
-	//	dir = enemyTransform_->translate - start;
-	//	if (Length(dir) > 0.0001f) dir = Normalize(dir);
-	//	else hasTarget = false;
-	//}
-	//if (!hasTarget) {
-	//	const float yaw = playerTransform_->rotate.y;
-	//	dir = { std::sin(yaw), 0.0f, std::cos(yaw) };
-	//	dir = Normalize(dir);
-	//}
-
-	//// 弾を生成
-	//auto bullet = std::make_unique<PlayerBullet>(owner_->GetBaseScene());
-	//// いま使っているカメラを渡す
-	//bullet->SetCamera(owner_->GetCamera());
-	//bullet->Initialize();
-	//bullet->Fire(start, dir, /*speed*/0.8f, /*lifeSec*/3.0f);
-
-	//bullets_.push_back(std::move(bullet));
-
-	//// アニメ
-	//owner_->RequestAnimKey(PlayerAnimKey::SwordAttackFast, 10, 0.6f);
+	
 }

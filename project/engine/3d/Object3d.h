@@ -87,6 +87,16 @@ public:
 
     void SetAnimation(const std::string& name);
 
+    // アニメ切替のブレンド秒数を設定
+    void SetBlendDuration(float sec) { if (model_) model_->SetBlendDuration(sec); }
+
+    // 親オブジェクト（通常の親）
+    void SetParent(Object3d* parent) { parent_ = parent; parentJointName_.reset(); }
+
+    // 親の特定ボーンにアタッチ（Sword用）
+    void SetParentJoint(Object3d* parent, const std::string& jointName) { parent_ = parent; parentJointName_ = jointName; }
+
+
     //--------getter--------//
     const Vector3& GetScale() const { return transform.scale; }
     const Vector3& GetRotate() const { return transform.rotate; }
@@ -103,6 +113,11 @@ public:
     /// <param name="jointName">取得するボーン名</param>
     /// <returns>ワールド座標（取得できなければ std::nullopt）</returns>
     std::optional<Vector3> GetJointWorldPosition(const std::string& jointName) const;
+
+    /// <summary>
+    /// 指定したジョイントのワールド行列を取得（モデルがアニメ付きの場合のみ）
+    /// </summary>
+    std::optional<Matrix4x4> GetJointWorldMatrix(const std::string& jointName) const;
 
     void SetAnimationOneShot(const std::string& name) { if (model_) model_->SetAnimationOneShot(name); }
 
@@ -134,4 +149,9 @@ private:
     Transform transform;
 
     Matrix4x4 worldMatrix_;
+
+    // 親（オブジェクト or 親ボーン）
+    Object3d* parent_ = nullptr;
+    std::optional<std::string> parentJointName_; // これがある場合は「親のボーン」を使う
+
 };

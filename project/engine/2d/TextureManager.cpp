@@ -58,6 +58,21 @@ void TextureManager::LoadTexture(const std::string& filePath)
         hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
     }
 
+    auto HrToHex = [](HRESULT hr) {
+        char buf[64];
+        sprintf_s(buf, "0x%08X", (unsigned)hr);
+        return std::string(buf);
+        };
+
+    if (FAILED(hr)) {
+        std::string msg =
+            "[TextureManager] FAILED: " + resolvedPath +
+            " hr=" + HrToHex(hr) + "\n";
+        OutputDebugStringA(msg.c_str());
+        assert(false && "Texture load failed. See Output window for path/hr.");
+    }
+
+
     assert(SUCCEEDED(hr));
 
     DirectX::ScratchImage mipImages{};
