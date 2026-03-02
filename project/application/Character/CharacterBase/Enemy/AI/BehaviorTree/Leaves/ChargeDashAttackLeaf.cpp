@@ -159,7 +159,7 @@ void ChargeDashAttackLeaf::tick()
         if (timer_ >= endStopTime_)
         {
             timer_ = 0.0f;
-            phase_ = Phase::Idle;
+            phase_ = Phase::DropShot;
 
             if (!enemy->IsHitReact()) {
                 enemy->SetAnimationIfChanged(enemy->GetAnimSet().Idle);
@@ -169,6 +169,20 @@ void ChargeDashAttackLeaf::tick()
         mNodeResult = NodeResult::Running;
         break;
     }
+    case Phase::DropShot:
+    {
+        // Dash後に1発だけ落とす（プレイヤー位置をロックして狙う）
+        if (target) {
+            enemy->SpawnDropBullet(target->translate);
+        }
+
+        timer_ = 0.0f;
+        phase_ = Phase::Idle;
+
+        mNodeResult = NodeResult::Running;
+        break;
+    }
+
     }
 
 	enemy->SetTransform(e);

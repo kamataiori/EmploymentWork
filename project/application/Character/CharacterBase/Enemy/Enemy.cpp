@@ -1,5 +1,6 @@
 #include "Enemy.h"
 #include "application/Character/CharacterBase/Enemy/AI/EnemyAIController.h"
+#include "EnemyDropBullet.h"
 #include <CollisionTypeIdDef.h>
 #include <SceneManager.h>
 #include "engine/UI/UIManager.h"
@@ -138,6 +139,18 @@ void Enemy::Update()
 			if (aiController_) {
 				aiController_->Update(dt);
 			}
+
+			for (auto it = dropBullets_.begin(); it != dropBullets_.end(); )
+			{
+				(*it)->Update();
+				if ((*it)->IsDead()) {
+					it = dropBullets_.erase(it);
+				}
+				else {
+					++it;
+				}
+			}
+
 		}
 
 	}
@@ -272,7 +285,10 @@ void Enemy::Draw()
 	// コライダーの描画
 	multiCollider_->Draw();
 
-	
+	// 落下弾（デバッグ球）
+	for (auto& b : dropBullets_) {
+		b->Draw();
+	}
 }
 
 void Enemy::ForeGroundDraw()
@@ -361,4 +377,17 @@ void Enemy::SetAnimationIfChanged(const std::string& name)
 		object3d_->SetAnimation(name);
 		currentAnimationName_ = name;
 	}
+}
+
+void Enemy::SpawnDropBullet(const Vector3& targetPos)
+{
+	// 発射位置：敵の現在位置（少し上から）
+	Vector3 shootPos = transform.translate;
+	shootPos.y += 2.0f;
+
+	auto b = std::make_unique<EnemyDropBullet>(this->GetBaseScene());
+	b->Initialize(shootPos, targetPos);
+	b->SetCamera(this->GetCamera()); // カメラ必要なら（デバッグ描画だけなら不要でもOK）
+
+	dropBullets_.push_back(std::move(b));
 }

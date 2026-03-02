@@ -5,6 +5,8 @@
 #include <MyGame.h>
 #include "engine/TimeManager.h"
 
+#include "EnemyDropBullet.h"
+
 #ifdef max
 #undef max
 #endif
@@ -248,6 +250,10 @@ void GamePlayScene::Update()
 		collisionManager_->RegisterCollider(wcol);
 	}
 	collisionManager_->RegisterCollider(enemy_->GetMultiCollider());
+
+	for (auto& b : enemy_->GetDropBullets()) {
+		collisionManager_->RegisterCollider(b->GetMultiCollider());
+	}
 	//collisionMManager_->RegisterCollider(player_->Get()->GetCollider());
 	//collisionMManager_->RegisterCollider(enemy_.get());
 	/*if (player_->GetBullet()) {

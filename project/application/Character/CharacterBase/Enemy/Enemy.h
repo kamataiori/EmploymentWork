@@ -4,6 +4,7 @@
 #include <memory>
 
 class EnemyAIController;
+class EnemyDropBullet;
 class UIManager;
 
 struct SkeltonAnimationSet {
@@ -103,6 +104,12 @@ public:
 	// 被弾リアクション中か（BTがアニメを上書きしないため）
 	bool IsHitReact() const { return hitReactTimer_ > 0.0f; }
 
+	// Dash後の1パターン用：落下弾を生成
+	void SpawnDropBullet(const Vector3& targetPos);
+
+	// Scene側でコライダー登録するために公開
+	const std::list<std::unique_ptr<EnemyDropBullet>>& GetDropBullets() const { return dropBullets_; }
+
 private:
 
 	SkeltonAnimationSet animation_; // アニメーション名セット
@@ -118,6 +125,8 @@ private:
 	// AIはここに閉じ込める
 	std::unique_ptr<EnemyAIController> aiController_;
 	const Transform* target_ = nullptr; // Player の Transform を参照
+
+	std::list<std::unique_ptr<EnemyDropBullet>> dropBullets_;
 
 	// 生成時（Initialize時）の位置を保存しておく
 	Vector3 homePosition_{};

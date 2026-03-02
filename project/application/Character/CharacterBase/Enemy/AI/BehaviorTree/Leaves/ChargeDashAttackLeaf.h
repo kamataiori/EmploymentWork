@@ -35,6 +35,7 @@ private:
 		Charge,     // 溜め（home固定）
 		Dash,       // 突進
 		EndStop,    // 突進後その場で停止
+		DropShot,
 	};
 
 	Phase phase_ = Phase::Idle;
