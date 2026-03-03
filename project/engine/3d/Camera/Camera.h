@@ -20,7 +20,9 @@ public:
 	//------setter------//
 	void SetRotate(const Vector3& rotate) {transform.rotate = rotate;};
 	void SetTranslate(const Vector3& translate) {transform.translate = translate;}
-	void SetFovY(float fovY) {horizontalViewingAngle = fovY;};
+	void SetFovY(float fovY_deg) {
+		horizontalViewingAngle = fovY_deg * (3.1415926535f / 180.0f);
+	}
 	void SetAspectRatio(float aspectRatio) {aspect = aspectRatio;};
 	void SetNearClip(float nearClip) {this->nearClip = nearClip;};
 	void SetFarClip(float farClip) {this->farClip = farClip;};
@@ -38,11 +40,8 @@ public:
 	const Vector3& GetRotate() const { return transform.rotate; }
 	const Vector3& GetTranslate() const { return transform.translate; }
 
-	/// <summary>
-    /// 現在の垂直 FOV（ラジアン）を取得
-    /// SetFovY で設定した値と同じもの
-    /// </summary>
-	float GetFovY() const { return horizontalViewingAngle; }
+	float GetFovYRad() const { return horizontalViewingAngle; }
+	float GetFovYDeg() const { return horizontalViewingAngle * (180.0f / 3.1415926535f); }
 
 
 protected:

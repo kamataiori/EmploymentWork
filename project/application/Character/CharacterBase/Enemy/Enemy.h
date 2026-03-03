@@ -2,9 +2,11 @@
 #include "ObjectBase.h"
 #include "MultiCollider.h"
 #include <memory>
+#include <list>
 
 class EnemyAIController;
 class EnemyDropBullet;
+class EnemySplitBullet;
 class UIManager;
 
 struct SkeltonAnimationSet {
@@ -107,8 +109,12 @@ public:
 	// Dash後の1パターン用：落下弾を生成
 	void SpawnDropBullet(const Vector3& targetPos);
 
+	// 4発バースト（上昇→分裂→直線発射）
+	void SpawnSplitBurstToPlayer(const Vector3& playerPos);
+
 	// Scene側でコライダー登録するために公開
 	const std::list<std::unique_ptr<EnemyDropBullet>>& GetDropBullets() const { return dropBullets_; }
+	const std::list<std::unique_ptr<EnemySplitBullet>>& GetSplitBullets() const { return splitBullets_; }
 
 private:
 
@@ -127,6 +133,7 @@ private:
 	const Transform* target_ = nullptr; // Player の Transform を参照
 
 	std::list<std::unique_ptr<EnemyDropBullet>> dropBullets_;
+	std::list<std::unique_ptr<EnemySplitBullet>> splitBullets_;
 
 	// 生成時（Initialize時）の位置を保存しておく
 	Vector3 homePosition_{};

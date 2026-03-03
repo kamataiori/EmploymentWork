@@ -5,6 +5,7 @@
 #include <SceneManager.h>
 #include "engine/UI/UIManager.h"
 #include <engine/UI/UIHpBar.h>
+#include <EnemySplitBullet.h>
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
@@ -151,6 +152,17 @@ void Enemy::Update()
 				}
 			}
 
+			for (auto it = splitBullets_.begin(); it != splitBullets_.end(); )
+			{
+				(*it)->Update();
+				if ((*it)->IsDead()) {
+					it = splitBullets_.erase(it);
+				}
+				else {
+					++it;
+				}
+			}
+
 		}
 
 	}
@@ -289,6 +301,10 @@ void Enemy::Draw()
 	for (auto& b : dropBullets_) {
 		b->Draw();
 	}
+
+	for (auto& b : splitBullets_) {
+		b->Draw();
+	}
 }
 
 void Enemy::ForeGroundDraw()
@@ -310,6 +326,11 @@ void Enemy::ParticleDraw()
 {
 	if (isDead_) {
 		deathSystem_->Draw();
+	}
+
+	// 弾パーティクル
+	for (auto& b : splitBullets_) {
+		b->ParticleDraw();
 	}
 }
 
@@ -379,15 +400,53 @@ void Enemy::SetAnimationIfChanged(const std::string& name)
 	}
 }
 
-void Enemy::SpawnDropBullet(const Vector3& targetPos)
+//void Enemy::SpawnSplitBurstToPlayer(const Vector3& playerPos)
+//{
+//	Vector3 start = transform.translate;
+//	start.y += 2.0f;
+//
+//	const float riseHeight = 12.0f;
+//	const float riseSpeed = 18.0f;
+//	const float splitRadius = 4.0f;
+//	const float shotSpeed = 28.0f;
+//
+//	for (int i = 0; i < 4; ++i)
+//	{
+//		auto b = std::make_unique<EnemySplitBullet>(GetBaseScene());
+//		b->InitializeBurst(start, playerPos, riseHeight, riseSpeed, splitRadius, shotSpeed);
+//
+//		// indexをセットする関数を用意する or publicにする
+//		// 最短：EnemySplitBullet に SetIndex を追加
+//		b->SetIndex(i);
+//
+//		b->SetCamera(GetCamera());
+//		splitBullets_.push_back(std::move(b));
+//	}
+//}
+
+void Enemy::SpawnSplitBurstToPlayer(const Vector3& playerPos)
 {
-	// 発射位置：敵の現在位置（少し上から）
-	Vector3 shootPos = transform.translate;
-	shootPos.y += 2.0f;
+	// 敵の少し上からスタート（4発同じ位置から上昇）
+	Vector3 start = transform.translate;
+	start.y += 2.0f;
 
-	auto b = std::make_unique<EnemyDropBullet>(this->GetBaseScene());
-	b->Initialize(shootPos, targetPos);
-	b->SetCamera(this->GetCamera()); // カメラ必要なら（デバッグ描画だけなら不要でもOK）
+	// パラメータ（調整用）
+	const float riseHeight = 12.0f;
+	const float riseSpeed = 18.0f;
+	const float splitRadius = 4.0f;
+	const float shotSpeed = 28.0f;
 
-	dropBullets_.push_back(std::move(b));
+	for (int i = 0; i < 4; ++i)
+	{
+		auto b = std::make_unique<EnemySplitBullet>(GetBaseScene());
+		b->SetCamera(GetCamera());
+		// ここが重要：0..3 をセット（分裂位置が変わる）
+		b->SetIndex(i);
+
+		// ここが重要：InitializeBurstを呼ぶ（Initialize()は空なので呼んじゃダメ）
+		b->InitializeBurst(start, playerPos, riseHeight, riseSpeed, splitRadius, shotSpeed);
+
+
+		splitBullets_.push_back(std::move(b));
+	}
 }

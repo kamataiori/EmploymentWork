@@ -65,7 +65,7 @@ void CameraZoom::UpdateInternal(Camera* camera, float deltaTime)
 {
     // useCurrentFov が true の場合、最初のフレームだけカメラから開始 FOV を取得する
     if (useCurrentFov_ && !capturedStartFov_) {
-        startFov_ = camera->GetFovY();
+        startFov_ = camera->GetFovYRad();
         capturedStartFov_ = true;
     }
 

@@ -6,6 +6,7 @@
 #include "engine/TimeManager.h"
 
 #include "EnemyDropBullet.h"
+#include <EnemySplitBullet.h>
 
 #ifdef max
 #undef max
@@ -39,8 +40,9 @@ void GamePlayScene::Initialize()
 	player_ = std::make_unique<Player>(this);
 	enemy_ = std::make_unique<Enemy>(this);
 
-	followCamera = std::make_unique<FollowCamera>(player_.get(), 30.0f, 8.0f);
+	followCamera = std::make_unique<FollowCamera>(player_.get(), 9.5f, 2.2f);
 	followCamera->SetFarClip(2000.0f);
+	followCamera->SetFovY(75.0f);
 
 	player_->Initialize();
 	player_->SetCamera(followCamera.get());
@@ -254,6 +256,9 @@ void GamePlayScene::Update()
 	for (auto& b : enemy_->GetDropBullets()) {
 		collisionManager_->RegisterCollider(b->GetMultiCollider());
 	}
+	for (auto& b : enemy_->GetSplitBullets()) {
+		collisionManager_->RegisterCollider(b->GetMultiCollider());
+	}
 	//collisionMManager_->RegisterCollider(player_->Get()->GetCollider());
 	//collisionMManager_->RegisterCollider(enemy_.get());
 	/*if (player_->GetBullet()) {
@@ -315,7 +320,7 @@ void GamePlayScene::Draw()
 	// ================================================
 
 	// 各オブジェクトの描画
-	//sky->Draw();
+	sky->Draw();
 	ground->Draw();
 	player_->Draw();
 	enemy_->Draw();

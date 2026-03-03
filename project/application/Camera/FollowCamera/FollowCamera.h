@@ -67,9 +67,10 @@ private: // メンバ変数
 
 	ObjectBase* target; // キャラクター（PlayerやEnemyなど）
 	float followDistance;  // 対象との距離
-	float heightOffset;    // カメラの高さオフセット
+	float heightOffset = 1.5f;    // カメラの高さオフセット
 	float angle = 3.14f;    // カメラの回転角度（Y軸）
 	float sensitivity_ = 0.001f; // 初期値：感度
+	float shoulderOffset = 1.2f;  // 肩越し
 
 	// --- 注視点Yの追従を弱める設定 ---
 	bool  lockLookY_ = true;          // true: 注視点Yを固定（追従しない）

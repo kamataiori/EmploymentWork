@@ -173,7 +173,7 @@ void ChargeDashAttackLeaf::tick()
     {
         // Dash後に1発だけ落とす（プレイヤー位置をロックして狙う）
         if (target) {
-            enemy->SpawnDropBullet(target->translate);
+            enemy->SpawnSplitBurstToPlayer(target->translate);
         }
 
         timer_ = 0.0f;
