@@ -162,5 +162,11 @@ private:
 
 	std::unique_ptr<ParticleManager> deathSystem_ = std::make_unique<ParticleManager>();
 
-};
+	// ★ SplitBullet の順次発射制御
+	float splitFireTimer_ = 0.0f;        // 発射間隔タイマー
+	float splitFireInterval_ = 0.3f;     // 1発ごとの発射間隔（秒）調整用
+	bool  splitFireActive_ = false;      // 順次発射モード中かどうか
 
+	// ★ 順次発射の更新処理（Update内から呼ぶ）
+	void UpdateSplitBulletFiring(float dt);
+};

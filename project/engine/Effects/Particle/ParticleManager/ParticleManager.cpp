@@ -24,7 +24,8 @@ void to_json(json& j, const ParticlePreset& p)
 			{ "count",             p.emitterSpawn.count },
 			{ "frequency",         p.emitterSpawn.frequency },
 			{ "repeat",            p.emitterSpawn.repeat },
-			{ "useRandomPosition", p.emitterSpawn.useRandomPosition }
+			{ "useRandomPosition", p.emitterSpawn.useRandomPosition },
+			{ "useLocalSpace",     p.emitterSpawn.useLocalSpace }
 		}},
 
 		// ========= particleSpawn =========
@@ -221,12 +222,14 @@ void from_json(const json& j, ParticlePreset& p)
 		p.emitterSpawn.frequency = es.value("frequency", 1.0f);
 		p.emitterSpawn.repeat = es.value("repeat", false);
 		p.emitterSpawn.useRandomPosition = es.value("useRandomPosition", false);
+		p.emitterSpawn.useLocalSpace = es.value("useLocalSpace", false);
 	}
 	else {
 		p.emitterSpawn.count = j.value("count", 10u);
 		p.emitterSpawn.frequency = j.value("frequency", 1.0f);
 		p.emitterSpawn.repeat = j.value("repeat", false);
 		p.emitterSpawn.useRandomPosition = j.value("useRandomPosition", false);
+		p.emitterSpawn.useLocalSpace = j.value("useLocalSpace", false);
 	}
 
 	// ========= particleSpawn =========
@@ -492,19 +495,16 @@ void ParticleManager::Update()
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
 	// ========= カメラ行列の計算 =========
+	// ★ カメラが持っている ViewProjection 行列をそのまま使う
+	//    これにより fov / aspect / near / far の不一致が起きない
+	Matrix4x4 viewProjectionMatrix = camera_->GetViewProjectionMatrix();
+
+	// ビルボード用にカメラ行列も取得
 	Matrix4x4 cameraMatrix = MakeAffineMatrix(
 		{ 1.0f,1.0f,1.0f },
 		camera_->GetRotate(),
 		camera_->GetTranslate()
 	);
-	Matrix4x4 viewMatrix = Inverse(cameraMatrix);
-	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
-		0.45f,
-		float(kWindowWidth) / float(kWindowHeight),
-		0.1f,
-		100.0f
-	);
-	Matrix4x4 viewProjectionMatrix = Multiply(viewMatrix, projectionMatrix);
 
 	// ========= ビルボード行列の計算 =========
 	Matrix4x4 backToFrontMatrix = MakeRotateYMatrix(std::numbers::pi_v<float>);
@@ -831,6 +831,7 @@ void ParticleManager::DrawImGuiParticlePresetEditor()
 	DragFloat("発生間隔(秒)", &preset.emitterSpawn.frequency, 0.01f, 0.0f, 60.0f);
 	Checkbox("繰り返し再生", &preset.emitterSpawn.repeat);
 	Checkbox("ランダム位置を使用", &preset.emitterSpawn.useRandomPosition);
+	Checkbox("ローカル空間モード", &preset.emitterSpawn.useLocalSpace);
 
 	// --- パーティクル共通 ---
 	Separator();
@@ -1409,18 +1410,38 @@ void ParticleManager::EmitSystem(const std::string& systemName, const Transform&
 	// まず System が存在するかチェック
 	ParticleSystem* system = FindSystem(systemName);
 	if (!system) {
-		// Editor 上では System がまだ登録されていない可能性もあるので、その場合は何もしない
 		return;
 	}
 
 	// この System に紐付いているプリセット名一覧を取得
 	const auto& presetNames = system->GetPresetNames();
 
-	// 各プリセットごとに EmitterInstance を生成して System にぶら下げる
-	for (const std::string& presetName : presetNames) {
-		// ※ AddEmitterToSystem 内で CreateEmitterInstanceFromPreset を呼び、
-		//    emitterInstances_ に push_back ＋ system->AddEmitter(emitter) までやってくれます
-		AddEmitterToSystem(systemName, presetName, transform);
+	// System に既にエミッターが登録されているか確認
+	const auto& emitters = system->GetEmitters();
+
+	if (!emitters.empty()) {
+		// ★ 既にエミッターが存在する → Transform だけ更新する
+		//   パーティクルの生成は EmitterInstance 内部の自動Emit（UpdateParticles）に任せる
+		//   ここで SpawnParticles を呼ぶと二重Emitになるので呼ばない
+		for (auto& entry : emitters) {
+			if (entry.emitter) {
+				entry.emitter->SetTransform(transform);
+			}
+		}
+	}
+	else {
+		// ★ 初回のみ：エミッターを新規作成して System に登録
+		for (const std::string& presetName : presetNames) {
+			AddEmitterToSystem(systemName, presetName, transform);
+		}
+
+		// 作成したエミッターを即再生開始
+		for (auto& entry : system->GetEmitters()) {
+			if (entry.emitter) {
+				entry.emitter->SetTransform(transform);
+				entry.emitter->Play();
+			}
+		}
 	}
 }
 
@@ -1458,6 +1479,15 @@ void ParticleManager::PopulateInstancesFromEmitters(
 			Vector3 scale = p.scale;
 			Vector3 rotate = p.rotation;
 			Vector3 position = p.position;
+
+			// ★ Local Space モードの場合、エミッタのワールド座標を加算して
+			//    パーティクルのローカル座標をワールド座標に変換する
+			if (emitter.IsLocalSpace()) {
+				const Transform& et = emitter.GetTransform();
+				position.x += et.translate.x;
+				position.y += et.translate.y;
+				position.z += et.translate.z;
+			}
 
 			Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
 
@@ -1867,11 +1897,16 @@ void ParticleManager::Emit(const std::string& name, const Transform& transform, 
 
 	ParticleGroup& group = particleGroups[name];
 
-	if (group.particleList.size() >= count) {
+	// ★ 最大インスタンス数を超えないようにする（countではなくkNumMaxInstance）
+	if (group.particleList.size() >= kNumMaxInstance) {
 		return;
 	}
 
-	for (uint32_t i = 0; i < count; ++i) {
+	// 追加可能な残り数を計算
+	uint32_t maxToAdd = static_cast<uint32_t>(kNumMaxInstance - group.particleList.size());
+	uint32_t actualCount = (count < maxToAdd) ? count : maxToAdd;
+
+	for (uint32_t i = 0; i < actualCount; ++i) {
 		Particle particle{};
 
 		if (useRandomPosition) {
@@ -1911,13 +1946,16 @@ void ParticleManager::PrimitiveEmit(const std::string name, const Transform& tra
 	// 指定されたパーティクルグループが存在する場合、そのグループにパーティクルを追加
 	ParticleGroup& group = particleGroups[name];
 
-	// すでにkNumMaxInstanceに達している場合、新しいパーティクルの追加をスキップする
-	if (group.particleList.size() >= count) {
+	// ★ 最大インスタンス数を超えないようにする
+	if (group.particleList.size() >= kNumMaxInstance) {
 		return;
 	}
 
+	uint32_t maxToAdd = static_cast<uint32_t>(kNumMaxInstance - group.particleList.size());
+	uint32_t actualCount = (count < maxToAdd) ? count : maxToAdd;
+
 	// 指定された数のパーティクルを生成して追加
-	for (uint32_t i = 0; i < count; ++i) {
+	for (uint32_t i = 0; i < actualCount; ++i) {
 		Particle particle = PrimitiveMakeNewParticle(randomEngine, transform.translate);
 		particle.transform.rotate = transform.rotate;
 		particle.transform.scale = transform.scale;
@@ -1934,12 +1972,15 @@ void ParticleManager::RingEmit(const std::string& name, const Transform& transfo
 
 	ParticleGroup& group = particleGroups[name];
 
-	// Plane と同じように、既に count 個以上あるなら追加しない
-	if (group.particleList.size() >= count) {
+	// ★ 最大インスタンス数を超えないようにする
+	if (group.particleList.size() >= kNumMaxInstance) {
 		return;
 	}
 
-	for (uint32_t i = 0; i < count; ++i) {
+	uint32_t maxToAdd = static_cast<uint32_t>(kNumMaxInstance - group.particleList.size());
+	uint32_t actualCount = (count < maxToAdd) ? count : maxToAdd;
+
+	for (uint32_t i = 0; i < actualCount; ++i) {
 		Particle particle = RingMakeNewParticle(transform.translate);
 		particle.transform.rotate = transform.rotate;
 		particle.transform.scale = transform.scale;
@@ -1957,11 +1998,15 @@ void ParticleManager::CylinderEmit(const std::string& name,
 
 	ParticleGroup& group = particleGroups[name];
 
-	if (group.particleList.size() >= count) {
+	// ★ 最大インスタンス数を超えないようにする
+	if (group.particleList.size() >= kNumMaxInstance) {
 		return;
 	}
 
-	for (uint32_t i = 0; i < count; ++i) {
+	uint32_t maxToAdd = static_cast<uint32_t>(kNumMaxInstance - group.particleList.size());
+	uint32_t actualCount = (count < maxToAdd) ? count : maxToAdd;
+
+	for (uint32_t i = 0; i < actualCount; ++i) {
 		Particle particle = CylinderMakeNewParticle(transform.translate);
 		particle.transform.rotate = transform.rotate;
 		particle.transform.scale = transform.scale;

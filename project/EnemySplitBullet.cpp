@@ -4,188 +4,230 @@
 
 static Vector3 NormalizeSafe(const Vector3& v)
 {
-    float len = Length(v);
-    if (len < 1e-6f) return { 0,0,1 };
-    return v / len;
+	float len = Length(v);
+	if (len < 1e-6f) return { 0,0,1 };
+	return v / len;
 }
 
 void EnemySplitBullet::InitializeBurst(
-    const Vector3& startPos,
-    const Vector3& lockPlayerPos,
-    float riseHeight,
-    float riseSpeed,
-    float splitRadius,
-    float shotSpeed
+	const Vector3& startPos,
+	const Vector3& lockPlayerPos,
+	float riseHeight,
+	float riseSpeed,
+	float splitRadius,
+	float shotSpeed
 )
 {
-    startPos_ = startPos;
-    lockPlayerPos_ = lockPlayerPos;
+	startPos_ = startPos;
+	lockPlayerPos_ = lockPlayerPos;
 
-    riseHeight_ = riseHeight;
-    riseSpeed_ = riseSpeed;
-    splitRadius_ = splitRadius;
-    shotSpeed_ = shotSpeed;
+	riseHeight_ = riseHeight;
+	riseSpeed_ = riseSpeed;
+	splitRadius_ = splitRadius;
+	shotSpeed_ = shotSpeed;
 
-    transform.translate = startPos_;
-    transform.rotate = { 0,0,0 };
-    transform.scale = { 1,1,1 };
+	transform.translate = startPos_;
+	transform.rotate = { 0,0,0 };
+	transform.scale = { 1,1,1 };
 
-    // collider（Sphere1個）
-    multiCollider_->Clear();
+	// collider（Sphere1個）
+	multiCollider_->Clear();
 
-    Sphere sp{};
-    sp.center = transform.translate;
-    sp.radius = radius_;
-    multiCollider_->AddSphere(sp);
-    multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::EnemyBullet));
-    multiCollider_->SetHitCallbackEx([this](const CollisionInfo& info) { this->OnCollision(info); });
+	Sphere sp{};
+	sp.center = transform.translate;
+	sp.radius = radius_;
+	multiCollider_->AddSphere(sp);
+	multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::EnemyBullet));
+	multiCollider_->SetHitCallbackEx([this](const CollisionInfo& info) { this->OnCollision(info); });
 
-    phase_ = Phase::Rise;
-    isDead_ = false;
+	phase_ = Phase::Rise;
+	isDead_ = false;
+	phaseTimer_ = 0.0f;
 
-    //==========================
-    // Particle 初期化（deathSystem_と同じ）
-    //==========================
-    particleSystem_ = std::make_unique<ParticleManager>();
-    particleSystem_->Initialize(VertexDataType::Plane);
+	//==========================
+	// Particle 初期化
+	//==========================
+	particleSystem_ = std::make_unique<ParticleManager>();
+	particleSystem_->Initialize(VertexDataType::Plane);
 
-    particleSystem_->LoadAllPresets();
-    particleSystem_->LoadAllSystems();
+	particleSystem_->LoadAllPresets();
+	particleSystem_->LoadAllSystems();
 
-    // bulletのカメラをParticleにも渡す（Enemy側でSetCameraされるのでここで1回だけでもOK）
-    if (camera_) {
-        particleSystem_->SetCamera(camera_);
-    }
+	if (camera_) {
+		particleSystem_->SetCamera(camera_);
+	}
 
-    particleTransform_ = transform;
+	particleTransform_ = transform;
 
-    // スポーン直後に1回Emit（見た目の初速）
-    particleTransform_.translate = transform.translate;
-    //particleSystem_->EmitSystemByName(particleSystemName_, particleTransform_);
+	// 初回Emit：エミッターを作成
+	particleTransform_.translate = transform.translate;
+	particleSystem_->EmitSystemByName(particleSystemName_, particleTransform_);
 
-    emitTimer_ = 0.0f;
+	emitTimer_ = 0.0f;
+}
+
+void EnemySplitBullet::Fire()
+{
+	// ★ SplitWait 状態のときだけ発射に移行する
+	if (phase_ == Phase::SplitWait)
+	{
+		phase_ = Phase::Shot;
+	}
 }
 
 void EnemySplitBullet::Update()
 {
-    float dt = TimeManager::GetInstance()->GetDeltaTime();
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-    if (phase_ == Phase::Rise)
-    {
-        transform.translate.y += riseSpeed_ * dt;
+	//==========================
+	// フェーズごとの挙動
+	//==========================
+	if (phase_ == Phase::Rise)
+	{
+		transform.translate.y += riseSpeed_ * dt;
 
-        // 一定高さへ到達したら分裂配置へ移動開始
-        if (transform.translate.y >= startPos_.y + riseHeight_)
-        {
-            // 分裂の4点（十字）: (+x, -x, +z, -z)
-            Vector3 base = transform.translate; // 到達高度の位置が基準（真上）
-            switch (index_)
-            {
-            case 0: splitTargetPos_ = base + Vector3{ +splitRadius_, 0.0f, 0.0f }; break;
-            case 1: splitTargetPos_ = base + Vector3{ -splitRadius_, 0.0f, 0.0f }; break;
-            case 2: splitTargetPos_ = base + Vector3{ 0.0f, 0.0f, +splitRadius_ }; break;
-            case 3: splitTargetPos_ = base + Vector3{ 0.0f, 0.0f, -splitRadius_ }; break;
-            default: splitTargetPos_ = base; break;
-            }
+		if (transform.translate.y >= startPos_.y + riseHeight_)
+		{
+			transform.translate.y = startPos_.y + riseHeight_;
 
-            phase_ = Phase::SplitMove;
+			// 分裂先の目標位置を計算
+			Vector3 base = transform.translate;
+			switch (index_)
+			{
+			case 0: splitTargetPos_ = base + Vector3{ +splitRadius_, 0.0f, 0.0f }; break;
+			case 1: splitTargetPos_ = base + Vector3{ -splitRadius_, 0.0f, 0.0f }; break;
+			case 2: splitTargetPos_ = base + Vector3{ 0.0f, 0.0f, +splitRadius_ }; break;
+			case 3: splitTargetPos_ = base + Vector3{ 0.0f, 0.0f, -splitRadius_ }; break;
+			default: splitTargetPos_ = base; break;
+			}
 
-            //// 分裂の瞬間に少し強めに出したいならここでEmit
-            //particleTransform_.translate = transform.translate;
-            //particleSystem_->EmitSystemByName(particleSystemName_, particleTransform_);
-        }
-    }
-    else if (phase_ == Phase::SplitMove)
-    {
-        // 分裂後の所定位置へスッと移動
-        Vector3 to = splitTargetPos_ - transform.translate;
-        float d = Length(to);
+			// 上昇後、少し止まる
+			phase_ = Phase::RiseWait;
+			phaseTimer_ = 0.0f;
+		}
+	}
+	else if (phase_ == Phase::RiseWait)
+	{
+		// 上昇後の待機
+		phaseTimer_ += dt;
+		if (phaseTimer_ >= riseWaitDuration_)
+		{
+			phase_ = Phase::SplitMove;
+		}
+	}
+	else if (phase_ == Phase::SplitMove)
+	{
+		// 四方向に分裂移動
+		Vector3 to = splitTargetPos_ - transform.translate;
+		float d = Length(to);
 
-        if (d < 0.05f)
-        {
-            transform.translate = splitTargetPos_;
+		if (d < 0.05f)
+		{
+			transform.translate = splitTargetPos_;
 
-            // ここで「プレイヤーへ向けた方向」をロックして直線発射
-            Vector3 toP = lockPlayerPos_ - transform.translate;
-            shotDir_ = NormalizeSafe(toP);
+			// プレイヤーへの方向をロック
+			Vector3 toP = lockPlayerPos_ - transform.translate;
+			shotDir_ = NormalizeSafe(toP);
 
-            phase_ = Phase::Shot;
-        }
-        else
-        {
-            Vector3 dir = NormalizeSafe(to);
-            float step = splitMoveSpeed_ * dt;
-            if (step > d) step = d;
-            transform.translate += dir * step;
-        }
-    }
-    else // Shot
-    {
-        transform.translate += shotDir_ * (shotSpeed_ * dt);
+			// ★ ここでShotに行かず、発射許可を待つ
+			phase_ = Phase::SplitWait;
+		}
+		else
+		{
+			Vector3 dir = NormalizeSafe(to);
+			float step = splitMoveSpeed_ * dt;
+			if (step > d) step = d;
+			transform.translate += dir * step;
+		}
+	}
+	else if (phase_ == Phase::SplitWait)
+	{
+		// ★ 何もしない。Enemy側からFire()が呼ばれるのを待つだけ
+	}
+	else // Shot
+	{
+		transform.translate += shotDir_ * (shotSpeed_ * dt);
 
-        // 寿命（暫定）：遠くに行ったら消す
-        // ※本当はlifeTimerか画面外判定にするのがいい
-        if (Length(transform.translate - startPos_) > 200.0f)
-        {
-            isDead_ = true;
-        }
-    }
+		if (Length(transform.translate - startPos_) > 200.0f)
+		{
+			isDead_ = true;
+		}
+	}
 
-    // collider 更新
-    Sphere& sp = multiCollider_->MutableSphere(0);
-    sp.center = transform.translate;
-    sp.radius = radius_;
+	// collider 更新
+	Sphere& sp = multiCollider_->MutableSphere(0);
+	sp.center = transform.translate;
+	sp.radius = radius_;
 
-    //==========================
-    // Particle 更新（追従トレイル）
-    //==========================
-    if (particleSystem_)
-    {
-        emitTimer_ += dt;
-        if (emitTimer_ >= emitInterval_)
-        {
-            emitTimer_ = 0.0f;
+	//==========================
+	// Particle 更新
+	//==========================
+	if (particleSystem_)
+	{
+		particleTransform_ = transform;
+		particleSystem_->EmitSystemByName(particleSystemName_, particleTransform_);
+		particleSystem_->Update();
+	}
 
-            particleTransform_.translate = transform.translate;
-            particleSystem_->EmitSystemByName(particleSystemName_, particleTransform_);
-        }
+#ifdef USE_IMGUI
+	ImGui::Begin("SplitBullet Debug");
 
-        particleSystem_->Update();
-    }
+	ImGui::Text("=== Bullet [%d] ===", index_);
+	const char* phaseNames[] = { "Rise", "RiseWait", "SplitMove", "SplitWait", "Shot" };
+	ImGui::Text("Phase: %s", phaseNames[static_cast<int>(phase_)]);
+	ImGui::Text("phaseTimer: %.3f", phaseTimer_);
+	ImGui::DragFloat3("Bullet translate", &transform.translate.x, 0.01f);
+
+	ImGui::Separator();
+	ImGui::DragFloat3("Particle translate", &particleTransform_.translate.x, 0.01f);
+
+	ImGui::Separator();
+	ImGui::Text("SystemName: %s", particleSystemName_.c_str());
+	ImGui::Text("particleSystem_: %s", particleSystem_ ? "exists" : "NULL");
+	ImGui::Text("isDead: %s", isDead_ ? "true" : "false");
+
+	ParticleSystem* sys = particleSystem_->FindSystem(particleSystemName_);
+	if (sys) {
+		ImGui::Text("System found: YES");
+		ImGui::Text("Emitter count: %d", (int)sys->GetEmitters().size());
+	}
+	else {
+		ImGui::Text("System found: NO");
+	}
+
+	ImGui::End();
+#endif // USE_IMGUI
 }
 
 void EnemySplitBullet::Draw()
 {
-    // デバッグ球だけ
-    multiCollider_->Draw();
+	multiCollider_->Draw();
 }
 
 void EnemySplitBullet::ParticleDraw()
 {
-    if (particleSystem_) {
-        OutputDebugStringA("EnemySplitBullet::ParticleDraw\n");
-        particleSystem_->Draw();
-    }
+	if (particleSystem_) {
+		particleSystem_->Draw();
+	}
 }
 
 void EnemySplitBullet::OnCollision(const CollisionInfo& info)
 {
-    // プレイヤーに当たったら消す（あなたのTypeIdに合わせて調整）
-    auto other = static_cast<CollisionTypeIdDef>(info.otherType);
+	auto other = static_cast<CollisionTypeIdDef>(info.otherType);
 
-    if (other == CollisionTypeIdDef::kPlayer ||
-        other == CollisionTypeIdDef::kPlayerWeapon ||
-        other == CollisionTypeIdDef::kPlayerAttack ||
-        other == CollisionTypeIdDef::PlayerBullet)
-    {
-        isDead_ = true;
-    }
+	if (other == CollisionTypeIdDef::kPlayer ||
+		other == CollisionTypeIdDef::kPlayerWeapon ||
+		other == CollisionTypeIdDef::kPlayerAttack ||
+		other == CollisionTypeIdDef::PlayerBullet)
+	{
+		isDead_ = true;
+	}
 }
 
 void EnemySplitBullet::SetCamera(Camera* camera)
 {
-    ObjectBase::SetCamera(camera);
-    if (particleSystem_) {
-        particleSystem_->SetCamera(camera);
-    }
+	ObjectBase::SetCamera(camera);
+	if (particleSystem_) {
+		particleSystem_->SetCamera(camera);
+	}
 }

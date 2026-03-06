@@ -163,19 +163,16 @@ void Enemy::Update()
 				}
 			}
 
+			// ★ 分裂弾の順次発射制御
+			UpdateSplitBulletFiring(dt);
 		}
 
 	}
 
 	// 当たり判定中心を更新
-	//colliderTranslate_ = transform.translate + colliderOffset_;
 	colliderCenter_ = transform.translate + colliderOffset_;
 
 	// コライダー更新
-	/*Sphere& sp = multiCollider_->MutableSphere(0);
-	sp.center = colliderTranslate_;
-	sp.radius = sphereRadius_;*/
-
 	OBB& obb = multiCollider_->MutableOBB(0);
 	obb.center = colliderCenter_;
 
@@ -186,14 +183,14 @@ void Enemy::Update()
 	obb.orientations[2] = axes[2];
 
 	// スケールを当たりにも反映したい場合はここで掛ける
-	obb.size = { obbSize_.x /** transform.scale.x*/,
-				 obbSize_.y /** transform.scale.y*/,
-				 obbSize_.z /** transform.scale.z*/ };
+	obb.size = { obbSize_.x,
+				 obbSize_.y,
+				 obbSize_.z };
 
 
 	// HitReact の終了管理：一定時間で Idle に戻す
 	if (hitReactTimer_ > 0.0f) {
-		hitReactTimer_ -= dt; // 可変ならΔtを使う
+		hitReactTimer_ -= dt;
 		if (hitReactTimer_ <= 0.0f) {
 			SetAnimationIfChanged(animation_.Idle);
 			hitReactTimer_ = 0.0f;
@@ -218,38 +215,31 @@ void Enemy::Update()
 
 	// ======== 死亡演出（縮小＋爆破＋タイトル遷移） ========
 	if (isDead_) {
-		// 経過時間（固定 60fps 前提）
+		// 経過時間
 		deathTimer_ += dt;
 
 		// Death アニメーションを少し見せてから縮小開始
-		const float kShrinkDelay = 0.8f;  // これだけ待ってから縮小
-		const float kShrinkDuration = 1.0f;  // 縮小しきるまでの時間
+		const float kShrinkDelay = 0.8f;
+		const float kShrinkDuration = 1.0f;
 
 		if (deathTimer_ >= kShrinkDelay) {
-			// 0.0 ～ 1.0 の縮小進行度
 			float t = (deathTimer_ - kShrinkDelay) / kShrinkDuration;
 			if (t < 0.0f) t = 0.0f;
 			if (t > 1.0f) t = 1.0f;
 
-			// deathStartScale_ → 0 へ線形に縮小
 			transform.scale.x = deathStartScale_.x * (1.0f - t);
 			transform.scale.y = deathStartScale_.y * (1.0f - t);
 			transform.scale.z = deathStartScale_.z * (1.0f - t);
 
-			// スケールが 0 になったタイミングで一度だけ爆破
 			if (!hasSpawnedExplosion_ && t >= 1.0f) {
 
-				// 爆発の中心（少し上にオフセットして胸あたり）
 				explosionPos = transform.translate;
-				//explosionPos.y += 1.0f;
 
 				deathParticleTransform_.translate = explosionPos;
 				deathParticleTransform_.translate.y += 3.5f;
 				deathSystem_->EmitSystemByName("ADE", deathParticleTransform_);
 
 				hasSpawnedExplosion_ = true;
-
-
 			}
 		}
 
@@ -265,11 +255,10 @@ void Enemy::Update()
 		if (transform.scale.y < 0.0f) transform.scale.y = 0.0f;
 		if (transform.scale.z < 0.0f) transform.scale.z = 0.0f;
 
-		// 毎フレームパーティクルを更新（Emitter は今のまま Update() 引数なし）
+		// 毎フレームパーティクルを更新
 		if (deathSystem_) {
 			deathSystem_->Update();
 		}
-
 
 		// 一定時間経ったら TITLE へ戻る
 		if (deathTimer_ >= kDeathToTitleDelay_) {
@@ -286,6 +275,73 @@ void Enemy::Update()
 
 	uiManager_->ApplyDataToAll(data);
 	uiManager_->Update();
+}
+
+//==========================
+// ★ 分裂弾の順次発射制御
+//==========================
+void Enemy::UpdateSplitBulletFiring(float dt)
+{
+	// 分裂弾がなければ何もしない
+	if (splitBullets_.empty()) {
+		splitFireActive_ = false;
+		return;
+	}
+
+	// まだ順次発射モードに入っていない場合：
+	// 全弾が SplitWait（分裂完了・発射待ち）になったかチェック
+	if (!splitFireActive_)
+	{
+		bool allReady = true;
+		for (auto& b : splitBullets_) {
+			if (!b->IsReadyToShot()) {
+				allReady = false;
+				break;
+			}
+		}
+
+		if (allReady) {
+			// 全弾が分裂完了 → 順次発射モード開始
+			splitFireActive_ = true;
+			splitFireTimer_ = 0.0f;
+
+			// ★ 最初の1発は即座に発射
+			for (auto& b : splitBullets_) {
+				if (b->IsReadyToShot()) {
+					b->Fire();
+					break;
+				}
+			}
+		}
+		return;
+	}
+
+	// 順次発射モード中：タイマーで1発ずつ発射
+	splitFireTimer_ += dt;
+	if (splitFireTimer_ >= splitFireInterval_)
+	{
+		splitFireTimer_ = 0.0f;
+
+		// まだ待機中の弾を1つだけ発射
+		for (auto& b : splitBullets_) {
+			if (b->IsReadyToShot()) {
+				b->Fire();
+				break;  // 1発だけ
+			}
+		}
+
+		// 全弾発射済みかチェック
+		bool anyWaiting = false;
+		for (auto& b : splitBullets_) {
+			if (b->IsReadyToShot()) {
+				anyWaiting = true;
+				break;
+			}
+		}
+		if (!anyWaiting) {
+			splitFireActive_ = false;
+		}
+	}
 }
 
 void Enemy::BackGroundDraw()
@@ -309,8 +365,6 @@ void Enemy::Draw()
 
 void Enemy::ForeGroundDraw()
 {
-	//OutputDebugStringA("Enemy::ForeGroundDraw called\n");
-
 	// === HPバー描画 ===
 	if (uiManager_) {
 		uiManager_->Draw();
@@ -367,29 +421,19 @@ void Enemy::OnCollision()
 
 void Enemy::OnCollision(const CollisionInfo& info)
 {
-	// 相手のタイプIDを enum に戻す
 	const auto otherType = static_cast<CollisionTypeIdDef>(info.otherType);
 
-	// 要件：kPlayerWeapon と Enemy が当たった時にHP減少
-	// Enemy側なので「相手が kPlayerWeapon」ならダメージを入れる
 	if (otherType == CollisionTypeIdDef::kPlayerWeapon)
 	{
-		OnCollision();  // 既存のHP減少・死亡・被弾アニメ処理を使う
+		OnCollision();
 		return;
 	}
 }
 
 void Enemy::SetCamera(Camera* camera)
 {
-	// まずは ObjectBase 側の処理（camera_ と object3d_ にセット）
 	ObjectBase::SetCamera(camera);
-
-	// パーティクル側にも同じカメラを渡す
 	deathSystem_->SetCamera(camera);
-
-
-	// 必要なら武器や他のオブジェクトにもここで渡せる
-	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能
 }
 
 void Enemy::SetAnimationIfChanged(const std::string& name)
@@ -399,30 +443,6 @@ void Enemy::SetAnimationIfChanged(const std::string& name)
 		currentAnimationName_ = name;
 	}
 }
-
-//void Enemy::SpawnSplitBurstToPlayer(const Vector3& playerPos)
-//{
-//	Vector3 start = transform.translate;
-//	start.y += 2.0f;
-//
-//	const float riseHeight = 12.0f;
-//	const float riseSpeed = 18.0f;
-//	const float splitRadius = 4.0f;
-//	const float shotSpeed = 28.0f;
-//
-//	for (int i = 0; i < 4; ++i)
-//	{
-//		auto b = std::make_unique<EnemySplitBullet>(GetBaseScene());
-//		b->InitializeBurst(start, playerPos, riseHeight, riseSpeed, splitRadius, shotSpeed);
-//
-//		// indexをセットする関数を用意する or publicにする
-//		// 最短：EnemySplitBullet に SetIndex を追加
-//		b->SetIndex(i);
-//
-//		b->SetCamera(GetCamera());
-//		splitBullets_.push_back(std::move(b));
-//	}
-//}
 
 void Enemy::SpawnSplitBurstToPlayer(const Vector3& playerPos)
 {
@@ -440,13 +460,13 @@ void Enemy::SpawnSplitBurstToPlayer(const Vector3& playerPos)
 	{
 		auto b = std::make_unique<EnemySplitBullet>(GetBaseScene());
 		b->SetCamera(GetCamera());
-		// ここが重要：0..3 をセット（分裂位置が変わる）
 		b->SetIndex(i);
-
-		// ここが重要：InitializeBurstを呼ぶ（Initialize()は空なので呼んじゃダメ）
 		b->InitializeBurst(start, playerPos, riseHeight, riseSpeed, splitRadius, shotSpeed);
-
 
 		splitBullets_.push_back(std::move(b));
 	}
+
+	// ★ 発射制御をリセット
+	splitFireActive_ = false;
+	splitFireTimer_ = 0.0f;
 }
