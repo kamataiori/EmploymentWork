@@ -114,8 +114,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\EnemyAIController.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\BaseTutorialState.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChargeDashAttackLeaf.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\ChargeDashState.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyActionState.cpp" />
     <ClCompile Include="EnemyDropBullet.cpp" />
     <ClCompile Include="EnemySplitBullet.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyStateManager.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraEffectController.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraMove.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraShake.cpp" />
@@ -158,6 +161,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.cpp" />
     <ClCompile Include="engine\Scene\ChangeEffect\Fade\FadeTransition.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.cpp" />
     <ClCompile Include="IsTargetNearLeaf.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\math\MathFunctions.cpp" />
@@ -233,8 +237,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Scene\TutorialScene\BaseTutorialState.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChargeDashAttackLeaf.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\ChargeDashParam.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\ChargeDashState.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\EnemyActionState.h" />
     <ClInclude Include="EnemyDropBullet.h" />
     <ClInclude Include="EnemySplitBullet.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\EnemyStateManager.h" />
     <ClInclude Include="engine\BlendMode.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\EnemyAIController.h" />
     <ClInclude Include="engine\3d\Camera\CameraEffectController.h" />
@@ -266,6 +273,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\Camera\Camera.h" />
     <ClInclude Include="engine\check\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\directx\DirectXCommon.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui.h" />
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />

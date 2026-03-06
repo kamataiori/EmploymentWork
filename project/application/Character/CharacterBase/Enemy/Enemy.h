@@ -8,6 +8,7 @@ class EnemyAIController;
 class EnemyDropBullet;
 class EnemySplitBullet;
 class UIManager;
+class EnemyStateManager;
 
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
@@ -92,7 +93,7 @@ public:
 	// アニメーションを設定する関数
 	void SetAnimationIfChanged(const std::string& name);
 
-	// 追尾ターゲット（Player）を渡してください（例：enemy->SetTargetTransform(&player->Get()->transform);）
+	// 追尾ターゲット（Player）を渡してください
 	void SetTargetTransform(const Transform* t) { target_ = t; }
 
 	bool IsDead() const { return isDead_; }
@@ -115,6 +116,9 @@ public:
 	// Scene側でコライダー登録するために公開
 	const std::list<std::unique_ptr<EnemyDropBullet>>& GetDropBullets() const { return dropBullets_; }
 	const std::list<std::unique_ptr<EnemySplitBullet>>& GetSplitBullets() const { return splitBullets_; }
+
+	// ★ ステートマネージャへのアクセス（BT の ExecuteStateLeaf が使う）
+	EnemyStateManager* GetStateManager() { return stateManager_.get(); }
 
 private:
 
@@ -162,11 +166,13 @@ private:
 
 	std::unique_ptr<ParticleManager> deathSystem_ = std::make_unique<ParticleManager>();
 
-	// ★ SplitBullet の順次発射制御
-	float splitFireTimer_ = 0.0f;        // 発射間隔タイマー
-	float splitFireInterval_ = 0.3f;     // 1発ごとの発射間隔（秒）調整用
-	bool  splitFireActive_ = false;      // 順次発射モード中かどうか
+	// ★ ステートマネージャ（BT が選んだ攻撃の実行を管理）
+	std::unique_ptr<EnemyStateManager> stateManager_;
 
-	// ★ 順次発射の更新処理（Update内から呼ぶ）
+	// ★ SplitBullet の順次発射制御
+	float splitFireTimer_ = 0.0f;
+	float splitFireInterval_ = 0.3f;
+	bool  splitFireActive_ = false;
+
 	void UpdateSplitBulletFiring(float dt);
 };
