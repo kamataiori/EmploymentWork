@@ -3,6 +3,7 @@
 #include "MultiCollider.h"
 #include <memory>
 #include <list>
+#include <MinionEnemy.h>
 
 class EnemyAIController;
 class EnemyDropBullet;
@@ -113,11 +114,17 @@ public:
 	// 4発バースト（上昇→分裂→直線発射）
 	void SpawnSplitBurstToPlayer(const Vector3& playerPos);
 
+	// 雑魚敵を1体召喚（SummonMinionState から呼ばれる）
+	void SpawnMinion(const Vector3& spawnPos);
+
+	// リストの公開（Scene側でコライダー登録用）
+	const std::list<std::unique_ptr<MinionEnemy>>& GetMinions() const { return minions_; }
+
 	// Scene側でコライダー登録するために公開
 	const std::list<std::unique_ptr<EnemyDropBullet>>& GetDropBullets() const { return dropBullets_; }
 	const std::list<std::unique_ptr<EnemySplitBullet>>& GetSplitBullets() const { return splitBullets_; }
 
-	// ★ ステートマネージャへのアクセス（BT の ExecuteStateLeaf が使う）
+	// ステートマネージャへのアクセス（BT の ExecuteStateLeaf が使う）
 	EnemyStateManager* GetStateManager() { return stateManager_.get(); }
 
 private:
@@ -166,10 +173,13 @@ private:
 
 	std::unique_ptr<ParticleManager> deathSystem_ = std::make_unique<ParticleManager>();
 
-	// ★ ステートマネージャ（BT が選んだ攻撃の実行を管理）
+	// ステートマネージャ（BT が選んだ攻撃の実行を管理）
 	std::unique_ptr<EnemyStateManager> stateManager_;
 
-	// ★ SplitBullet の順次発射制御
+	// 雑魚敵リスト
+	std::list<std::unique_ptr<MinionEnemy>> minions_;
+
+	// SplitBullet の順次発射制御
 	float splitFireTimer_ = 0.0f;
 	float splitFireInterval_ = 0.3f;
 	bool  splitFireActive_ = false;

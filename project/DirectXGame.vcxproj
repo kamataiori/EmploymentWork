@@ -206,6 +206,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.cpp" />
     <ClCompile Include="MenuScene.cpp" />
+    <ClCompile Include="MinionEnemy.cpp" />
     <ClCompile Include="PauseScreen.cpp" />
     <ClCompile Include="PunchAttackLeaf.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialController.cpp" />
@@ -225,6 +226,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\UI\UITexture.cpp" />
     <ClCompile Include="SceneTransitionStates.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\StayHomeLeaf.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\SummonMinionState.cpp" />
     <ClCompile Include="Sword.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -339,6 +341,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeBase.h" />
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeResult.h" />
     <ClInclude Include="MenuScene.h" />
+    <ClInclude Include="MinionEnemy.h" />
     <ClInclude Include="PauseScreen.h" />
     <ClInclude Include="PunchAttackLeaf.h" />
     <ClInclude Include="resource.h" />
@@ -367,6 +370,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\UI\UITexture.h" />
     <ClInclude Include="SceneTransitionStates.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\StayHomeLeaf.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\SummonMinionState.h" />
     <ClInclude Include="Sword.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />

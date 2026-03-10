@@ -259,6 +259,9 @@ void GamePlayScene::Update()
 	for (auto& b : enemy_->GetSplitBullets()) {
 		collisionManager_->RegisterCollider(b->GetMultiCollider());
 	}
+	for (auto& m : enemy_->GetMinions()) {
+		collisionManager_->RegisterCollider(m->GetMultiCollider());
+	}
 	//collisionMManager_->RegisterCollider(player_->Get()->GetCollider());
 	//collisionMManager_->RegisterCollider(enemy_.get());
 	/*if (player_->GetBullet()) {

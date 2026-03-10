@@ -10,9 +10,10 @@
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/NearIdleLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/StayHomeLeaf.h"
 
-//　Leaf + State
-#include <Enemy/State/ChargeDashState.h>
+// Leaf + State
 #include "BehaviorTree/Leaves/ExecuteStateLeaf.h"
+#include <Enemy/State/ChargeDashState.h>
+#include <Enemy/State/SummonMinionState.h>
 
 void EnemyAIController::Initialize(Enemy* owner)
 {
@@ -20,7 +21,6 @@ void EnemyAIController::Initialize(Enemy* owner)
 
 	blackboard_ = std::make_unique<BlackBoard>();
 
-	// Leafが参照できるように Enemy を登録
 	blackboard_->set_value<Enemy*>("enemy", owner_);
 
 	BuildTree();
@@ -32,7 +32,6 @@ void EnemyAIController::Update(float dt)
 
 	blackboard_->set_value<float>("dt", dt);
 
-	// ツリー実行
 	root_->execute();
 }
 
@@ -40,9 +39,9 @@ void EnemyAIController::BuildTree()
 {
 	FixHysteresis();
 
-	// 黒板へ突進パラメータを登録（従来互換）
 	blackboard_->set_value("charge_dash_param", chargeDashParam_);
 
+	// ★ ルートは Sequence: FindTarget → 攻撃パターン選択(Selector)
 	auto rootSeq = std::make_unique<SequenceNode>(blackboard_.get());
 
 	// ターゲット探索
@@ -59,13 +58,25 @@ void EnemyAIController::BuildTree()
 	);
 	rootSeq->add_node(std::move(find));
 
-	// ★ ChargeDashAttackLeaf → ExecuteStateLeaf + ChargeDashState に置き換え
-	//    ファクトリがパラメータをキャプチャして、呼ばれるたびに新しいステートを作る
+	// ★ 攻撃パターンを Selector で選択
+	//    今は Sequence（順番に全部実行）にしておく
+	//    将来的に条件分岐（距離判定など）を入れて Selector に変えられる
+	auto attackSeq = std::make_unique<SequenceNode>(blackboard_.get());
+
+	// パターン1: チャージダッシュ → 分裂弾
 	ChargeDashParam p = chargeDashParam_;
-	rootSeq->add_node(std::make_unique<ExecuteStateLeaf>(
+	attackSeq->add_node(std::make_unique<ExecuteStateLeaf>(
 		blackboard_.get(),
 		[p]() { return std::make_unique<ChargeDashState>(p); }
 	));
+
+	// ★ パターン2: 雑魚敵召喚
+	attackSeq->add_node(std::make_unique<ExecuteStateLeaf>(
+		blackboard_.get(),
+		[]() { return std::make_unique<SummonMinionState>(); }
+	));
+
+	rootSeq->add_node(std::move(attackSeq));
 
 	root_ = std::move(rootSeq);
 }
