@@ -51,8 +51,6 @@ void TitleScene::Initialize()
 	sword->SetTranslate(swordTransform.translate);
 
 	// モデル読み込み
-	ModelManager::GetInstance()->LoadModel("human/sneakWalk.gltf");
-	ModelManager::GetInstance()->LoadModel("human/walk.gltf");
 	ModelManager::GetInstance()->LoadModel("Warrior.gltf");
 	ModelManager::GetInstance()->LoadModel("ground.obj");
 	ModelManager::GetInstance()->LoadModel("skydome.obj");

@@ -86,6 +86,11 @@ public:
 	/// </summary>
 	void SetCamera(Camera* camera) override;
 
+	/// <summary>
+	/// イントロ演出専用：AI/弾を動かさずに見た目だけ更新する
+	/// </summary>
+	void UpdateVisual();
+
 	// 初期位置
 	const Vector3& GetHomePosition() const { return homePosition_; }
 

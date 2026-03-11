@@ -372,6 +372,16 @@ void Enemy::OnCollision(const CollisionInfo& info)
 	}
 }
 
+void Enemy::UpdateVisual()
+{
+	// AI・弾・ステートを動かさず、見た目（object3d_）だけ更新する
+	// イントロ演出中に呼ぶ専用メソッド
+	object3d_->SetTranslate(transform.translate);
+	object3d_->SetScale(transform.scale);
+	object3d_->SetRotate(transform.rotate);
+	object3d_->Update();
+}
+
 void Enemy::SetCamera(Camera* camera)
 {
 	ObjectBase::SetCamera(camera);

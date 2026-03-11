@@ -21,7 +21,7 @@ void Player::Initialize()
 	// object3dの初期化
 	object3d_->Initialize();
 
-	
+
 	object3d_->SetModel("Warrior.gltf");
 	// アニメ切替の補間（コンボ用に短め）
 	object3d_->SetBlendDuration(0.10f);
@@ -71,7 +71,7 @@ void Player::Initialize()
 	// ボーン名は実際の名前に合わせて修正が必要
 	sword_->AttachTo(object3d_.get(), "Fist.R");
 
-	
+
 	//poweder = std::make_unique<ParticleManager>();
 	//poweder->Initialize(ParticleManager::VertexDataType::Plane);
 
@@ -100,9 +100,12 @@ void Player::Update()
 
 	if (weapon_) {
 		weapon_->Update();
-		weapon_->NormalAttack();
-		weapon_->Skill();
-		weapon_->Ultimate();
+		// 演出中は攻撃入力を受け付けない
+		if (!inputLocked_) {
+			weapon_->NormalAttack();
+			weapon_->Skill();
+			weapon_->Ultimate();
+		}
 	}
 
 	if (sword_) {
@@ -170,7 +173,7 @@ void Player::Draw()
 
 void Player::ForeGroundDraw()
 {
-	
+
 }
 
 void Player::AnimationDraw()
@@ -221,6 +224,13 @@ void Player::OnCollision()
 
 void Player::Move()
 {
+	// ===== 演出中は入力をすべて無視 =====
+	if (inputLocked_) {
+		// Idle アニメーションを維持しておく
+		RequestAnimaKey(PlayerAnimKey::Idle, 0);
+		return;
+	}
+
 	// ===== Δt（回転のスムージング用） =====
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
