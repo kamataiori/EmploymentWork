@@ -6,6 +6,10 @@
 #include <PostEffectManager.h>
 #include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
 
+#ifdef USE_IMGUI
+#include "externals/imgui/imnodes.h"
+#endif
+
 static float EaseOutCubic(float t) {
 	if (t < 0.0f) t = 0.0f;
 	if (t > 1.0f) t = 1.0f;
@@ -26,12 +30,6 @@ void TitleScene::Initialize()
 	BaseScene::GetLight()->GetDirectionalLight();
 	BaseScene::GetLight()->SetDirectionalLightIntensity({ 1.0f });
 	BaseScene::GetLight()->SetDirectionalLightColor({ 1.0f,1.0f,1.0f,1.0f });
-	//BaseScene::GetLight()->SetDirectionalLightDirection(Normalize({ 1.0f,1.0f }));
-	/*BaseScene::GetLight()->GetSpotLight();
-	BaseScene::GetLight()->SetCameraPosition({ 0.0f, 1.0f, 0.0f });
-	BaseScene::GetLight()->SetSpotLightColor({ 1.0f,1.0f,1.0f,1.0f });
-	BaseScene::GetLight()->SetSpotLightPosition({ 10.0f,2.25f,0.0f });
-	BaseScene::GetLight()->SetSpotLightIntensity({ 4.0f });*/
 
 	// 3Dオブジェクトの初期化
 
@@ -338,6 +336,84 @@ void TitleScene::Debug()
 		swordTransform.translate = { 0.0f, 0.0f, 0.0f };
 		swordTransform.rotate = { 0.0f, 0.0f, 0.0f };
 		swordTransform.scale = { 1.0f, 1.0f, 1.0f };
+	}
+
+	ImGui::End();
+
+	// ================================================
+	// imnodes テスト：ノードエディター
+	// ================================================
+	ImGui::Begin("Behavior Tree Editor (Test)");
+	ImGui::Text("imnodes Test - Drag nodes, connect pins!");
+	ImGui::Separator();
+
+	ImNodes::BeginNodeEditor();
+
+	// --- Root ノード ---
+	ImNodes::BeginNode(1);
+
+	ImNodes::BeginNodeTitleBar();
+	ImGui::TextUnformatted("Root (Sequence)");
+	ImNodes::EndNodeTitleBar();
+
+	ImNodes::BeginOutputAttribute(100);
+	ImGui::Text("child 1 ->");
+	ImNodes::EndOutputAttribute();
+
+	ImNodes::BeginOutputAttribute(101);
+	ImGui::Text("child 2 ->");
+	ImNodes::EndOutputAttribute();
+
+	ImNodes::EndNode();
+
+	// --- FindTarget ノード ---
+	ImNodes::BeginNode(2);
+
+	ImNodes::BeginNodeTitleBar();
+	ImGui::TextUnformatted("FindTarget");
+	ImNodes::EndNodeTitleBar();
+
+	ImNodes::BeginInputAttribute(200);
+	ImGui::Text("-> in");
+	ImNodes::EndInputAttribute();
+
+	ImGui::Text("Detect player");
+
+	ImNodes::EndNode();
+
+	// --- ChargeDash ノード ---
+	ImNodes::BeginNode(3);
+
+	ImNodes::BeginNodeTitleBar();
+	ImGui::TextUnformatted("ChargeDash");
+	ImNodes::EndNodeTitleBar();
+
+	ImNodes::BeginInputAttribute(300);
+	ImGui::Text("-> in");
+	ImNodes::EndInputAttribute();
+
+	// ★ ノード内に ImGui ウィジェットを埋め込める
+	static float dashSpeed = 25.0f;
+	static float chargeTime = 0.8f;
+	ImGui::SetNextItemWidth(100.0f);
+	ImGui::DragFloat("Dash Speed", &dashSpeed, 0.5f, 1.0f, 100.0f);
+	ImGui::SetNextItemWidth(100.0f);
+	ImGui::DragFloat("Charge Time", &chargeTime, 0.05f, 0.1f, 5.0f);
+
+	ImNodes::EndNode();
+
+	// --- リンク（ノード間の接続線）---
+	// Link(linkId, startAttr, endAttr)
+	ImNodes::Link(1, 100, 200);  // Root -> FindTarget
+	ImNodes::Link(2, 101, 300);  // Root -> ChargeDash
+
+	ImNodes::EndNodeEditor();
+
+	// リンク作成の検出（ユーザーがドラッグで新しいリンクを作ったとき）
+	int startAttr, endAttr;
+	if (ImNodes::IsLinkCreated(&startAttr, &endAttr)) {
+		// ここで新しいリンクを保存する処理を書く（今はログだけ）
+		OutputDebugStringA("New link created!\n");
 	}
 
 	ImGui::End();
