@@ -1,0 +1,262 @@
+{
+  "links": [
+    {
+      "fromNodeId": 1,
+      "id": 3,
+      "toNodeId": 2
+    },
+    {
+      "fromNodeId": 2,
+      "id": 5,
+      "toNodeId": 4
+    },
+    {
+      "fromNodeId": 2,
+      "id": 7,
+      "toNodeId": 6
+    },
+    {
+      "fromNodeId": 6,
+      "id": 9,
+      "toNodeId": 8
+    },
+    {
+      "fromNodeId": 8,
+      "id": 12,
+      "toNodeId": 10
+    },
+    {
+      "fromNodeId": 8,
+      "id": 13,
+      "toNodeId": 11
+    },
+    {
+      "fromNodeId": 6,
+      "id": 15,
+      "toNodeId": 14
+    },
+    {
+      "fromNodeId": 14,
+      "id": 18,
+      "toNodeId": 16
+    },
+    {
+      "fromNodeId": 14,
+      "id": 19,
+      "toNodeId": 17
+    }
+  ],
+  "nextId": 20,
+  "nodes": [
+    {
+      "id": 1,
+      "kind": 0,
+      "label": "Root",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 0.800000011920929,
+          "cooldownTime": 1.2000000476837158,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.4000000059604645,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "stateType": 0,
+        "thresholdDistance": 10.0
+      },
+      "posX": 254.0,
+      "posY": 9.0
+    },
+    {
+      "id": 2,
+      "kind": 1,
+      "label": "Sequence",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 0.800000011920929,
+          "cooldownTime": 1.2000000476837158,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.4000000059604645,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "stateType": 0,
+        "thresholdDistance": 10.0
+      },
+      "posX": 261.0,
+      "posY": 117.0
+    },
+    {
+      "id": 4,
+      "kind": 4,
+      "label": "FindTarget",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 0.800000011920929,
+          "cooldownTime": 1.2000000476837158,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.4000000059604645,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "stateType": 3,
+        "thresholdDistance": 10.0
+      },
+      "posX": 546.0,
+      "posY": 227.0
+    },
+    {
+      "id": 6,
+      "kind": 2,
+      "label": "Selector",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 0.800000011920929,
+          "cooldownTime": 1.2000000476837158,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.4000000059604645,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "stateType": 0,
+        "thresholdDistance": 10.0
+      },
+      "posX": 76.0,
+      "posY": 186.0
+    },
+    {
+      "id": 8,
+      "kind": 1,
+      "label": "Sequence",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 0.800000011920929,
+          "cooldownTime": 1.2000000476837158,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.4000000059604645,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "stateType": 0,
+        "thresholdDistance": 10.0
+      },
+      "posX": 156.0,
+      "posY": 303.0
+    },
+    {
+      "id": 10,
+      "kind": 4,
+      "label": "IsTargetFar",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 0.800000011920929,
+          "cooldownTime": 1.2000000476837158,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.4000000059604645,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "stateType": 7,
+        "thresholdDistance": 10.0
+      },
+      "posX": 331.0,
+      "posY": 376.0
+    },
+    {
+      "id": 11,
+      "kind": 4,
+      "label": "ChargeDash",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 0.800000011920929,
+          "cooldownTime": 1.2000000476837158,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.4000000059604645,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "stateType": 1,
+        "thresholdDistance": 10.0
+      },
+      "posX": 105.0,
+      "posY": 413.0
+    },
+    {
+      "id": 14,
+      "kind": 1,
+      "label": "Sequence",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 0.800000011920929,
+          "cooldownTime": 1.2000000476837158,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.4000000059604645,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "stateType": 0,
+        "thresholdDistance": 10.0
+      },
+      "posX": 524.0,
+      "posY": 333.0
+    },
+    {
+      "id": 16,
+      "kind": 4,
+      "label": "IsTargetFar",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 0.800000011920929,
+          "cooldownTime": 1.2000000476837158,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.4000000059604645,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "stateType": 7,
+        "thresholdDistance": 10.0
+      },
+      "posX": 716.0,
+      "posY": 414.0
+    },
+    {
+      "id": 17,
+      "kind": 4,
+      "label": "ChaseTarget",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 0.800000011920929,
+          "cooldownTime": 1.2000000476837158,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.4000000059604645,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "stateType": 4,
+        "thresholdDistance": 10.0
+      },
+      "posX": 548.0,
+      "posY": 476.0
+    }
+  ]
+}

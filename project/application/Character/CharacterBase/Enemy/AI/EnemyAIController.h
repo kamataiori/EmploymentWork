@@ -7,6 +7,7 @@
 #include "application/AI/BehaviorTree/Core/INode.h"
 
 #include "application/Character/CharacterBase/Enemy/AI/ChargeDashParam.h"
+#include "application/Scene/EditorScene/BTEditorData.h"
 
 // Forward
 class Enemy;
@@ -53,6 +54,9 @@ public:
 
 	// 突撃パラメータsetter
 	void SetChargeDashParam(const ChargeDashParam& p) { chargeDashParam_ = p; }
+
+	// エディターの BTGraph からランタイム BT を再構築
+	void RebuildFromGraph(const BTEditor::BTGraph& graph);
 	const ChargeDashParam& GetChargeDashParam() const { return chargeDashParam_; }
 
 

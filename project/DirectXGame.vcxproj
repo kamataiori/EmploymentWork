@@ -116,6 +116,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChargeDashAttackLeaf.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\ChargeDashState.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyActionState.cpp" />
+    <ClCompile Include="application\Scene\EditorScene\BTNodeGraphEditor.cpp" />
+    <ClCompile Include="application\Scene\EditorScene\BTEditorScene.cpp" />
     <ClCompile Include="EnemyDropBullet.cpp" />
     <ClCompile Include="EnemySplitBullet.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyStateManager.cpp" />
@@ -241,6 +243,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\ChargeDashParam.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\ChargeDashState.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\EnemyActionState.h" />
+    <ClInclude Include="application\Scene\EditorScene\BTEditorData.h" />
+    <ClInclude Include="application\Scene\EditorScene\BTNodeGraphEditor.h" />
+    <ClInclude Include="application\Scene\EditorScene\BTEditorScene.h" />
     <ClInclude Include="EnemyDropBullet.h" />
     <ClInclude Include="EnemySplitBullet.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\EnemyStateManager.h" />

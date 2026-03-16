@@ -7,7 +7,7 @@
 // ChargeDashState
 //------------------------------------------------------
 // 元 ChargeDashAttackLeaf の Phase ロジックをそのまま移植
-// Idle(待機) → Charge(溜め) → Dash(突進) → EndStop(硬直) → DropShot(弾発射) → 完了
+	// Idle(待機) → Charge(溜め) → Dash(突進) → Recover(硬直) → 完了
 //======================================================
 class ChargeDashState : public EnemyActionState
 {
@@ -25,8 +25,7 @@ private:
 		Idle,       // homeで待機（プレイヤーを見る）
 		Charge,     // 溜め（home固定）
 		Dash,       // 突進
-		EndStop,    // 突進後その場で停止
-		DropShot,   // 弾発射
+		Recover,    // 突進後硬直
 	};
 
 	Phase phase_ = Phase::Idle;
@@ -37,5 +36,4 @@ private:
 	Vector3 dashDir_{ 0.0f, 0.0f, 1.0f };
 	float dashTraveled_ = 0.0f;
 	Vector3 dashStartPos_{};
-	float endStopTime_ = 0.25f;
 };

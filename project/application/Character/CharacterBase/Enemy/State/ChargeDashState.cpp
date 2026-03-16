@@ -109,7 +109,7 @@ bool ChargeDashState::Update(Enemy* enemy, float dt)
 		if (dashTraveled_ >= param_.dashDistance - 1e-4f)
 		{
 			timer_ = 0.0f;
-			phase_ = Phase::EndStop;
+			phase_ = Phase::Recover;
 			if (!enemy->IsHitReact()) {
 				enemy->SetAnimationIfChanged(enemy->GetAnimSet().Idle);
 			}
@@ -117,32 +117,18 @@ bool ChargeDashState::Update(Enemy* enemy, float dt)
 		break;
 	}
 
-	case Phase::EndStop:
+	case Phase::Recover:
 	{
 		FaceTargetYaw();
 
 		timer_ += dt;
-		if (timer_ >= endStopTime_)
+		if (timer_ >= param_.recoverTime)
 		{
-			timer_ = 0.0f;
-			phase_ = Phase::DropShot;
-
-			if (!enemy->IsHitReact()) {
-				enemy->SetAnimationIfChanged(enemy->GetAnimSet().Idle);
-			}
+			// 硬直完了 → ステート終了
+			enemy->SetTransform(e);
+			return false;
 		}
 		break;
-	}
-
-	case Phase::DropShot:
-	{
-		if (target) {
-			enemy->SpawnSplitBurstToPlayer(target->translate);
-		}
-
-		// このステートは完了 → false を返す
-		enemy->SetTransform(e);
-		return false;
 	}
 	}
 
