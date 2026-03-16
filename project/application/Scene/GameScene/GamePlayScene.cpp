@@ -8,6 +8,10 @@
 #include "EnemyDropBullet.h"
 #include <EnemySplitBullet.h>
 
+#include "application/Character/CharacterBase/Enemy/AI/EnemyAIController.h"
+#include "application/AI/BehaviorTree/Core/NodeResult.h"
+#include <cmath>
+
 #ifdef max
 #undef max
 #endif
@@ -380,6 +384,71 @@ void GamePlayScene::Debug()
 {
 #ifdef _DEBUG
 	if (!IsDockedImGuiEnabled()) return;
+
+	// ===== BT デバッグウィンドウ ===== ← ここから追加
+	ImGui::SetNextWindowPos(ImVec2(10, 80), ImGuiCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(320, 220), ImGuiCond_Once);
+	ImGui::Begin("BT デバッグ", nullptr, ImGuiWindowFlags_None);
+
+	if (enemy_) {
+		auto* ai = enemy_->GetAIController();
+		if (ai) {
+			auto info = ai->GetDebugInfo();
+
+			// BT状態
+			const char* resultStr = "Idle";
+			ImVec4 resultColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+			switch (info.rootResult) {
+			case NodeResult::Running:
+				resultStr = "Running"; resultColor = { 0.4f,1.0f,0.4f,1.0f }; break;
+			case NodeResult::Success:
+				resultStr = "Success"; resultColor = { 0.4f,0.8f,1.0f,1.0f }; break;
+			case NodeResult::Fail:
+				resultStr = "Fail";    resultColor = { 1.0f,0.3f,0.3f,1.0f }; break;
+			default: break;
+			}
+			ImGui::Text("BT 状態:");
+			ImGui::SameLine();
+			ImGui::TextColored(resultColor, "%s", resultStr);
+			ImGui::Separator();
+
+			// 実行中ステート
+			ImGui::Text("実行中ステート:");
+			ImGui::SameLine();
+			if (info.runningStateName.empty() || info.runningStateName == "(なし)") {
+				ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "(なし)");
+			}
+			else {
+				ImGui::TextColored(ImVec4(1.0f, 0.9f, 0.2f, 1.0f),
+					"%s", info.runningStateName.c_str());
+			}
+			ImGui::Separator();
+
+			// BlackBoard情報
+			ImGui::Text("BlackBoard:");
+			ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f),
+				"%s", info.blackboardInfo.c_str());
+			ImGui::Separator();
+
+			// 距離情報
+			if (enemy_->GetTargetTransform()) {
+				Vector3 diff = enemy_->GetTargetTransform()->translate
+					- enemy_->GetTransform().translate;
+				diff.y = 0.0f;
+				float dist = std::sqrt(diff.x * diff.x + diff.z * diff.z);
+				ImGui::Text("ターゲットまでの距離: %.2f m", dist);
+			}
+		}
+		else {
+			ImGui::TextDisabled("AIController なし");
+		}
+	}
+	else {
+		ImGui::TextDisabled("Enemy なし");
+	}
+
+	ImGui::End();
+	// ===== ここまで追加 =====
 #endif
 }
 

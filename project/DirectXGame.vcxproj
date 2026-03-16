@@ -164,6 +164,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.cpp" />
     <ClCompile Include="engine\Scene\ChangeEffect\Fade\FadeTransition.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsHPLeaf.cpp" />
     <ClCompile Include="IsTargetNearLeaf.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\math\MathFunctions.cpp" />
@@ -229,7 +230,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="SceneTransitionStates.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\StayHomeLeaf.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\SummonMinionState.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\ShootSplitBulletState.cpp" />
     <ClCompile Include="Sword.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\ThrowBigBulletState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\AI\BehaviorTree\BehaviorTree.h" />
@@ -301,6 +304,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.h" />
     <ClInclude Include="engine\Scene\ChangeEffect\Fade\FadeTransition.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsHPLeaf.h" />
     <ClInclude Include="IsTargetNearLeaf.h" />
     <ClInclude Include="matrix\Matrix3x3.h" />
     <ClInclude Include="matrix\Matrix4x4.h" />
@@ -373,7 +377,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="SceneTransitionStates.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\StayHomeLeaf.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\SummonMinionState.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\ShootSplitBulletState.h" />
     <ClInclude Include="Sword.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\ThrowBigBulletState.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />

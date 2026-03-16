@@ -39,7 +39,6 @@ BTNodeGraphEditor::~BTNodeGraphEditor() = default;
 
 void BTNodeGraphEditor::Initialize()
 {
-	// コンテキストは ImGuiManager が管理するため独自生成しない
 
 	// スタイル調整
 	// ※ NodePaddingHorizontal / NodePaddingVertical は
@@ -62,6 +61,7 @@ void BTNodeGraphEditor::Finalize()
 //======================================================
 void BTNodeGraphEditor::Draw()
 {
+
 	// ===== メインウィンドウ =====
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
@@ -238,10 +238,13 @@ void BTNodeGraphEditor::DrawNodeGraph()
 		ImNodes::Link(link.id, from->OutputPinId(), to->InputPinId());
 	}
 
-	// ===== 右クリックコンテキストメニュー =====
-	DrawNodeContextMenu();
+	// ===== 右クリック検出（BeginNodeEditor 内）=====
+	DetectContextMenu();
 
 	ImNodes::EndNodeEditor();
+
+	// ===== 右クリックポップアップ（EndNodeEditor 後）=====
+	DrawContextMenuPopup();
 
 	// ===== ノード位置を毎フレーム graph_ へ書き戻す =====
 	for (auto& node : graph_.nodes)
@@ -305,37 +308,37 @@ void BTNodeGraphEditor::DrawNodeGraph()
 //======================================================
 // 右クリックコンテキストメニュー
 //======================================================
-void BTNodeGraphEditor::DrawNodeContextMenu()
+// BeginNodeEditor 内：右クリック検出のみ
+void BTNodeGraphEditor::DetectContextMenu()
 {
-	// 空白部分を右クリックでメニュー
-	int hoveredNodeCtx_ = -1, hoveredLinkCtx_ = -1;
+	int hoveredNode = -1, hoveredLink = -1;
 	if (ImNodes::IsEditorHovered() &&
 		ImGui::IsMouseClicked(ImGuiMouseButton_Right) &&
-		!ImNodes::IsNodeHovered(&hoveredNodeCtx_) &&
-		!ImNodes::IsLinkHovered(&hoveredLinkCtx_))
+		!ImNodes::IsNodeHovered(&hoveredNode) &&
+		!ImNodes::IsLinkHovered(&hoveredLink))
 	{
-		contextMenuOpen_ = true;
 		ImVec2 mp = ImGui::GetMousePos();
 		contextMenuPosX_ = mp.x;
 		contextMenuPosY_ = mp.y;
 		ImGui::OpenPopup("##CanvasContextMenu");
 	}
+}
 
+// EndNodeEditor 後：ポップアップ描画
+void BTNodeGraphEditor::DrawContextMenuPopup()
+{
 	if (ImGui::BeginPopup("##CanvasContextMenu"))
 	{
 		ImGui::TextDisabled("ノードを追加");
 		ImGui::Separator();
 
-		// スクリーン座標 → グリッド座標に変換
-		// EditorContextGetPanning() は全バージョンで使える
-		ImVec2 winPos = ImGui::GetWindowPos();
 		ImVec2 panning = ImNodes::EditorContextGetPanning();
-		float gx = (contextMenuPosX_ - winPos.x) - panning.x;
-		float gy = (contextMenuPosY_ - winPos.y) - panning.y;
+		ImVec2 editorWinPos = ImGui::GetWindowPos();
+		float gx = (contextMenuPosX_ - editorWinPos.x) - panning.x;
+		float gy = (contextMenuPosY_ - editorWinPos.y) - panning.y;
 
 		auto AddAt = [&](NodeKind k) {
-			int id = AddNode(k, gx, gy);
-			(void)id;
+			AddNode(k, gx, gy);
 			ImGui::CloseCurrentPopup();
 			};
 
@@ -349,6 +352,7 @@ void BTNodeGraphEditor::DrawNodeContextMenu()
 		ImGui::EndPopup();
 	}
 }
+
 
 //======================================================
 // サイドパネル（選択ノードのパラメーター編集）
@@ -451,23 +455,31 @@ void BTNodeGraphEditor::DrawParamEditor(EditorNode& node)
 		// ステート種別コンボ
 		static const char* kStateNames[] = {
 			"None",
-			"ChargeDash",
-			"SummonMinion",
-			"FindTarget",
-			"ChaseTarget",
-			"NearIdle",
-			"StayHome",
-			"IsTargetFar",
+			"ChargeDash       (突撃ダッシュ)",
+			"SummonMinion     (雑魚召喚)",
+			"FindTarget       (ターゲット探索)",
+			"ChaseTarget      (追跡)",
+			"NearIdle         (近距離待機)",
+			"StayHome         (定点待機)",
+			"IsTargetFar      (遠距離判定)",
+			"ShootSplitBullet (分裂弾発射)",
 			"Custom",
 		};
 		int cur = static_cast<int>(node.param.stateType);
 		if (ImGui::Combo("アクション種別", &cur, kStateNames, IM_ARRAYSIZE(kStateNames))) {
 			node.param.stateType = static_cast<LeafStateType>(cur);
-			// ラベルを自動更新
-			node.label = kStateNames[cur];
+			static const char* kLabelNames[] = {
+				"None","ChargeDash","SummonMinion","FindTarget","ChaseTarget",
+				"NearIdle","StayHome","IsTargetFar","ShootSplitBullet","Custom"
+			};
+			if (cur < IM_ARRAYSIZE(kLabelNames)) node.label = kLabelNames[cur];
 		}
 
 		ImGui::Spacing();
+
+		if (node.param.stateType == LeafStateType::ShootSplitBullet) {
+			ImGui::TextWrapped("分裂弾を4発プレイヤーに向けて発射します。\n溜め0.6秒 → 発射 → 硬直0.8秒");
+		}
 
 		// ChargeDash 専用パラメーター
 		if (node.param.stateType == LeafStateType::ChargeDash) {

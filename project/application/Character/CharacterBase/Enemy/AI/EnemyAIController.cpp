@@ -1,36 +1,44 @@
 #include "EnemyAIController.h"
 #include "Enemy/Enemy.h"
 
+// JSON 読み込み用
+#include <json.hpp>
+#include <fstream>
+
 // Composite
 #include "application/AI/BehaviorTree/Nodes/Composite/SequenceNode.h"
 #include "application/AI/BehaviorTree/Nodes/Composite/SelectorNode.h"
 
-// Leaf（従来）
+// Decorator
+#include "application/AI/BehaviorTree/Nodes/Decorator/InverterDecorator.h"
+
+// Leaf
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/FindTargetLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/NearIdleLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/StayHomeLeaf.h"
+#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/ChaseTargetLeaf.h"
+#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsTargetFarLeaf.h"
 
 // Leaf + State
 #include "BehaviorTree/Leaves/ExecuteStateLeaf.h"
 #include <Enemy/State/ChargeDashState.h>
 #include <Enemy/State/SummonMinionState.h>
-#include <json.hpp>
-#include <fstream>
-#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/ChaseTargetLeaf.h"
-#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsTargetFarLeaf.h"
-#include "application/AI/BehaviorTree/Nodes/Decorator/InverterDecorator.h"
+#include "application/Character/CharacterBase/Enemy/State/ShootSplitBulletState.h"
+#include "application/Character/CharacterBase/Enemy/State/ThrowBigBulletState.h"
+#include "application/Character/CharacterBase/Enemy/State/ThrowBigBulletState.h"
+#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsHPLeaf.h"
+
+// StateManager（デバッグ用）
+#include "application/Character/CharacterBase/Enemy/State/EnemyStateManager.h"
 
 void EnemyAIController::Initialize(Enemy* owner)
 {
 	owner_ = owner;
-
 	blackboard_ = std::make_unique<BlackBoard>();
-
 	blackboard_->set_value<Enemy*>("enemy", owner_);
 
-	BuildTree(); // デフォルトツリー
+	BuildTree();
 
-	// エディターで保存した JSON が存在すれば上書き読み込み
 	std::ifstream ifs("Resources/BT/Enemy/enemy_bt.json");
 	if (ifs)
 	{
@@ -40,32 +48,26 @@ void EnemyAIController::Initialize(Enemy* owner)
 			BTEditor::BTGraph graph = j.get<BTEditor::BTGraph>();
 			RebuildFromGraph(graph);
 		}
-		catch (...)
-		{
-			// 読み込み失敗時はデフォルトツリーをそのまま使う
-		}
+		catch (...) {}
 	}
 }
 
 void EnemyAIController::Update(float dt)
 {
 	if (!owner_ || !root_ || !blackboard_) { return; }
-
 	blackboard_->set_value<float>("dt", dt);
-
 	root_->execute();
+
+	// NodeBase::execute() が次フレーム冒頭で自動 Reset するため手動 Reset 不要
 }
 
 void EnemyAIController::BuildTree()
 {
 	FixHysteresis();
-
 	blackboard_->set_value("charge_dash_param", chargeDashParam_);
 
-	// ★ ルートは Sequence: FindTarget → 攻撃パターン選択(Selector)
 	auto rootSeq = std::make_unique<SequenceNode>(blackboard_.get());
 
-	// ターゲット探索
 	auto find = std::make_unique<FindTargetLeaf>(
 		blackboard_.get(),
 		[this]() -> const Transform*
@@ -79,41 +81,26 @@ void EnemyAIController::BuildTree()
 	);
 	rootSeq->add_node(std::move(find));
 
-	//    攻撃パターンを Selector で選択
-	//    今は Sequence（順番に全部実行）にしておく
-	//    将来的に条件分岐（距離判定など）を入れて Selector に変えられる
 	auto attackSeq = std::make_unique<SequenceNode>(blackboard_.get());
-
-	// パターン1: チャージダッシュ → 分裂弾
 	ChargeDashParam p = chargeDashParam_;
 	attackSeq->add_node(std::make_unique<ExecuteStateLeaf>(
 		blackboard_.get(),
 		[p]() { return std::make_unique<ChargeDashState>(p); }
 	));
-
-	// ★ パターン2: 雑魚敵召喚
 	attackSeq->add_node(std::make_unique<ExecuteStateLeaf>(
 		blackboard_.get(),
 		[]() { return std::make_unique<SummonMinionState>(); }
 	));
-
 	rootSeq->add_node(std::move(attackSeq));
-
 	root_ = std::move(rootSeq);
 }
 
-//======================================================
-// RebuildFromGraph
-// BTEditor::BTGraph → ランタイム INode ツリーを再構築
-// エディターで保存した JSON をゲームに反映する
-//======================================================
 void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 {
 	using namespace BTEditor;
 
 	if (!owner_ || !blackboard_) return;
 
-	// ルートノードを探す
 	const EditorNode* rootNode = nullptr;
 	for (auto& n : graph.nodes) {
 		if (n.kind == NodeKind::Root) { rootNode = &n; break; }
@@ -122,7 +109,6 @@ void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 
 	blackboard_->set_value<ChargeDashParam>("charge_dash_param", chargeDashParam_);
 
-	// 再帰でノードツリーを構築するラムダ
 	std::function<std::unique_ptr<INode>(int)> Build =
 		[&](int nodeId) -> std::unique_ptr<INode>
 		{
@@ -205,6 +191,21 @@ void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 					return std::make_unique<ExecuteStateLeaf>(
 						blackboard_.get(),
 						[]() { return std::make_unique<SummonMinionState>(); });
+				case LeafStateType::ShootSplitBullet:
+					return std::make_unique<ExecuteStateLeaf>(
+						blackboard_.get(),
+						[]() { return std::make_unique<ShootSplitBulletState>(); });
+				case LeafStateType::ThrowBigBullet:
+					return std::make_unique<ExecuteStateLeaf>(
+						blackboard_.get(),
+						[]() { return std::make_unique<ThrowBigBulletState>(); });
+				case LeafStateType::IsPhase2:
+					// Phase1=0, Phase2=1, Phase3=2
+					// Phase2以上（HP50%以下）なら Success
+					return std::make_unique<IsHPLeaf>(blackboard_.get(), 1);
+				case LeafStateType::IsPhase3:
+					// Phase3のみ（HP25%以下）なら Success
+					return std::make_unique<IsHPLeaf>(blackboard_.get(), 2);
 				default:
 					return nullptr;
 				}
@@ -212,7 +213,7 @@ void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 			default:
 				return nullptr;
 			}
-		}; // end Build
+		};
 
 	auto newRoot = Build(rootNode->id);
 	if (newRoot) {
@@ -220,10 +221,45 @@ void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 	}
 }
 
+EnemyAIController::BTDebugInfo EnemyAIController::GetDebugInfo() const
+{
+	BTDebugInfo info;
+
+	info.rootResult = root_ ? root_->get_node_result() : NodeResult::Idle;
+
+	if (owner_) {
+		auto* sm = owner_->GetStateManager();
+		if (sm && sm->HasState()) {
+			info.runningStateName = sm->GetCurrentStateName()
+				? sm->GetCurrentStateName() : "---";
+		}
+		else {
+			info.runningStateName = sm && sm->IsFinished() ? "(完了待ち)" : "(なし)";
+		}
+	}
+
+	if (blackboard_) {
+		const Transform* target = nullptr;
+		if (blackboard_->try_get_value<const Transform*>("target", target) && target) {
+			char buf[128];
+			snprintf(buf, sizeof(buf),
+				"target=(%.1f, %.1f, %.1f)",
+				target->translate.x,
+				target->translate.y,
+				target->translate.z);
+			info.blackboardInfo = buf;
+		}
+		else {
+			info.blackboardInfo = "target=null";
+		}
+	}
+
+	return info;
+}
+
 void EnemyAIController::FixHysteresis()
 {
 	const float kGap = 0.5f;
-
 	if (attackDist_ < stopDist_) {
 		attackDist_ = stopDist_;
 	}

@@ -21,10 +21,8 @@ public:
 	BTNodeGraphEditor();
 	~BTNodeGraphEditor();
 
-	// 初期化（imnodes コンテキスト生成）
 	void Initialize();
 
-	// 後処理（imnodes コンテキスト破棄）
 	void Finalize();
 
 	// 毎フレーム呼ぶ（ImGui ウィンドウごと描画）
@@ -50,7 +48,9 @@ private:
 	void DrawMenuBar();
 	void DrawNodeGraph();
 	void DrawSidePanel();
-	void DrawNodeContextMenu();
+	void DrawNodeContextMenu();   // 旧（未使用）
+	void DetectContextMenu();     // BeginNodeEditor 内：右クリック検出
+	void DrawContextMenuPopup();  // EndNodeEditor 後：ポップアップ描画
 
 	//--------------------------------------------------
 	// ノード操作
@@ -98,6 +98,7 @@ private:
 	bool   contextMenuOpen_ = false;
 	float  contextMenuPosX_ = 0.0f;
 	float  contextMenuPosY_ = 0.0f;
+
 
 	ApplyCallback applyCallback_;
 };

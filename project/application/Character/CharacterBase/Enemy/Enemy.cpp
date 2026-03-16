@@ -418,6 +418,23 @@ void Enemy::SpawnSplitBurstToPlayer(const Vector3& playerPos)
 	splitFireTimer_ = 0.0f;
 }
 
+// 大弾を生成（ThrowBigBulletState から呼ばれる）
+void Enemy::SpawnBigBullet(const Vector3& targetPos)
+{
+	Vector3 start = transform.translate;
+	start.y += 2.0f;
+
+	// EnemyDropBullet を大きめのパラメーターで生成
+	auto b = std::make_unique<EnemyDropBullet>(GetBaseScene());
+	b->SetCamera(GetCamera());
+	b->Initialize(start, targetPos);
+	// radius を大きくするため BigBullet 用スケールを設定
+	Transform bt = b->GetTransform();
+	bt.scale = { 3.0f, 3.0f, 3.0f };  // 通常弾の3倍サイズ
+	b->SetTransform(bt);
+	dropBullets_.push_back(std::move(b));
+}
+
 // 雑魚敵を1体召喚
 void Enemy::SpawnMinion(const Vector3& spawnPos)
 {

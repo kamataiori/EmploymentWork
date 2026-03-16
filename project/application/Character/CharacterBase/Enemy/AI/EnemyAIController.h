@@ -5,6 +5,7 @@
 // Node方式 BT基盤
 #include "application/AI/BehaviorTree/Core/BlackBoard.h"
 #include "application/AI/BehaviorTree/Core/INode.h"
+#include "application/AI/BehaviorTree/Core/NodeResult.h"
 
 #include "application/Character/CharacterBase/Enemy/AI/ChargeDashParam.h"
 #include "application/Scene/EditorScene/BTEditorData.h"
@@ -54,10 +55,18 @@ public:
 
 	// 突撃パラメータsetter
 	void SetChargeDashParam(const ChargeDashParam& p) { chargeDashParam_ = p; }
+	const ChargeDashParam& GetChargeDashParam() const { return chargeDashParam_; }
+
+	// デバッグ用：現在実行中のノード情報を取得
+	struct BTDebugInfo {
+		std::string runningStateName; // StateManager の現在ステート名
+		std::string blackboardInfo;   // BlackBoard の主要キー情報
+		NodeResult  rootResult;       // ルートノードの結果
+	};
+	BTDebugInfo GetDebugInfo() const;
 
 	// エディターの BTGraph からランタイム BT を再構築
 	void RebuildFromGraph(const BTEditor::BTGraph& graph);
-	const ChargeDashParam& GetChargeDashParam() const { return chargeDashParam_; }
 
 
 private:

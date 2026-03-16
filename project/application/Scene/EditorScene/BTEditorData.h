@@ -52,6 +52,10 @@ namespace BTEditor {
 		NearIdle = 5,
 		StayHome = 6,
 		IsTargetFar = 7,  // Condition (bool 判定 Leaf)
+		ShootSplitBullet = 8, // 分裂弾発射
+		ThrowBigBullet = 9, // 大弾投げ
+		IsPhase2 = 10, // HP50%以下か判定
+		IsPhase3 = 11, // HP25%以下か判定
 		Custom = 99, // 将来拡張用
 	};
 
@@ -66,6 +70,10 @@ namespace BTEditor {
 		case LeafStateType::NearIdle:      return "NearIdle";
 		case LeafStateType::StayHome:      return "StayHome";
 		case LeafStateType::IsTargetFar:   return "IsTargetFar";
+		case LeafStateType::ShootSplitBullet: return "ShootSplitBullet";
+		case LeafStateType::ThrowBigBullet:   return "ThrowBigBullet";
+		case LeafStateType::IsPhase2:         return "IsPhase2";
+		case LeafStateType::IsPhase3:         return "IsPhase3";
 		case LeafStateType::Custom:        return "Custom";
 		default:                           return "Unknown";
 		}

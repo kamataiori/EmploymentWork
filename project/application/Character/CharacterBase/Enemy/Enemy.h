@@ -104,6 +104,19 @@ public:
 
 	bool IsDead() const { return isDead_; }
 
+	// HPフェーズ
+	enum class EnemyPhase { Phase1, Phase2, Phase3 };
+	float GetHPRatio() const { return static_cast<float>(hp_) / static_cast<float>(kMaxHP_); }
+	EnemyPhase GetPhase() const {
+		float r = GetHPRatio();
+		if (r > 0.5f) return EnemyPhase::Phase1;
+		if (r > 0.25f) return EnemyPhase::Phase2;
+		return EnemyPhase::Phase3;
+	}
+
+	// 大弾を投げる（ThrowBigBulletState から呼ばれる）
+	void SpawnBigBullet(const Vector3& targetPos);
+
 	// BT側が target_ を参照できるように getter を追加
 	const Transform* GetTargetTransform() const { return target_; }
 
@@ -131,6 +144,7 @@ public:
 
 	// ステートマネージャへのアクセス（BT の ExecuteStateLeaf が使う）
 	EnemyStateManager* GetStateManager() { return stateManager_.get(); }
+	EnemyAIController* GetAIController() const { return aiController_.get(); }
 
 private:
 
@@ -155,8 +169,8 @@ private:
 	Vector3 homePosition_{};
 
 	// HP
-	int hp_ = 250;                   // 現在HP
-	const int kMaxHP_ = 250;         // 最大HP
+	int hp_ = 1000;                   // 現在HP
+	const int kMaxHP_ = 1000;         // 最大HP
 	const int kDamagePerHit_ = 30;   // 被弾時のダメージ量
 
 	// === HPバー表示用 ===
