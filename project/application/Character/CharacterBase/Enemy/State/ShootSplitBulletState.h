@@ -15,7 +15,8 @@
 class ShootSplitBulletState : public EnemyActionState
 {
 public:
-	ShootSplitBulletState() = default;
+	// angryMode: true のとき SpawnSplitBurstAngry（8発）を使う
+	explicit ShootSplitBulletState(bool angryMode = false);
 
 	void Enter(Enemy* enemy) override;
 	bool Update(Enemy* enemy, float dt) override;
@@ -30,6 +31,7 @@ private:
 		Recover,  // 硬直
 	};
 
+	bool  angryMode_ = false; // true のとき8発モード
 	Phase phase_ = Phase::WindUp;
 	float timer_ = 0.0f;
 

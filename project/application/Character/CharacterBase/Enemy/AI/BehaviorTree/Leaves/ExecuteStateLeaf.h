@@ -3,6 +3,7 @@
 #include "application/AI/BehaviorTree/Core/BlackBoard.h"
 #include <memory>
 #include <functional>
+#include <string>
 
 class EnemyActionState;
 
@@ -27,7 +28,10 @@ public:
 	// stateFactory: 呼ばれるたびに新しいステートを作って返す関数
 	using StateFactory = std::function<std::unique_ptr<EnemyActionState>()>;
 
-	ExecuteStateLeaf(BlackBoard* bb, StateFactory factory);
+	// actionName: BlackBoard の "last_action" に書き込む名前
+	// 省略すると記録しない（FindTarget 等の非攻撃 Leaf 用）
+	ExecuteStateLeaf(BlackBoard* bb, StateFactory factory,
+		const std::string& actionName = "");
 
 protected:
 	void init() override;
@@ -35,4 +39,5 @@ protected:
 
 private:
 	StateFactory stateFactory_;
+	std::string  actionName_;   // BlackBoard に記録する攻撃名
 };

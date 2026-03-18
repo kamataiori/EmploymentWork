@@ -107,12 +107,18 @@ public:
 	// HPフェーズ
 	enum class EnemyPhase { Phase1, Phase2, Phase3 };
 	float GetHPRatio() const { return static_cast<float>(hp_) / static_cast<float>(kMaxHP_); }
+	// 怒り状態（HP50%以下）
+	bool IsAngry() const { return GetHPRatio() <= 0.5f; }
+
 	EnemyPhase GetPhase() const {
 		float r = GetHPRatio();
 		if (r > 0.5f) return EnemyPhase::Phase1;
 		if (r > 0.25f) return EnemyPhase::Phase2;
 		return EnemyPhase::Phase3;
 	}
+
+	// 怒り時：分裂弾を多発（8発）
+	void SpawnSplitBurstAngry(const Vector3& playerPos);
 
 	// 大弾を投げる（ThrowBigBulletState から呼ばれる）
 	void SpawnBigBullet(const Vector3& targetPos);
@@ -169,8 +175,8 @@ private:
 	Vector3 homePosition_{};
 
 	// HP
-	int hp_ = 1000;                   // 現在HP
-	const int kMaxHP_ = 1000;         // 最大HP
+	int hp_ = 250;                   // 現在HP
+	const int kMaxHP_ = 250;         // 最大HP
 	const int kDamagePerHit_ = 30;   // 被弾時のダメージ量
 
 	// === HPバー表示用 ===

@@ -1,11 +1,14 @@
 #include "ExecuteStateLeaf.h"
+#include <string>
 #include "Enemy/Enemy.h"
 #include "application/Character/CharacterBase/Enemy/State/EnemyStateManager.h"
 #include "application/Character/CharacterBase/Enemy/State/EnemyActionState.h"
 
-ExecuteStateLeaf::ExecuteStateLeaf(BlackBoard* bb, StateFactory factory)
+ExecuteStateLeaf::ExecuteStateLeaf(BlackBoard* bb, StateFactory factory,
+	const std::string& actionName)
 	: LeafNodeBase(bb)
 	, stateFactory_(std::move(factory))
+	, actionName_(actionName)
 {
 }
 
@@ -13,7 +16,6 @@ void ExecuteStateLeaf::init()
 {
 	NodeBase::init();
 
-	// ステートを生成して Enemy の StateManager にセット
 	Enemy* enemy = mpBlackBoard->get_value<Enemy*>("enemy");
 	if (!enemy || !stateFactory_) {
 		mNodeResult = NodeResult::Fail;
@@ -38,9 +40,12 @@ void ExecuteStateLeaf::tick()
 		return;
 	}
 
-	// StateManager が完了を報告したら Success
 	if (enemy->GetStateManager()->IsFinished()) {
 		mNodeResult = NodeResult::Success;
+		// 攻撃名を BlackBoard に記録（NotLastActionLeaf が参照）
+		if (!actionName_.empty()) {
+			mpBlackBoard->set_value<std::string>("last_action", actionName_);
+		}
 	}
 	else {
 		mNodeResult = NodeResult::Running;

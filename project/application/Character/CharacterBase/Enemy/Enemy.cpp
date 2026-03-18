@@ -418,6 +418,31 @@ void Enemy::SpawnSplitBurstToPlayer(const Vector3& playerPos)
 	splitFireTimer_ = 0.0f;
 }
 
+// 怒り時：分裂弾を8発発射（通常の2倍）
+void Enemy::SpawnSplitBurstAngry(const Vector3& playerPos)
+{
+	Vector3 start = transform.translate;
+	start.y += 2.0f;
+
+	// 通常より速く・広く・多い
+	const float riseHeight = 14.0f;
+	const float riseSpeed = 22.0f;
+	const float splitRadius = 6.0f;
+	const float shotSpeed = 35.0f;
+	const int   bulletCount = 8;    // 通常4発 → 8発
+
+	for (int i = 0; i < bulletCount; ++i) {
+		auto b = std::make_unique<EnemySplitBullet>(GetBaseScene());
+		b->SetCamera(GetCamera());
+		b->SetIndex(i % 4);  // index は 0〜3 でループ
+		b->InitializeBurst(start, playerPos, riseHeight, riseSpeed, splitRadius, shotSpeed);
+		splitBullets_.push_back(std::move(b));
+	}
+
+	splitFireActive_ = false;
+	splitFireTimer_ = 0.0f;
+}
+
 // 大弾を生成（ThrowBigBulletState から呼ばれる）
 void Enemy::SpawnBigBullet(const Vector3& targetPos)
 {

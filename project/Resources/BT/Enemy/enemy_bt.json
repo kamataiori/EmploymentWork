@@ -1,4 +1,157 @@
 {
+  "links": [
+    {
+      "fromNodeId": 1,
+      "id": 100,
+      "toNodeId": 2
+    },
+    {
+      "fromNodeId": 2,
+      "id": 101,
+      "toNodeId": 3
+    },
+    {
+      "fromNodeId": 2,
+      "id": 102,
+      "toNodeId": 4
+    },
+    {
+      "fromNodeId": 4,
+      "id": 103,
+      "toNodeId": 5
+    },
+    {
+      "fromNodeId": 4,
+      "id": 104,
+      "toNodeId": 30
+    },
+    {
+      "fromNodeId": 5,
+      "id": 105,
+      "toNodeId": 6
+    },
+    {
+      "fromNodeId": 5,
+      "id": 106,
+      "toNodeId": 7
+    },
+    {
+      "fromNodeId": 7,
+      "id": 107,
+      "toNodeId": 8
+    },
+    {
+      "fromNodeId": 8,
+      "id": 108,
+      "toNodeId": 9
+    },
+    {
+      "fromNodeId": 8,
+      "id": 109,
+      "toNodeId": 10
+    },
+    {
+      "fromNodeId": 8,
+      "id": 110,
+      "toNodeId": 11
+    },
+    {
+      "fromNodeId": 7,
+      "id": 111,
+      "toNodeId": 12
+    },
+    {
+      "fromNodeId": 12,
+      "id": 112,
+      "toNodeId": 13
+    },
+    {
+      "fromNodeId": 12,
+      "id": 113,
+      "toNodeId": 14
+    },
+    {
+      "fromNodeId": 14,
+      "id": 114,
+      "toNodeId": 15
+    },
+    {
+      "fromNodeId": 12,
+      "id": 115,
+      "toNodeId": 16
+    },
+    {
+      "fromNodeId": 7,
+      "id": 116,
+      "toNodeId": 17
+    },
+    {
+      "fromNodeId": 17,
+      "id": 117,
+      "toNodeId": 18
+    },
+    {
+      "fromNodeId": 17,
+      "id": 118,
+      "toNodeId": 19
+    },
+    {
+      "fromNodeId": 7,
+      "id": 119,
+      "toNodeId": 20
+    },
+    {
+      "fromNodeId": 30,
+      "id": 130,
+      "toNodeId": 31
+    },
+    {
+      "fromNodeId": 31,
+      "id": 131,
+      "toNodeId": 32
+    },
+    {
+      "fromNodeId": 31,
+      "id": 132,
+      "toNodeId": 33
+    },
+    {
+      "fromNodeId": 31,
+      "id": 133,
+      "toNodeId": 34
+    },
+    {
+      "fromNodeId": 30,
+      "id": 134,
+      "toNodeId": 35
+    },
+    {
+      "fromNodeId": 35,
+      "id": 135,
+      "toNodeId": 36
+    },
+    {
+      "fromNodeId": 35,
+      "id": 136,
+      "toNodeId": 37
+    },
+    {
+      "fromNodeId": 37,
+      "id": 137,
+      "toNodeId": 38
+    },
+    {
+      "fromNodeId": 35,
+      "id": 138,
+      "toNodeId": 39
+    },
+    {
+      "fromNodeId": 30,
+      "id": 139,
+      "toNodeId": 40
+    }
+  ],
+  "nextId": 200,
   "nodes": [
     {
       "id": 1,
@@ -6,15 +159,16 @@
       "label": "Root",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
+        "lastActionName": "",
         "stateType": 0,
         "thresholdDistance": 8.0
       },
@@ -27,15 +181,16 @@
       "label": "Sequence",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
+        "lastActionName": "",
         "stateType": 0,
         "thresholdDistance": 8.0
       },
@@ -48,15 +203,16 @@
       "label": "FindTarget",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
+        "lastActionName": "",
         "stateType": 3,
         "thresholdDistance": 8.0
       },
@@ -69,15 +225,16 @@
       "label": "Selector",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
+        "lastActionName": "",
         "stateType": 0,
         "thresholdDistance": 8.0
       },
@@ -90,15 +247,16 @@
       "label": "Sequence",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
+        "lastActionName": "",
         "stateType": 0,
         "thresholdDistance": 8.0
       },
@@ -108,19 +266,20 @@
     {
       "id": 6,
       "kind": 4,
-      "label": "IsPhase3",
+      "label": "IsAngry",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 11,
+        "lastActionName": "",
+        "stateType": 13,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -132,15 +291,16 @@
       "label": "Selector",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
+        "lastActionName": "",
         "stateType": 0,
         "thresholdDistance": 8.0
       },
@@ -149,20 +309,21 @@
     },
     {
       "id": 8,
-      "kind": 4,
-      "label": "ThrowBigBullet",
+      "kind": 1,
+      "label": "Seq_AngryDash",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 9,
+        "lastActionName": "",
+        "stateType": 0,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -171,19 +332,20 @@
     {
       "id": 9,
       "kind": 4,
-      "label": "ShootSplitBullet",
+      "label": "Not:ChargeDash",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 8,
+        "lastActionName": "ChargeDash",
+        "stateType": 12,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -192,19 +354,20 @@
     {
       "id": 10,
       "kind": 4,
-      "label": "ChargeDash",
+      "label": "IsTargetFar",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 1,
+        "lastActionName": "",
+        "stateType": 7,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -212,20 +375,21 @@
     },
     {
       "id": 11,
-      "kind": 1,
-      "label": "Sequence",
+      "kind": 4,
+      "label": "ChargeDash",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 0,
+        "lastActionName": "",
+        "stateType": 1,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -233,20 +397,21 @@
     },
     {
       "id": 12,
-      "kind": 4,
-      "label": "IsPhase2",
+      "kind": 1,
+      "label": "Seq_AngryShot",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 10,
+        "lastActionName": "",
+        "stateType": 0,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -254,20 +419,21 @@
     },
     {
       "id": 13,
-      "kind": 2,
-      "label": "Selector",
+      "kind": 4,
+      "label": "Not:AngryShot",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 0,
+        "lastActionName": "ShootSplitBullet",
+        "stateType": 12,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -275,20 +441,21 @@
     },
     {
       "id": 14,
-      "kind": 4,
-      "label": "ThrowBigBullet",
+      "kind": 3,
+      "label": "Inverter",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 9,
+        "lastActionName": "",
+        "stateType": 0,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -296,20 +463,21 @@
     },
     {
       "id": 15,
-      "kind": 1,
-      "label": "Sequence",
+      "kind": 4,
+      "label": "IsTargetFar",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 0,
+        "lastActionName": "",
+        "stateType": 7,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -318,61 +486,64 @@
     {
       "id": 16,
       "kind": 4,
-      "label": "IsTargetFar",
+      "label": "ShootSplitBulletAngry",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 7,
+        "lastActionName": "",
+        "stateType": 14,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 441.0,
+      "posY": 39.0
     },
     {
       "id": 17,
-      "kind": 4,
-      "label": "ChargeDash",
+      "kind": 1,
+      "label": "Seq_BigBullet",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 1,
+        "lastActionName": "",
+        "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 259.0,
+      "posY": 87.0
     },
     {
       "id": 18,
-      "kind": 1,
-      "label": "Sequence",
+      "kind": 4,
+      "label": "Not:BigBullet",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 0,
+        "lastActionName": "ThrowBigBullet",
+        "stateType": 12,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -380,20 +551,21 @@
     },
     {
       "id": 19,
-      "kind": 3,
-      "label": "Inverter",
+      "kind": 4,
+      "label": "ThrowBigBullet",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 0,
+        "lastActionName": "",
+        "stateType": 9,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -402,208 +574,20 @@
     {
       "id": 20,
       "kind": 4,
-      "label": "IsTargetFar",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 1.2,
-          "cooldownTime": 5.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.8,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 7,
-        "thresholdDistance": 8.0
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 21,
-      "kind": 4,
-      "label": "ShootSplitBullet",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 1.2,
-          "cooldownTime": 5.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.8,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 8,
-        "thresholdDistance": 8.0
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 22,
-      "kind": 4,
       "label": "ChaseTarget",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
+        "lastActionName": "",
         "stateType": 4,
-        "thresholdDistance": 8.0
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 23,
-      "kind": 2,
-      "label": "Selector",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 1.2,
-          "cooldownTime": 5.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.8,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 0,
-        "thresholdDistance": 8.0
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 24,
-      "kind": 1,
-      "label": "Sequence",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 1.2,
-          "cooldownTime": 5.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.8,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 0,
-        "thresholdDistance": 8.0
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 25,
-      "kind": 4,
-      "label": "IsTargetFar",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 1.2,
-          "cooldownTime": 5.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.8,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 7,
-        "thresholdDistance": 8.0
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 26,
-      "kind": 4,
-      "label": "ChargeDash",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 1.2,
-          "cooldownTime": 5.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.8,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 1,
-        "thresholdDistance": 8.0
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 27,
-      "kind": 1,
-      "label": "Sequence",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 1.2,
-          "cooldownTime": 5.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.8,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 0,
-        "thresholdDistance": 8.0
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 28,
-      "kind": 3,
-      "label": "Inverter",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 1.2,
-          "cooldownTime": 5.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.8,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 0,
-        "thresholdDistance": 8.0
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 29,
-      "kind": 4,
-      "label": "IsTargetFar",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 1.2,
-          "cooldownTime": 5.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.8,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 7,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -611,20 +595,21 @@
     },
     {
       "id": 30,
-      "kind": 4,
-      "label": "ShootSplitBullet",
+      "kind": 2,
+      "label": "Selector",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 8,
+        "lastActionName": "",
+        "stateType": 0,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
@@ -632,177 +617,223 @@
     },
     {
       "id": 31,
-      "kind": 4,
-      "label": "ChaseTarget",
+      "kind": 1,
+      "label": "Seq_Dash",
       "param": {
         "chargeDash": {
-          "chargeTime": 1.2,
+          "chargeTime": 1.2000000476837158,
           "cooldownTime": 5.0,
           "dashDistance": 20.0,
           "dashSpeed": 25.0,
-          "recoverTime": 0.8,
+          "recoverTime": 0.800000011920929,
           "turnLerp": 0.25
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 4,
+        "lastActionName": "",
+        "stateType": 0,
         "thresholdDistance": 8.0
       },
       "posX": 0.0,
       "posY": 0.0
+    },
+    {
+      "id": 32,
+      "kind": 4,
+      "label": "Not:ChargeDash",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 1.2000000476837158,
+          "cooldownTime": 5.0,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.800000011920929,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "lastActionName": "ChargeDash",
+        "stateType": 12,
+        "thresholdDistance": 8.0
+      },
+      "posX": 0.0,
+      "posY": 0.0
+    },
+    {
+      "id": 33,
+      "kind": 4,
+      "label": "IsTargetFar",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 1.2000000476837158,
+          "cooldownTime": 5.0,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.800000011920929,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "lastActionName": "",
+        "stateType": 7,
+        "thresholdDistance": 8.0
+      },
+      "posX": 0.0,
+      "posY": 0.0
+    },
+    {
+      "id": 34,
+      "kind": 4,
+      "label": "ChargeDash",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 1.2000000476837158,
+          "cooldownTime": 5.0,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.800000011920929,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "lastActionName": "",
+        "stateType": 1,
+        "thresholdDistance": 8.0
+      },
+      "posX": 0.0,
+      "posY": 0.0
+    },
+    {
+      "id": 35,
+      "kind": 1,
+      "label": "Seq_Shot",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 1.2000000476837158,
+          "cooldownTime": 5.0,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.800000011920929,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "lastActionName": "",
+        "stateType": 0,
+        "thresholdDistance": 8.0
+      },
+      "posX": 0.0,
+      "posY": 0.0
+    },
+    {
+      "id": 36,
+      "kind": 4,
+      "label": "Not:Shot",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 1.2000000476837158,
+          "cooldownTime": 5.0,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.800000011920929,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "lastActionName": "ShootSplitBullet",
+        "stateType": 12,
+        "thresholdDistance": 8.0
+      },
+      "posX": 0.0,
+      "posY": 0.0
+    },
+    {
+      "id": 37,
+      "kind": 3,
+      "label": "Inverter",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 1.2000000476837158,
+          "cooldownTime": 5.0,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.800000011920929,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "lastActionName": "",
+        "stateType": 0,
+        "thresholdDistance": 8.0
+      },
+      "posX": 0.0,
+      "posY": 0.0
+    },
+    {
+      "id": 38,
+      "kind": 4,
+      "label": "IsTargetFar",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 1.2000000476837158,
+          "cooldownTime": 5.0,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.800000011920929,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "lastActionName": "",
+        "stateType": 7,
+        "thresholdDistance": 8.0
+      },
+      "posX": 0.0,
+      "posY": 0.0
+    },
+    {
+      "id": 39,
+      "kind": 4,
+      "label": "ShootSplitBullet",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 1.2000000476837158,
+          "cooldownTime": 5.0,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.800000011920929,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "lastActionName": "",
+        "stateType": 8,
+        "thresholdDistance": 8.0
+      },
+      "posX": 115.0,
+      "posY": 439.0
+    },
+    {
+      "id": 40,
+      "kind": 4,
+      "label": "ChaseTarget",
+      "param": {
+        "chargeDash": {
+          "chargeTime": 1.2000000476837158,
+          "cooldownTime": 5.0,
+          "dashDistance": 20.0,
+          "dashSpeed": 25.0,
+          "recoverTime": 0.800000011920929,
+          "turnLerp": 0.25
+        },
+        "customName": "",
+        "decoratorType": "Inverter",
+        "lastActionName": "",
+        "stateType": 4,
+        "thresholdDistance": 8.0
+      },
+      "posX": 624.0,
+      "posY": 510.0
     }
-  ],
-  "links": [
-    {
-      "id": 50,
-      "fromNodeId": 1,
-      "toNodeId": 2
-    },
-    {
-      "id": 51,
-      "fromNodeId": 2,
-      "toNodeId": 3
-    },
-    {
-      "id": 52,
-      "fromNodeId": 2,
-      "toNodeId": 4
-    },
-    {
-      "id": 53,
-      "fromNodeId": 4,
-      "toNodeId": 5
-    },
-    {
-      "id": 54,
-      "fromNodeId": 4,
-      "toNodeId": 11
-    },
-    {
-      "id": 55,
-      "fromNodeId": 4,
-      "toNodeId": 23
-    },
-    {
-      "id": 56,
-      "fromNodeId": 5,
-      "toNodeId": 6
-    },
-    {
-      "id": 57,
-      "fromNodeId": 5,
-      "toNodeId": 7
-    },
-    {
-      "id": 58,
-      "fromNodeId": 7,
-      "toNodeId": 8
-    },
-    {
-      "id": 59,
-      "fromNodeId": 7,
-      "toNodeId": 9
-    },
-    {
-      "id": 60,
-      "fromNodeId": 7,
-      "toNodeId": 10
-    },
-    {
-      "id": 61,
-      "fromNodeId": 11,
-      "toNodeId": 12
-    },
-    {
-      "id": 62,
-      "fromNodeId": 11,
-      "toNodeId": 13
-    },
-    {
-      "id": 63,
-      "fromNodeId": 13,
-      "toNodeId": 14
-    },
-    {
-      "id": 64,
-      "fromNodeId": 13,
-      "toNodeId": 15
-    },
-    {
-      "id": 65,
-      "fromNodeId": 15,
-      "toNodeId": 16
-    },
-    {
-      "id": 66,
-      "fromNodeId": 15,
-      "toNodeId": 17
-    },
-    {
-      "id": 67,
-      "fromNodeId": 13,
-      "toNodeId": 18
-    },
-    {
-      "id": 68,
-      "fromNodeId": 18,
-      "toNodeId": 19
-    },
-    {
-      "id": 69,
-      "fromNodeId": 19,
-      "toNodeId": 20
-    },
-    {
-      "id": 70,
-      "fromNodeId": 18,
-      "toNodeId": 21
-    },
-    {
-      "id": 71,
-      "fromNodeId": 13,
-      "toNodeId": 22
-    },
-    {
-      "id": 72,
-      "fromNodeId": 23,
-      "toNodeId": 24
-    },
-    {
-      "id": 73,
-      "fromNodeId": 24,
-      "toNodeId": 25
-    },
-    {
-      "id": 74,
-      "fromNodeId": 24,
-      "toNodeId": 26
-    },
-    {
-      "id": 75,
-      "fromNodeId": 23,
-      "toNodeId": 27
-    },
-    {
-      "id": 76,
-      "fromNodeId": 27,
-      "toNodeId": 28
-    },
-    {
-      "id": 77,
-      "fromNodeId": 28,
-      "toNodeId": 29
-    },
-    {
-      "id": 78,
-      "fromNodeId": 27,
-      "toNodeId": 30
-    },
-    {
-      "id": 79,
-      "fromNodeId": 23,
-      "toNodeId": 31
-    }
-  ],
-  "nextId": 100
+  ]
 }

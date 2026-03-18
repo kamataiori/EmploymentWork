@@ -56,6 +56,9 @@ namespace BTEditor {
 		ThrowBigBullet = 9, // 大弾投げ
 		IsPhase2 = 10, // HP50%以下か判定
 		IsPhase3 = 11, // HP25%以下か判定
+		NotLastAction = 12, // 前回と同じ攻撃を禁止
+		IsAngry = 13, // 怒り状態（HP50%以下）か判定
+		ShootSplitBulletAngry = 14, // 怒り時の分裂弾（8発）
 		Custom = 99, // 将来拡張用
 	};
 
@@ -74,6 +77,9 @@ namespace BTEditor {
 		case LeafStateType::ThrowBigBullet:   return "ThrowBigBullet";
 		case LeafStateType::IsPhase2:         return "IsPhase2";
 		case LeafStateType::IsPhase3:         return "IsPhase3";
+		case LeafStateType::NotLastAction:         return "NotLastAction";
+		case LeafStateType::IsAngry:               return "IsAngry";
+		case LeafStateType::ShootSplitBulletAngry: return "ShootSplitBulletAngry";
 		case LeafStateType::Custom:        return "Custom";
 		default:                           return "Unknown";
 		}
@@ -115,6 +121,9 @@ namespace BTEditor {
 		// --- Decorator 専用 ---
 		std::string decoratorType = "Inverter"; // 今後拡張
 
+		// --- NotLastAction 用：禁止する攻撃名 ---
+		std::string lastActionName; // "ChargeDash" など
+
 		// --- カスタム Leaf 名（Custom 用） ---
 		std::string customName;
 	};
@@ -125,6 +134,7 @@ namespace BTEditor {
 		j["chargeDash"] = p.chargeDash;
 		j["thresholdDistance"] = p.thresholdDistance;
 		j["decoratorType"] = p.decoratorType;
+		j["lastActionName"] = p.lastActionName;
 		j["customName"] = p.customName;
 	}
 
@@ -134,6 +144,7 @@ namespace BTEditor {
 		p.chargeDash = j.value("chargeDash", ChargeDashParamData{});
 		p.thresholdDistance = j.value("thresholdDistance", 10.0f);
 		p.decoratorType = j.value("decoratorType", std::string("Inverter"));
+		p.lastActionName = j.value("lastActionName", std::string(""));
 		p.customName = j.value("customName", std::string(""));
 	}
 

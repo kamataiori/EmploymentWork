@@ -463,6 +463,9 @@ void BTNodeGraphEditor::DrawParamEditor(EditorNode& node)
 			"StayHome         (定点待機)",
 			"IsTargetFar      (遠距離判定)",
 			"ShootSplitBullet (分裂弾発射)",
+			"ThrowBigBullet   (大弾投げ)",
+			"IsPhase2         (HP50%以下)",
+			"IsPhase3         (HP25%以下)",
 			"Custom",
 		};
 		int cur = static_cast<int>(node.param.stateType);
@@ -470,13 +473,39 @@ void BTNodeGraphEditor::DrawParamEditor(EditorNode& node)
 			node.param.stateType = static_cast<LeafStateType>(cur);
 			static const char* kLabelNames[] = {
 				"None","ChargeDash","SummonMinion","FindTarget","ChaseTarget",
-				"NearIdle","StayHome","IsTargetFar","ShootSplitBullet","Custom"
+				"NearIdle","StayHome","IsTargetFar","ShootSplitBullet","ThrowBigBullet","IsPhase2","IsPhase3","NotLastAction","IsAngry","ShootSplitBulletAngry","Custom"
 			};
 			if (cur < IM_ARRAYSIZE(kLabelNames)) node.label = kLabelNames[cur];
 		}
 
 		ImGui::Spacing();
 
+		if (node.param.stateType == LeafStateType::ThrowBigBullet) {
+			ImGui::TextWrapped("大弾を1発プレイヤーに向けて投げます。\n溜め1.5秒 → 投擲 → 硬直1.0秒\nフェーズ2以降推奨");
+		}
+		if (node.param.stateType == LeafStateType::IsPhase2) {
+			ImGui::TextWrapped("HP50%%以下なら Success\nSequenceの条件として使用");
+		}
+		if (node.param.stateType == LeafStateType::IsPhase3) {
+			ImGui::TextWrapped("HP25%%以下なら Success\nSequenceの条件として使用");
+		}
+		if (node.param.stateType == LeafStateType::IsAngry) {
+			ImGui::TextWrapped("HP50%%以下（怒り状態）なら Success。\nSequenceの条件として使用。");
+		}
+		if (node.param.stateType == LeafStateType::ShootSplitBulletAngry) {
+			ImGui::TextWrapped("怒り時の分裂弾（8発）。\n溜め0.6秒 → 発射 → 硬直0.8秒");
+		}
+		if (node.param.stateType == LeafStateType::NotLastAction) {
+			ImGui::TextWrapped("前回と同じ攻撃なら Fail。Sequenceの先頭に置いて連続使用を防ぎます。");
+			ImGui::Spacing();
+			char buf[64] = {};
+			snprintf(buf, sizeof(buf), "%s", node.param.lastActionName.c_str());
+			if (ImGui::InputText("禁止する攻撃名", buf, sizeof(buf))) {
+				node.param.lastActionName = buf;
+				node.label = std::string("Not:") + buf;
+			}
+			ImGui::TextDisabled("例: ChargeDash / ShootSplitBullet / ThrowBigBullet");
+		}
 		if (node.param.stateType == LeafStateType::ShootSplitBullet) {
 			ImGui::TextWrapped("分裂弾を4発プレイヤーに向けて発射します。\n溜め0.6秒 → 発射 → 硬直0.8秒");
 		}

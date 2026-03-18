@@ -25,8 +25,9 @@
 #include <Enemy/State/SummonMinionState.h>
 #include "application/Character/CharacterBase/Enemy/State/ShootSplitBulletState.h"
 #include "application/Character/CharacterBase/Enemy/State/ThrowBigBulletState.h"
-#include "application/Character/CharacterBase/Enemy/State/ThrowBigBulletState.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsHPLeaf.h"
+#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/NotLastActionLeaf.h"
+#include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsAngryLeaf.h"
 
 // StateManager（デバッグ用）
 #include "application/Character/CharacterBase/Enemy/State/EnemyStateManager.h"
@@ -183,29 +184,48 @@ void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 					cp.recoverTime = p.chargeDash.recoverTime;
 					cp.cooldownTime = p.chargeDash.cooldownTime;
 					cp.turnLerp = p.chargeDash.turnLerp;
+					// 怒り状態なら速度・溜め・クールダウンを強化
+					{
+						Enemy* _owner = blackboard_.get() ? blackboard_->get_value<Enemy*>("enemy") : nullptr;
+						if (_owner && _owner->IsAngry()) {
+							cp.dashSpeed *= 1.6f;  // 速度1.6倍
+							cp.chargeTime *= 0.5f;  // 溜め半分
+							cp.cooldownTime *= 0.6f;  // クールダウン短め
+						}
+					}
 					return std::make_unique<ExecuteStateLeaf>(
 						blackboard_.get(),
-						[cp]() { return std::make_unique<ChargeDashState>(cp); });
+						[cp]() { return std::make_unique<ChargeDashState>(cp); },
+						"ChargeDash");
 				}
 				case LeafStateType::SummonMinion:
 					return std::make_unique<ExecuteStateLeaf>(
 						blackboard_.get(),
-						[]() { return std::make_unique<SummonMinionState>(); });
+						[]() { return std::make_unique<SummonMinionState>(); }, "SummonMinion");
 				case LeafStateType::ShootSplitBullet:
 					return std::make_unique<ExecuteStateLeaf>(
 						blackboard_.get(),
-						[]() { return std::make_unique<ShootSplitBulletState>(); });
+						[]() { return std::make_unique<ShootSplitBulletState>(); }, "ShootSplitBullet");
 				case LeafStateType::ThrowBigBullet:
 					return std::make_unique<ExecuteStateLeaf>(
 						blackboard_.get(),
-						[]() { return std::make_unique<ThrowBigBulletState>(); });
+						[]() { return std::make_unique<ThrowBigBulletState>(); }, "ThrowBigBullet");
 				case LeafStateType::IsPhase2:
 					// Phase1=0, Phase2=1, Phase3=2
 					// Phase2以上（HP50%以下）なら Success
 					return std::make_unique<IsHPLeaf>(blackboard_.get(), 1);
 				case LeafStateType::IsPhase3:
-					// Phase3のみ（HP25%以下）なら Success
 					return std::make_unique<IsHPLeaf>(blackboard_.get(), 2);
+				case LeafStateType::NotLastAction:
+					return std::make_unique<NotLastActionLeaf>(
+						blackboard_.get(), p.lastActionName);
+				case LeafStateType::IsAngry:
+					return std::make_unique<IsAngryLeaf>(blackboard_.get());
+				case LeafStateType::ShootSplitBulletAngry:
+					return std::make_unique<ExecuteStateLeaf>(
+						blackboard_.get(),
+						[]() { return std::make_unique<ShootSplitBulletState>(true); },
+						"ShootSplitBullet");
 				default:
 					return nullptr;
 				}

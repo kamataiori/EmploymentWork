@@ -1,6 +1,12 @@
+
 #include "ShootSplitBulletState.h"
 #include "Enemy/Enemy.h"
 #include <cmath>
+
+ShootSplitBulletState::ShootSplitBulletState(bool angryMode)
+	: angryMode_(angryMode)
+{
+}
 
 void ShootSplitBulletState::Enter(Enemy* enemy)
 {
@@ -48,9 +54,14 @@ bool ShootSplitBulletState::Update(Enemy* enemy, float dt)
 
 	case Phase::Shoot:
 	{
-		// 分裂弾を発射
+		// 怒り時は多発（8発）、通常は4発
 		if (target) {
-			enemy->SpawnSplitBurstToPlayer(target->translate);
+			if (angryMode_) {
+				enemy->SpawnSplitBurstAngry(target->translate);
+			}
+			else {
+				enemy->SpawnSplitBurstToPlayer(target->translate);
+			}
 		}
 
 		timer_ = 0.0f;
