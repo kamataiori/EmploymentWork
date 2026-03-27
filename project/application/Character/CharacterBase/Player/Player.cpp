@@ -84,6 +84,37 @@ void Player::Update()
 	// ===== Δt（スロー対応） =====
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
+	// ===== デバッグ：Xキーで即死 =====
+	if (!isDead_ && Input::GetInstance()->TriggerKey(DIK_X)) {
+		hp_ = 0;
+	}
+
+	// ===== 死亡突入（hp_が0になった瞬間に1回だけ） =====
+	if (!isDead_ && hp_ <= 0) {
+		isDead_ = true;
+		deathTimer_ = kDeathDuration_;
+		inputLocked_ = true;                          // 移動・攻撃・全入力を封鎖
+		object3d_->SetAnimationOneShot("Death");      // Deathアニメをワンショット再生
+	}
+
+	// ===== 死亡中：タイマーだけ進めてアニメを回す =====
+	if (isDead_) {
+		deathTimer_ -= dt;
+		if (deathTimer_ < 0.0f) deathTimer_ = 0.0f;
+
+		// アニメ・剣の追従は死亡中も毎フレーム更新
+		object3d_->SetTranslate(transform.translate);
+		object3d_->SetRotate(transform.rotate);
+		object3d_->SetScale(transform.scale);
+		object3d_->Update();
+
+		if (sword_) {
+			sword_->Update(); // Fist.R ボーンへの追従を維持
+		}
+
+		return;
+	}
+
 	// ロックの減衰
 	if (animaLockTimer_ > 0.0f) {
 		animaLockTimer_ -= dt;
@@ -196,6 +227,13 @@ void Player::OnCollision()
 	// ====== HP減少処理 ======
 	/*hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;*/
+
+	if (isDead_) return; // 死亡中は被弾無視
+
+	hp_ -= kDamagePerHit_;
+	if (hp_ < 0) hp_ = 0;
+
+	isCollided_ = true;
 
 	/*poweder->EmitByPresetName("powder", transform);
 	poweder->Update();*/

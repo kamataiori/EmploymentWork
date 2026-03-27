@@ -28,6 +28,7 @@ using namespace BTEditor;
 //======================================================
 void BTEditorScene::Initialize()
 {
+#ifdef USE_IMGUI
 	editor_.Initialize();
 
 	// BT 適用コールバックを登録
@@ -37,6 +38,7 @@ void BTEditorScene::Initialize()
 
 	// デフォルト JSON を自動ロード（存在すれば）
 	editor_.LoadFromJson("Resources/BT/Enemy/enemy_bt.json");
+#endif
 }
 
 //======================================================
@@ -44,7 +46,9 @@ void BTEditorScene::Initialize()
 //======================================================
 void BTEditorScene::Finalize()
 {
+#ifdef USE_IMGUI
 	editor_.Finalize();
+#endif
 }
 
 //======================================================
@@ -56,12 +60,12 @@ void BTEditorScene::Update()
 	req.fadeOutSec = 2.0f;
 	req.fadeInSec = 2.5f;
 
+#ifdef USE_IMGUI
 	// Esc でゲームシーンへ戻る
 	if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
 		SceneManager::GetInstance()->RequestChangeScene("GAMEPLAY", req);
 	}
-
-
+#endif
 
 	Debug();
 }
@@ -71,13 +75,13 @@ void BTEditorScene::Update()
 //======================================================
 void BTEditorScene::Draw()
 {
-	
 }
 
 void BTEditorScene::Debug()
 {
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 	if (!IsDockedImGuiEnabled()) return;
+
 	// 戻るボタン（画面左上に固定オーバーレイ）
 	ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(160, 40), ImGuiCond_Always);
@@ -101,22 +105,15 @@ void BTEditorScene::Debug()
 
 //======================================================
 // ApplyGraphToEnemy
-// BTGraph → ランタイム INode ツリーを再構築して
-// EnemyAIController に差し込む
 //======================================================
 void BTEditorScene::ApplyGraphToEnemy(const BTGraph& graph)
 {
 	if (!aiController_) {
-		// aiController_ が未設定の場合は JSON 保存だけ行い、
-		// ゲーム起動時に読み込ませる運用も可能
 		editor_.SaveToJson("Resources/BT/Enemy/enemy_bt.json");
 		return;
 	}
 
-	// EnemyAIController に RebuildFromGraph を追加している前提で呼ぶ
-	// (追加方法は下記の「EnemyAIController への追加コード」を参照)
 	aiController_->RebuildFromGraph(graph);
 
-	// JSON にも同期保存
 	editor_.SaveToJson("Resources/BT/Enemy/enemy_bt.json");
 }

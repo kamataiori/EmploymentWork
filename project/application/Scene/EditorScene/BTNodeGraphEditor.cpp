@@ -8,9 +8,12 @@
 
 #include <fstream>
 #include <algorithm>
+#include <unordered_map>
 #include <cassert>
 
 using namespace BTEditor;
+
+#ifdef USE_IMGUI
 
 //======================================================
 // 色定数（ABGR 形式 for imnodes）
@@ -77,20 +80,20 @@ void BTNodeGraphEditor::Draw()
 	DrawMenuBar();
 
 	// ===== レイアウト: 左 サイドパネル | 右 グラフキャンバス =====
-	const float sidePanelWidth = 300.0f;
-	ImGui::BeginChild("##SidePanel",
-		ImVec2(sidePanelWidth, 0.0f),
-		true,
-		ImGuiWindowFlags_None);
-	DrawSidePanel();
+	// ===== 左：グループパネル =====
+	ImGui::BeginChild("##GroupPanel", ImVec2(210.0f, 0.0f), true);
+	DrawGroupPanel();
 	ImGui::EndChild();
-
 	ImGui::SameLine();
 
-	ImGui::BeginChild("##GraphCanvas",
-		ImVec2(0.0f, 0.0f),
-		false,
-		ImGuiWindowFlags_None);
+	// ===== 中：ノード詳細パネル =====
+	ImGui::BeginChild("##SidePanel", ImVec2(280.0f, 0.0f), true);
+	DrawSidePanel();
+	ImGui::EndChild();
+	ImGui::SameLine();
+
+	// ===== 右：グラフキャンバス =====
+	ImGui::BeginChild("##GraphCanvas", ImVec2(0.0f, 0.0f), false);
 	DrawNodeGraph();
 	ImGui::EndChild();
 
@@ -146,7 +149,27 @@ void BTNodeGraphEditor::DrawMenuBar()
 		ImGui::EndMenu();
 	}
 
-	// ゲームへ適用ボタン
+	// 自動整理 / グループ系ボタン
+	ImGui::Separator();
+	if (ImGui::Button(" 自動整理↓ ")) {
+		AutoLayout();            // 上→下（縦方向）
+	}
+	ImGui::SetItemTooltip("ツリーを上から下へ整列（縦方向）");
+	ImGui::SameLine();
+	if (ImGui::Button(" 自動整理→ ")) {
+		AutoLayoutHorizontal();  // 左→右（横方向）
+	}
+	ImGui::SetItemTooltip("ツリーを左から右へ整列（横方向）");
+	ImGui::SameLine();
+	if (ImGui::Button(" 自動グループ分け ")) {
+		AutoGrouping();          // グループ生成のみ（整列はしない）
+	}
+	ImGui::SetItemTooltip("ツリーを解析してグループを自動生成");
+	ImGui::SameLine();
+	if (ImGui::Button(" グループ別整列 ")) {
+		GroupLayout();           // グループ単位で縦にまとめる
+	}
+	ImGui::SetItemTooltip("同じグループのノードを縦にまとめて配置");
 	ImGui::Separator();
 	if (ImGui::Button("  ゲームに反映  ")) {
 		if (applyCallback_) applyCallback_(graph_);
@@ -169,20 +192,60 @@ void BTNodeGraphEditor::DrawMenuBar()
 //======================================================
 void BTNodeGraphEditor::DrawNodeGraph()
 {
+	// ===== スクロール可能なキャンバス領域 =====
+	ImGui::BeginChild("##NodeCanvas",
+		ImVec2(0.0f, 0.0f),
+		false,
+		ImGuiWindowFlags_HorizontalScrollbar);
+
+	// ===== マウスホイールでズーム =====
+	if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) {
+		float wheel = ImGui::GetIO().MouseWheel;
+		if (wheel != 0.0f) {
+			// Ctrl を押していないときだけズーム（押しているときはデフォルトのスクロール）
+			if (!ImGui::GetIO().KeyCtrl) {
+				zoomScale_ += wheel * 0.08f;
+				if (zoomScale_ < 0.3f) zoomScale_ = 0.3f; // ズーム範囲: 30%〜250%
+				if (zoomScale_ > 2.5f) zoomScale_ = 2.5f;
+			}
+		}
+	}
+
+	// ===== ズームを FontScale で反映 =====
+	ImGui::SetWindowFontScale(zoomScale_);
+
 	ImNodes::BeginNodeEditor();
+
 
 	// ===== ノードの描画 =====
 	for (auto& node : graph_.nodes)
 	{
-		// ノード色を種別で変える
-		ImNodes::PushColorStyle(ImNodesCol_NodeBackground, NodeColor(node.kind));
+		// ノード色を種別で決める（グループに属していればグループカラーで上書き）
+		unsigned int baseColor = NodeColor(node.kind);
+		unsigned int titleColor = NodeTitleColor(node.kind);
+		int gid = GroupOfNode(node.id);
+		if (gid != -1) {
+			for (auto& grp : graph_.groups) {
+				if (grp.id == gid) {
+					// グループカラーをノード背景に薄く反映
+					baseColor = IM_COL32(grp.colorR / 2 + 30,
+						grp.colorG / 2 + 30,
+						grp.colorB / 2 + 30, 255);
+					titleColor = IM_COL32(grp.colorR * 2 / 3,
+						grp.colorG * 2 / 3,
+						grp.colorB * 2 / 3, 255);
+					break;
+				}
+			}
+		}
+		ImNodes::PushColorStyle(ImNodesCol_NodeBackground, baseColor);
 		ImNodes::PushColorStyle(ImNodesCol_NodeBackgroundHovered,
-			NodeColor(node.kind) + 0x00101010u);
+			baseColor + 0x00101010u);
 		ImNodes::PushColorStyle(ImNodesCol_NodeBackgroundSelected,
-			NodeColor(node.kind) + 0x00202020u);
-		ImNodes::PushColorStyle(ImNodesCol_TitleBar, NodeTitleColor(node.kind));
-		ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, NodeTitleColor(node.kind) + 0x00101010u);
-		ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, NodeTitleColor(node.kind) + 0x00202020u);
+			baseColor + 0x00202020u);
+		ImNodes::PushColorStyle(ImNodesCol_TitleBar, titleColor);
+		ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, titleColor + 0x00101010u);
+		ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, titleColor + 0x00202020u);
 
 		ImNodes::BeginNode(node.ImNodeId());
 
@@ -193,20 +256,20 @@ void BTNodeGraphEditor::DrawNodeGraph()
 		ImGui::TextDisabled("[%s]", NodeKindName(node.kind));
 		ImNodes::EndNodeTitleBar();
 
-		// --- 入力ピン（Root 以外） ---
+		// --- 入力ピン（Root 以外）---
 		if (node.kind != NodeKind::Root) {
 			ImNodes::BeginInputAttribute(node.InputPinId());
 			ImGui::TextDisabled("in");
 			ImNodes::EndInputAttribute();
 		}
 
-		// --- ノード本体コンテンツ（簡易サマリ表示） ---
+		// --- ノード本体コンテンツ ---
 		if (node.kind == NodeKind::Leaf) {
 			ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.4f, 1.0f),
 				"%s", LeafStateTypeName(node.param.stateType));
 		}
 
-		// --- 出力ピン（Leaf 以外） ---
+		// --- 出力ピン（Leaf 以外）---
 		if (node.kind != NodeKind::Leaf) {
 			ImNodes::BeginOutputAttribute(node.OutputPinId());
 			ImGui::Indent(40.0f);
@@ -241,10 +304,21 @@ void BTNodeGraphEditor::DrawNodeGraph()
 	// ===== 右クリック検出（BeginNodeEditor 内）=====
 	DetectContextMenu();
 
+	// ===== ミニマップ（EndNodeEditor の直前に呼ぶ）=====
+	// 右下に表示、サイズはキャンバスの20%
+	ImNodes::MiniMap(
+		0.2f,                              // ミニマップのサイズ比率（20%）
+		ImNodesMiniMapLocation_BottomRight // 表示位置：右下
+	);
+
 	ImNodes::EndNodeEditor();
 
 	// ===== 右クリックポップアップ（EndNodeEditor 後）=====
 	DrawContextMenuPopup();
+
+	// FontScale を元に戻す（他のウィンドウに影響しないように）
+	ImGui::SetWindowFontScale(1.0f);
+	ImGui::EndChild(); // BeginChild に対応する EndChild
 
 	// ===== ノード位置を毎フレーム graph_ へ書き戻す =====
 	for (auto& node : graph_.nodes)
@@ -353,6 +427,65 @@ void BTNodeGraphEditor::DrawContextMenuPopup()
 	}
 }
 
+//======================================================
+// AutoLayoutHorizontal
+// ツリー構造を解析して左→右へ自動整列する
+// ・X軸：深さ（Rootから何段目か）に応じて右へ配置
+// ・Y軸：兄弟ノードを等間隔に縦並び
+// ・親ノードは子ノード群の中央（縦）に配置
+//======================================================
+void BTNodeGraphEditor::AutoLayoutHorizontal()
+{
+	using namespace BTEditor;
+
+	constexpr float kNodeSpacingX = 260.0f;
+	constexpr float kNodeSpacingY = 140.0f;
+	constexpr float kOriginX = 60.0f;
+	constexpr float kOriginY = 60.0f;
+
+	EditorNode* rootNode = nullptr;
+	for (auto& n : graph_.nodes) {
+		if (n.kind == NodeKind::Root) { rootNode = &n; break; }
+	}
+
+	if (!rootNode) return;
+
+	int leafCounter = 0;
+
+	std::function<float(int, int)> CalcY =
+		[&](int nodeId, int depth) -> float
+		{
+			std::vector<int> children = graph_.ChildrenOf(nodeId);
+			EditorNode* node = graph_.FindNode(nodeId);
+			if (!node) return 0.0f;
+
+			node->posX = kOriginX + depth * kNodeSpacingX;
+
+			if (children.empty()) {
+				node->posY = kOriginY + leafCounter * kNodeSpacingY;
+				++leafCounter;
+				return node->posY;
+			}
+
+			float firstChildY = 0.0f, lastChildY = 0.0f;
+			bool  first = true;
+			for (int cid : children) {
+				float cy = CalcY(cid, depth + 1);
+				if (first) { firstChildY = cy; first = false; }
+				lastChildY = cy;
+			}
+			node->posY = (firstChildY + lastChildY) * 0.5f;
+			return node->posY;
+		};
+
+	CalcY(rootNode->id, 0);
+
+	for (auto& node : graph_.nodes) {
+		ImNodes::SetNodeGridSpacePos(
+			node.ImNodeId(), ImVec2(node.posX, node.posY));
+	}
+}
+
 
 //======================================================
 // サイドパネル（選択ノードのパラメーター編集）
@@ -363,6 +496,11 @@ void BTNodeGraphEditor::DrawSidePanel()
 	ImGui::Separator();
 
 	// グラフ統計
+	// ズームリセットボタン
+	ImGui::Text("ズーム: %.0f%%", zoomScale_ * 100.0f);
+	ImGui::SameLine();
+	if (ImGui::SmallButton("リセット")) { zoomScale_ = 1.0f; }
+	ImGui::Separator();
 	ImGui::Text("Nodes: %d  Links: %d",
 		(int)graph_.nodes.size(),
 		(int)graph_.links.size());
@@ -473,7 +611,7 @@ void BTNodeGraphEditor::DrawParamEditor(EditorNode& node)
 			node.param.stateType = static_cast<LeafStateType>(cur);
 			static const char* kLabelNames[] = {
 				"None","ChargeDash","SummonMinion","FindTarget","ChaseTarget",
-				"NearIdle","StayHome","IsTargetFar","ShootSplitBullet","ThrowBigBullet","IsPhase2","IsPhase3","NotLastAction","IsAngry","ShootSplitBulletAngry","Custom"
+				"NearIdle","StayHome","IsTargetFar","ShootSplitBullet","ThrowBigBullet","IsPhase2","IsPhase3","NotLastAction","IsAngry","ShootSplitBulletAngry","IdleWait","Custom"
 			};
 			if (cur < IM_ARRAYSIZE(kLabelNames)) node.label = kLabelNames[cur];
 		}
@@ -488,6 +626,9 @@ void BTNodeGraphEditor::DrawParamEditor(EditorNode& node)
 		}
 		if (node.param.stateType == LeafStateType::IsPhase3) {
 			ImGui::TextWrapped("HP25%%以下なら Success\nSequenceの条件として使用");
+		}
+		if (node.param.stateType == LeafStateType::IdleWait) {
+			ImGui::TextWrapped("0.8秒その場で待機します。攻撃の合間の隙として使います。Selectorの最後に置くのがオススメ。");
 		}
 		if (node.param.stateType == LeafStateType::IsAngry) {
 			ImGui::TextWrapped("HP50%%以下（怒り状態）なら Success。\nSequenceの条件として使用。");
@@ -718,8 +859,541 @@ unsigned int BTNodeGraphEditor::NodeTitleColor(NodeKind kind) const
 }
 
 //======================================================
-// デフォルトグラフ（Root ノード1個だけ）
+// DrawGroupPanel
+// 左ペイン：グループ一覧・折りたたみ・カメラ移動
 //======================================================
+void BTNodeGraphEditor::DrawGroupPanel()
+{
+	using namespace BTEditor;
+
+	ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.3f, 1.0f), "グループ管理");
+	ImGui::Separator();
+
+	// ===== 新規グループ作成 =====
+	static char newGroupName[64] = "新しいグループ";
+	static int  newColorIdx = 0;
+	// プリセットカラー（名前付き）
+	struct ColorPreset { const char* name; int r, g, b; };
+	static const ColorPreset kColors[] = {
+		{"赤",    180, 60,  60 },
+		{"青",    60,  100, 180},
+		{"緑",    60,  160, 80 },
+		{"紫",    140, 60,  180},
+		{"橙",    200, 120, 40 },
+		{"水色",  60,  180, 180},
+		{"灰",    120, 120, 120},
+	};
+	constexpr int kColorCount = 7;
+
+	ImGui::SetNextItemWidth(130.0f);
+	ImGui::InputText("##grpname", newGroupName, sizeof(newGroupName));
+	ImGui::SetNextItemWidth(80.0f);
+	ImGui::Combo("##grpcolor", &newColorIdx,
+		[](void* data, int idx, const char** out) -> bool {
+			*out = ((const ColorPreset*)data)[idx].name;
+			return true;
+		}, (void*)kColors, kColorCount);
+	ImGui::SameLine();
+	if (ImGui::Button("+追加")) {
+		const auto& col = kColors[newColorIdx];
+		AddGroup(newGroupName, col.r, col.g, col.b);
+	}
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	// ===== グループ一覧 =====
+	if (graph_.groups.empty()) {
+		ImGui::TextDisabled("グループなし");
+		ImGui::TextDisabled("ノードを選択して");
+		ImGui::TextDisabled("グループに追加できます");
+	}
+
+	for (auto& grp : graph_.groups)
+	{
+		// グループカラーをラベルに反映
+		ImVec4 col(grp.colorR / 255.0f,
+			grp.colorG / 255.0f,
+			grp.colorB / 255.0f, 1.0f);
+
+		// 折りたたみヘッダー
+		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(col.x * 0.6f, col.y * 0.6f, col.z * 0.6f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(col.x * 0.8f, col.y * 0.8f, col.z * 0.8f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, col);
+
+		bool open = ImGui::CollapsingHeader(
+			grp.name.c_str(),
+			ImGuiTreeNodeFlags_DefaultOpen);
+
+		ImGui::PopStyleColor(3);
+
+		// ヘッダー右クリックでグループ削除
+		if (ImGui::IsItemHovered() &&
+			ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+			ImGui::OpenPopup(("##grpdel" + std::to_string(grp.id)).c_str());
+		}
+		if (ImGui::BeginPopup(("##grpdel" + std::to_string(grp.id)).c_str())) {
+			ImGui::TextColored(col, "%s", grp.name.c_str());
+			ImGui::Separator();
+
+			// ===== グループ名の変更 =====
+			static char renameBuf[64] = {};
+			if (ImGui::IsWindowAppearing()) {
+				snprintf(renameBuf, sizeof(renameBuf), "%s", grp.name.c_str());
+			}
+			ImGui::SetNextItemWidth(160.0f);
+			if (ImGui::InputText("名前##rename", renameBuf, sizeof(renameBuf),
+				ImGuiInputTextFlags_EnterReturnsTrue)) {
+				grp.name = renameBuf;
+			}
+
+			ImGui::Separator();
+
+			// ===== カラー変更 =====
+			ImGui::Text("カラー変更:");
+			// プリセットカラーボタン（横並び）
+			struct CPre { const char* name; int r, g, b; };
+			static const CPre kPre[] = {
+				{"赤",   200, 60,  60 },
+				{"橙",   200, 130, 40 },
+				{"黄",   200, 190, 40 },
+				{"緑",   60,  160, 80 },
+				{"水",   60,  180, 180},
+				{"青",   60,  100, 200},
+				{"紫",   140, 60,  180},
+				{"灰",   120, 120, 120},
+			};
+			for (int pi = 0; pi < 8; ++pi) {
+				if (pi % 4 != 0) ImGui::SameLine();
+				ImVec4 pc(
+					kPre[pi].r / 255.0f,
+					kPre[pi].g / 255.0f,
+					kPre[pi].b / 255.0f, 1.0f);
+				ImGui::PushStyleColor(ImGuiCol_Button, pc);
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+					ImVec4(pc.x * 1.2f, pc.y * 1.2f, pc.z * 1.2f, 1.0f));
+				char pid[16];
+				snprintf(pid, sizeof(pid), "%s##p%d_%d", kPre[pi].name, grp.id, pi);
+				if (ImGui::Button(pid, ImVec2(36, 22))) {
+					grp.colorR = kPre[pi].r;
+					grp.colorG = kPre[pi].g;
+					grp.colorB = kPre[pi].b;
+				}
+				ImGui::PopStyleColor(2);
+			}
+
+			// RGB スライダーで細かく調整
+			ImGui::Spacing();
+			float fc[3] = {
+				grp.colorR / 255.0f,
+				grp.colorG / 255.0f,
+				grp.colorB / 255.0f
+			};
+			ImGui::SetNextItemWidth(180.0f);
+			if (ImGui::ColorEdit3(
+				("##col" + std::to_string(grp.id)).c_str(),
+				fc,
+				ImGuiColorEditFlags_NoLabel |
+				ImGuiColorEditFlags_NoAlpha)) {
+				grp.colorR = (int)(fc[0] * 255);
+				grp.colorG = (int)(fc[1] * 255);
+				grp.colorB = (int)(fc[2] * 255);
+			}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("カメラをこのグループへ移動")) {
+				FocusGroup(grp.id);
+			}
+			if (ImGui::MenuItem("このグループを削除")) {
+				DeleteGroup(grp.id);
+				ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
+				break;
+			}
+			ImGui::EndPopup();
+		}
+
+		if (!open) continue;
+
+		// グループ内のノード一覧
+		for (int nid : grp.nodeIds)
+		{
+			EditorNode* n = graph_.FindNode(nid);
+			if (!n) continue;
+
+			bool sel = (n->id == selectedNodeId_);
+			char lbl[64];
+			snprintf(lbl, sizeof(lbl), "  [%d] %s", n->id, n->label.c_str());
+
+			ImGui::PushStyleColor(ImGuiCol_Text, col);
+			if (ImGui::Selectable(lbl, sel,
+				ImGuiSelectableFlags_None, ImVec2(0, 0))) {
+				selectedNodeId_ = n->id;
+				// クリックでカメラをそのノードへ移動
+				ImNodes::SetNodeGridSpacePos(
+					n->ImNodeId(), ImVec2(n->posX, n->posY));
+			}
+			ImGui::PopStyleColor();
+
+			// ノードをグループから除外ボタン
+			ImGui::SameLine();
+			char btnId[32];
+			snprintf(btnId, sizeof(btnId), "x##rm%d_%d", grp.id, nid);
+			ImGui::PushStyleColor(ImGuiCol_Button,
+				ImVec4(0.5f, 0.1f, 0.1f, 0.6f));
+			if (ImGui::SmallButton(btnId)) {
+				grp.nodeIds.erase(
+					std::remove(grp.nodeIds.begin(),
+						grp.nodeIds.end(), nid),
+					grp.nodeIds.end());
+				break;
+			}
+			ImGui::PopStyleColor();
+		}
+
+		// 選択中ノードをこのグループに追加
+		if (selectedNodeId_ != -1) {
+			// 既に属していなければ追加ボタン表示
+			bool already = std::find(grp.nodeIds.begin(),
+				grp.nodeIds.end(), selectedNodeId_) != grp.nodeIds.end();
+			if (!already) {
+				char addBtn[64];
+				snprintf(addBtn, sizeof(addBtn),
+					" + 選択ノード[%d]を追加##%d",
+					selectedNodeId_, grp.id);
+				ImGui::PushStyleColor(ImGuiCol_Button,
+					ImVec4(col.x * 0.4f, col.y * 0.4f, col.z * 0.4f, 1.0f));
+				if (ImGui::SmallButton(addBtn)) {
+					grp.nodeIds.push_back(selectedNodeId_);
+				}
+				ImGui::PopStyleColor();
+			}
+		}
+
+		ImGui::Spacing();
+	}
+}
+
+//======================================================
+// AddGroup / DeleteGroup / FocusGroup / GroupOfNode
+//======================================================
+void BTNodeGraphEditor::AddGroup(const std::string& name, int r, int g, int b)
+{
+	BTEditor::NodeGroup grp;
+	grp.id = graph_.NewId();
+	grp.name = name;
+	grp.colorR = r;
+	grp.colorG = g;
+	grp.colorB = b;
+	graph_.groups.push_back(grp);
+}
+
+void BTNodeGraphEditor::DeleteGroup(int groupId)
+{
+	graph_.groups.erase(
+		std::remove_if(graph_.groups.begin(), graph_.groups.end(),
+			[groupId](const BTEditor::NodeGroup& g) {
+				return g.id == groupId;
+			}),
+		graph_.groups.end());
+	if (selectedGroupId_ == groupId) selectedGroupId_ = -1;
+}
+
+void BTNodeGraphEditor::FocusGroup(int groupId)
+{
+	for (auto& grp : graph_.groups) {
+		if (grp.id != groupId) continue;
+		if (grp.nodeIds.empty()) return;
+
+		// グループ内ノードの重心を計算してカメラを移動
+		float cx = 0.0f, cy = 0.0f;
+		int   count = 0;
+		for (int nid : grp.nodeIds) {
+			const BTEditor::EditorNode* n = graph_.FindNode(nid);
+			if (!n) continue;
+			cx += n->posX;
+			cy += n->posY;
+			++count;
+		}
+		if (count == 0) return;
+		cx /= count;
+		cy /= count;
+
+		// パンを調整してグループ中心を画面中央に
+		ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+		ImNodes::EditorContextResetPanning(
+			ImVec2(canvasSize.x * 0.5f - cx,
+				canvasSize.y * 0.5f - cy));
+		break;
+	}
+}
+
+int BTNodeGraphEditor::GroupOfNode(int nodeId) const
+{
+	for (auto& grp : graph_.groups) {
+		for (int nid : grp.nodeIds) {
+			if (nid == nodeId) return grp.id;
+		}
+	}
+	return -1;
+}
+
+
+//======================================================
+// AutoGrouping
+//======================================================
+void BTNodeGraphEditor::AutoGrouping()
+{
+	using namespace BTEditor;
+
+	// 「[AUTO]」プレフィックスのグループだけ削除
+	graph_.groups.erase(
+		std::remove_if(graph_.groups.begin(), graph_.groups.end(),
+			[](const NodeGroup& g) {
+				return g.name.find("[AUTO]") == 0;
+			}),
+		graph_.groups.end());
+
+	struct GroupDef {
+		const char* name;
+		int r, g, b;
+		LeafStateType triggerState;
+	};
+
+	const std::vector<GroupDef> kGroupDefs = {
+		{"[AUTO] 怒り状態（HP50%以下）", 200, 60,  60,  LeafStateType::IsAngry},
+		{"[AUTO] フェーズ3（HP25%以下）", 200, 130, 40,  LeafStateType::IsPhase3},
+		{"[AUTO] フェーズ2（HP50%以下）", 60,  120, 200, LeafStateType::IsPhase2},
+	};
+
+	std::vector<int> commonIds;
+	std::vector<int> chaseIds;
+	std::vector<int> rootIds;
+	std::vector<std::vector<int>> groupNodeIds(kGroupDefs.size());
+
+	std::function<void(int, std::vector<LeafStateType>)> Classify =
+		[&](int nodeId, std::vector<LeafStateType> ancestorStates)
+		{
+			const EditorNode* en = graph_.FindNode(nodeId);
+			if (!en) return;
+
+			std::vector<LeafStateType> myAncestors = ancestorStates;
+			if (en->kind == NodeKind::Leaf) {
+				myAncestors.push_back(en->param.stateType);
+			}
+
+			if (en->kind == NodeKind::Leaf) {
+				if (en->param.stateType == LeafStateType::FindTarget) {
+					commonIds.push_back(nodeId);
+					return;
+				}
+				if (en->param.stateType == LeafStateType::ChaseTarget) {
+					chaseIds.push_back(nodeId);
+					return;
+				}
+			}
+
+			int matchedGroup = -1;
+			for (int gi = 0; gi < (int)kGroupDefs.size(); ++gi) {
+				for (auto& st : ancestorStates) {
+					if (st == kGroupDefs[gi].triggerState) {
+						matchedGroup = gi;
+						break;
+					}
+				}
+				if (matchedGroup != -1) break;
+			}
+
+			if (matchedGroup != -1) {
+				groupNodeIds[matchedGroup].push_back(nodeId);
+			}
+			else if (en->kind == NodeKind::Root ||
+				en->kind == NodeKind::Sequence ||
+				en->kind == NodeKind::Selector ||
+				en->kind == NodeKind::Decorator) {
+				rootIds.push_back(nodeId);
+			}
+
+			for (int cid : graph_.ChildrenOf(nodeId)) {
+				Classify(cid, myAncestors);
+			}
+		};
+
+	for (auto& n : graph_.nodes) {
+		if (n.kind == NodeKind::Root) {
+			Classify(n.id, {});
+			break;
+		}
+	}
+
+	for (int gi = 0; gi < (int)kGroupDefs.size(); ++gi) {
+		if (groupNodeIds[gi].empty()) continue;
+		const auto& def = kGroupDefs[gi];
+		NodeGroup grp;
+		grp.id = graph_.NewId();
+		grp.name = def.name;
+		grp.colorR = def.r;
+		grp.colorG = def.g;
+		grp.colorB = def.b;
+		grp.nodeIds = groupNodeIds[gi];
+		graph_.groups.push_back(grp);
+	}
+
+	if (!commonIds.empty()) {
+		NodeGroup grp;
+		grp.id = graph_.NewId();
+		grp.name = "[AUTO] 共通処理";
+		grp.colorR = 120; grp.colorG = 120; grp.colorB = 120;
+		grp.nodeIds = commonIds;
+		graph_.groups.push_back(grp);
+	}
+
+	if (!chaseIds.empty()) {
+		NodeGroup grp;
+		grp.id = graph_.NewId();
+		grp.name = "[AUTO] 追跡";
+		grp.colorR = 60; grp.colorG = 180; grp.colorB = 180;
+		grp.nodeIds = chaseIds;
+		graph_.groups.push_back(grp);
+	}
+
+	if (!rootIds.empty()) {
+		NodeGroup grp;
+		grp.id = graph_.NewId();
+		grp.name = "[AUTO] 構造ノード";
+		grp.colorR = 80; grp.colorG = 80; grp.colorB = 80;
+		grp.nodeIds = rootIds;
+		grp.collapsed = true;
+		graph_.groups.push_back(grp);
+	}
+}
+
+
+//======================================================
+// GroupLayout
+//======================================================
+void BTNodeGraphEditor::GroupLayout()
+{
+	using namespace BTEditor;
+
+	constexpr float kGroupWidth = 260.0f;
+	constexpr float kNodeSpacingY = 150.0f;
+	constexpr float kOriginX = 80.0f;
+	constexpr float kOriginY = 80.0f;
+	constexpr float kGroupGap = 40.0f;
+
+	if (graph_.groups.empty()) return;
+
+	std::unordered_map<int, int> nodeToGroupIndex;
+	for (int gi = 0; gi < (int)graph_.groups.size(); ++gi) {
+		for (int nid : graph_.groups[gi].nodeIds) {
+			nodeToGroupIndex[nid] = gi;
+		}
+	}
+
+	std::vector<float> groupY(graph_.groups.size(), kOriginY);
+	std::vector<float> groupX(graph_.groups.size(), 0.0f);
+	float curX = kOriginX;
+	int   structGroupIdx = -1;
+	for (int gi = 0; gi < (int)graph_.groups.size(); ++gi) {
+		if (graph_.groups[gi].name == "[AUTO] 構造ノード") {
+			structGroupIdx = gi;
+			continue;
+		}
+		groupX[gi] = curX;
+		curX += kGroupWidth + kGroupGap;
+	}
+	if (structGroupIdx != -1) {
+		groupX[structGroupIdx] = curX;
+		curX += kGroupWidth + kGroupGap;
+	}
+
+	float ungroupedX = curX;
+	float ungroupedY = kOriginY;
+
+	for (auto& node : graph_.nodes) {
+		auto it = nodeToGroupIndex.find(node.id);
+		if (it == nodeToGroupIndex.end()) {
+			node.posX = ungroupedX;
+			node.posY = ungroupedY;
+			ungroupedY += kNodeSpacingY;
+		}
+		else {
+			int gi = it->second;
+			node.posX = groupX[gi];
+			node.posY = groupY[gi];
+			groupY[gi] += kNodeSpacingY;
+		}
+	}
+
+	for (auto& node : graph_.nodes) {
+		ImNodes::SetNodeGridSpacePos(
+			node.ImNodeId(),
+			ImVec2(node.posX, node.posY));
+	}
+}
+
+
+//======================================================
+// AutoLayout
+//======================================================
+void BTNodeGraphEditor::AutoLayout()
+{
+	using namespace BTEditor;
+
+	constexpr float kNodeSpacingX = 240.0f;
+	constexpr float kNodeSpacingY = 160.0f;
+	constexpr float kOriginX = 100.0f;
+	constexpr float kOriginY = 60.0f;
+
+	EditorNode* rootNode = nullptr;
+	for (auto& n : graph_.nodes) {
+		if (n.kind == NodeKind::Root) { rootNode = &n; break; }
+	}
+	if (!rootNode) return;
+
+	int leafCounter = 0;
+
+	std::function<float(int, int)> CalcX =
+		[&](int nodeId, int depth) -> float
+		{
+			std::vector<int> children = graph_.ChildrenOf(nodeId);
+
+			EditorNode* node = graph_.FindNode(nodeId);
+			if (!node) return 0.0f;
+
+			node->posY = kOriginY + depth * kNodeSpacingY;
+
+			if (children.empty()) {
+				node->posX = kOriginX + leafCounter * kNodeSpacingX;
+				++leafCounter;
+				return node->posX;
+			}
+
+			float firstChildX = 0.0f;
+			float lastChildX = 0.0f;
+			bool  first = true;
+
+			for (int cid : children) {
+				float cx = CalcX(cid, depth + 1);
+				if (first) { firstChildX = cx; first = false; }
+				lastChildX = cx;
+			}
+
+			node->posX = (firstChildX + lastChildX) * 0.5f;
+			return node->posX;
+		};
+
+	CalcX(rootNode->id, 0);
+
+	for (auto& node : graph_.nodes) {
+		ImNodes::SetNodeGridSpacePos(
+			node.ImNodeId(),
+			ImVec2(node.posX, node.posY));
+	}
+}
+
+
 void BTNodeGraphEditor::ResetToDefault()
 {
 	graph_.Clear();
@@ -774,3 +1448,43 @@ bool BTNodeGraphEditor::LoadFromJson(const std::string& filepath)
 		return false;
 	}
 }
+
+#else // USE_IMGUI 未定義時（Release）：空実装でリンクエラーを防ぐ
+
+BTNodeGraphEditor::BTNodeGraphEditor() = default;
+BTNodeGraphEditor::~BTNodeGraphEditor() = default;
+void BTNodeGraphEditor::Initialize() {}
+void BTNodeGraphEditor::Finalize() {}
+void BTNodeGraphEditor::Draw() {}
+bool BTNodeGraphEditor::SaveToJson(const std::string&) { return false; }
+bool BTNodeGraphEditor::LoadFromJson(const std::string&) { return false; }
+
+void BTNodeGraphEditor::DrawMenuBar() {}
+void BTNodeGraphEditor::DrawNodeGraph() {}
+void BTNodeGraphEditor::DrawSidePanel() {}
+void BTNodeGraphEditor::DrawNodeContextMenu() {}
+void BTNodeGraphEditor::DetectContextMenu() {}
+void BTNodeGraphEditor::DrawContextMenuPopup() {}
+int  BTNodeGraphEditor::AddNode(BTEditor::NodeKind, float, float) { return -1; }
+bool BTNodeGraphEditor::AddLink(int, int) { return false; }
+void BTNodeGraphEditor::DeleteNode(int) {}
+void BTNodeGraphEditor::DeleteLink(int) {}
+void BTNodeGraphEditor::DeleteSelectedNodes() {}
+void BTNodeGraphEditor::DeleteSelectedLinks() {}
+void BTNodeGraphEditor::DrawParamEditor(BTEditor::EditorNode&) {}
+void BTNodeGraphEditor::DrawChargeDashParamEditor(BTEditor::ChargeDashParamData&) {}
+unsigned int BTNodeGraphEditor::NodeColor(BTEditor::NodeKind)      const { return 0; }
+unsigned int BTNodeGraphEditor::NodeTitleColor(BTEditor::NodeKind) const { return 0; }
+bool BTNodeGraphEditor::WouldCreateCycle(int, int) const { return false; }
+void BTNodeGraphEditor::ResetToDefault() {}
+void BTNodeGraphEditor::AutoLayout() {}
+void BTNodeGraphEditor::AutoLayoutHorizontal() {}
+void BTNodeGraphEditor::AutoGrouping() {}
+void BTNodeGraphEditor::GroupLayout() {}
+void BTNodeGraphEditor::DrawGroupPanel() {}
+void BTNodeGraphEditor::AddGroup(const std::string&, int, int, int) {}
+void BTNodeGraphEditor::DeleteGroup(int) {}
+void BTNodeGraphEditor::FocusGroup(int) {}
+int  BTNodeGraphEditor::GroupOfNode(int) const { return -1; }
+
+#endif // USE_IMGUI

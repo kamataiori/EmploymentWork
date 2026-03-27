@@ -59,6 +59,7 @@ namespace BTEditor {
 		NotLastAction = 12, // 前回と同じ攻撃を禁止
 		IsAngry = 13, // 怒り状態（HP50%以下）か判定
 		ShootSplitBulletAngry = 14, // 怒り時の分裂弾（8発）
+		IdleWait = 15, // その場で待機（攻撃の隙）
 		Custom = 99, // 将来拡張用
 	};
 
@@ -80,6 +81,7 @@ namespace BTEditor {
 		case LeafStateType::NotLastAction:         return "NotLastAction";
 		case LeafStateType::IsAngry:               return "IsAngry";
 		case LeafStateType::ShootSplitBulletAngry: return "ShootSplitBulletAngry";
+		case LeafStateType::IdleWait:              return "IdleWait";
 		case LeafStateType::Custom:        return "Custom";
 		default:                           return "Unknown";
 		}
@@ -216,16 +218,55 @@ namespace BTEditor {
 	//------------------------------------------------------
 	// グラフ全体
 	//------------------------------------------------------
+
+	//------------------------------------------------------
+	// ノードグループ
+	// 関連するノードをまとめて管理する
+	//------------------------------------------------------
+	struct NodeGroup
+	{
+		int         id = -1;
+		std::string name;            // グループ名（例: "Phase1_通常"）
+		std::vector<int> nodeIds;    // グループに属するノードIDのリスト
+		bool        collapsed = false; // 折りたたみ状態
+		// グループカラー（RGBA 0〜255）
+		int colorR = 100, colorG = 100, colorB = 100;
+	};
+
+	inline void to_json(nlohmann::json& j, const NodeGroup& g)
+	{
+		j["id"] = g.id;
+		j["name"] = g.name;
+		j["nodeIds"] = g.nodeIds;
+		j["collapsed"] = g.collapsed;
+		j["colorR"] = g.colorR;
+		j["colorG"] = g.colorG;
+		j["colorB"] = g.colorB;
+	}
+
+	inline void from_json(const nlohmann::json& j, NodeGroup& g)
+	{
+		g.id = j.value("id", -1);
+		g.name = j.value("name", std::string(""));
+		g.nodeIds = j.value("nodeIds", std::vector<int>{});
+		g.collapsed = j.value("collapsed", false);
+		g.colorR = j.value("colorR", 100);
+		g.colorG = j.value("colorG", 100);
+		g.colorB = j.value("colorB", 100);
+	}
+
 	struct BTGraph
 	{
-		std::vector<EditorNode> nodes;
-		std::vector<EditorLink> links;
-		int nextId = 1;   // 発行済み最大ID+1
+		std::vector<EditorNode>  nodes;
+		std::vector<EditorLink>  links;
+		std::vector<NodeGroup>   groups; // ノードグループ
+		int nextId = 1;
 
 		void Clear()
 		{
 			nodes.clear();
 			links.clear();
+			groups.clear();
 			nextId = 1;
 		}
 

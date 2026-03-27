@@ -25,6 +25,9 @@
 #include <Enemy/State/SummonMinionState.h>
 #include "application/Character/CharacterBase/Enemy/State/ShootSplitBulletState.h"
 #include "application/Character/CharacterBase/Enemy/State/ThrowBigBulletState.h"
+#include "application/Character/CharacterBase/Enemy/State/IdleWaitState.h"
+#include "application/Character/CharacterBase/Enemy/State/ThrowBigBulletState.h"
+#include "application/Character/CharacterBase/Enemy/State/IdleWaitState.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsHPLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/NotLastActionLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsAngryLeaf.h"
@@ -226,6 +229,11 @@ void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 						blackboard_.get(),
 						[]() { return std::make_unique<ShootSplitBulletState>(true); },
 						"ShootSplitBullet");
+				case LeafStateType::IdleWait:
+					return std::make_unique<ExecuteStateLeaf>(
+						blackboard_.get(),
+						[]() { return std::make_unique<IdleWaitState>(0.8f); },
+						"IdleWait");
 				default:
 					return nullptr;
 				}

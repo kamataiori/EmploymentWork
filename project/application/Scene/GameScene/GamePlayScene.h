@@ -107,4 +107,11 @@ private:
 	std::unique_ptr<SceneController>  stage_;
 	std::unique_ptr<Sprite>           ex;
 	std::unique_ptr<UIManager>        uiManager_;
+
+	// ===== ゲームオーバー演出 =====
+	bool  gameOverStarted_ = false;   // 演出開始フラグ
+	float vignetteTimer_ = 0.0f;    // 経過時間
+	const float kVignetteDuration_ = 2.0f; // 黒くなりきるまでの秒数
+	const float kVignetteScale_ = 0.3f; // ビネットの広がり具合
+	const float kVignettePower_ = 3.0f; // 最終的な暗さ
 };

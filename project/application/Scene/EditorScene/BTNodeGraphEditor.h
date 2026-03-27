@@ -2,6 +2,7 @@
 #include "BTEditorData.h"
 #include <string>
 #include <functional>
+#include <unordered_map>
 
 //======================================================
 // BTNodeGraphEditor.h
@@ -87,12 +88,29 @@ private:
 	// グラフをデフォルト（Rootのみ）に初期化
 	void ResetToDefault();
 
+	// ノードを階層ごとに自動整列
+	void AutoLayout();             // 上→下（縦方向）
+	void AutoLayoutHorizontal();   // 左→右（横方向）
+	void AutoGrouping(); // ツリー解析で自動グループ分け
+	void GroupLayout();  // グループ単位で縦にまとめて配置
+
+	// グループ管理
+	void DrawGroupPanel();              // グループ一覧UI
+	void AddGroup(const std::string& name, int r, int g, int b);
+	void DeleteGroup(int groupId);
+	void FocusGroup(int groupId);       // グループにカメラを移動
+	int  GroupOfNode(int nodeId) const; // ノードが属するグループIDを返す
+
 	//--------------------------------------------------
 	// 状態
 	//--------------------------------------------------
 	BTEditor::BTGraph   graph_;
-	int                 selectedNodeId_ = -1;   // サイドパネルで編集中のノード
+	int                 selectedNodeId_ = -1;
+	int                 selectedGroupId_ = -1;  // グループパネルで選択中   // サイドパネルで編集中のノード
 	std::string         saveFilePath_ = "Resources/BT/Enemy/enemy_bt.json";
+
+	// ズームスケール（0.3〜2.5、デフォルト1.0）
+	float  zoomScale_ = 1.0f;
 
 	// 右クリックメニュー用
 	bool   contextMenuOpen_ = false;

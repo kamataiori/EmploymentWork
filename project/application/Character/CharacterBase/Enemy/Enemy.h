@@ -175,8 +175,8 @@ private:
 	Vector3 homePosition_{};
 
 	// HP
-	int hp_ = 250;                   // 現在HP
-	const int kMaxHP_ = 250;         // 最大HP
+	int hp_ = 10000;                   // 現在HP
+	const int kMaxHP_ = 10000;         // 最大HP
 	const int kDamagePerHit_ = 30;   // 被弾時のダメージ量
 
 	// === HPバー表示用 ===

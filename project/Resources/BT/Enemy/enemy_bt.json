@@ -151,7 +151,7 @@
       "toNodeId": 40
     }
   ],
-  "nextId": 200,
+  "nextId": 208,
   "nodes": [
     {
       "id": 1,
@@ -172,8 +172,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 60.0,
+      "posY": 698.75
     },
     {
       "id": 2,
@@ -194,8 +194,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 320.0,
+      "posY": 698.75
     },
     {
       "id": 3,
@@ -216,8 +216,8 @@
         "stateType": 3,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 580.0,
+      "posY": 60.0
     },
     {
       "id": 4,
@@ -238,8 +238,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 580.0,
+      "posY": 1337.5
     },
     {
       "id": 5,
@@ -260,8 +260,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 840.0,
+      "posY": 585.0
     },
     {
       "id": 6,
@@ -282,8 +282,8 @@
         "stateType": 13,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1100.0,
+      "posY": 200.0
     },
     {
       "id": 7,
@@ -304,8 +304,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1100.0,
+      "posY": 970.0
     },
     {
       "id": 8,
@@ -326,8 +326,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1360.0,
+      "posY": 480.0
     },
     {
       "id": 9,
@@ -348,8 +348,8 @@
         "stateType": 12,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1620.0,
+      "posY": 340.0
     },
     {
       "id": 10,
@@ -370,8 +370,8 @@
         "stateType": 7,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1620.0,
+      "posY": 480.0
     },
     {
       "id": 11,
@@ -392,8 +392,8 @@
         "stateType": 1,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1620.0,
+      "posY": 620.0
     },
     {
       "id": 12,
@@ -414,8 +414,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1360.0,
+      "posY": 900.0
     },
     {
       "id": 13,
@@ -436,8 +436,8 @@
         "stateType": 12,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1620.0,
+      "posY": 760.0
     },
     {
       "id": 14,
@@ -458,8 +458,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1620.0,
+      "posY": 900.0
     },
     {
       "id": 15,
@@ -480,8 +480,8 @@
         "stateType": 7,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1880.0,
+      "posY": 900.0
     },
     {
       "id": 16,
@@ -502,8 +502,8 @@
         "stateType": 14,
         "thresholdDistance": 8.0
       },
-      "posX": 441.0,
-      "posY": 39.0
+      "posX": 1620.0,
+      "posY": 1040.0
     },
     {
       "id": 17,
@@ -524,8 +524,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 259.0,
-      "posY": 87.0
+      "posX": 1360.0,
+      "posY": 1250.0
     },
     {
       "id": 18,
@@ -546,8 +546,8 @@
         "stateType": 12,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1620.0,
+      "posY": 1180.0
     },
     {
       "id": 19,
@@ -568,13 +568,13 @@
         "stateType": 9,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1620.0,
+      "posY": 1320.0
     },
     {
       "id": 20,
       "kind": 4,
-      "label": "ChaseTarget",
+      "label": "IdleWait",
       "param": {
         "chargeDash": {
           "chargeTime": 1.2000000476837158,
@@ -587,11 +587,11 @@
         "customName": "",
         "decoratorType": "Inverter",
         "lastActionName": "",
-        "stateType": 4,
+        "stateType": 15,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1360.0,
+      "posY": 1460.0
     },
     {
       "id": 30,
@@ -612,8 +612,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 840.0,
+      "posY": 2090.0
     },
     {
       "id": 31,
@@ -634,8 +634,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1100.0,
+      "posY": 1740.0
     },
     {
       "id": 32,
@@ -656,8 +656,8 @@
         "stateType": 12,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1360.0,
+      "posY": 1600.0
     },
     {
       "id": 33,
@@ -678,8 +678,8 @@
         "stateType": 7,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1360.0,
+      "posY": 1740.0
     },
     {
       "id": 34,
@@ -700,8 +700,8 @@
         "stateType": 1,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1360.0,
+      "posY": 1880.0
     },
     {
       "id": 35,
@@ -722,8 +722,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1100.0,
+      "posY": 2160.0
     },
     {
       "id": 36,
@@ -744,8 +744,8 @@
         "stateType": 12,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1360.0,
+      "posY": 2020.0
     },
     {
       "id": 37,
@@ -766,8 +766,8 @@
         "stateType": 0,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1360.0,
+      "posY": 2160.0
     },
     {
       "id": 38,
@@ -788,8 +788,8 @@
         "stateType": 7,
         "thresholdDistance": 8.0
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 1620.0,
+      "posY": 2160.0
     },
     {
       "id": 39,
@@ -810,13 +810,13 @@
         "stateType": 8,
         "thresholdDistance": 8.0
       },
-      "posX": 115.0,
-      "posY": 439.0
+      "posX": 1360.0,
+      "posY": 2300.0
     },
     {
       "id": 40,
       "kind": 4,
-      "label": "ChaseTarget",
+      "label": "IdleWait",
       "param": {
         "chargeDash": {
           "chargeTime": 1.2000000476837158,
@@ -829,11 +829,11 @@
         "customName": "",
         "decoratorType": "Inverter",
         "lastActionName": "",
-        "stateType": 4,
+        "stateType": 15,
         "thresholdDistance": 8.0
       },
-      "posX": 624.0,
-      "posY": 510.0
+      "posX": 1100.0,
+      "posY": 2440.0
     }
   ]
 }

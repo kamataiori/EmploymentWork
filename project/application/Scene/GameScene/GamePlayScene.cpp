@@ -122,6 +122,7 @@ void GamePlayScene::Initialize()
 	auto pause = std::make_unique<PauseScreen>();
 	pause->Initialize({ 1280.0f, 720.0f }, "TITLE");
 	uiManager_->Add(std::move(pause));
+
 }
 
 void GamePlayScene::Finalize()
@@ -241,6 +242,42 @@ void GamePlayScene::Update()
 		followCamera->Update();
 	}
 
+	// ===== ゲームオーバー演出 =====
+	if (player_->IsDead()) {
+
+		// Deathアニメ終了後に演出を開始（1回だけ）
+		if (!gameOverStarted_ && player_->GetDeathTimer() <= 0.0f) {
+			gameOverStarted_ = true;
+			vignetteTimer_ = 0.0f;
+
+			// ビネットを有効化（最初は真っ暗にしない）
+			PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
+			PostEffectManager::GetInstance()->VignetteInitialize(
+				kVignetteScale_,   // scale：ビネットの広がり
+				0.0f,              // power：最初は0（透明）
+				{ 0.0f, 0.0f, 0.0f } // color：黒
+			);
+		}
+
+		// 演出中：powerを0→kVignettePower_へ線形補間
+		if (gameOverStarted_) {
+			float dt = TimeManager::GetInstance()->GetUnscaledDeltaTime(); // スロー影響を受けない
+			vignetteTimer_ += dt;
+
+			float t = vignetteTimer_ / kVignetteDuration_;
+			if (t > 1.0f) t = 1.0f;
+
+			// power を徐々に上げて画面を黒く
+			PostEffectManager::GetInstance()->SetVignettePower(kVignettePower_ * t);
+
+			// 真っ暗になりきったらタイトルへ
+			if (t >= 1.0f) {
+				PostEffectManager::GetInstance()->SetType(PostEffectType::Normal); // リセット
+				SceneManager::GetInstance()->ChangeScene("TITLE");
+			}
+		}
+	}
+
 	using ShakeMode = CameraEffectController::ShakeMode;
 	using ZoomParams = CameraEffectController::ZoomParams;
 	using MoveParams = CameraEffectController::MoveParams;
@@ -313,9 +350,6 @@ void GamePlayScene::Update()
 
 	cameraEffect_->Update(followCamera.get(), dt);
 
-	if (Input::GetInstance()->TriggerKey(DIK_K)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
-	}
 
 	collisionManager_->RegisterCollider(player_->GetMultiCollider());
 	if (auto* wcol = player_->GetWeaponCollider()) {
