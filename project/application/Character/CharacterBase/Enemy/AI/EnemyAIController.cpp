@@ -4,10 +4,13 @@
 // JSON 読み込み用
 #include <json.hpp>
 #include <fstream>
+#include <algorithm>
+#include <random>
 
 // Composite
 #include "application/AI/BehaviorTree/Nodes/Composite/SequenceNode.h"
 #include "application/AI/BehaviorTree/Nodes/Composite/SelectorNode.h"
+#include "application/AI/BehaviorTree/Nodes/Composite/RandomSelectorNode.h"
 
 // Decorator
 #include "application/AI/BehaviorTree/Nodes/Decorator/InverterDecorator.h"
@@ -26,8 +29,10 @@
 #include "application/Character/CharacterBase/Enemy/State/ShootSplitBulletState.h"
 #include "application/Character/CharacterBase/Enemy/State/ThrowBigBulletState.h"
 #include "application/Character/CharacterBase/Enemy/State/IdleWaitState.h"
+#include "application/Character/CharacterBase/Enemy/State/WaitMinionDeadState.h"
 #include "application/Character/CharacterBase/Enemy/State/ThrowBigBulletState.h"
 #include "application/Character/CharacterBase/Enemy/State/IdleWaitState.h"
+#include "application/Character/CharacterBase/Enemy/State/WaitMinionDeadState.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsHPLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/NotLastActionLeaf.h"
 #include "application/Character/CharacterBase/Enemy/AI/BehaviorTree/Leaves/IsAngryLeaf.h"
@@ -141,6 +146,15 @@ void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 				}
 				return sel;
 			}
+			case NodeKind::RandomSelector:
+			{
+				auto rsel = std::make_unique<RandomSelectorNode>(blackboard_.get());
+				for (int cid : children) {
+					auto child = Build(cid);
+					if (child) rsel->add_node(std::move(child));
+				}
+				return rsel;
+			}
 			case NodeKind::Decorator:
 			{
 				auto dec = std::make_unique<InverterDecorator>(blackboard_.get());
@@ -230,10 +244,24 @@ void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 						[]() { return std::make_unique<ShootSplitBulletState>(true); },
 						"ShootSplitBullet");
 				case LeafStateType::IdleWait:
+				{
+					// thresholdDistance を待機秒数として流用（0なら7秒デフォルト）
+					float waitSec = (p.thresholdDistance > 0.0f) ? p.thresholdDistance : 7.0f;
 					return std::make_unique<ExecuteStateLeaf>(
 						blackboard_.get(),
-						[]() { return std::make_unique<IdleWaitState>(0.8f); },
+						[waitSec]() { return std::make_unique<IdleWaitState>(waitSec); },
 						"IdleWait");
+				}
+				case LeafStateType::SummonMinionNormal:
+					return std::make_unique<ExecuteStateLeaf>(
+						blackboard_.get(),
+						[]() { return std::make_unique<SummonMinionState>(); },
+						"SummonMinion");
+				case LeafStateType::WaitMinionDead:
+					return std::make_unique<ExecuteStateLeaf>(
+						blackboard_.get(),
+						[]() { return std::make_unique<WaitMinionDeadState>(); },
+						"WaitMinionDead");
 				default:
 					return nullptr;
 				}

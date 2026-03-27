@@ -13,8 +13,6 @@
 
 using namespace BTEditor;
 
-#ifdef USE_IMGUI
-
 //======================================================
 // 色定数（ABGR 形式 for imnodes）
 // imnodes は IM_COL32(R,G,B,A) マクロを使う
@@ -135,7 +133,8 @@ void BTNodeGraphEditor::DrawMenuBar()
 		if (ImGui::MenuItem("Sequence  （順列)"))  AddNode(NodeKind::Sequence);
 		if (ImGui::MenuItem("Selector  （選択)"))  AddNode(NodeKind::Selector);
 		if (ImGui::MenuItem("Decorator （反転)")) AddNode(NodeKind::Decorator);
-		if (ImGui::MenuItem("Leaf     （アクション)"))      AddNode(NodeKind::Leaf);
+		if (ImGui::MenuItem("Leaf          （アクション)"))   AddNode(NodeKind::Leaf);
+		if (ImGui::MenuItem("RandomSelector（ランダム選択)")) AddNode(NodeKind::RandomSelector);
 		ImGui::EndMenu();
 	}
 
@@ -447,7 +446,6 @@ void BTNodeGraphEditor::AutoLayoutHorizontal()
 	for (auto& n : graph_.nodes) {
 		if (n.kind == NodeKind::Root) { rootNode = &n; break; }
 	}
-
 	if (!rootNode) return;
 
 	int leafCounter = 0;
@@ -611,7 +609,7 @@ void BTNodeGraphEditor::DrawParamEditor(EditorNode& node)
 			node.param.stateType = static_cast<LeafStateType>(cur);
 			static const char* kLabelNames[] = {
 				"None","ChargeDash","SummonMinion","FindTarget","ChaseTarget",
-				"NearIdle","StayHome","IsTargetFar","ShootSplitBullet","ThrowBigBullet","IsPhase2","IsPhase3","NotLastAction","IsAngry","ShootSplitBulletAngry","IdleWait","Custom"
+				"NearIdle","StayHome","IsTargetFar","ShootSplitBullet","ThrowBigBullet","IsPhase2","IsPhase3","NotLastAction","IsAngry","ShootSplitBulletAngry","IdleWait","SummonMinion","WaitMinionDead","Custom"
 			};
 			if (cur < IM_ARRAYSIZE(kLabelNames)) node.label = kLabelNames[cur];
 		}
@@ -628,7 +626,14 @@ void BTNodeGraphEditor::DrawParamEditor(EditorNode& node)
 			ImGui::TextWrapped("HP25%%以下なら Success\nSequenceの条件として使用");
 		}
 		if (node.param.stateType == LeafStateType::IdleWait) {
-			ImGui::TextWrapped("0.8秒その場で待機します。攻撃の合間の隙として使います。Selectorの最後に置くのがオススメ。");
+			ImGui::TextWrapped("その場で待機します。\n待機秒数は'距離しきい値'で設定（例: 7.0 = 7秒）。\n0の場合は7秒デフォルト。");
+			ImGui::DragFloat("待機秒数", &node.param.thresholdDistance, 0.1f, 0.1f, 60.0f, "%.1f 秒");
+		}
+		if (node.param.stateType == LeafStateType::SummonMinionNormal) {
+			ImGui::TextWrapped("雑魚敵を召喚します。通常フェーズから使用可能。");
+		}
+		if (node.param.stateType == LeafStateType::WaitMinionDead) {
+			ImGui::TextWrapped("雑魚が全滅するまで定位置で待機します。\n20秒でタイムアウト強制終了。");
 		}
 		if (node.param.stateType == LeafStateType::IsAngry) {
 			ImGui::TextWrapped("HP50%%以下（怒り状態）なら Success。\nSequenceの条件として使用。");
@@ -839,8 +844,9 @@ unsigned int BTNodeGraphEditor::NodeColor(NodeKind kind) const
 	switch (kind) {
 	case NodeKind::Root:      return kColorRoot;
 	case NodeKind::Sequence:  return kColorSeq;
-	case NodeKind::Selector:  return kColorSel;
-	case NodeKind::Decorator: return kColorDec;
+	case NodeKind::Selector:       return kColorSel;
+	case NodeKind::RandomSelector: return IM_COL32(180, 100, 40, 255); // 橙色
+	case NodeKind::Decorator:      return kColorDec;
 	case NodeKind::Leaf:      return kColorLeaf;
 	default:                  return IM_COL32(80, 80, 80, 255);
 	}
@@ -858,6 +864,9 @@ unsigned int BTNodeGraphEditor::NodeTitleColor(NodeKind kind) const
 	}
 }
 
+//======================================================
+// デフォルトグラフ（Root ノード1個だけ）
+//======================================================
 //======================================================
 // DrawGroupPanel
 // 左ペイン：グループ一覧・折りたたみ・カメラ移動
@@ -1141,11 +1150,22 @@ int BTNodeGraphEditor::GroupOfNode(int nodeId) const
 
 //======================================================
 // AutoGrouping
+// ツリー構造を解析してグループを自動生成する
+//
+// 判断ロジック:
+//   IsAngry の子孫         → "怒り状態" グループ（赤）
+//   IsPhase3 の子孫        → "フェーズ3 HP25%以下" グループ（橙）
+//   IsPhase2 の子孫        → "フェーズ2 HP50%以下" グループ（青）
+//   FindTarget             → "共通" グループ（灰）
+//   ChaseTarget            → "追跡" グループ（水色）
+//   Root / Sequence /      → 所属フェーズのグループ
+//   Selector / Decorator
 //======================================================
 void BTNodeGraphEditor::AutoGrouping()
 {
 	using namespace BTEditor;
 
+	// 既存の自動生成グループをクリア（手動グループは残す）
 	// 「[AUTO]」プレフィックスのグループだけ削除
 	graph_.groups.erase(
 		std::remove_if(graph_.groups.begin(), graph_.groups.end(),
@@ -1154,34 +1174,44 @@ void BTNodeGraphEditor::AutoGrouping()
 			}),
 		graph_.groups.end());
 
+	// グループ定義：条件となる LeafStateType と グループ情報
 	struct GroupDef {
 		const char* name;
 		int r, g, b;
-		LeafStateType triggerState;
+		LeafStateType triggerState; // このLeafが祖先にあればこのグループ
 	};
 
 	const std::vector<GroupDef> kGroupDefs = {
-		{"[AUTO] 怒り状態（HP50%以下）", 200, 60,  60,  LeafStateType::IsAngry},
-		{"[AUTO] フェーズ3（HP25%以下）", 200, 130, 40,  LeafStateType::IsPhase3},
-		{"[AUTO] フェーズ2（HP50%以下）", 60,  120, 200, LeafStateType::IsPhase2},
+		{"[AUTO] 怒り状態（HP50%以下）", 200, 60,  60,  LeafStateType::IsAngry},   // 赤
+		{"[AUTO] フェーズ3（HP25%以下）", 200, 130, 40,  LeafStateType::IsPhase3},  // 橙
+		{"[AUTO] フェーズ2（HP50%以下）", 60,  120, 200, LeafStateType::IsPhase2},  // 青
 	};
+	// 特殊グループ用カラー（被らないよう固定）
+	// 共通=灰(120,120,120) 追跡=水色(60,180,180) 構造=暗灰(70,70,70)
 
-	std::vector<int> commonIds;
-	std::vector<int> chaseIds;
-	std::vector<int> rootIds;
+	// 特殊グループ（条件Leafではなく種別で判断）
+	std::vector<int> commonIds;   // 共通（FindTarget等）
+	std::vector<int> chaseIds;    // 追跡（ChaseTarget）
+	std::vector<int> rootIds;     // Root/Selector/Sequence（構造ノード）
+
+	// 各グループ定義のノードIDリスト
 	std::vector<std::vector<int>> groupNodeIds(kGroupDefs.size());
 
+	// ノードIDから「どのグループに属するか」を再帰的に判断
+	// ancestorStates: Rootからそのノードまでの祖先LeafStateTypeの集合
 	std::function<void(int, std::vector<LeafStateType>)> Classify =
 		[&](int nodeId, std::vector<LeafStateType> ancestorStates)
 		{
 			const EditorNode* en = graph_.FindNode(nodeId);
 			if (!en) return;
 
+			// このノードがLeafの場合、祖先リストに自分のstateTypeを追加
 			std::vector<LeafStateType> myAncestors = ancestorStates;
 			if (en->kind == NodeKind::Leaf) {
 				myAncestors.push_back(en->param.stateType);
 			}
 
+			// 特殊ノードの分類
 			if (en->kind == NodeKind::Leaf) {
 				if (en->param.stateType == LeafStateType::FindTarget) {
 					commonIds.push_back(nodeId);
@@ -1193,6 +1223,7 @@ void BTNodeGraphEditor::AutoGrouping()
 				}
 			}
 
+			// 祖先に特定のLeafStateTypeがあるか確認
 			int matchedGroup = -1;
 			for (int gi = 0; gi < (int)kGroupDefs.size(); ++gi) {
 				for (auto& st : ancestorStates) {
@@ -1214,11 +1245,13 @@ void BTNodeGraphEditor::AutoGrouping()
 				rootIds.push_back(nodeId);
 			}
 
+			// 子ノードを再帰処理
 			for (int cid : graph_.ChildrenOf(nodeId)) {
 				Classify(cid, myAncestors);
 			}
 		};
 
+	// Rootから分類開始
 	for (auto& n : graph_.nodes) {
 		if (n.kind == NodeKind::Root) {
 			Classify(n.id, {});
@@ -1226,6 +1259,7 @@ void BTNodeGraphEditor::AutoGrouping()
 		}
 	}
 
+	// グループを生成（ノードがあるものだけ）
 	for (int gi = 0; gi < (int)kGroupDefs.size(); ++gi) {
 		if (groupNodeIds[gi].empty()) continue;
 		const auto& def = kGroupDefs[gi];
@@ -1239,6 +1273,7 @@ void BTNodeGraphEditor::AutoGrouping()
 		graph_.groups.push_back(grp);
 	}
 
+	// 共通グループ
 	if (!commonIds.empty()) {
 		NodeGroup grp;
 		grp.id = graph_.NewId();
@@ -1248,6 +1283,7 @@ void BTNodeGraphEditor::AutoGrouping()
 		graph_.groups.push_back(grp);
 	}
 
+	// 追跡グループ
 	if (!chaseIds.empty()) {
 		NodeGroup grp;
 		grp.id = graph_.NewId();
@@ -1257,13 +1293,14 @@ void BTNodeGraphEditor::AutoGrouping()
 		graph_.groups.push_back(grp);
 	}
 
+	// 構造ノードグループ
 	if (!rootIds.empty()) {
 		NodeGroup grp;
 		grp.id = graph_.NewId();
 		grp.name = "[AUTO] 構造ノード";
 		grp.colorR = 80; grp.colorG = 80; grp.colorB = 80;
 		grp.nodeIds = rootIds;
-		grp.collapsed = true;
+		grp.collapsed = true;  // デフォルトで折りたたむ
 		graph_.groups.push_back(grp);
 	}
 }
@@ -1271,49 +1308,67 @@ void BTNodeGraphEditor::AutoGrouping()
 
 //======================================================
 // GroupLayout
+// グループ単位で縦にまとめて配置する
+//
+// 動作:
+//   ・グループごとに固有のX列を割り当て
+//   ・同じグループのノードをその列に縦並び
+//   ・グループ間には余白を設ける
+//   ・どのグループにも属さないノードは右端に配置
+//
+// 注意: 自動整理(AutoLayout)を押すとツリー順に上書きされる
 //======================================================
 void BTNodeGraphEditor::GroupLayout()
 {
 	using namespace BTEditor;
 
-	constexpr float kGroupWidth = 260.0f;
-	constexpr float kNodeSpacingY = 150.0f;
-	constexpr float kOriginX = 80.0f;
-	constexpr float kOriginY = 80.0f;
-	constexpr float kGroupGap = 40.0f;
+	constexpr float kGroupWidth = 260.0f; // グループ列の幅
+	constexpr float kNodeSpacingY = 150.0f; // ノード間の縦間隔
+	constexpr float kOriginX = 80.0f;  // 開始X
+	constexpr float kOriginY = 80.0f;  // 開始Y
+	constexpr float kGroupGap = 40.0f;  // グループ間の余白
 
 	if (graph_.groups.empty()) return;
 
-	std::unordered_map<int, int> nodeToGroupIndex;
+	// グループに属するノードIDの集合（高速検索用）
+	std::unordered_map<int, int> nodeToGroupIndex; // nodeId → groupsのindex
 	for (int gi = 0; gi < (int)graph_.groups.size(); ++gi) {
 		for (int nid : graph_.groups[gi].nodeIds) {
 			nodeToGroupIndex[nid] = gi;
 		}
 	}
 
+	// グループごとのY位置カウンター
 	std::vector<float> groupY(graph_.groups.size(), kOriginY);
+
+	// グループのX位置（列）を計算
+	// 構造ノード([AUTO])は右端にまとめる
 	std::vector<float> groupX(graph_.groups.size(), 0.0f);
 	float curX = kOriginX;
 	int   structGroupIdx = -1;
 	for (int gi = 0; gi < (int)graph_.groups.size(); ++gi) {
 		if (graph_.groups[gi].name == "[AUTO] 構造ノード") {
 			structGroupIdx = gi;
-			continue;
+			continue; // 最後に配置
 		}
 		groupX[gi] = curX;
 		curX += kGroupWidth + kGroupGap;
 	}
+	// 構造ノードを右端に
 	if (structGroupIdx != -1) {
 		groupX[structGroupIdx] = curX;
 		curX += kGroupWidth + kGroupGap;
 	}
 
+	// どのグループにも属さないノードのX（最右端）
 	float ungroupedX = curX;
 	float ungroupedY = kOriginY;
 
+	// 各ノードに位置を設定
 	for (auto& node : graph_.nodes) {
 		auto it = nodeToGroupIndex.find(node.id);
 		if (it == nodeToGroupIndex.end()) {
+			// グループなし → 右端に縦並び
 			node.posX = ungroupedX;
 			node.posY = ungroupedY;
 			ungroupedY += kNodeSpacingY;
@@ -1326,6 +1381,7 @@ void BTNodeGraphEditor::GroupLayout()
 		}
 	}
 
+	// imnodes に位置を反映
 	for (auto& node : graph_.nodes) {
 		ImNodes::SetNodeGridSpacePos(
 			node.ImNodeId(),
@@ -1336,24 +1392,34 @@ void BTNodeGraphEditor::GroupLayout()
 
 //======================================================
 // AutoLayout
+// ツリー構造を解析して各ノードを自動整列する
+// ・X軸：兄弟ノードを等間隔に横並び
+// ・Y軸：深さ（Rootから何段目か）に応じて縦に配置
+// ・親ノードは子ノード群の中央に配置
 //======================================================
 void BTNodeGraphEditor::AutoLayout()
 {
 	using namespace BTEditor;
 
-	constexpr float kNodeSpacingX = 240.0f;
-	constexpr float kNodeSpacingY = 160.0f;
-	constexpr float kOriginX = 100.0f;
-	constexpr float kOriginY = 60.0f;
+	// レイアウト定数
+	constexpr float kNodeSpacingX = 240.0f;  // ノード間の横幅
+	constexpr float kNodeSpacingY = 160.0f;  // 深さごとの縦幅
+	constexpr float kOriginX = 100.0f;  // 開始X座標
+	constexpr float kOriginY = 60.0f;   // 開始Y座標
 
+	// Rootノードを探す
 	EditorNode* rootNode = nullptr;
 	for (auto& n : graph_.nodes) {
 		if (n.kind == NodeKind::Root) { rootNode = &n; break; }
 	}
 	if (!rootNode) return;
 
+	// 各ノードの X 位置を計算するカウンター（葉ノードを左から順番に並べる）
 	int leafCounter = 0;
 
+	// ノードの X 座標を計算する再帰関数
+	// 葉ノード：leafCounter をインクリメントしてその位置を返す
+	// 内部ノード：子の X 座標の平均を返す
 	std::function<float(int, int)> CalcX =
 		[&](int nodeId, int depth) -> float
 		{
@@ -1362,14 +1428,17 @@ void BTNodeGraphEditor::AutoLayout()
 			EditorNode* node = graph_.FindNode(nodeId);
 			if (!node) return 0.0f;
 
+			// Y座標は深さで決まる
 			node->posY = kOriginY + depth * kNodeSpacingY;
 
 			if (children.empty()) {
+				// 葉ノード：左から順番に配置
 				node->posX = kOriginX + leafCounter * kNodeSpacingX;
 				++leafCounter;
 				return node->posX;
 			}
 
+			// 内部ノード：子を再帰的に配置して中央に自分を置く
 			float firstChildX = 0.0f;
 			float lastChildX = 0.0f;
 			bool  first = true;
@@ -1380,12 +1449,14 @@ void BTNodeGraphEditor::AutoLayout()
 				lastChildX = cx;
 			}
 
+			// 子の最左〜最右の中央に配置
 			node->posX = (firstChildX + lastChildX) * 0.5f;
 			return node->posX;
 		};
 
 	CalcX(rootNode->id, 0);
 
+	// imnodes に新しい位置を反映
 	for (auto& node : graph_.nodes) {
 		ImNodes::SetNodeGridSpacePos(
 			node.ImNodeId(),
@@ -1448,43 +1519,3 @@ bool BTNodeGraphEditor::LoadFromJson(const std::string& filepath)
 		return false;
 	}
 }
-
-#else // USE_IMGUI 未定義時（Release）：空実装でリンクエラーを防ぐ
-
-BTNodeGraphEditor::BTNodeGraphEditor() = default;
-BTNodeGraphEditor::~BTNodeGraphEditor() = default;
-void BTNodeGraphEditor::Initialize() {}
-void BTNodeGraphEditor::Finalize() {}
-void BTNodeGraphEditor::Draw() {}
-bool BTNodeGraphEditor::SaveToJson(const std::string&) { return false; }
-bool BTNodeGraphEditor::LoadFromJson(const std::string&) { return false; }
-
-void BTNodeGraphEditor::DrawMenuBar() {}
-void BTNodeGraphEditor::DrawNodeGraph() {}
-void BTNodeGraphEditor::DrawSidePanel() {}
-void BTNodeGraphEditor::DrawNodeContextMenu() {}
-void BTNodeGraphEditor::DetectContextMenu() {}
-void BTNodeGraphEditor::DrawContextMenuPopup() {}
-int  BTNodeGraphEditor::AddNode(BTEditor::NodeKind, float, float) { return -1; }
-bool BTNodeGraphEditor::AddLink(int, int) { return false; }
-void BTNodeGraphEditor::DeleteNode(int) {}
-void BTNodeGraphEditor::DeleteLink(int) {}
-void BTNodeGraphEditor::DeleteSelectedNodes() {}
-void BTNodeGraphEditor::DeleteSelectedLinks() {}
-void BTNodeGraphEditor::DrawParamEditor(BTEditor::EditorNode&) {}
-void BTNodeGraphEditor::DrawChargeDashParamEditor(BTEditor::ChargeDashParamData&) {}
-unsigned int BTNodeGraphEditor::NodeColor(BTEditor::NodeKind)      const { return 0; }
-unsigned int BTNodeGraphEditor::NodeTitleColor(BTEditor::NodeKind) const { return 0; }
-bool BTNodeGraphEditor::WouldCreateCycle(int, int) const { return false; }
-void BTNodeGraphEditor::ResetToDefault() {}
-void BTNodeGraphEditor::AutoLayout() {}
-void BTNodeGraphEditor::AutoLayoutHorizontal() {}
-void BTNodeGraphEditor::AutoGrouping() {}
-void BTNodeGraphEditor::GroupLayout() {}
-void BTNodeGraphEditor::DrawGroupPanel() {}
-void BTNodeGraphEditor::AddGroup(const std::string&, int, int, int) {}
-void BTNodeGraphEditor::DeleteGroup(int) {}
-void BTNodeGraphEditor::FocusGroup(int) {}
-int  BTNodeGraphEditor::GroupOfNode(int) const { return -1; }
-
-#endif // USE_IMGUI

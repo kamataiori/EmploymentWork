@@ -236,6 +236,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\ShootSplitBulletState.cpp" />
     <ClCompile Include="Sword.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\ThrowBigBulletState.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\WaitMinionDeadState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\AI\BehaviorTree\BehaviorTree.h" />
@@ -356,6 +357,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NotLastActionLeaf.h" />
     <ClInclude Include="PauseScreen.h" />
     <ClInclude Include="PunchAttackLeaf.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\RandomSelectorNode.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
     <ClInclude Include="engine\3d\StructAnimation.h" />
@@ -390,6 +392,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />
     <ClInclude Include="engine\FrameWork\WinApp\WinApp.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\WaitMinionDeadState.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

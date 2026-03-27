@@ -24,7 +24,8 @@ namespace BTEditor {
 		Sequence = 1,
 		Selector = 2,
 		Decorator = 3,  // Inverter など
-		Leaf = 4,  // 汎用 Leaf / ExecuteStateLeaf
+		Leaf = 4,           // 汎用 Leaf / ExecuteStateLeaf
+		RandomSelector = 5, // ランダムに子を選ぶ Selector
 	};
 
 	inline const char* NodeKindName(NodeKind k)
@@ -34,7 +35,8 @@ namespace BTEditor {
 		case NodeKind::Sequence:  return "Sequence";
 		case NodeKind::Selector:  return "Selector";
 		case NodeKind::Decorator: return "Decorator";
-		case NodeKind::Leaf:      return "Leaf";
+		case NodeKind::Leaf:           return "Leaf";
+		case NodeKind::RandomSelector: return "RandomSelector";
 		default:                  return "Unknown";
 		}
 	}
@@ -60,6 +62,8 @@ namespace BTEditor {
 		IsAngry = 13, // 怒り状態（HP50%以下）か判定
 		ShootSplitBulletAngry = 14, // 怒り時の分裂弾（8発）
 		IdleWait = 15, // その場で待機（攻撃の隙）
+		SummonMinionNormal = 17, // 通常時の雑魚召喚
+		WaitMinionDead = 18, // 雑魚が全滅するまで待機
 		Custom = 99, // 将来拡張用
 	};
 
@@ -82,6 +86,8 @@ namespace BTEditor {
 		case LeafStateType::IsAngry:               return "IsAngry";
 		case LeafStateType::ShootSplitBulletAngry: return "ShootSplitBulletAngry";
 		case LeafStateType::IdleWait:              return "IdleWait";
+		case LeafStateType::SummonMinionNormal:    return "SummonMinion";
+		case LeafStateType::WaitMinionDead:        return "WaitMinionDead";
 		case LeafStateType::Custom:        return "Custom";
 		default:                           return "Unknown";
 		}
