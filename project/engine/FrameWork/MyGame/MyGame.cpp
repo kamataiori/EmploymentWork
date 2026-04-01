@@ -27,7 +27,7 @@ void MyGame::Initialize()
 	SceneManager::GetInstance()->SetTransitionService(transitionService_.get());
 
 
-	SceneManager::GetInstance()->ChangeScene("ENEMYBT");
+	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 
 #ifdef USE_IMGUI
 
