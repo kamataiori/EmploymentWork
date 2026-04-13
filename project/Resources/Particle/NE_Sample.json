@@ -5,9 +5,10 @@
         "vertexType": 0
     },
     "emitterSpawn": {
-        "count": 73,
+        "count": 104,
         "frequency": 1.0,
         "repeat": false,
+        "useLocalSpace": false,
         "useRandomPosition": true
     },
     "name": "NE_Sample",
@@ -127,13 +128,13 @@
     },
     "render": {
         "color": [
-            0.6795363426208496,
-            0.0,
-            1.0,
+            0.46332043409347534,
+            0.46332043409347534,
+            0.46332043409347534,
             1.0
         ],
         "colorGradient": {
-            "enabled": true,
+            "enabled": false,
             "keys": [
                 [
                     0.0,

@@ -43,8 +43,9 @@ public:
 	void SetApplyCallback(ApplyCallback cb) { applyCallback_ = std::move(cb); }
 
 private:
+#ifdef USE_IMGUI
 	//--------------------------------------------------
-	// 描画サブルーチン
+	// 描画サブルーチン（USE_IMGUI 時のみ）
 	//--------------------------------------------------
 	void DrawMenuBar();
 	void DrawNodeGraph();
@@ -54,7 +55,7 @@ private:
 	void DrawContextMenuPopup();  // EndNodeEditor 後：ポップアップ描画
 
 	//--------------------------------------------------
-	// ノード操作
+	// ノード操作（USE_IMGUI 時のみ）
 	//--------------------------------------------------
 	// 新しいノードを追加してIDを返す
 	int  AddNode(BTEditor::NodeKind kind, float posX = 200.0f, float posY = 200.0f);
@@ -70,23 +71,17 @@ private:
 	void DeleteSelectedLinks();
 
 	//--------------------------------------------------
-	// パラメーター編集 UI（サイドパネル内）
+	// パラメーター編集 UI（USE_IMGUI 時のみ）
 	//--------------------------------------------------
 	void DrawParamEditor(BTEditor::EditorNode& node);
 	void DrawChargeDashParamEditor(BTEditor::ChargeDashParamData& p);
 
 	//--------------------------------------------------
-	// ユーティリティ
+	// ユーティリティ（USE_IMGUI 時のみ）
 	//--------------------------------------------------
 	// ノードの色（種別ごと）
 	unsigned int NodeColor(BTEditor::NodeKind kind) const;
 	unsigned int NodeTitleColor(BTEditor::NodeKind kind) const;
-
-	// 循環チェック: toNodeId が fromNodeId の祖先か
-	bool WouldCreateCycle(int fromNodeId, int toNodeId) const;
-
-	// グラフをデフォルト（Rootのみ）に初期化
-	void ResetToDefault();
 
 	// ノードを階層ごとに自動整列
 	void AutoLayout();             // 上→下（縦方向）
@@ -101,22 +96,29 @@ private:
 	void FocusGroup(int groupId);       // グループにカメラを移動
 	int  GroupOfNode(int nodeId) const; // ノードが属するグループIDを返す
 
-	//--------------------------------------------------
-	// 状態
-	//--------------------------------------------------
-	BTEditor::BTGraph   graph_;
-	int                 selectedNodeId_ = -1;
-	int                 selectedGroupId_ = -1;  // グループパネルで選択中   // サイドパネルで編集中のノード
-	std::string         saveFilePath_ = "Resources/BT/Enemy/enemy_bt.json";
-
-	// ズームスケール（0.3〜2.5、デフォルト1.0）
-	float  zoomScale_ = 1.0f;
-
-	// 右クリックメニュー用
+	// USE_IMGUI 時のみ必要なメンバ変数
+	int    selectedNodeId_ = -1;
+	int    selectedGroupId_ = -1;  // グループパネルで選択中
+	float  zoomScale_ = 1.0f; // ズームスケール（0.3〜2.5）
 	bool   contextMenuOpen_ = false;
 	float  contextMenuPosX_ = 0.0f;
 	float  contextMenuPosY_ = 0.0f;
+#endif // USE_IMGUI
 
+	//--------------------------------------------------
+	// ユーティリティ（常に有効）
+	//--------------------------------------------------
+	// 循環チェック: toNodeId が fromNodeId の祖先か
+	bool WouldCreateCycle(int fromNodeId, int toNodeId) const;
+
+	// グラフをデフォルト（Rootのみ）に初期化
+	void ResetToDefault();
+
+	//--------------------------------------------------
+	// 状態（常に有効）
+	//--------------------------------------------------
+	BTEditor::BTGraph   graph_;
+	std::string         saveFilePath_ = "Resources/BT/Enemy/enemy_bt.json";
 
 	ApplyCallback applyCallback_;
 };

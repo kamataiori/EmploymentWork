@@ -1,7 +1,9 @@
 #include "BTEditorScene.h"
 
 #include "SceneManager.h"
+#ifdef USE_IMGUI
 #include "imguiManager.h"
+#endif // USE_IMGUI
 
 // BT ノード
 #include "application/AI/BehaviorTree/Nodes/Composite/SequenceNode.h"
@@ -38,7 +40,7 @@ void BTEditorScene::Initialize()
 
 	// デフォルト JSON を自動ロード（存在すれば）
 	editor_.LoadFromJson("Resources/BT/Enemy/enemy_bt.json");
-#endif
+#endif // USE_IMGUI
 }
 
 //======================================================
@@ -48,7 +50,7 @@ void BTEditorScene::Finalize()
 {
 #ifdef USE_IMGUI
 	editor_.Finalize();
-#endif
+#endif // USE_IMGUI
 }
 
 //======================================================
@@ -65,8 +67,7 @@ void BTEditorScene::Update()
 	if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
 		SceneManager::GetInstance()->RequestChangeScene("GAMEPLAY", req);
 	}
-#endif
-
+#endif // USE_IMGUI
 	Debug();
 }
 
@@ -100,7 +101,7 @@ void BTEditorScene::Debug()
 
 	// グラフエディター本体
 	editor_.Draw();
-#endif
+#endif // USE_IMGUI
 }
 
 //======================================================

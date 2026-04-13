@@ -1,9 +1,9 @@
 #include "BTNodeGraphEditor.h"
 
-#include <imguiManager.h>
 #ifdef USE_IMGUI
+#include <imguiManager.h>
 #include "externals/imgui/imnodes.h"
-#endif
+#endif // USE_IMGUI
 #include <json.hpp>
 
 #include <fstream>
@@ -12,6 +12,14 @@
 #include <cassert>
 
 using namespace BTEditor;
+
+//======================================================
+// 生成 / 破棄（常に有効）
+//======================================================
+BTNodeGraphEditor::BTNodeGraphEditor() = default;
+BTNodeGraphEditor::~BTNodeGraphEditor() = default;
+
+#ifdef USE_IMGUI
 
 //======================================================
 // 色定数（ABGR 形式 for imnodes）
@@ -32,15 +40,9 @@ namespace {
 
 } // anonymous namespace
 
-//======================================================
-// 生成 / 破棄
-//======================================================
-BTNodeGraphEditor::BTNodeGraphEditor() = default;
-BTNodeGraphEditor::~BTNodeGraphEditor() = default;
-
 void BTNodeGraphEditor::Initialize()
 {
-
+#ifdef USE_IMGUI
 	// スタイル調整
 	// ※ NodePaddingHorizontal / NodePaddingVertical は
 	//   imnodes の古いバージョンにのみ存在するため使用しない
@@ -48,6 +50,7 @@ void BTNodeGraphEditor::Initialize()
 	style.NodeCornerRounding = 6.0f;
 	style.PinCircleRadius = 5.0f;
 	style.LinkThickness = 2.5f;
+#endif // USE_IMGUI
 
 	ResetToDefault();
 }
@@ -62,7 +65,7 @@ void BTNodeGraphEditor::Finalize()
 //======================================================
 void BTNodeGraphEditor::Draw()
 {
-
+#ifdef USE_IMGUI
 	// ===== メインウィンドウ =====
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
@@ -96,6 +99,7 @@ void BTNodeGraphEditor::Draw()
 	ImGui::EndChild();
 
 	ImGui::End();
+#endif // USE_IMGUI
 }
 
 //======================================================
@@ -822,6 +826,8 @@ void BTNodeGraphEditor::DeleteSelectedLinks()
 	}
 }
 
+#endif // USE_IMGUI
+
 //======================================================
 // 循環チェック（DFS で toNodeId が fromNodeId の祖先か調べる）
 //======================================================
@@ -835,6 +841,8 @@ bool BTNodeGraphEditor::WouldCreateCycle(int fromNodeId, int toNodeId) const
 	}
 	return false;
 }
+
+#ifdef USE_IMGUI
 
 //======================================================
 // ノード色
@@ -1465,10 +1473,14 @@ void BTNodeGraphEditor::AutoLayout()
 }
 
 
+#endif // USE_IMGUI
+
 void BTNodeGraphEditor::ResetToDefault()
 {
 	graph_.Clear();
+#ifdef USE_IMGUI
 	selectedNodeId_ = -1;
+#endif // USE_IMGUI
 
 	EditorNode root;
 	root.id = graph_.NewId();
@@ -1507,12 +1519,13 @@ bool BTNodeGraphEditor::LoadFromJson(const std::string& filepath)
 		nlohmann::json j;
 		ifs >> j;
 		graph_ = j.get<BTEditor::BTGraph>();
+#ifdef USE_IMGUI
 		selectedNodeId_ = -1;
-
 		// imnodes に位置を再設定
 		for (auto& n : graph_.nodes) {
 			ImNodes::SetNodeGridSpacePos(n.ImNodeId(), ImVec2(n.posX, n.posY));
 		}
+#endif // USE_IMGUI
 		return true;
 	}
 	catch (...) {
