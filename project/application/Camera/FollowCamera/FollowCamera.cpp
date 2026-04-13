@@ -5,10 +5,10 @@ FollowCamera::FollowCamera(ObjectBase* target, float followDistance, float heigh
 	: target(target),
 	followDistance(followDistance),
 	heightOffset(heightOffset),
-	shoulderOffset(3.5f),   // 2.8f → 3.5f：右肩越しを強調
+	shoulderOffset(0.0f),
 	sensitivity_(0.005f),
 	dampPosY_(true),
-	posYSmooth_(12.0f),     // 6.0f → 12.0f：Y追従を速くしてカメラが落ち着く
+	posYSmooth_(12.0f),
 	lockLookY_(false),
 	lookYSmooth_(10.0f),
 	lookY_(0.0f),
@@ -18,58 +18,43 @@ FollowCamera::FollowCamera(ObjectBase* target, float followDistance, float heigh
 
 void FollowCamera::Update()
 {
-    if (!target) return;
+	if (!target) return;
 
-    float dt = TimeManager::GetInstance()->GetDeltaTime();
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-    // 初回だけ：カメラの周回角を player の向きに合わせる
-    static bool sInitializedAngle = false;
+	// 初回だけ：プレイヤーの後ろ（+π）にカメラを配置
 	if (!initializedAngle_) {
-		angle = target->GetTransform().rotate.y;
+		angle = target->GetTransform().rotate.y + std::numbers::pi_v<float>;
 		initializedAngle_ = true;
 	}
 
-    // =============================
-    // 入力：周回角（カメラオービット）
-    // =============================
-    if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= 0.03f;
-    if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += 0.03f;
+	// =============================
+	// 入力：周回角（カメラオービット）
+	// =============================
+	if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= 0.03f;
+	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += 0.03f;
 
-    angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
+	angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
 
-    const auto& t = target->GetTransform();
-    const Vector3& targetPos = t.translate;
+	const Vector3& targetPos = target->GetTransform().translate;
 
-    // playerの向き（Yaw）を基準に「右方向」を作る
-    // ※もし player の yaw が別管理ならここを差し替え
-    const float targetYaw = t.rotate.y;
+	// カメラ位置計算の部分を変更
+	// カメラを左にずらす（マイナス方向）
+	const float camShiftX = -std::cos(angle) * 2.2f;
+	const float camShiftZ = std::sin(angle) * 2.2f;
 
-    // =============================
-    // カメラ位置
-    //   - 後ろ方向：カメラ周回 angle 基準
-    //   - 肩オフセット：playerYaw 基準（回り込み防止）
-    // =============================
-    const float bs = std::sin(angle);
-    const float bc = std::cos(angle);
+	Vector3 desiredPos = {
+		targetPos.x + std::sin(angle) * followDistance + camShiftX,
+		targetPos.y + heightOffset,
+		targetPos.z + std::cos(angle) * followDistance + camShiftZ
+	};
 
-    // player基準の右方向
-    const float rs = std::sin(targetYaw);
-    const float rc = std::cos(targetYaw);
-
-    Vector3 offset = {
-        bs * followDistance + rc * shoulderOffset,
-        heightOffset,
-        bc * followDistance - rs * shoulderOffset
-    };
-
-	Vector3 desiredPos = targetPos + offset;
-
-	// XZは即追従
+	// XZ は即追従
 	transform.translate.x = desiredPos.x;
 	transform.translate.z = desiredPos.z;
 
+	// Y だけ遅らせる（初回は即セット）
 	if (dampPosY_) {
-		// 初回だけ補間せずに直接セット
 		if (!initializedPosY_) {
 			transform.translate.y = desiredPos.y;
 			lookY_ = targetPos.y;
@@ -84,57 +69,44 @@ void FollowCamera::Update()
 		transform.translate.y = desiredPos.y;
 	}
 
-    // =============================
-    // 注視点Y：固定 or 緩め追従
-    // =============================
-    Vector3 lookAt = targetPos;
+	// =============================
+	// 注視点：プレイヤーの胸あたりを見る
+	// =============================
+	Vector3 lookAt = targetPos;
 
-    if (lockLookY_) {
-        static bool initialized = false;
-        if (!initialized) {
-            lookY_ = targetPos.y;
-            initialized = true;
-        }
-        lookAt.y = lookY_;
-    }
-    else {
-        const float tt = 1.0f - std::exp(-lookYSmooth_ * dt);
-        lookY_ = lookY_ + (targetPos.y - lookY_) * tt;
-        lookAt.y = lookY_;
-    }
+	// 注視点 Y を滑らかに追従
+	{
+		const float tt = 1.0f - std::exp(-lookYSmooth_ * dt);
+		lookY_ = lookY_ + (targetPos.y - lookY_) * tt;
+		lookAt.y = lookY_ + 0.5f; // 胸の高さ
+	}
 
-    // =============================
-    // 見る位置：胸 + 少し左（playerYaw基準に統一）
-    // =============================
-    lookAt.y += 1.2f; // 胸あたり
+	// =============================
+	// 肩越し（右肩カメラ）：
+	// 注視点を「カメラの右方向」にずらすことでキャラを画面左寄りに見せる
+	// カメラ位置は円のまま変えないので距離は絶対変わらない
+	// =============================
+	// angle に対する右方向（forward を -90° 回転）
+	const float rightX = std::cos(angle);
+	const float rightZ = -std::sin(angle);
 
-    // 「少し左を見る」＝ player基準で左にずらす
-    // ※右肩カメラでキャラを画面左寄せにしたいので "左" を見る
-    float sideOffset = 0.6f;
+	// 注視点も同じ方向（左）にずらす
+	lookAt.x += camShiftX;
+	lookAt.z += camShiftZ;
 
-    // left = -right
-    lookAt.x -= rc * sideOffset;
-    lookAt.z += rs * sideOffset;
+	// =============================
+	// 向き：lookAt に向ける（Yaw + Pitch）
+	// =============================
+	Vector3 dir = Normalize(lookAt - transform.translate);
 
-    // =============================
-    // 向き：Yaw + Pitch を lookAt に合わせる
-    // =============================
-    Vector3 dir = Normalize(lookAt - transform.translate);
+	transform.rotate.y = std::atan2(dir.x, dir.z);
 
-    // Yaw
-    transform.rotate.y = std::atan2(dir.x, dir.z);
+	const float horizontalLength = std::sqrt(dir.x * dir.x + dir.z * dir.z);
+	float pitch = std::atan2(-dir.y, horizontalLength);
 
-    // Pitch（反転しない範囲に制限）
-    float horizontalLength = std::sqrt(dir.x * dir.x + dir.z * dir.z);
-    float pitch = std::atan2(-dir.y, horizontalLength);
+	// Pitch クランプ（下向きのみ）
+	pitch = std::clamp(pitch, 0.60f, 0.65f);
+	transform.rotate.x = pitch;
 
-    const float minPitch = 0.10f; // 少し下向き（約6度）
-    const float maxPitch = 0.60f; // 下向き最大（約34度）
-
-    if (pitch < minPitch) pitch = minPitch;
-    if (pitch > maxPitch) pitch = maxPitch;
-
-    transform.rotate.x = pitch;
-
-    Camera::Update();
+	Camera::Update();
 }

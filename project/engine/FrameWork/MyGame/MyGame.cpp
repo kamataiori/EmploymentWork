@@ -26,7 +26,7 @@ void MyGame::Initialize()
 	transitionService_->SetUIManager(uiManager_.get());
 	SceneManager::GetInstance()->SetTransitionService(transitionService_.get());
 
-	SceneManager::GetInstance()->ChangeScene("TITLE");
+	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 
 #ifdef USE_IMGUI
 
