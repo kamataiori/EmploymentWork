@@ -31,8 +31,8 @@ void FollowCamera::Update()
 	// =============================
 	// 入力：周回角（カメラオービット）
 	// =============================
-	if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= 0.03f;
-	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += 0.03f;
+	if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= 0.01f;
+	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += 0.01f;
 
 	angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
 
