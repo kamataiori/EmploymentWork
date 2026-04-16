@@ -98,6 +98,7 @@ private:
 	std::unique_ptr<SkyBox>   skybox = std::make_unique<SkyBox>();
 	std::unique_ptr<Object3d> ground;
 	std::unique_ptr<Object3d> sky;
+	std::unique_ptr<Object3d> Colosseum;
 
 	std::unique_ptr<Player>   player_;
 	std::unique_ptr<Enemy>    enemy_;

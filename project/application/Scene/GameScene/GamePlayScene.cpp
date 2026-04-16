@@ -34,6 +34,7 @@ void GamePlayScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("ground.obj");
 	ModelManager::GetInstance()->LoadModel("stage.obj");
 	ModelManager::GetInstance()->LoadModel("skydome.obj");
+	ModelManager::GetInstance()->LoadModel("Colosseum.obj");
 
 	// カメラ
 	camera1->SetTranslate({ 0.0f, 0.0f, -20.0f });
@@ -51,6 +52,12 @@ void GamePlayScene::Initialize()
 	sky->Initialize();
 	sky->SetModel("skydome.obj");
 	sky->SetTranslate({ 0.0f,0.0f,0.0f });
+
+	Colosseum = std::make_unique<Object3d>(this);
+	Colosseum->Initialize();
+	Colosseum->SetModel("Colosseum.obj");
+	//Colosseum->SetScale({ 0.5f,0.5f,0.5f });
+	Colosseum->SetTranslate({ 0.0f,-10.0f,0.0f });
 
 	stage_ = std::make_unique<SceneController>(this);
 	stage_->LoadScene("stage");
@@ -74,6 +81,7 @@ void GamePlayScene::Initialize()
 	stage_->SetCamera(followCamera.get());
 	player_->SetCamera(followCamera.get());
 	enemy_->SetCamera(followCamera.get());
+	Colosseum->SetCamera(followCamera.get());
 	DrawLine::GetInstance()->SetCamera(followCamera.get());
 
 	// プレイヤーの入力をロック（イントロ終わるまで動かせない）
@@ -218,6 +226,7 @@ void GamePlayScene::Update()
 		skybox->Update();
 		ground->Update();
 		sky->Update();
+		Colosseum->Update();
 		player_->Update();
 		enemy_->UpdateVisual(); // AI非動作・見た目のみ（攻撃させない）
 		followCamera->Update();
@@ -233,6 +242,7 @@ void GamePlayScene::Update()
 	skybox->Update();
 	ground->Update();
 	sky->Update();
+	Colosseum->Update();
 	player_->Update();
 	enemy_->Update();
 	ex->Update();
@@ -385,8 +395,9 @@ void GamePlayScene::BackGroundDraw()
 void GamePlayScene::Draw()
 {
 	Object3dCommon::GetInstance()->CommonSetting();
-	sky->Draw();
+	//sky->Draw();
 	ground->Draw();
+	Colosseum->Draw();
 	player_->Draw();
 	enemy_->Draw();
 
