@@ -54,6 +54,9 @@ public:
 		sceneFactory_ = factory;
 	}
 
+	// シーンファクトリーのGetter（EditorLayout等のUIから参照する用）
+	AbstractSceneFactory* GetSceneFactory() const { return sceneFactory_; }
+
 	// 現在のシーンを取得
 	BaseScene* GetCurrentScene() const { return scene_; }
 

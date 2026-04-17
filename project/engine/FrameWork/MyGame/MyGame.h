@@ -7,6 +7,7 @@
 
 #ifdef USE_IMGUI
 #include "ImGuiManager.h"
+#include "EditorLayout.h"
 #endif // USE_IMGUI
 
 #include <deque>
@@ -37,22 +38,13 @@ public:
 	void Draw() override;
 
 
-	/// <summary>
-	/// 
-	/// </summary>
-	void ApplyImGuiStyle();
-
-	void DrawUnityLayout();
-	void DrawCenterPanel();
-	void DrawLeftPanels();
-	void DrawRightPanels();
-	void DrawBottomPanel();
-
 private:
 
 #ifdef USE_IMGUI
 
 	std::unique_ptr<ImGuiManager> imGuiManager_ = nullptr;
+
+	std::unique_ptr<EditorLayout> editorLayout_ = nullptr;
 
 #endif // USE_IMGUI
 

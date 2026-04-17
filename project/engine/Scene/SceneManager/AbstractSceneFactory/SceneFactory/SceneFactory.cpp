@@ -38,3 +38,17 @@ BaseScene* SceneFactory::CreateScene(const std::string& sceneName)
 	
 	return newScene;
 }
+
+std::vector<std::string> SceneFactory::GetSceneNameList() const
+{
+	// CreateScene の if 分岐と同じ順で並べる
+	// シーンを追加したら、ここにも追加すること
+	return {
+		"TITLE",
+		"GAMEPLAY",
+		"PARTICLE",
+		"TUTORIAL",
+		"MENU",
+		"ENEMYBT",
+	};
+}

@@ -34,6 +34,10 @@ void MyGame::Initialize()
 	imGuiManager_ = std::make_unique<ImGuiManager>();
 	imGuiManager_->Initialize(winApp.get(), DirectXCommon::GetInstance());
 
+	// EditorLayoutの初期化
+	editorLayout_ = std::make_unique<EditorLayout>();
+	editorLayout_->Initialize();
+
 #endif // USE_IMGUI
 
 	//offscreenRendering->Initialize(PostEffectType::Normal);
@@ -47,6 +51,12 @@ void MyGame::Initialize()
 void MyGame::Finalize()
 {
 #ifdef USE_IMGUI
+
+	// EditorLayoutを先に終了
+	if (editorLayout_) {
+		editorLayout_->Finalize();
+	}
+	editorLayout_.reset();
 
 	// ImGuiの終了処理
 	imGuiManager_->Finalize();
@@ -63,6 +73,11 @@ void MyGame::Update()
 
 	// ImGuiのフレーム開始を宣言
 	imGuiManager_->Update();
+
+	// UE5風レイアウト（DockSpace + 各パネル）を先に構築する
+	//    → 個別ウィンドウ (ImGui::Begin) はこの後に並べる
+	editorLayout_->BeginFrame();
+
 	ImGui::Begin("Performance");
 	ImGui::Text("FPS: %.2f", GetFPS());
 	ImGui::Text("Frame Time: %.2f ms", GetFrameTimeMs());
@@ -80,6 +95,9 @@ void MyGame::Update()
 	//GlobalVariables::GetInstance()->Update();
 
 #ifdef USE_IMGUI
+
+	// レイアウトの後処理
+	editorLayout_->EndFrame();
 
 	// ImGuiの内部コマンドを生成する
 	ImGui::Render();

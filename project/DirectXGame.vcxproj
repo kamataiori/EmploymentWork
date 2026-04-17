@@ -118,6 +118,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyActionState.cpp" />
     <ClCompile Include="application\Scene\EditorScene\BTNodeGraphEditor.cpp" />
     <ClCompile Include="application\Scene\EditorScene\BTEditorScene.cpp" />
+    <ClCompile Include="EditorLayout.cpp" />
     <ClCompile Include="EnemyDropBullet.cpp" />
     <ClCompile Include="EnemySplitBullet.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyStateManager.cpp" />
@@ -253,6 +254,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Scene\EditorScene\BTEditorData.h" />
     <ClInclude Include="application\Scene\EditorScene\BTNodeGraphEditor.h" />
     <ClInclude Include="application\Scene\EditorScene\BTEditorScene.h" />
+    <ClInclude Include="EditorLayout.h" />
     <ClInclude Include="EnemyDropBullet.h" />
     <ClInclude Include="EnemySplitBullet.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\EnemyStateManager.h" />
