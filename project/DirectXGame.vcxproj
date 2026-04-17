@@ -113,6 +113,14 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Decorator\DecoratorNodeBase.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\EnemyAIController.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\BaseTutorialState.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChargeDashAttackLeaf.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\ChargeDashState.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyActionState.cpp" />
+    <ClCompile Include="application\Scene\EditorScene\BTNodeGraphEditor.cpp" />
+    <ClCompile Include="application\Scene\EditorScene\BTEditorScene.cpp" />
+    <ClCompile Include="EnemyDropBullet.cpp" />
+    <ClCompile Include="EnemySplitBullet.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyStateManager.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraEffectController.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraMove.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraShake.cpp" />
@@ -155,6 +163,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.cpp" />
     <ClCompile Include="engine\Scene\ChangeEffect\Fade\FadeTransition.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsHPLeaf.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsAngryLeaf.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\IdleWaitState.cpp" />
     <ClCompile Include="IsTargetNearLeaf.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\math\MathFunctions.cpp" />
@@ -199,6 +211,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.cpp" />
     <ClCompile Include="MenuScene.cpp" />
+    <ClCompile Include="MinionEnemy.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NotLastActionLeaf.cpp" />
     <ClCompile Include="PauseScreen.cpp" />
     <ClCompile Include="PunchAttackLeaf.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialController.cpp" />
@@ -217,7 +231,12 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\UI\UIManager.cpp" />
     <ClCompile Include="engine\UI\UITexture.cpp" />
     <ClCompile Include="SceneTransitionStates.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\StayHomeLeaf.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\SummonMinionState.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\ShootSplitBulletState.cpp" />
     <ClCompile Include="Sword.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\ThrowBigBulletState.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\WaitMinionDeadState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\AI\BehaviorTree\BehaviorTree.h" />
@@ -227,6 +246,16 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\CompositeNodeBase.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Decorator\DecoratorNodeBase.h" />
     <ClInclude Include="application\Scene\TutorialScene\BaseTutorialState.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChargeDashAttackLeaf.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\ChargeDashParam.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\ChargeDashState.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\EnemyActionState.h" />
+    <ClInclude Include="application\Scene\EditorScene\BTEditorData.h" />
+    <ClInclude Include="application\Scene\EditorScene\BTNodeGraphEditor.h" />
+    <ClInclude Include="application\Scene\EditorScene\BTEditorScene.h" />
+    <ClInclude Include="EnemyDropBullet.h" />
+    <ClInclude Include="EnemySplitBullet.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\EnemyStateManager.h" />
     <ClInclude Include="engine\BlendMode.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\EnemyAIController.h" />
     <ClInclude Include="engine\3d\Camera\CameraEffectController.h" />
@@ -258,11 +287,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\Camera\Camera.h" />
     <ClInclude Include="engine\check\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\directx\DirectXCommon.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
-    <ClInclude Include="externals\imgui\imgui.h" />
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
-    <ClInclude Include="externals\imgui\imgui_impl_win32.h" />
-    <ClInclude Include="externals\imgui\imgui_internal.h" />
     <ClInclude Include="externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
@@ -281,6 +308,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsTargetFarLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Leaf\LeafNodeBase.h" />
     <ClInclude Include="engine\Scene\ChangeEffect\Fade\FadeTransition.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsHPLeaf.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsAngryLeaf.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\IdleWaitState.h" />
     <ClInclude Include="IsTargetNearLeaf.h" />
     <ClInclude Include="matrix\Matrix3x3.h" />
     <ClInclude Include="matrix\Matrix4x4.h" />
@@ -323,8 +353,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeBase.h" />
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeResult.h" />
     <ClInclude Include="MenuScene.h" />
+    <ClInclude Include="MinionEnemy.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NotLastActionLeaf.h" />
     <ClInclude Include="PauseScreen.h" />
     <ClInclude Include="PunchAttackLeaf.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\RandomSelectorNode.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
     <ClInclude Include="engine\3d\StructAnimation.h" />
@@ -350,11 +383,16 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\UI\UIManager.h" />
     <ClInclude Include="engine\UI\UITexture.h" />
     <ClInclude Include="SceneTransitionStates.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\StayHomeLeaf.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\SummonMinionState.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\ShootSplitBulletState.h" />
     <ClInclude Include="Sword.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\ThrowBigBulletState.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
     <ClInclude Include="vector\Vector4.h" />
     <ClInclude Include="engine\FrameWork\WinApp\WinApp.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\WaitMinionDeadState.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
@@ -362,6 +400,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
+    </ProjectReference>
+    <ProjectReference Include="externals\imgui\imgui.vcxproj">
+      <Project>{0281b0c5-86e2-434d-81f0-bd03bffc65a6}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

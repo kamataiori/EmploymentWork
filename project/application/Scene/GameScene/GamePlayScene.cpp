@@ -5,6 +5,13 @@
 #include <MyGame.h>
 #include "engine/TimeManager.h"
 
+#include "EnemyDropBullet.h"
+#include <EnemySplitBullet.h>
+
+#include "application/Character/CharacterBase/Enemy/AI/EnemyAIController.h"
+#include "application/AI/BehaviorTree/Core/NodeResult.h"
+#include <cmath>
+
 #ifdef max
 #undef max
 #endif
@@ -15,7 +22,6 @@
 void GamePlayScene::Initialize()
 {
 	// ライト
-	// Lightクラスのデータを初期化
 	BaseScene::GetLight()->Initialize();
 	BaseScene::GetLight()->GetCameraLight();
 	BaseScene::GetLight()->GetDirectionalLight();
@@ -28,27 +34,13 @@ void GamePlayScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("ground.obj");
 	ModelManager::GetInstance()->LoadModel("stage.obj");
 	ModelManager::GetInstance()->LoadModel("skydome.obj");
+	ModelManager::GetInstance()->LoadModel("Colosseum.obj");
 
-	// 3Dカメラの初期化
+	// カメラ
 	camera1->SetTranslate({ 0.0f, 0.0f, -20.0f });
-
 	cameraEffect_ = std::make_unique<CameraEffectController>();
 
-	player_ = std::make_unique<Player>(this);
-	enemy_ = std::make_unique<Enemy>(this);
-
-	followCamera = std::make_unique<FollowCamera>(player_.get(), 30.0f, 8.0f);
-	followCamera->SetFarClip(2000.0f);
-
-	player_->Initialize();
-	player_->SetCamera(followCamera.get());
-	/*followCamera->SetTarget(player_->Get());*/
-
-	enemy_->Initialize();
-	enemy_->SetCamera(followCamera.get());
-	enemy_->SetTargetTransform(&player_->GetTransform());
-	enemy_->SetCamera(followCamera.get());
-
+	// 3D オブジェクト生成（SetCamera より前に必ず生成）
 	skybox->Initialize("Resources/rostock_laage_airport_4k.dds", { 1000.0f,1000.0f,1000.0f });
 
 	ground = std::make_unique<Object3d>(this);
@@ -61,17 +53,73 @@ void GamePlayScene::Initialize()
 	sky->SetModel("skydome.obj");
 	sky->SetTranslate({ 0.0f,0.0f,0.0f });
 
-	skybox->SetCamera(followCamera.get());
-	ground->SetCamera(followCamera.get());
-	sky->SetCamera(followCamera.get());
-	DrawLine::GetInstance()->SetCamera(followCamera.get());
+	Colosseum = std::make_unique<Object3d>(this);
+	Colosseum->Initialize();
+	Colosseum->SetModel("Colosseum.obj");
+	//Colosseum->SetScale({ 0.5f,0.5f,0.5f });
+	Colosseum->SetTranslate({ 0.0f,-10.0f,0.0f });
 
 	stage_ = std::make_unique<SceneController>(this);
-	stage_->LoadScene("stage"); // Resources/Json/stage.json を読み込む
+	stage_->LoadScene("stage");
+
+	// キャラクター生成・初期化
+	player_ = std::make_unique<Player>(this);
+	enemy_ = std::make_unique<Enemy>(this);
+
+	followCamera = std::make_unique<FollowCamera>(player_.get(), 6.0f, 4.5f);
+	followCamera->SetFarClip(3000.0f);
+	followCamera->SetFovY(90.0f);
+
+	player_->Initialize();
+	enemy_->Initialize();
+	enemy_->SetTargetTransform(&player_->GetTransform());
+
+	// 全オブジェクトに followCamera をセット（イントロから最初から通常カメラ）
+	sky->SetCamera(followCamera.get());
+	ground->SetCamera(followCamera.get());
+	skybox->SetCamera(followCamera.get());
 	stage_->SetCamera(followCamera.get());
+	player_->SetCamera(followCamera.get());
+	enemy_->SetCamera(followCamera.get());
+	Colosseum->SetCamera(followCamera.get());
+	DrawLine::GetInstance()->SetCamera(followCamera.get());
 
+	// プレイヤーの入力をロック（イントロ終わるまで動かせない）
+	player_->SetInputLocked(true);
 
+	// イントロ演出リセット
+	intro_.Reset();
 
+	// ================================================
+	// カウントダウン用スプライト
+	// 画面中央より少し上に配置
+	// "Resources/count_0.png" 〜 "Resources/count_5.png" を想定
+	// ※ 実際のリソースパスに合わせてください
+	// ================================================
+	// 画面サイズ 1280x720 の中央より少し上
+	// テクスチャサイズ 320x180 の中心を画面中央より少し上に合わせる
+	// アンカーポイントを (0.5, 0.5) にして SetPosition で中心座標を指定する
+	const float texW = 320.0f;
+	const float texH = 180.0f;
+	const Vector2 centerPos = { 1280.0f * 0.5f, 720.0f * 0.25f };
+
+	for (int i = 0; i <= kCountMax; ++i) {
+		countSprites_[i] = std::make_unique<Sprite>();
+		countSprites_[i]->Initialize("Resources/count_" + std::to_string(i) + ".png");
+		countSprites_[i]->SetSize({ texW, texH });
+		countSprites_[i]->SetAnchorPoint({ 0.5f, 0.5f }); // 中心基準
+		countSprites_[i]->SetPosition(centerPos);
+		countSprites_[i]->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f }); // 赤
+	}
+
+	startSprite_ = std::make_unique<Sprite>();
+	startSprite_->Initialize("Resources/start.png");
+	startSprite_->SetSize({ texW, texH });
+	startSprite_->SetAnchorPoint({ 0.5f, 0.5f }); // 中心基準
+	startSprite_->SetPosition(centerPos);
+	startSprite_->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f }); // 赤
+
+	// その他
 	collisionManager_ = std::make_unique<CollisionManager>();
 
 	ex = std::make_unique<Sprite>();
@@ -79,7 +127,6 @@ void GamePlayScene::Initialize()
 	ex->SetPosition({ 0.0f,100.0f });
 
 	uiManager_ = std::make_unique<UIManager>();
-
 	auto pause = std::make_unique<PauseScreen>();
 	pause->Initialize({ 1280.0f, 720.0f }, "TITLE");
 	uiManager_->Add(std::move(pause));
@@ -88,113 +135,202 @@ void GamePlayScene::Initialize()
 
 void GamePlayScene::Finalize()
 {
-
 }
 
+// ================================================
+// イントロ演出の更新
+// ================================================
+void GamePlayScene::UpdateIntro(float dt)
+{
+	switch (intro_.phase)
+	{
+		// --------------------------------------------------
+		// 5→0 カウントダウン
+		// --------------------------------------------------
+	case IntroPhase::kCountdown:
+	{
+		intro_.countdownTimer += dt;
+		if (intro_.countdownTimer >= intro_.kCountPerSec) {
+			intro_.countdownTimer -= intro_.kCountPerSec;
+			intro_.countdownNum--;
+
+			if (intro_.countdownNum < 0) {
+				intro_.phase = IntroPhase::kStart;
+				intro_.startDisplayTimer = 0.0f;
+			}
+		}
+		break;
+	}
+
+	// --------------------------------------------------
+	// "START!" 表示
+	// --------------------------------------------------
+	case IntroPhase::kStart:
+	{
+		intro_.startDisplayTimer += dt;
+		if (intro_.startDisplayTimer >= intro_.kStartDisplaySec) {
+			intro_.phase = IntroPhase::kFinished;
+			player_->SetInputLocked(false); // 入力ロック解除
+		}
+		break;
+	}
+
+	case IntroPhase::kFinished:
+	default:
+		break;
+	}
+}
+
+// ================================================
+// イントロ UI 描画
+// ================================================
+void GamePlayScene::DrawIntroUI()
+{
+	switch (intro_.phase)
+	{
+	case IntroPhase::kCountdown:
+	{
+		int idx = intro_.countdownNum;
+		if (idx >= 0 && idx <= kCountMax) {
+			countSprites_[idx]->Update();
+			countSprites_[idx]->Draw();
+		}
+		break;
+	}
+	case IntroPhase::kStart:
+		startSprite_->Update();
+		startSprite_->Draw();
+		break;
+	case IntroPhase::kFinished:
+	default:
+		break;
+	}
+}
+
+// ================================================
 void GamePlayScene::Update()
 {
-	// =========================
-    // UI 更新（ESC入力・ポーズ判定含む）
-    // =========================
 	uiManager_->Update();
 
-	// =========================
-	// ポーズ中ならゲーム更新しない
-	// =========================
 	if (uiManager_->IsModalActive()) {
 		return;
 	}
 
-		// 各3Dオブジェクトの更新
+	// =========================
+	// イントロ演出中
+	// =========================
+	if (intro_.isActive()) {
+		float dt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
+
+		stage_->Update();
+		skybox->Update();
+		ground->Update();
+		sky->Update();
+		Colosseum->Update();
+		player_->Update();
+		enemy_->UpdateVisual(); // AI非動作・見た目のみ（攻撃させない）
+		followCamera->Update();
+
+		UpdateIntro(dt);
+		return;
+	}
+
+	// =========================
+	// 通常ゲームの Update
+	// =========================
 	stage_->Update();
 	skybox->Update();
 	ground->Update();
 	sky->Update();
+	Colosseum->Update();
 	player_->Update();
 	enemy_->Update();
-
 	ex->Update();
 
-	// カメラの更新
 	camera1->Update();
-	// ロックされていないときだけ followCamera を更新する
 	if (!followCameraLocked_) {
 		followCamera->Update();
 	}
 
-	// ========= ここからカメラ演出入力 =========
-	Input* input = Input::GetInstance();
+	// ===== ゲームオーバー演出 =====
+	if (player_->IsDead()) {
+
+		// Deathアニメ終了後に演出を開始（1回だけ）
+		if (!gameOverStarted_ && player_->GetDeathTimer() <= 0.0f) {
+			gameOverStarted_ = true;
+			vignetteTimer_ = 0.0f;
+
+			// ビネットを有効化（最初は真っ暗にしない）
+			PostEffectManager::GetInstance()->SetType(PostEffectType::Vignette);
+			PostEffectManager::GetInstance()->VignetteInitialize(
+				kVignetteScale_,   // scale：ビネットの広がり
+				0.0f,              // power：最初は0（透明）
+				{ 0.0f, 0.0f, 0.0f } // color：黒
+			);
+		}
+
+		// 演出中：powerを0→kVignettePower_へ線形補間
+		if (gameOverStarted_) {
+			float dt = TimeManager::GetInstance()->GetUnscaledDeltaTime(); // スロー影響を受けない
+			vignetteTimer_ += dt;
+
+			float t = vignetteTimer_ / kVignetteDuration_;
+			if (t > 1.0f) t = 1.0f;
+
+			// power を徐々に上げて画面を黒く
+			PostEffectManager::GetInstance()->SetVignettePower(kVignettePower_ * t);
+
+			// 真っ暗になりきったらタイトルへ
+			if (t >= 1.0f) {
+				PostEffectManager::GetInstance()->SetType(PostEffectType::Normal); // リセット
+				SceneManager::GetInstance()->ChangeScene("TITLE");
+			}
+		}
+	}
 
 	using ShakeMode = CameraEffectController::ShakeMode;
 	using ZoomParams = CameraEffectController::ZoomParams;
 	using MoveParams = CameraEffectController::MoveParams;
 
-
-	// O キー：撃破カメラテスト（回り込み）
-	// 敵死亡 → 撃破カメラ開始
-	bool enemyDeadNow = enemy_->IsDead();  // 今の状態
+	bool enemyDeadNow = enemy_->IsDead();
 
 	if (!enemyWasDead_ && enemyDeadNow)
 	{
-		// カメラ追従を止める
 		followCameraLocked_ = true;
 
-		// 回り込みの中心はプレイヤー位置
 		const Transform& playerTf = player_->GetTransform();
 		Vector3 center = playerTf.translate;
 
-		// 回り込み用パラメータを組み立てる
 		CameraEffectController::OrbitParams orbit{};
 		float angleRad = std::numbers::pi_v<float> / 1.5f;
-
 		orbit
-			.Center(center)                 // どこを中心に回り込むか
-			.Angle(angleRad)                // 回り込む角度
-			.Duration(0.6f)                 // 1秒かけて
-			.Easing(Tween::Easing::EaseInExpo); // 急激に加速するカーブ
+			.Center(center)
+			.Angle(angleRad)
+			.Duration(0.6f)
+			.Easing(Tween::Easing::EaseInExpo);
 
-		// これ1行で「回り込み＋プレイヤー注視」まで全部やってくれる
-		cameraEffect_->StartOrbitMove(
-			followCamera.get(),
-			orbit
-		);
+		cameraEffect_->StartOrbitMove(followCamera.get(), orbit);
 
-		// ここでスローモーション開始（回り込みと同時スタート）
-		TimeManager::GetInstance()->SetTimeScale(0.1f); // 1/10 速度など好みで
+		TimeManager::GetInstance()->SetTimeScale(0.1f);
 		slowMotionStarted_ = true;
-
-		// ズームは少し遅らせて開始したいので、ここではタイマーだけセット
-		defeatZoomTimer_ = 0.9f;    // 0.9秒後にズーム開始（好みで調整）
-		defeatZoomStarted_ = false;   // 念のためリセット
-
-		// ズーム状態もリセット
+		defeatZoomTimer_ = 0.9f;
+		defeatZoomStarted_ = false;
 		zoomActive_ = false;
 		zoomTimer_ = 0.0f;
 	}
 
-
-	// 次フレームの比較用
 	enemyWasDead_ = enemyDeadNow;
 
-	// ===== TimeManager から時間を取得 =====
-	float dt = TimeManager::GetInstance()->GetDeltaTime();         // スケール後
-	float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime(); // スケール無し（今は未使用でもOK）
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+	float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
 
-	// ===============================
-	//  撃破ズームの遅延開始
-	// ===============================
 	if (defeatZoomTimer_ > 0.0f && !defeatZoomStarted_)
 	{
-		// カメラ演出と同じ「ゲーム内時間」で減らす
 		defeatZoomTimer_ -= dt;
-
 		if (defeatZoomTimer_ <= 0.0f)
 		{
-			using ZoomParams = CameraEffectController::ZoomParams;
-
 			ZoomParams zoom{};
-			constexpr float kZoomDuration = 0.5f; // ズームにかける時間（ゲーム内時間）
-
+			constexpr float kZoomDuration = 0.5f;
 			zoom
 				.UseCurrentFov(true)
 				.ToFov(std::numbers::pi_v<float> / 8.0f)
@@ -202,193 +338,162 @@ void GamePlayScene::Update()
 				.Easing(Tween::Easing::EaseOutExpo);
 
 			cameraEffect_->StartZoom(zoom);
-
 			defeatZoomStarted_ = true;
-
-			// ズーム中フラグ＆残り時間セット
 			zoomActive_ = true;
 			zoomTimer_ = kZoomDuration;
 		}
 	}
 
-	// ===============================
-	//  ズーム終了を監視してスロー解除
-	// ===============================
 	if (zoomActive_)
 	{
-		// ここも dt に変更
 		zoomTimer_ -= dt;
-
 		if (zoomTimer_ <= 0.0f)
 		{
 			zoomActive_ = false;
-
-			// ここでスローモーションを元に戻す
 			if (slowMotionStarted_)
 			{
-				TimeManager::GetInstance()->SetTimeScale(1.0f); // 通常速度に戻す
+				TimeManager::GetInstance()->SetTimeScale(1.0f);
 				slowMotionStarted_ = false;
 			}
 		}
 	}
 
-
-	// カメラ演出の更新
 	cameraEffect_->Update(followCamera.get(), dt);
 
-
-	// ==========================================
-
-	if (Input::GetInstance()->TriggerKey(DIK_K)) {
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Grayscale);
-	}
 
 	collisionManager_->RegisterCollider(player_->GetMultiCollider());
 	if (auto* wcol = player_->GetWeaponCollider()) {
 		collisionManager_->RegisterCollider(wcol);
 	}
 	collisionManager_->RegisterCollider(enemy_->GetMultiCollider());
-	//collisionMManager_->RegisterCollider(player_->Get()->GetCollider());
-	//collisionMManager_->RegisterCollider(enemy_.get());
-	/*if (player_->GetBullet()) {
-		auto bullet = player_->GetBullet();
-		collisionMManager_->RegisterCollider(bullet);
-	}*/
-	/*for (const auto& areaAttack : enemy_->GetAreaAttacks()) {
-		collisionMManager_->RegisterCollider(areaAttack.get());
+
+	for (auto& b : enemy_->GetDropBullets()) {
+		collisionManager_->RegisterCollider(b->GetMultiCollider());
 	}
-	for (const auto& bulletAttack : enemy_->GetAttackBullets()) {
-		collisionMManager_->RegisterCollider(bulletAttack.get());
-	}*/
+	for (auto& b : enemy_->GetSplitBullets()) {
+		collisionManager_->RegisterCollider(b->GetMultiCollider());
+	}
+	for (auto& m : enemy_->GetMinions()) {
+		collisionManager_->RegisterCollider(m->GetMultiCollider());
+	}
 
-
-	// 衝突判定と応答
 	CheckAllCollisions();
-
 	Debug();
 
 	if (Input::GetInstance()->TriggerKey(DIK_T)) {
-		// シーン切り替え
 		SceneManager::GetInstance()->ChangeScene("TITLE");
 	}
-
-	if (Input::GetInstance()->TriggerKey(DIK_U)) {
-		// シーン切り替え
-		SceneManager::GetInstance()->ChangeScene("Unity");
-	}
-
 }
 
 void GamePlayScene::BackGroundDraw()
 {
-	// Spriteの描画前処理。Spriteの描画設定に共通のグラフィックスコマンドを積む
 	SpriteCommon::GetInstance()->CommonSetting();
-
-	// ================================================
-	// ここからSprite個々の背景描画
-	// ================================================
-
 	player_->BackGroundDraw();
 	enemy_->BackGroundDraw();
-
-	// ================================================
-	// ここまでSprite個々の背景描画
-	// ================================================
 }
 
 void GamePlayScene::Draw()
 {
-
-	//skybox->Draw();
-
-	// 3Dオブジェクトの描画前処理。3Dオブジェクトの描画設定に共通のグラフィックスコマンドを積む
 	Object3dCommon::GetInstance()->CommonSetting();
-
-	// ================================================
-	// ここから3Dオブジェクト個々の描画
-	// ================================================
-
-	// 各オブジェクトの描画
 	//sky->Draw();
 	ground->Draw();
+	Colosseum->Draw();
 	player_->Draw();
 	enemy_->Draw();
 
-
-	// ================================================
-	// ここまで3Dオブジェクト個々の描画
-	// ================================================
-
-	//	アニメーションオブジェクトの描画前処理。3Dオブジェクトの描画設定に共通のグラフィックスコマンドを積む
 	Skinning::GetInstance()->CommonSetting();
-
-	// ================================================
-	// ここからアニメーションオブジェクトの個々の描画
-	// ================================================
-
-	// 各オブジェクトの描画
 	player_->AnimationDraw();
 	enemy_->AnimationDraw();
-
-
-	// ================================================
-	// ここまでアニメーションオブジェクトの個々の描画
-	// ================================================
-
-	// ================================================
-	// ここからDrawLine個々の描画
-	// ================================================
-
-
-
-	// ================================================
-	// ここまでDrawLine個々の描画
-	// ================================================
 }
 
 void GamePlayScene::ForeGroundDraw()
 {
-	// Spriteの描画前処理。Spriteの描画設定に共通のグラフィックスコマンドを積む
 	SpriteCommon::GetInstance()->CommonSetting();
 
-	// ================================================
-	// ここからSprite個々の前景描画(UIなど)
-	// ================================================
+	// イントロ演出中は専用 UI のみ描画
+	if (intro_.isActive()) {
+		DrawIntroUI();
+		return;
+	}
 
+	// 通常ゲームの前景描画
 	ex->Draw();
 	player_->ForeGroundDraw();
 	enemy_->ForeGroundDraw();
-
-
 	uiManager_->Draw();
-	
-	// ================================================
-	// ここまでSprite個々の前景描画(UIなど)
-	// ================================================
-
-	// ================================================
-	// ここからparticle個々の描画
-	// ================================================
-
 	player_->ParticleDraw();
 	enemy_->ParticleDraw();
-
-	// ================================================
-	// ここまでparticle個々の描画
-	// ================================================
 }
 
 void GamePlayScene::Debug()
 {
 #ifdef _DEBUG
-
 	if (!IsDockedImGuiEnabled()) return;
 
-	// ↓ ここから ImGui::Begin(...) など
+	// ===== BT デバッグウィンドウ ===== ← ここから追加
+	ImGui::SetNextWindowPos(ImVec2(10, 80), ImGuiCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(320, 220), ImGuiCond_Once);
+	ImGui::Begin("BT デバッグ", nullptr, ImGuiWindowFlags_None);
 
+	if (enemy_) {
+		auto* ai = enemy_->GetAIController();
+		if (ai) {
+			auto info = ai->GetDebugInfo();
 
+			// BT状態
+			const char* resultStr = "Idle";
+			ImVec4 resultColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+			switch (info.rootResult) {
+			case NodeResult::Running:
+				resultStr = "Running"; resultColor = { 0.4f,1.0f,0.4f,1.0f }; break;
+			case NodeResult::Success:
+				resultStr = "Success"; resultColor = { 0.4f,0.8f,1.0f,1.0f }; break;
+			case NodeResult::Fail:
+				resultStr = "Fail";    resultColor = { 1.0f,0.3f,0.3f,1.0f }; break;
+			default: break;
+			}
+			ImGui::Text("BT 状態:");
+			ImGui::SameLine();
+			ImGui::TextColored(resultColor, "%s", resultStr);
+			ImGui::Separator();
 
+			// 実行中ステート
+			ImGui::Text("実行中ステート:");
+			ImGui::SameLine();
+			if (info.runningStateName.empty() || info.runningStateName == "(なし)") {
+				ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "(なし)");
+			}
+			else {
+				ImGui::TextColored(ImVec4(1.0f, 0.9f, 0.2f, 1.0f),
+					"%s", info.runningStateName.c_str());
+			}
+			ImGui::Separator();
 
+			// BlackBoard情報
+			ImGui::Text("BlackBoard:");
+			ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f),
+				"%s", info.blackboardInfo.c_str());
+			ImGui::Separator();
+
+			// 距離情報
+			if (enemy_->GetTargetTransform()) {
+				Vector3 diff = enemy_->GetTargetTransform()->translate
+					- enemy_->GetTransform().translate;
+				diff.y = 0.0f;
+				float dist = std::sqrt(diff.x * diff.x + diff.z * diff.z);
+				ImGui::Text("ターゲットまでの距離: %.2f m", dist);
+			}
+		}
+		else {
+			ImGui::TextDisabled("AIController なし");
+		}
+	}
+	else {
+		ImGui::TextDisabled("Enemy なし");
+	}
+
+	ImGui::End();
+	// ===== ここまで追加 =====
 #endif
 }
 

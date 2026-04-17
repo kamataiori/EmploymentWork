@@ -53,7 +53,7 @@ public:
 	/// <summary>
 	/// パーティクルグループの生成
 	/// </summary>
-	void CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode  = kBlendModeNormal);
+	void CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode = kBlendModeNormal);
 
 	// カメラの設定
 	void SetCamera(Camera* camera) { this->camera_ = camera; }
@@ -109,7 +109,7 @@ public:
 
 	// ---- System 管理用API（新規） ----
 
-    // System を 1 つ作成してコンテナに登録
+	// System を 1 つ作成してコンテナに登録
 	ParticleSystem* CreateSystem(const std::string& systemName);
 
 	// 既に存在する System を名前で取得（なければ nullptr）
@@ -123,9 +123,9 @@ public:
 		const Transform& emitterTransform);
 
 	// ----------------------------------------
-    // Systemにプリセットを登録する簡易API
-    // （JSONは変えず、コード／エディタ側から設定する用）
-    // ----------------------------------------
+	// Systemにプリセットを登録する簡易API
+	// （JSONは変えず、コード／エディタ側から設定する用）
+	// ----------------------------------------
 	void RegisterSystemPreset(const std::string& systemName,
 		const std::string& presetName);
 
@@ -142,9 +142,9 @@ public:
 	void EmitSystemByName(const std::string& systemName, const Transform& emitterTransform);
 
 	// --- System JSON 保存/読み込み ---
-	bool SaveSystemToJson(const std::string& systemName,const std::string& directory = "Resources/ParticleSystem");
+	bool SaveSystemToJson(const std::string& systemName, const std::string& directory = "Resources/ParticleSystem");
 
-	bool LoadSystemFromJson(const std::string& systemName,const std::string& directory = "Resources/ParticleSystem");
+	bool LoadSystemFromJson(const std::string& systemName, const std::string& directory = "Resources/ParticleSystem");
 
 	void LoadAllSystems(const std::string& directory = "Resources/ParticleSystem");
 
@@ -174,7 +174,7 @@ private:
 	void Update(float dt);
 
 	// 新EmitterInstanceのパーティクルをインスタンシングバッファへ書き込む
-	void PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix,const Matrix4x4& billboardMatrix);
+	void PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& billboardMatrix);
 
 	/// <summary>
 	/// 頂点リソースの生成、バッファービューの作成
@@ -345,7 +345,7 @@ private:
 public:
 
 	// プリセットの内容に合わせて ParticleGroup を準備し、
-    // カーブやフラグ類を反映したうえで参照を返す共通ヘルパー
+	// カーブやフラグ類を反映したうえで参照を返す共通ヘルパー
 	ParticleGroup& EnsureGroupForPreset(const ParticlePreset& preset);
 
 	/// <summary>

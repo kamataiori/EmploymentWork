@@ -22,97 +22,97 @@
 class GamePlayScene : public BaseScene
 {
 public:
-	//------メンバ関数------
-
-	/// <summary>
-	/// 初期化
-	/// </summary>
 	void Initialize() override;
-
-	/// <summary>
-	/// 終了
-	/// </summary>
 	void Finalize() override;
-
-	/// <summary>
-	/// 更新
-	/// </summary>
 	void Update() override;
-
-	/// <summary>
-	/// 背景描画
-	/// </summary>
 	void BackGroundDraw() override;
-
-	/// <summary>
-	/// 描画
-	/// </summary>
 	void Draw() override;
-
-	/// <summary>
-	/// 前景描画
-	/// </summary>
 	void ForeGroundDraw() override;
-
 	void Debug() override;
-
-	/// <summary>
-	/// camera1のセッター
-	/// </summary>
-	void SetCamera1(std::unique_ptr<Camera> newCamera)
-	{
-		camera1 = std::move(newCamera);
-	}
-
-	/// <summary>
-	/// camera1のゲッター
-	/// </summary>
-	Camera* GetCamera1() const
-	{
-		return camera1.get();
-	}
-
-	/// <summary>
-	/// 衝突判定と応答
-	/// </summary>
 	void CheckAllCollisions();
 
+	void SetCamera1(std::unique_ptr<Camera> newCamera) { camera1 = std::move(newCamera); }
+	Camera* GetCamera1() const { return camera1.get(); }
 
 private:
 
-	//3Dカメラの初期化
+	// ================================================
+	// バトル開始イントロ演出
+	// ================================================
+
+	enum class IntroPhase
+	{
+		kCountdown, // 5→0 カウントダウン
+		kStart,     // "START!" 表示
+		kFinished,  // 演出終了
+	};
+
+	struct BattleIntroController
+	{
+		IntroPhase phase = IntroPhase::kCountdown;
+
+		// ---- Countdown ----
+		int   countdownNum = 5;
+		float countdownTimer = 0.0f;
+		float kCountPerSec = 1.0f; // 1カウント減らす間隔（秒）
+
+		// ---- Start ----
+		float startDisplayTimer = 0.0f;
+		float kStartDisplaySec = 1.2f; // "START!" 表示時間（秒）
+
+		bool isActive() const { return phase != IntroPhase::kFinished; }
+
+		void Reset()
+		{
+			phase = IntroPhase::kCountdown;
+			countdownNum = 5;
+			countdownTimer = 0.0f;
+			startDisplayTimer = 0.0f;
+		}
+	};
+
+	BattleIntroController intro_;
+
+	// カウントダウン用スプライト [0]="0" 〜 [5]="5"
+	static constexpr int kCountMax = 5;
+	std::array<std::unique_ptr<Sprite>, kCountMax + 1> countSprites_;
+	std::unique_ptr<Sprite> startSprite_;
+
+	void UpdateIntro(float dt);
+	void DrawIntroUI();
+
+	// ================================================
+
 	std::unique_ptr<Camera> camera1 = std::make_unique<Camera>();
 	std::unique_ptr<FollowCamera> followCamera;
 
-	// カメラ演出用コントローラ
 	std::unique_ptr<CameraEffectController> cameraEffect_;
-	// フォローカメラを止めるかどうか
-	bool followCameraLocked_ = false;
-	// 撃破演出用：ズームを何秒後に開始するかのタイマー
-	float defeatZoomTimer_ = -1.0f;   // < 0 なら未使用
-	bool  defeatZoomStarted_ = false; // ズーム開始済みかどうか
-	bool slowMotionStarted_ = false;  // スローモーションの開始時間
-	// ズームが「進行中」かどうか＆残り時間
+	bool  followCameraLocked_ = false;
+	float defeatZoomTimer_ = -1.0f;
+	bool  defeatZoomStarted_ = false;
+	bool  slowMotionStarted_ = false;
 	bool  zoomActive_ = false;
 	float zoomTimer_ = 0.0f;
-	float zoomDuration_ = 0.0f;   // ズームの総時間を保存
+	float zoomDuration_ = 0.0f;
 
-	std::unique_ptr<SkyBox> skybox = std::make_unique<SkyBox>();
+	std::unique_ptr<SkyBox>   skybox = std::make_unique<SkyBox>();
 	std::unique_ptr<Object3d> ground;
-
 	std::unique_ptr<Object3d> sky;
+	std::unique_ptr<Object3d> Colosseum;
 
-	std::unique_ptr<Player> player_;
-	std::unique_ptr<Enemy> enemy_;
-	bool enemyWasDead_ = false;   // 前フレームの死亡状態
+	std::unique_ptr<Player>   player_;
+	std::unique_ptr<Enemy>    enemy_;
+	bool enemyWasDead_ = false;
 
 	std::unique_ptr<CollisionManager> collisionManager_;
+	std::unique_ptr<SceneController>  stage_;
+	std::unique_ptr<Sprite>           ex;
+	std::unique_ptr<UIManager>        uiManager_;
 
-	std::unique_ptr<SceneController> stage_;
-
-	std::unique_ptr<Sprite> ex;
-
-
-	std::unique_ptr<UIManager> uiManager_;
+	// ===== ゲームオーバー演出 =====
+	bool  gameOverStarted_ = false;   // 演出開始フラグ
+	float vignetteTimer_ = 0.0f;    // 経過時間
+	const float kVignetteDuration_ = 2.0f; // 黒くなりきるまでの秒数
+	const float kVignetteScale_ = 0.3f; // ビネットの広がり具合
+	const float kVignettePower_ = 3.0f; // 最終的な暗さ
 };
-

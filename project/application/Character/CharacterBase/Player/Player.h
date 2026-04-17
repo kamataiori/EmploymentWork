@@ -82,12 +82,24 @@ public:
 
 	void SetAnimation(const std::string& name)
 	{
-		if (name.empty()) return;              // 安全ガード
+		if (name.empty()) return;
 		if (currentAnimationName_ == name) return;
 		object3d_->SetAnimation(name);
 		currentAnimationName_ = name;
 	}
 
+	/// <summary>
+	/// 入力ロックのセット（true=演出中・入力無効 / false=通常）
+	/// </summary>
+	void SetInputLocked(bool locked) { inputLocked_ = locked; }
+
+	/// <summary>
+	/// 入力ロック状態を取得
+	/// </summary>
+	bool IsInputLocked() const { return inputLocked_; }
+
+	bool  IsDead()         const { return isDead_; }
+	float GetDeathTimer()  const { return deathTimer_; }
 private:
 
 	/// <summary>
@@ -104,7 +116,6 @@ private:
 	/// playerのブリンク(ダッシュ)処理
 	/// </summary>
 	void Blink();
-
 
 
 
@@ -164,13 +175,22 @@ private:
 
 	bool isCollided_ = false;  // 当たり判定フラグ
 
+	// =============================
+	// 演出中の入力ロックフラグ
+	// =============================
+	bool inputLocked_ = false;
+
 	// HP関連
 	int hp_ = 10000;                     // 現在HP
 	const int kMaxHP_ = 10000;           // 最大HP
-	const int kDamagePerHit_ = 10;     // 1回の衝突ダメージ
+	const int kDamagePerHit_ = 10;       // 1回の衝突ダメージ
+
+	// ===== 死亡演出 =====
+	bool isDead_ = false;
+	float deathTimer_ = 0.0f;
+	const float kDeathDuration_ = 3.0f; // Deathアニメの長さに合わせて調整
 
 
 	std::unique_ptr<Sword> sword_;
 
 };
-
