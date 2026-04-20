@@ -23,9 +23,6 @@ public:
 	void Skill() override;
 	void Ultimate() override;
 
-	// （必要ならシーン登録用に公開）
-	MultiCollider* GetMultiCollider() const { return mc_.get(); }
-
 	bool IsAttacking() const { return activeTime_ > 0.0f; }
 	bool HasComboReserve() const { return comboReserve_; } // あるなら
 
@@ -43,19 +40,9 @@ public:
 
 private:
 
-	// ===== 正面OBB（剣の当たり判定） =====
-	std::unique_ptr<MultiCollider> mc_{};
-
 	// 出現中タイマー（>0の間だけ当たり有効）
 	float activeDuration_ = 1.0f;      // 出現時間（秒）
 	float activeTime_ = 0.0f;
-
-	// サイズ（ハーフエクステント）
-	Vector3 obbHalf_ = { 1.08f, 1.58f, 2.45f };
-
-	// プレイヤー足元原点からのオフセット
-	float frontDist_ = 0.85f;  // 前方距離
-	float height_ = 1.0f;   // 高さ
 
 	// 入力エッジ検出用
 	bool IsnormalAttack_ = false;

@@ -67,7 +67,7 @@ void Player::Initialize()
 	sword_ = std::make_unique<Sword>(baseScene_);
 	sword_->Initialize();
 	sword_->SetCamera(camera_); // camera_ が後で入るなら SetCamera() 側でも呼ぶ
-
+	sword_->SetPlayerTransform(&transform);
 	// ボーン名は実際の名前に合わせて修正が必要
 	sword_->AttachTo(object3d_.get(), "Fist.R");
 
@@ -93,8 +93,8 @@ void Player::Update()
 	if (!isDead_ && hp_ <= 0) {
 		isDead_ = true;
 		deathTimer_ = kDeathDuration_;
-		inputLocked_ = true;                          // 移動・攻撃・全入力を封鎖
-		object3d_->SetAnimationOneShot("Death");      // Deathアニメをワンショット再生
+		inputLocked_ = true;
+		object3d_->SetAnimationOneShot("Death");
 	}
 
 	// ===== 死亡中：タイマーだけ進めてアニメを回す =====
@@ -102,14 +102,14 @@ void Player::Update()
 		deathTimer_ -= dt;
 		if (deathTimer_ < 0.0f) deathTimer_ = 0.0f;
 
-		// アニメ・剣の追従は死亡中も毎フレーム更新
 		object3d_->SetTranslate(transform.translate);
 		object3d_->SetRotate(transform.rotate);
 		object3d_->SetScale(transform.scale);
 		object3d_->Update();
 
 		if (sword_) {
-			sword_->Update(); // Fist.R ボーンへの追従を維持
+			sword_->SetHitEnabled(false);
+			sword_->Update();
 		}
 
 		return;
@@ -121,70 +121,55 @@ void Player::Update()
 		if (animaLockTimer_ <= 0.0f) {
 			animaLockTimer_ = 0.0f;
 			currentAnimaPriority_ = 0;
-			// 止まっている場合に備えて一度Idleを要求しておく
-			//RequestAnimaKey(PlayerAnimKey::IdleWeapon, 0);
 		}
 	}
 
-	// playerの基本となる動きの呼出し
+	// playerの基本となる動き
 	Move();
+
+	bool weaponAttacking = false;
 
 	if (weapon_) {
 		weapon_->Update();
-		// 演出中は攻撃入力を受け付けない
+
 		if (!inputLocked_) {
 			weapon_->NormalAttack();
 			weapon_->Skill();
 			weapon_->Ultimate();
 		}
+
+		if (auto w = dynamic_cast<PlayerWeaponOBB*>(weapon_.get())) {
+			weaponAttacking = w->IsAttacking();
+		}
 	}
 
-	if (sword_) {
-		sword_->Update();
-	}
-
-	bool weaponAttacking = false;
-	if (auto w = dynamic_cast<PlayerWeaponOBB*>(weapon_.get())) {
-		weaponAttacking = w->IsAttacking();
-	}
-
+	// object3d_->Update() の前にアニメーションを決める
 	if (!IsAnimaLocked() && !weaponAttacking) {
-		if (isMoving_)  RequestAnimaKey(PlayerAnimKey::RunWeapon, 0);
-		else            RequestAnimaKey(PlayerAnimKey::Idle, 0);
+		if (isMoving_) {
+			RequestAnimaKey(PlayerAnimKey::RunWeapon, 0);
+		}
+		else {
+			RequestAnimaKey(PlayerAnimKey::Idle, 0);
+		}
 	}
 
-
-
-	//ImGui::Begin("player");
-	//ImGui::DragFloat3("translate", &transform.translate.x);
-	//ImGui::DragFloat3("Collider Offset", &colliderOffset_.x, 0.01f);
-	//ImGui::DragFloat("Sphere Radius", &sphereRadius_, 0.01f, 0.0f, 10.0f);
-
-	//// 当たり判定の可視化
-	//if (isCollided_) {
-	//	ImGui::TextColored(ImVec4(1, 0, 0, 1), "Hit! (Collision Detected)");
-	//}
-	//else {
-	//	ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No Collision");
-	//}
-	//ImGui::End();
-
-	// --- 当たり判定の中心を更新 ---
+	// --- 先に Player 本体を更新する ---
 	colliderTranslate_ = transform.translate + colliderOffset_;
 
-	// ------------------------
-	// オブジェクト更新処理
-	// ------------------------
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
 	object3d_->Update();
 
-	// コライダー位置を更新
-	// OBB をプレイヤーTransformに追従させる
-	// 今回は最初の形状(0)を更新する想定
+	// Player 本体更新後に Sword を更新
+	if (sword_) {
+		sword_->SetHitEnabled(weaponAttacking);
+		sword_->Update();
+	}
+
+	// Player 本体コライダー更新
 	isCollided_ = false;
-	Sphere& sp = multiCollider_->MutableSphere(0); // MultiCollider 側に MutableSphere(index) がある前提
+	Sphere& sp = multiCollider_->MutableSphere(0);
 	sp.center = colliderTranslate_;
 	sp.radius = sphereRadius_;
 
@@ -198,7 +183,6 @@ void Player::BackGroundDraw()
 void Player::Draw()
 {
 	multiCollider_->Draw();
-	weapon_->Draw();
 	sword_->Draw();
 }
 

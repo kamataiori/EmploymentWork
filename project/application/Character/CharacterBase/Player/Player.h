@@ -73,11 +73,8 @@ public:
 	PlayerIWeapon* GetWeapon() { return weapon_.get(); }
 
 	MultiCollider* GetWeaponCollider() {
-		if (!weapon_) return nullptr;
-		if (auto* w = dynamic_cast<PlayerWeaponOBB*>(weapon_.get())) {
-			return w->GetMultiCollider();
-		}
-		return nullptr;
+		if (!sword_) return nullptr;
+		return sword_->GetMultiCollider();
 	}
 
 	void SetAnimation(const std::string& name)
