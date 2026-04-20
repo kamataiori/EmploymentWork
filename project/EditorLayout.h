@@ -9,14 +9,15 @@
 /// UE5風レイアウトを管理するクラス
 /// 
 /// ドッキング可能な5パネル構成:
-///   ┌──────────┬────────────────────┬─────────────┐
-///   │          │                    │             │
-///   │ Outliner │      Viewport      │   Details   │
-///   │          │                    │             │
-///   ├──────────┤                    ├─────────────┤
-///   │ Content  │                    │   World     │
-///   │ Browser  │                    │  Settings   │
-///   └──────────┴────────────────────┴─────────────┘
+///   ┌────────┬──────────────────────┬──────────────┐
+///   │        │                      │              │
+///   │        │       Viewport       │   Outliner   │
+///   │ Actors │                      │              │
+///   │ Palette├──────────────────────┼──────────────┤
+///   │        │                      │              │
+///   │        │   Content Browser    │   Details    │
+///   │        │                      │              │
+///   └────────┴──────────────────────┴──────────────┘
 /// </summary>
 class EditorLayout
 {
@@ -32,14 +33,12 @@ public:
 	/// <summary>
 	/// フレーム開始処理
 	/// MyGame::Update() の冒頭で呼ぶ
-	/// ImGuiのDockSpace/MenuBar/各パネルを描画する
 	/// </summary>
 	void BeginFrame();
 
 	/// <summary>
 	/// フレーム終了処理
 	/// MyGame::Update() の末尾で呼ぶ
-	/// （シーン切り替え予約の実行などはここで行う）
 	/// </summary>
 	void EndFrame();
 
@@ -49,9 +48,19 @@ public:
 public:
 	//------ゲッター/セッター------//
 
-	/// <summary>エディタ全体の表示/非表示</summary>
 	bool IsEnabled() const { return enabled_; }
 	void SetEnabled(bool enable) { enabled_ = enable; }
+
+	/// <summary>
+	/// パフォーマンス統計を注入する
+	/// MyGame::Update() 内で計測した結果を毎フレーム渡す
+	/// </summary>
+	void SetPerformanceStats(float fps, float frameTimeMs, float averageFps)
+	{
+		stat_fps_ = fps;
+		stat_frameTimeMs_ = frameTimeMs;
+		stat_averageFps_ = averageFps;
+	}
 
 private:
 	//------ヘルパー関数（パネルごとに分割）------//
@@ -65,20 +74,23 @@ private:
 	/// <summary>DockSpaceを構築（初回のみレイアウトを設定）</summary>
 	void BuildDockSpace();
 
-	/// <summary>Viewport (中央: 実際のゲーム画面を表示)</summary>
+	/// <summary>Viewport (中央上: 実際のゲーム画面を表示)</summary>
 	void DrawViewportPanel();
 
-	/// <summary>Outliner (左上: シーン内のオブジェクト一覧)</summary>
-	void DrawOutlinerPanel();
+	/// <summary>Actors Palette (左: アクタを配置するパネル)</summary>
+	void DrawActorsPalettePanel();
 
-	/// <summary>Content Browser (左下: アセット一覧)</summary>
+	/// <summary>Content Browser (中央下: アセット一覧)</summary>
 	void DrawContentBrowserPanel();
 
-	/// <summary>Details / Inspector (右上: 選択オブジェクトの詳細)</summary>
+	/// <summary>Outliner (右上: シーン内のオブジェクト一覧)</summary>
+	void DrawOutlinerPanel();
+
+	/// <summary>Details / Inspector (右下: 選択オブジェクトの詳細)</summary>
 	void DrawDetailsPanel();
 
-	/// <summary>World Settings (右下: ワールド全体の設定)</summary>
-	void DrawWorldSettingsPanel();
+	/// <summary>Viewport上に重ねるFPSオーバーレイ (UE5のStat FPS風)</summary>
+	void DrawStatFPSOverlay();
 
 	/// <summary>カスタムスタイルの適用</summary>
 	void ApplyStyle();
@@ -94,34 +106,37 @@ private:
 
 	// 各パネルの表示/非表示
 	bool showViewport_ = true;
-	bool showOutliner_ = true;
+	bool showActorsPalette_ = true;
 	bool showContentBrowser_ = true;
+	bool showOutliner_ = true;
 	bool showDetails_ = true;
-	bool showWorldSettings_ = true;
 
 	// レイアウトリセット要求フラグ
 	bool requestResetLayout_ = false;
 
-	// ---- シーン切り替え用 ----
-	// シーン切り替えは BeginFrame の途中で SceneManager に発行すると
-	// 同フレーム内でシーンが作り変わって危険なので、予約しておいて
-	// EndFrame で実行する方針にする
-	std::string requestedSceneName_;  // 空なら予約なし
+	// シーン切り替え予約
+	std::string requestedSceneName_;
+
+	// ---- Stat FPS オーバーレイ用 ----
+	// MyGame から注入されるパフォーマンス統計
+	float stat_fps_ = 0.0f;
+	float stat_frameTimeMs_ = 0.0f;
+	float stat_averageFps_ = 0.0f;
+	// Viewport上にStat FPSを表示するかどうか
+	bool  showStatFPS_ = true;
 
 	// 各パネル名（ウィンドウ識別用）
 	static constexpr const char* kDockSpaceName = "EditorDockSpace";
 	static constexpr const char* kViewportName = "Viewport";
-	static constexpr const char* kOutlinerName = "Outliner";
+	static constexpr const char* kActorsPaletteName = "Actors";
 	static constexpr const char* kContentBrowserName = "Content Browser";
+	static constexpr const char* kOutlinerName = "Outliner";
 	static constexpr const char* kDetailsName = "Details";
-	static constexpr const char* kWorldSettingsName = "World Settings";
 };
 
 #else  // USE_IMGUI が無効なとき（Release）
 
-/// <summary>
-/// Release ビルド用のスタブ
-/// </summary>
+/// <summary>Release ビルド用のスタブ</summary>
 class EditorLayout
 {
 public:
@@ -132,6 +147,7 @@ public:
 	void ResetLayout() {}
 	bool IsEnabled() const { return false; }
 	void SetEnabled(bool) {}
+	void SetPerformanceStats(float, float, float) {}
 };
 
 #endif // USE_IMGUI

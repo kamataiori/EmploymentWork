@@ -142,7 +142,7 @@ void EnemySplitBullet::Update()
 	}
 	else if (phase_ == Phase::SplitWait)
 	{
-		// ★ 何もしない。Enemy側からFire()が呼ばれるのを待つだけ
+		// 何もしない。Enemy側からFire()が呼ばれるのを待つだけ
 	}
 	else // Shot
 	{
@@ -170,7 +170,7 @@ void EnemySplitBullet::Update()
 	}
 
 #ifdef USE_IMGUI
-	ImGui::Begin("SplitBullet Debug");
+	/*ImGui::Begin("SplitBullet Debug");
 
 	ImGui::Text("=== Bullet [%d] ===", index_);
 	const char* phaseNames[] = { "Rise", "RiseWait", "SplitMove", "SplitWait", "Shot" };
@@ -195,7 +195,7 @@ void EnemySplitBullet::Update()
 		ImGui::Text("System found: NO");
 	}
 
-	ImGui::End();
+	ImGui::End();*/
 #endif // USE_IMGUI
 }
 

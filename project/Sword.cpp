@@ -59,31 +59,31 @@ void Sword::SetLocalOffset(const Vector3& t, const Vector3& r, const Vector3& s)
 void Sword::Update()
 {
 #ifdef USE_IMGUI
-    ImGui::PushID(this);
-    char title[64];
-    sprintf_s(title, "Sword##%p", this);
+	/*ImGui::PushID(this);
+	char title[64];
+	sprintf_s(title, "Sword##%p", this);
 
-    if (ImGui::Begin(title)) {
-        ImGui::Text("Default Grip Offset (Bone Local)");
+	if (ImGui::Begin(title)) {
+		ImGui::Text("Default Grip Offset (Bone Local)");
 
-        ImGui::DragFloat3("Def Translate", &defaultOffsetT_.x, 0.01f);
-        ImGui::DragFloat3("Def Rotate", &defaultOffsetR_.x, 0.01f);
-        ImGui::DragFloat3("Def Scale", &defaultOffsetS_.x, 0.01f);
+		ImGui::DragFloat3("Def Translate", &defaultOffsetT_.x, 0.01f);
+		ImGui::DragFloat3("Def Rotate", &defaultOffsetR_.x, 0.01f);
+		ImGui::DragFloat3("Def Scale", &defaultOffsetS_.x, 0.01f);
 
-        if (ImGui::Button("Apply To Current")) {
-            transform.translate = defaultOffsetT_;
-            transform.rotate = defaultOffsetR_;
-            transform.scale = defaultOffsetS_;
-        }
+		if (ImGui::Button("Apply To Current")) {
+			transform.translate = defaultOffsetT_;
+			transform.rotate = defaultOffsetR_;
+			transform.scale = defaultOffsetS_;
+		}
 
-        ImGui::Separator();
-        ImGui::Text("Current Transform");
-        ImGui::DragFloat3("Translate", &transform.translate.x, 0.01f);
-        ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.01f);
-        ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
-    }
-    ImGui::End();
-    ImGui::PopID();
+		ImGui::Separator();
+		ImGui::Text("Current Transform");
+		ImGui::DragFloat3("Translate", &transform.translate.x, 0.01f);
+		ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.01f);
+		ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
+	}
+	ImGui::End();
+	ImGui::PopID();*/
 #endif // USE_IMGUI
 
 

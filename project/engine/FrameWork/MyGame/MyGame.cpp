@@ -2,9 +2,7 @@
 #include "engine/TimeManager.h"
 
 #ifdef USE_IMGUI
-
 #include <externals/imgui/imgui_internal.h>
-
 #endif // USE_IMGUI
 
 void MyGame::Initialize()
@@ -29,19 +27,15 @@ void MyGame::Initialize()
 	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 
 #ifdef USE_IMGUI
-
 	// ImGuiManagerの初期化
 	imGuiManager_ = std::make_unique<ImGuiManager>();
 	imGuiManager_->Initialize(winApp.get(), DirectXCommon::GetInstance());
 
-	// EditorLayoutの初期化
+	// ★ EditorLayoutの初期化（ImGuiManagerの後に！）
 	editorLayout_ = std::make_unique<EditorLayout>();
 	editorLayout_->Initialize();
-
 #endif // USE_IMGUI
 
-	//offscreenRendering->Initialize(PostEffectType::Normal);
-	//postEffect->Initialize(PostEffectType::Normal);
 	PostEffectManager::GetInstance()->Initialize(PostEffectType::Normal);
 	prevTime_ = std::chrono::steady_clock::now();
 
@@ -51,8 +45,7 @@ void MyGame::Initialize()
 void MyGame::Finalize()
 {
 #ifdef USE_IMGUI
-
-	// EditorLayoutを先に終了
+	// ★ EditorLayoutを先に終了
 	if (editorLayout_) {
 		editorLayout_->Finalize();
 	}
@@ -60,7 +53,6 @@ void MyGame::Finalize()
 
 	// ImGuiの終了処理
 	imGuiManager_->Finalize();
-
 #endif // USE_IMGUI
 
 	// 基底クラスの終了処理
@@ -70,38 +62,29 @@ void MyGame::Finalize()
 void MyGame::Update()
 {
 #ifdef USE_IMGUI
-
-	// ImGuiのフレーム開始を宣言
+	// ImGuiのフレーム開始
 	imGuiManager_->Update();
 
-	// UE5風レイアウト（DockSpace + 各パネル）を先に構築する
-	//    → 個別ウィンドウ (ImGui::Begin) はこの後に並べる
+	// ★ UE5風レイアウト(DockSpace + 各パネル)を先に構築
 	editorLayout_->BeginFrame();
 
-	ImGui::Begin("Performance");
-	ImGui::Text("FPS: %.2f", GetFPS());
-	ImGui::Text("Frame Time: %.2f ms", GetFrameTimeMs());
-	ImGui::Text("Average FPS: %.2f", GetAverageFPS());
-	ImGui::End();
+	// ※ 以前ここにあった Performance ウィンドウは EditorLayout の
+	//    Viewport オーバーレイ (Stat FPS) に移動したため削除
 
 #endif // USE_IMGUI
 
 	// 基底クラスの更新処理
 	Framework::Update();
 
-	// UI更新（遷移演出含む）
+	// UI更新
 	uiManager_->Update();
 
-	//GlobalVariables::GetInstance()->Update();
-
 #ifdef USE_IMGUI
-
 	// レイアウトの後処理
 	editorLayout_->EndFrame();
 
-	// ImGuiの内部コマンドを生成する
+	// ImGuiの内部コマンドを生成
 	ImGui::Render();
-
 #endif // USE_IMGUI
 
 	// ===== FPS & 時間計測 =====
@@ -111,13 +94,12 @@ void MyGame::Update()
 
 	float deltaSec = delta.count();
 	if (deltaSec <= 0.0f) {
-		deltaSec = 1.0f / 60.0f; // 万が一0になった時の保険
+		deltaSec = 1.0f / 60.0f;
 	}
 
 	fps_ = 1.0f / deltaSec;
 	frameTimeMs_ = deltaSec * 1000.0f;
 
-	// 平均FPS更新
 	fpsHistory_.push_back(fps_);
 	if (fpsHistory_.size() > kFpsHistorySize) {
 		fpsHistory_.pop_front();
@@ -127,12 +109,16 @@ void MyGame::Update()
 	for (float f : fpsHistory_) sum += f;
 	averageFps_ = sum / static_cast<float>(fpsHistory_.size());
 
+#ifdef USE_IMGUI
+	// 計測したFPS統計をEditorLayoutに注入
+	// 次フレームのStat FPSオーバーレイに反映される
+	editorLayout_->SetPerformanceStats(fps_, frameTimeMs_, averageFps_);
+#endif // USE_IMGUI
 
-
-	// ===== TimeManager に生のΔtを渡す（ここが重要） =====
+	// ===== TimeManager に生のΔtを渡す =====
 	TimeManager::GetInstance()->Update(deltaSec);
 
-	// ===== PostEffect 側には「スケールなし」のΔtを渡す =====
+	// ===== PostEffect にスケールなしΔtを渡す =====
 	float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
 	PostEffectManager::GetInstance()->RandomUpdate(unscaledDt);
 }
@@ -141,8 +127,6 @@ void MyGame::Draw()
 {
 	// Lineのデータをリセット
 	DrawLine::GetInstance()->ResetData();
-
-	// Lineのデータをリセット
 	DrawTriangle::GetInstance()->ResetData();
 
 	// RenderTextureへの描画前処理
@@ -173,15 +157,11 @@ void MyGame::Draw()
 
 	SrvManager::GetInstance()->PreDraw();
 
-	//offscreenRendering->Draw();
-	//postEffect->Draw();
 	PostEffectManager::GetInstance()->Draw();
 
 #ifdef USE_IMGUI
-
 	// ImGuiの描画 (スワップチェーンに対して)
 	imGuiManager_->Draw();
-
 #endif // USE_IMGUI
 
 	// スワップチェーンの描画後処理

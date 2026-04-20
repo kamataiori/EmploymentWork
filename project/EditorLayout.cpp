@@ -3,6 +3,8 @@
 #ifdef USE_IMGUI
 
 #include <externals/imgui/imgui_internal.h>
+#include <algorithm>
+#include <cstdio>
 
 #include "SrvManager.h"
 #include "PostEffectManager.h"
@@ -16,7 +18,6 @@
 
 void EditorLayout::Initialize()
 {
-	// スタイルを適用（UE5風の暗めなカラー）
 	ApplyStyle();
 
 	dockLayoutBuilt_ = false;
@@ -26,7 +27,6 @@ void EditorLayout::Initialize()
 
 void EditorLayout::Finalize()
 {
-	// 今のところ特になし
 }
 
 // ================================================================
@@ -39,15 +39,15 @@ void EditorLayout::BeginFrame()
 		return;
 	}
 
-	// --- 1. DockSpaceを構築（フルスクリーンの親ウィンドウ） ---
+	// 1. DockSpaceを構築
 	BuildDockSpace();
 
-	// --- 2. 各パネルを描画 ---
+	// 2. 各パネルを描画
 	if (showViewport_)       DrawViewportPanel();
-	if (showOutliner_)       DrawOutlinerPanel();
+	if (showActorsPalette_)  DrawActorsPalettePanel();
 	if (showContentBrowser_) DrawContentBrowserPanel();
+	if (showOutliner_)       DrawOutlinerPanel();
 	if (showDetails_)        DrawDetailsPanel();
-	if (showWorldSettings_)  DrawWorldSettingsPanel();
 }
 
 void EditorLayout::EndFrame()
@@ -56,9 +56,7 @@ void EditorLayout::EndFrame()
 		return;
 	}
 
-	// --- シーン切り替え予約があれば、ここで実行 ---
-	// （BeginFrame の最中に切り替えると、同フレーム内で scene_ が差し替わる前に
-	//   パネルの描画が走ってしまうことがあるため、末尾で発行する）
+	// シーン切り替え予約があればここで実行
 	if (!requestedSceneName_.empty()) {
 		SceneManager::GetInstance()->ChangeScene(requestedSceneName_);
 		requestedSceneName_.clear();
@@ -93,10 +91,8 @@ void EditorLayout::BuildDockSpace()
 	ImGui::Begin(kDockSpaceName, nullptr, window_flags);
 	ImGui::PopStyleVar(3);
 
-	// メニューバー
 	DrawMenuBar();
 
-	// DockSpaceのIDを取得
 	ImGuiID dockspace_id = ImGui::GetID(kDockSpaceName);
 
 	// 初回 or リセット要求時にレイアウトを構築
@@ -105,29 +101,51 @@ void EditorLayout::BuildDockSpace()
 		ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
 		ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->WorkSize);
 
+		// ================================================================
+		//  UE5風 5分割レイアウト
+		//
+		//  ┌────────┬──────────────────────┬──────────────┐
+		//  │        │                      │              │
+		//  │        │       Viewport       │   Outliner   │
+		//  │ Actors │                      │              │
+		//  │ Palette├──────────────────────┼──────────────┤
+		//  │        │                      │              │
+		//  │        │   Content Browser    │   Details    │
+		//  │        │                      │              │
+		//  └────────┴──────────────────────┴──────────────┘
+		//
+		//  全体比率: 左 15% : 中央 63% : 右 22%
+		//  中央の縦分割: Viewport 70% : Content Browser 30%
+		//  右の縦分割: Outliner 40% : Details 60%
+		// ================================================================
+
 		ImGuiID dock_main = dockspace_id;
 
-		// 左を20%切り出す (Outliner + Content Browser の領域)
+		// ① 左端から 15% を切り出す → Actors Palette
 		ImGuiID dock_left = ImGui::DockBuilderSplitNode(
-			dock_main, ImGuiDir_Left, 0.20f, nullptr, &dock_main);
+			dock_main, ImGuiDir_Left, 0.15f, nullptr, &dock_main);
 
-		// 右を25%切り出す (Details + World Settings の領域)
+		// ② 残り(85%)の右端から 22% を切り出す
+		//    比率補正: 0.22f / 0.85f ≒ 0.259f
 		ImGuiID dock_right = ImGui::DockBuilderSplitNode(
-			dock_main, ImGuiDir_Right, 0.25f / (1.0f - 0.20f), nullptr, &dock_main);
+			dock_main, ImGuiDir_Right, 0.22f / 0.85f, nullptr, &dock_main);
 
-		// 左側を上下に分割 (Outliner : Content Browser = 60 : 40)
-		ImGuiID dock_left_bottom = ImGui::DockBuilderSplitNode(
-			dock_left, ImGuiDir_Down, 0.40f, nullptr, &dock_left);
+		// ③ 中央(dock_main)を上下に分割: Content Browser を下30%に
+		ImGuiID dock_center_bottom = ImGui::DockBuilderSplitNode(
+			dock_main, ImGuiDir_Down, 0.30f, nullptr, &dock_main);
+		//   dock_main が Viewport(上70%)、dock_center_bottom が Content Browser
 
-		// 右側を上下に分割 (Details : World Settings = 60 : 40)
+		// ④ 右側を上下に分割: Outliner 40% / Details 60%
 		ImGuiID dock_right_bottom = ImGui::DockBuilderSplitNode(
-			dock_right, ImGuiDir_Down, 0.40f, nullptr, &dock_right);
+			dock_right, ImGuiDir_Down, 0.60f, nullptr, &dock_right);
+		//   dock_right が Outliner(上40%)、dock_right_bottom が Details(下60%)
 
-		ImGui::DockBuilderDockWindow(kOutlinerName, dock_left);
-		ImGui::DockBuilderDockWindow(kContentBrowserName, dock_left_bottom);
+		// --- 各ウィンドウをドッキング ---
+		ImGui::DockBuilderDockWindow(kActorsPaletteName, dock_left);
 		ImGui::DockBuilderDockWindow(kViewportName, dock_main);
-		ImGui::DockBuilderDockWindow(kDetailsName, dock_right);
-		ImGui::DockBuilderDockWindow(kWorldSettingsName, dock_right_bottom);
+		ImGui::DockBuilderDockWindow(kContentBrowserName, dock_center_bottom);
+		ImGui::DockBuilderDockWindow(kOutlinerName, dock_right);
+		ImGui::DockBuilderDockWindow(kDetailsName, dock_right_bottom);
 
 		ImGui::DockBuilderFinish(dockspace_id);
 
@@ -153,21 +171,23 @@ void EditorLayout::DrawMenuBar()
 	// File
 	if (ImGui::BeginMenu("File")) {
 		if (ImGui::MenuItem("Exit", "Alt+F4")) {
-			// 終了処理はMyGame側で行う想定
+			// 終了処理は将来MyGame側で
 		}
 		ImGui::EndMenu();
 	}
 
-	// Scene（シーン切り替え）★ここが今回の主役★
+	// Scene
 	DrawSceneMenu();
 
-	// Window（各パネルの表示/非表示）
+	// Window
 	if (ImGui::BeginMenu("Window")) {
 		ImGui::MenuItem(kViewportName, nullptr, &showViewport_);
-		ImGui::MenuItem(kOutlinerName, nullptr, &showOutliner_);
+		ImGui::MenuItem(kActorsPaletteName, nullptr, &showActorsPalette_);
 		ImGui::MenuItem(kContentBrowserName, nullptr, &showContentBrowser_);
+		ImGui::MenuItem(kOutlinerName, nullptr, &showOutliner_);
 		ImGui::MenuItem(kDetailsName, nullptr, &showDetails_);
-		ImGui::MenuItem(kWorldSettingsName, nullptr, &showWorldSettings_);
+		ImGui::Separator();
+		ImGui::MenuItem("Stat FPS", nullptr, &showStatFPS_);
 		ImGui::EndMenu();
 	}
 
@@ -194,42 +214,17 @@ void EditorLayout::DrawSceneMenu()
 
 	SceneManager* sm = SceneManager::GetInstance();
 
-	// --- SceneFactory からシーン名一覧を取得 ---
-	// SceneManager 側に直接 factory_ への getter は無いが、
-	// SetSceneFactory で渡している SceneFactory を取得する手段を今は持たない。
-	// そこで、MyGame::Initialize で SceneManager に渡したものと同じ方法で
-	// 直接 SceneFactory インスタンスを使いたい場合は getter を足してもよいが、
-	// まずは素直に「現在のシーン」を表示しつつ、固定のシーン名リストを
-	// AbstractSceneFactory 経由で取り出す。
-	//
-	// → ここでは SceneManager にシーンファクトリの参照がある前提で
-	//    SceneManager::GetSceneFactory() を用意するのが筋だが、
-	//    既存コードを極力壊さないため「SceneFactory の生ポインタ」を
-	//    呼び出し側（MyGame）から EditorLayout に注入する手もある。
-	//
-	// ここでは SceneManager を仲介せずに「現在のシーン名は取得できない」
-	// 前提でシンプルに実装する（切り替え先の予約のみ UI に出す）。
-
-	// 遷移中は操作不可にする
 	bool transitioning = sm->IsTransitioning();
 	if (transitioning) {
 		ImGui::TextDisabled("(transitioning...)");
 		ImGui::Separator();
 	}
 
-	// --- シーン名リスト ---
-	// 本来は SceneFactory を経由するべきだが、SceneManager に getter を
-	// 追加していないのでここでは独立した方法で取得する必要がある。
-	// ひとまず SceneManager に getter を追加する方向で実装（SceneManager.h を更新）。
 	AbstractSceneFactory* factory = sm->GetSceneFactory();
 	if (factory) {
 		const std::vector<std::string> names = factory->GetSceneNameList();
-
 		for (const std::string& name : names) {
-			// 現在のシーン名との比較は難しい（BaseScene に名前フィールドが無い）ので
-			// 選択マークなしのシンプルなメニューにする
 			if (ImGui::MenuItem(name.c_str(), nullptr, false, !transitioning)) {
-				// 予約のみ行い、実際の切り替えは EndFrame で実行
 				requestedSceneName_ = name;
 			}
 		}
@@ -242,7 +237,7 @@ void EditorLayout::DrawSceneMenu()
 }
 
 // ================================================================
-//  Viewport (中央)
+//  Viewport (中央上)
 // ================================================================
 
 void EditorLayout::DrawViewportPanel()
@@ -258,6 +253,11 @@ void EditorLayout::DrawViewportPanel()
 		if (avail.x > 0.0f && avail.y > 0.0f) {
 			ImGui::Image(textureID, avail);
 		}
+
+		// ★ Stat FPS オーバーレイ (Viewportが表示されているときだけ、Viewport内に重ねる)
+		if (showStatFPS_) {
+			DrawStatFPSOverlay();
+		}
 	}
 	ImGui::End();
 
@@ -265,21 +265,53 @@ void EditorLayout::DrawViewportPanel()
 }
 
 // ================================================================
-//  Outliner (左上)
+//  Actors Palette (左: アクタを配置するパネル)
 // ================================================================
 
-void EditorLayout::DrawOutlinerPanel()
+void EditorLayout::DrawActorsPalettePanel()
 {
-	if (ImGui::Begin(kOutlinerName, &showOutliner_)) {
-		ImGui::TextDisabled("Scene Objects");
+	if (ImGui::Begin(kActorsPaletteName, &showActorsPalette_)) {
+		ImGui::TextDisabled("Place Actors");
 		ImGui::Separator();
-		ImGui::TextUnformatted("(ここにシーンのオブジェクト一覧が入ります)");
+
+		// TODO: 基本カテゴリとアクタ一覧(後のステップで実装)
+		// UE5では「基本」「ライト」「シェイプ」「ボリューム」などのカテゴリと、
+		// そこに配置可能なアクタのアイコン一覧が並ぶ
+		ImGui::TextUnformatted("(ここに配置可能な");
+		ImGui::TextUnformatted(" アクタ一覧が入ります)");
+		ImGui::Spacing();
+
+		// プレースホルダとしてカテゴリだけ表示
+		// ※ u8"..." は C++20 以降 char8_t になるため、ImGui (const char*) と型が合わない
+		//   ソース自体を UTF-8 with BOM で保存していれば、"..." で日本語を使って問題ない
+		if (ImGui::CollapsingHeader("基本", ImGuiTreeNodeFlags_DefaultOpen)) {
+			ImGui::Indent();
+			ImGui::TextDisabled("アクタ");
+			ImGui::TextDisabled("キャラクター");
+			ImGui::TextDisabled("ポーン");
+			ImGui::TextDisabled("ポイントライト");
+			ImGui::Unindent();
+		}
+		if (ImGui::CollapsingHeader("ライト")) {
+			ImGui::Indent();
+			ImGui::TextDisabled("ディレクショナルライト");
+			ImGui::TextDisabled("ポイントライト");
+			ImGui::TextDisabled("スポットライト");
+			ImGui::Unindent();
+		}
+		if (ImGui::CollapsingHeader("シェイプ")) {
+			ImGui::Indent();
+			ImGui::TextDisabled("キューブ");
+			ImGui::TextDisabled("スフィア");
+			ImGui::TextDisabled("プレーン");
+			ImGui::Unindent();
+		}
 	}
 	ImGui::End();
 }
 
 // ================================================================
-//  Content Browser (左下)
+//  Content Browser (中央下)
 // ================================================================
 
 void EditorLayout::DrawContentBrowserPanel()
@@ -293,7 +325,21 @@ void EditorLayout::DrawContentBrowserPanel()
 }
 
 // ================================================================
-//  Details / Inspector (右上)
+//  Outliner (右上)
+// ================================================================
+
+void EditorLayout::DrawOutlinerPanel()
+{
+	if (ImGui::Begin(kOutlinerName, &showOutliner_)) {
+		ImGui::TextDisabled("Scene Objects");
+		ImGui::Separator();
+		ImGui::TextUnformatted("(ここにシーンのオブジェクト一覧が入ります)");
+	}
+	ImGui::End();
+}
+
+// ================================================================
+//  Details / Inspector (右下)
 // ================================================================
 
 void EditorLayout::DrawDetailsPanel()
@@ -302,28 +348,87 @@ void EditorLayout::DrawDetailsPanel()
 		ImGui::TextDisabled("Selected Object");
 		ImGui::Separator();
 		ImGui::TextUnformatted("(ここに選択オブジェクトの詳細が入ります)");
-	}
-	ImGui::End();
-}
 
-// ================================================================
-//  World Settings (右下)
-// ================================================================
-
-void EditorLayout::DrawWorldSettingsPanel()
-{
-	if (ImGui::Begin(kWorldSettingsName, &showWorldSettings_)) {
-		ImGui::TextDisabled("World / Camera");
-		ImGui::Separator();
-		ImGui::TextUnformatted("(ここにワールド/カメラの設定が入ります)");
-
-		// 現在のシーン名をざっくり出したいならここに追加
-		// （BaseScene に名前フィールドは無いので、参考情報として）
+		// デバッグ用に現在シーン情報を表示
 		BaseScene* current = SceneManager::GetInstance()->GetCurrentScene();
 		ImGui::Separator();
 		ImGui::Text("Current Scene ptr: %p", current);
 	}
 	ImGui::End();
+}
+
+// ================================================================
+//  Stat FPS オーバーレイ (Viewport左上に半透明で重ねる)
+// ================================================================
+
+void EditorLayout::DrawStatFPSOverlay()
+{
+	// ----- 現在のウィンドウ(Viewport)上に直接描画するため、DrawListを取得 -----
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+	// ウィンドウの左上スクリーン座標を取得
+	ImVec2 viewportMin = ImGui::GetWindowPos();
+
+	// Viewportのタブバーの高さ分だけ下げたい場合に使用する余白
+	// (PushStyleVarでpadding=0にしているので、ContentRegionの座標からmarginだけ足す)
+	const float marginX = 8.0f;
+	const float marginY = 8.0f;
+
+	// ContentRegionの開始位置を基準にする
+	ImVec2 cr_min = ImGui::GetWindowContentRegionMin();
+	ImVec2 overlayPos = ImVec2(
+		viewportMin.x + cr_min.x + marginX,
+		viewportMin.y + cr_min.y + marginY
+	);
+
+	// ----- テキスト内容を組み立て -----
+	char line1[64];
+	char line2[64];
+	char line3[64];
+	snprintf(line1, sizeof(line1), "FPS          : %6.2f", stat_fps_);
+	snprintf(line2, sizeof(line2), "Frame        : %6.2f ms", stat_frameTimeMs_);
+	snprintf(line3, sizeof(line3), "Average FPS  : %6.2f", stat_averageFps_);
+
+	// ----- 背景矩形のサイズ計算 -----
+	ImVec2 size1 = ImGui::CalcTextSize(line1);
+	ImVec2 size2 = ImGui::CalcTextSize(line2);
+	ImVec2 size3 = ImGui::CalcTextSize(line3);
+	float maxTextW = (std::max)((std::max)(size1.x, size2.x), size3.x);
+	float lineH = size1.y;
+
+	const float padX = 10.0f;
+	const float padY = 6.0f;
+
+	ImVec2 rectMin = overlayPos;
+	ImVec2 rectMax = ImVec2(
+		rectMin.x + maxTextW + padX * 2.0f,
+		rectMin.y + lineH * 3.0f + padY * 2.0f
+	);
+
+	// ----- 半透明黒の背景 -----
+	ImU32 bgColor = IM_COL32(0, 0, 0, 150);  // 半透明黒
+	drawList->AddRectFilled(rectMin, rectMax, bgColor, 4.0f);
+
+	// ----- うっすらとした枠線 -----
+	ImU32 borderColor = IM_COL32(255, 255, 255, 40);
+	drawList->AddRect(rectMin, rectMax, borderColor, 4.0f, 0, 1.0f);
+
+	// ----- テキストの描画 (UE5 Stat FPS風に黄色) -----
+	// FPSの値によって色を変える(60以上は緑、30以上は黄色、それ以下は赤)
+	ImU32 fpsColor;
+	if (stat_fps_ >= 60.0f)      fpsColor = IM_COL32(0, 255, 0, 255);      // 緑
+	else if (stat_fps_ >= 30.0f) fpsColor = IM_COL32(255, 255, 0, 255);    // 黄
+	else                         fpsColor = IM_COL32(255, 80, 80, 255);    // 赤
+
+	ImU32 labelColor = IM_COL32(230, 230, 230, 255);  // 白っぽい
+
+	ImVec2 textPos = ImVec2(rectMin.x + padX, rectMin.y + padY);
+
+	drawList->AddText(textPos, fpsColor, line1);
+	textPos.y += lineH;
+	drawList->AddText(textPos, labelColor, line2);
+	textPos.y += lineH;
+	drawList->AddText(textPos, labelColor, line3);
 }
 
 // ================================================================

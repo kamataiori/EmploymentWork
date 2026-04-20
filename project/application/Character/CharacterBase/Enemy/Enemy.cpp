@@ -188,14 +188,14 @@ void Enemy::Update()
 	object3d_->Update();
 
 #ifdef USE_IMGUI
-	ImGui::Begin("Enemy");
+	/*ImGui::Begin("Enemy");
 	ImGui::DragFloat3("translate", &transform.translate.x, 0.01f);
 	if (stateManager_) {
 		ImGui::Text("ActionState: %s", stateManager_->GetCurrentStateName());
 		ImGui::Text("State Finished: %s", stateManager_->IsFinished() ? "true" : "false");
 	}
 	ImGui::Text("Minion count: %d", (int)minions_.size());
-	ImGui::End();
+	ImGui::End();*/
 #endif
 
 	// 死亡演出
@@ -224,9 +224,9 @@ void Enemy::Update()
 		}
 
 #ifdef USE_IMGUI
-		ImGui::Begin("explosionPos");
+		/*ImGui::Begin("explosionPos");
 		ImGui::DragFloat3("translate", &explosionPos.x, 0.01f);
-		ImGui::End();
+		ImGui::End();*/
 #endif
 
 		if (transform.scale.x < 0.0f) transform.scale.x = 0.0f;
