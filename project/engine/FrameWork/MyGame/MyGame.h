@@ -4,6 +4,7 @@
 #include "engine/UI/UIManager.h"
 #include "engine/Scene/ChangeEffect/SceneTransitionService.h"
 #include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
+#include "PlayModeState.h"
 
 #ifdef USE_IMGUI
 #include "ImGuiManager.h"
@@ -81,4 +82,8 @@ private:
 
 	// 遷移演出の生成・管理（SceneManagerは所有しない）
 	std::unique_ptr<SceneTransitionService> transitionService_;
+
+	// 再生/停止 状態 (Play/Stop)
+	// EditorLayout と SceneManager が参照する
+	std::unique_ptr<PlayModeState> playModeState_;
 };

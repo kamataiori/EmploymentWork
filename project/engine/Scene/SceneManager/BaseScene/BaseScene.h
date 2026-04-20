@@ -7,91 +7,93 @@
 // 前方宣言
 class SceneManager;
 
+/// <summary>
+/// シーンの基底クラス
+/// 
+/// 毎フレームのライフサイクル (SceneManager から呼ばれる順):
+///   1. UpdateCamera() : カメラ位置/行列を最新にする
+///                       (他のオブジェクトがカメラ行列を参照する前に呼ぶ)
+///   2. Update()       : ゲームロジック (キャラ移動、AI、アニメ等)
+///   3. LateUpdate()   : 後処理 (カメラ追従、シェイク、カメラエフェクト等)
+/// 
+/// この3段階分離は UE5 / Unity と同じ設計で、
+/// - スカイボックスが初期フレームで崩れる問題を防ぐ
+/// - カメラ追従が1フレーム遅れる問題を防ぐ
+/// - DebugCamera などの "描画前にカメラを差し替える" 機能を綺麗に実現できる
+/// 
+/// 派生シーンは Update は必ず実装する。UpdateCamera/LateUpdate は必要に応じてoverride。
+/// </summary>
 class BaseScene
 {
 public:
 	//------メンバ関数------
 
 	BaseScene() {
-		AddLeftDockWindow("FPS");  // ← コンストラクタで固定Dock登録
+		AddLeftDockWindow("FPS");
 	}
 
-	//仮想デストラクタ
 	virtual ~BaseScene() = default;
 
-	/// <summary>
-	/// 初期化
-	/// </summary>
+	/// <summary>初期化 (シーン起動時に1回)</summary>
 	virtual void Initialize() = 0;
 
-	/// <summary>
-	/// 終了
-	/// </summary>
+	/// <summary>終了 (シーン終了時に1回)</summary>
 	virtual void Finalize() = 0;
 
 	/// <summary>
-	/// 更新
+	/// カメラ更新フェーズ (フレームの最初に呼ばれる)
+	/// 
+	/// ここでカメラの位置・角度・ViewMatrix/ProjectionMatrix を最新にする。
+	/// 派生シーンで、FollowCamera など「プレイヤー位置に依存しないカメラの基本処理」を実装する。
+	/// 
+	/// デフォルト実装は空。カメラを持たないシーンはoverride不要。
 	/// </summary>
+	virtual void UpdateCamera() {}
+
+	/// <summary>ゲームロジックの更新 (2番目)</summary>
 	virtual void Update() = 0;
 
 	/// <summary>
-	/// 背景描画
+	/// 後処理フェーズ (Update後に呼ばれる)
+	/// 
+	/// ここで「更新されたキャラ位置に追従するカメラ」「カメラエフェクト」等を実装する。
+	/// デフォルト実装は空。必要なシーンのみoverride。
 	/// </summary>
+	virtual void LateUpdate() {}
+
+	/// <summary>背景描画</summary>
 	virtual void BackGroundDraw() = 0;
 
-	/// <summary>
-	/// 描画
-	/// </summary>
+	/// <summary>描画</summary>
 	virtual void Draw() = 0;
 
-	/// <summary>
-	/// 前景描画
-	/// </summary>
+	/// <summary>前景描画</summary>
 	virtual void ForeGroundDraw() = 0;
 
-	/// <summary>
-	/// デバッグ用（Imguiなどはこちらへ）
-	/// </summary>
+	/// <summary>デバッグ用 (Imguiなど)</summary>
 	virtual void Debug() = 0;
 
-	/// <summary>
-	/// シーンマネージャーをシーンに貸し出すためのSetter
-	/// </summary>
-	/// <param name="sceneManager"></param>
+	/// <summary>シーンマネージャーをシーンに貸し出すためのSetter</summary>
 	virtual void SetSceneManager(SceneManager* sceneManager) { sceneManager_ = sceneManager; }
 
-	/// <summary>
-	/// Lightのゲッター
-	/// </summary>
+	/// <summary>Lightのゲッター</summary>
 	Light* GetLight() const {
-		return light.get();  // unique_ptr から Light ポインタを返す
+		return light.get();
 	}
 
-	// 描画ループ内で使用
 	void ShowFPS() {
-		//ImGui::Begin("FPS Display"); // ウィンドウを開始
-		//ImGuiIO& io = ImGui::GetIO(); // ImGuiのIOオブジェクトを取得
-		//ImGui::Text("FPS: %.1f", io.Framerate); // FPSを表示
-		//ImGui::End(); // ウィンドウを終了
-
-		// 現在の時間を取得
 		auto now = std::chrono::steady_clock::now();
-
-		// 経過時間を計算
 		std::chrono::duration<float> deltaTime = now - lastFrameTime_;
 		lastFrameTime_ = now;
-
-		// FPSを計算
 		fps_ = 1.0f / deltaTime.count();
 
-		// ImGuiで表示
 		ImGui::Begin("FPS Display");
 		ImGui::Text("Current FPS: %.2f", fps_);
 		ImGui::End();
 	}
 
 public:
-	// Dock候補登録用（MyGame側のDockBuilderで使われる）
+	// Dock候補登録用
 	const std::vector<std::string>& GetLeftDockWindows() const { return leftDockWindows_; }
 	const std::vector<std::string>& GetRightDockWindows() const { return rightDockWindows_; }
 	const std::vector<std::string>& GetBottomDockWindows() const { return bottomDockWindows_; }
@@ -110,15 +112,8 @@ private:
 	bool enableDockedImGui_ = true;
 
 private:
-	// シーンマネージャー (借りてくる)
 	SceneManager* sceneManager_ = nullptr;
-
-	// ライトの初期化
 	std::unique_ptr<Light> light = std::make_unique<Light>();
-
-	// FPS計測用の変数
 	std::chrono::steady_clock::time_point lastFrameTime_ = std::chrono::steady_clock::now();
 	float fps_ = 0.0f;
-
 };
-

@@ -5,6 +5,9 @@
 #include <externals/imgui/imgui.h>
 #include <string>
 
+// 前方宣言
+class PlayModeState;
+
 /// <summary>
 /// UE5風レイアウトを管理するクラス
 /// 
@@ -62,6 +65,13 @@ public:
 		stat_averageFps_ = averageFps;
 	}
 
+	/// <summary>
+	/// Play/Stop 状態の参照を注入する
+	/// Viewport上部のボタンがこれを操作 & 参照する
+	/// 所有権は持たない(呼び出し側が生存保証)
+	/// </summary>
+	void SetPlayModeState(PlayModeState* state) { playModeState_ = state; }
+
 private:
 	//------ヘルパー関数（パネルごとに分割）------//
 
@@ -91,6 +101,9 @@ private:
 
 	/// <summary>Viewport上に重ねるFPSオーバーレイ (UE5のStat FPS風)</summary>
 	void DrawStatFPSOverlay();
+
+	/// <summary>Viewport上部のPlay/Stopツールバー</summary>
+	void DrawPlayToolbar();
 
 	/// <summary>カスタムスタイルの適用</summary>
 	void ApplyStyle();
@@ -125,6 +138,10 @@ private:
 	// Viewport上にStat FPSを表示するかどうか
 	bool  showStatFPS_ = true;
 
+	// ---- Play/Stop ----
+	// MyGame から注入される再生状態の参照(所有はしない)
+	PlayModeState* playModeState_ = nullptr;
+
 	// 各パネル名（ウィンドウ識別用）
 	static constexpr const char* kDockSpaceName = "EditorDockSpace";
 	static constexpr const char* kViewportName = "Viewport";
@@ -137,6 +154,8 @@ private:
 #else  // USE_IMGUI が無効なとき（Release）
 
 /// <summary>Release ビルド用のスタブ</summary>
+class PlayModeState;  // 前方宣言
+
 class EditorLayout
 {
 public:
@@ -148,6 +167,7 @@ public:
 	bool IsEnabled() const { return false; }
 	void SetEnabled(bool) {}
 	void SetPerformanceStats(float, float, float) {}
+	void SetPlayModeState(PlayModeState*) {}
 };
 
 #endif // USE_IMGUI

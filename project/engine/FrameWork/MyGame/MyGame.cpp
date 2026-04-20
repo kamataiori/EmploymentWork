@@ -26,14 +26,33 @@ void MyGame::Initialize()
 
 	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 
+	// ★ Play/Stop 状態を生成
+	playModeState_ = std::make_unique<PlayModeState>();
+
+	// ★ Play 押下時: 現在のシーンを最初からリロードする
+	playModeState_->SetOnPlayCallback([]() {
+		SceneManager::GetInstance()->ReloadCurrentScene();
+		});
+
+	// ★ SceneManager にも Play/Stop 状態を注入
+	//    SceneManager::Update 内で IsPlaying を見て scene_->Update() をスキップする
+	//    (ただしシーン切替直後の1フレームだけは強制的にUpdateを呼ぶ)
+	SceneManager::GetInstance()->SetPlayModeState(playModeState_.get());
+
+	// ★ 起動直後は "停止状態" を確定させる (UE5 Editor流)
+	playModeState_->InitializeStopped();
+
 #ifdef USE_IMGUI
 	// ImGuiManagerの初期化
 	imGuiManager_ = std::make_unique<ImGuiManager>();
 	imGuiManager_->Initialize(winApp.get(), DirectXCommon::GetInstance());
 
-	// ★ EditorLayoutの初期化（ImGuiManagerの後に！）
+	// ★ EditorLayoutの初期化(ImGuiManagerの後に!)
 	editorLayout_ = std::make_unique<EditorLayout>();
 	editorLayout_->Initialize();
+
+	// ★ PlayModeState を EditorLayout に注入
+	editorLayout_->SetPlayModeState(playModeState_.get());
 #endif // USE_IMGUI
 
 	PostEffectManager::GetInstance()->Initialize(PostEffectType::Normal);
@@ -47,6 +66,7 @@ void MyGame::Finalize()
 #ifdef USE_IMGUI
 	// ★ EditorLayoutを先に終了
 	if (editorLayout_) {
+		editorLayout_->SetPlayModeState(nullptr); // 参照を切る
 		editorLayout_->Finalize();
 	}
 	editorLayout_.reset();
@@ -54,6 +74,13 @@ void MyGame::Finalize()
 	// ImGuiの終了処理
 	imGuiManager_->Finalize();
 #endif // USE_IMGUI
+
+	// ★ SceneManager から PlayModeState 参照を外してから解放
+	//    (ダングリング参照防止)
+	SceneManager::GetInstance()->SetPlayModeState(nullptr);
+
+	// Play/Stop 状態を解放
+	playModeState_.reset();
 
 	// 基底クラスの終了処理
 	Framework::Finalize();
@@ -66,18 +93,19 @@ void MyGame::Update()
 	imGuiManager_->Update();
 
 	// ★ UE5風レイアウト(DockSpace + 各パネル)を先に構築
+	//    (再生中でも停止中でも毎フレーム動く)
 	editorLayout_->BeginFrame();
-
-	// ※ 以前ここにあった Performance ウィンドウは EditorLayout の
-	//    Viewport オーバーレイ (Stat FPS) に移動したため削除
-
 #endif // USE_IMGUI
 
 	// 基底クラスの更新処理
+	// (内部で SceneManager::Update も呼ばれ、そこで Play/Stop 判定される)
 	Framework::Update();
 
-	// UI更新
-	uiManager_->Update();
+	// --- UI更新は停止中はスキップ (UE5 Editor の完全凍結ルール) ---
+	const bool isPlaying = (playModeState_ && playModeState_->IsPlaying());
+	if (isPlaying) {
+		uiManager_->Update();
+	}
 
 #ifdef USE_IMGUI
 	// レイアウトの後処理
@@ -87,7 +115,7 @@ void MyGame::Update()
 	ImGui::Render();
 #endif // USE_IMGUI
 
-	// ===== FPS & 時間計測 =====
+	// ===== FPS & 時間計測 (常時動作) =====
 	auto now = std::chrono::steady_clock::now();
 	std::chrono::duration<float> delta = now - lastFrameTime_;
 	lastFrameTime_ = now;
@@ -110,8 +138,7 @@ void MyGame::Update()
 	averageFps_ = sum / static_cast<float>(fpsHistory_.size());
 
 #ifdef USE_IMGUI
-	// 計測したFPS統計をEditorLayoutに注入
-	// 次フレームのStat FPSオーバーレイに反映される
+	// ★ 計測したFPS統計をEditorLayoutに注入
 	editorLayout_->SetPerformanceStats(fps_, frameTimeMs_, averageFps_);
 #endif // USE_IMGUI
 

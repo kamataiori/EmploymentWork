@@ -11,6 +11,7 @@
 #include "SceneManager.h"
 #include "AbstractSceneFactory.h"
 #include "BaseScene.h"
+#include "PlayModeState.h"
 
 // ================================================================
 //  初期化 / 終了
@@ -242,9 +243,16 @@ void EditorLayout::DrawSceneMenu()
 
 void EditorLayout::DrawViewportPanel()
 {
+	// Viewport全体は padding=0 (ツールバーと画像の境目を密着させるため)
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
 	if (ImGui::Begin(kViewportName, &showViewport_)) {
+
+		// --- (1) 上部ツールバー: Play/Stop ボタン ---
+		// ツールバー内だけは padding を復元して余白を持たせる
+		DrawPlayToolbar();
+
+		// --- (2) 実際のゲーム画面 (残りの領域すべて) ---
 		ImTextureID textureID = (ImTextureID)SrvManager::GetInstance()
 			->GetGPUDescriptorHandle(PostEffectManager::GetInstance()->GetSrvIndex()).ptr;
 
@@ -254,7 +262,7 @@ void EditorLayout::DrawViewportPanel()
 			ImGui::Image(textureID, avail);
 		}
 
-		// ★ Stat FPS オーバーレイ (Viewportが表示されているときだけ、Viewport内に重ねる)
+		// --- (3) Stat FPS オーバーレイ (Viewport画像の上に重ねる) ---
 		if (showStatFPS_) {
 			DrawStatFPSOverlay();
 		}
@@ -358,27 +366,130 @@ void EditorLayout::DrawDetailsPanel()
 }
 
 // ================================================================
+//  Play/Stop ツールバー (Viewport上部)
+// ================================================================
+
+void EditorLayout::DrawPlayToolbar()
+{
+	// 背景色(ツールバーの帯)を少し暗めにする
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.10f, 0.10f, 0.11f, 1.0f));
+
+	// ツールバー領域 (高さ固定)
+	const float toolbarHeight = 34.0f;
+	ImGui::BeginChild("##PlayToolbar", ImVec2(0, toolbarHeight), false,
+		ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+	// ツールバー内の要素に適度なpaddingを持たせる
+	ImGui::Dummy(ImVec2(6.0f, 0.0f));  // 左端の余白
+	ImGui::SameLine();
+
+	// PlayModeState が未セットなら、ダミーとしてボタンだけ表示
+	const bool hasState = (playModeState_ != nullptr);
+	const bool isPlaying = hasState && playModeState_->IsPlaying();
+
+	const ImVec2 btnSize(28.0f, 24.0f);
+
+	// ---------------------------------------------------------
+	// Play ボタン (▶)
+	// 再生中は無効化(押せないが強調表示する)
+	// ---------------------------------------------------------
+	{
+		if (isPlaying) {
+			// 再生中: 緑色でハイライトして「今Play中ですよ」と示す
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.55f, 0.25f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.55f, 0.25f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.20f, 0.55f, 0.25f, 1.0f));
+		}
+
+		// 再生中は押せない
+		ImGui::BeginDisabled(isPlaying || !hasState);
+		if (ImGui::Button("Play", btnSize)) {
+			if (playModeState_) {
+				playModeState_->Play();
+			}
+		}
+		ImGui::EndDisabled();
+
+		if (isPlaying) {
+			ImGui::PopStyleColor(3);
+		}
+
+		// ツールチップ
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+			ImGui::SetTooltip(isPlaying
+				? "Playing... (press Stop to end)"
+				: "Play (シーンを最初から再生)");
+		}
+	}
+
+	ImGui::SameLine();
+
+	// ---------------------------------------------------------
+	// Stop ボタン (■)
+	// 停止中は無効化
+	// ---------------------------------------------------------
+	{
+		if (!isPlaying && hasState) {
+			// 停止中は少し暗めに(disabled色っぽく)
+		}
+
+		ImGui::BeginDisabled(!isPlaying || !hasState);
+		if (ImGui::Button("Stop", btnSize)) {
+			if (playModeState_) {
+				playModeState_->Stop();
+			}
+		}
+		ImGui::EndDisabled();
+
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+			ImGui::SetTooltip(isPlaying
+				? "Stop (再生を停止)"
+				: "Stop (現在停止中)");
+		}
+	}
+
+	// ---------------------------------------------------------
+	// 右側に「現在の状態」テキストを表示(オプション)
+	// ---------------------------------------------------------
+	ImGui::SameLine();
+	ImGui::Dummy(ImVec2(14.0f, 0.0f));
+	ImGui::SameLine();
+	if (!hasState) {
+		ImGui::TextDisabled("(Play state not bound)");
+	}
+	else if (isPlaying) {
+		ImGui::TextColored(ImVec4(0.40f, 0.90f, 0.40f, 1.0f), "PLAYING");
+	}
+	else {
+		ImGui::TextColored(ImVec4(0.70f, 0.70f, 0.70f, 1.0f), "STOPPED");
+	}
+
+	ImGui::EndChild();
+	ImGui::PopStyleColor();
+}
+
+// ================================================================
 //  Stat FPS オーバーレイ (Viewport左上に半透明で重ねる)
 // ================================================================
 
 void EditorLayout::DrawStatFPSOverlay()
 {
-	// ----- 現在のウィンドウ(Viewport)上に直接描画するため、DrawListを取得 -----
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
 	// ウィンドウの左上スクリーン座標を取得
 	ImVec2 viewportMin = ImGui::GetWindowPos();
 
-	// Viewportのタブバーの高さ分だけ下げたい場合に使用する余白
-	// (PushStyleVarでpadding=0にしているので、ContentRegionの座標からmarginだけ足す)
-	const float marginX = 8.0f;
-	const float marginY = 8.0f;
-
 	// ContentRegionの開始位置を基準にする
 	ImVec2 cr_min = ImGui::GetWindowContentRegionMin();
+
+	// ツールバー(上部34px)の下に表示するため、Yを少し下にずらす
+	const float marginX = 8.0f;
+	const float marginY = 8.0f;
+	const float toolbarHeight = 34.0f;  // DrawPlayToolbar と合わせる
+
 	ImVec2 overlayPos = ImVec2(
 		viewportMin.x + cr_min.x + marginX,
-		viewportMin.y + cr_min.y + marginY
+		viewportMin.y + cr_min.y + toolbarHeight + marginY
 	);
 
 	// ----- テキスト内容を組み立て -----

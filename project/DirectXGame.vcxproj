@@ -215,6 +215,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="MinionEnemy.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NotLastActionLeaf.cpp" />
     <ClCompile Include="PauseScreen.cpp" />
+    <ClCompile Include="PlayModeState.cpp" />
     <ClCompile Include="PunchAttackLeaf.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialController.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateMove.cpp" />
@@ -358,6 +359,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="MinionEnemy.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NotLastActionLeaf.h" />
     <ClInclude Include="PauseScreen.h" />
+    <ClInclude Include="PlayModeState.h" />
     <ClInclude Include="PunchAttackLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\RandomSelectorNode.h" />
     <ClInclude Include="resource.h" />

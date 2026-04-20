@@ -24,7 +24,12 @@ class GamePlayScene : public BaseScene
 public:
 	void Initialize() override;
 	void Finalize() override;
-	void Update() override;
+
+	// 新しいライフサイクル (BaseScene)
+	void UpdateCamera() override;   // カメラを最初に更新
+	void Update() override;         // ゲームロジック
+	void LateUpdate() override;     // 後処理(カメラ追従・カメラエフェクト)
+
 	void BackGroundDraw() override;
 	void Draw() override;
 	void ForeGroundDraw() override;
@@ -51,14 +56,12 @@ private:
 	{
 		IntroPhase phase = IntroPhase::kCountdown;
 
-		// ---- Countdown ----
 		int   countdownNum = 5;
 		float countdownTimer = 0.0f;
-		float kCountPerSec = 1.0f; // 1カウント減らす間隔（秒）
+		float kCountPerSec = 1.0f;
 
-		// ---- Start ----
 		float startDisplayTimer = 0.0f;
-		float kStartDisplaySec = 1.2f; // "START!" 表示時間（秒）
+		float kStartDisplaySec = 1.2f;
 
 		bool isActive() const { return phase != IntroPhase::kFinished; }
 
@@ -73,7 +76,6 @@ private:
 
 	BattleIntroController intro_;
 
-	// カウントダウン用スプライト [0]="0" 〜 [5]="5"
 	static constexpr int kCountMax = 5;
 	std::array<std::unique_ptr<Sprite>, kCountMax + 1> countSprites_;
 	std::unique_ptr<Sprite> startSprite_;
@@ -109,10 +111,9 @@ private:
 	std::unique_ptr<Sprite>           ex;
 	std::unique_ptr<UIManager>        uiManager_;
 
-	// ===== ゲームオーバー演出 =====
-	bool  gameOverStarted_ = false;   // 演出開始フラグ
-	float vignetteTimer_ = 0.0f;    // 経過時間
-	const float kVignetteDuration_ = 2.0f; // 黒くなりきるまでの秒数
-	const float kVignetteScale_ = 0.3f; // ビネットの広がり具合
-	const float kVignettePower_ = 3.0f; // 最終的な暗さ
+	bool  gameOverStarted_ = false;
+	float vignetteTimer_ = 0.0f;
+	const float kVignetteDuration_ = 2.0f;
+	const float kVignetteScale_ = 0.3f;
+	const float kVignettePower_ = 3.0f;
 };
