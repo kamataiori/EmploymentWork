@@ -24,22 +24,22 @@ void MyGame::Initialize()
 	transitionService_->SetUIManager(uiManager_.get());
 	SceneManager::GetInstance()->SetTransitionService(transitionService_.get());
 
-	SceneManager::GetInstance()->ChangeScene("PARTICLE");
+	SceneManager::GetInstance()->ChangeScene("TITLE");
 
-	// ★ Play/Stop 状態を生成
+	// Play/Stop 状態を生成
 	playModeState_ = std::make_unique<PlayModeState>();
 
-	// ★ Play 押下時: 現在のシーンを最初からリロードする
+	// Play 押下時: 現在のシーンを最初からリロードする
 	playModeState_->SetOnPlayCallback([]() {
 		SceneManager::GetInstance()->ReloadCurrentScene();
 		});
 
-	// ★ SceneManager にも Play/Stop 状態を注入
+	// SceneManager にも Play/Stop 状態を注入
 	//    SceneManager::Update 内で IsPlaying を見て scene_->Update() をスキップする
 	//    (ただしシーン切替直後の1フレームだけは強制的にUpdateを呼ぶ)
 	SceneManager::GetInstance()->SetPlayModeState(playModeState_.get());
 
-	// ★ 起動直後は "停止状態" を確定させる (UE5 Editor流)
+	// 起動直後は "停止状態" を確定させる 
 	playModeState_->InitializeStopped();
 
 #ifdef USE_IMGUI
@@ -47,11 +47,11 @@ void MyGame::Initialize()
 	imGuiManager_ = std::make_unique<ImGuiManager>();
 	imGuiManager_->Initialize(winApp.get(), DirectXCommon::GetInstance());
 
-	// ★ EditorLayoutの初期化(ImGuiManagerの後に!)
+	// EditorLayoutの初期化(ImGuiManagerの後に!)
 	editorLayout_ = std::make_unique<EditorLayout>();
 	editorLayout_->Initialize();
 
-	// ★ PlayModeState を EditorLayout に注入
+	// PlayModeState を EditorLayout に注入
 	editorLayout_->SetPlayModeState(playModeState_.get());
 #endif // USE_IMGUI
 
@@ -64,7 +64,7 @@ void MyGame::Initialize()
 void MyGame::Finalize()
 {
 #ifdef USE_IMGUI
-	// ★ EditorLayoutを先に終了
+	// EditorLayoutを先に終了
 	if (editorLayout_) {
 		editorLayout_->SetPlayModeState(nullptr); // 参照を切る
 		editorLayout_->Finalize();
@@ -75,7 +75,7 @@ void MyGame::Finalize()
 	imGuiManager_->Finalize();
 #endif // USE_IMGUI
 
-	// ★ SceneManager から PlayModeState 参照を外してから解放
+	// SceneManager から PlayModeState 参照を外してから解放
 	//    (ダングリング参照防止)
 	SceneManager::GetInstance()->SetPlayModeState(nullptr);
 
@@ -92,7 +92,7 @@ void MyGame::Update()
 	// ImGuiのフレーム開始
 	imGuiManager_->Update();
 
-	// ★ UE5風レイアウト(DockSpace + 各パネル)を先に構築
+	// UE5風レイアウト(DockSpace + 各パネル)を先に構築
 	//    (再生中でも停止中でも毎フレーム動く)
 	editorLayout_->BeginFrame();
 #endif // USE_IMGUI
