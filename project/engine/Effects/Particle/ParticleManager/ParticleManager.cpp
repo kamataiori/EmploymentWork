@@ -1744,6 +1744,25 @@ void ParticleManager::InstancingMaxResource()
 	}
 }
 
+void ParticleManager::BuildVertexBuffer(VertexDataType type)
+{
+}
+
+std::vector<ParticleManager::VertexData> ParticleManager::MakePlaneVertices()
+{
+	return std::vector<VertexData>();
+}
+
+std::vector<ParticleManager::VertexData> ParticleManager::MakeRingVertices()
+{
+	return std::vector<VertexData>();
+}
+
+std::vector<ParticleManager::VertexData> ParticleManager::MakeCylinderVertices()
+{
+	return std::vector<VertexData>();
+}
+
 ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate)
 {
 	// 位置だけランダムにばら撒く

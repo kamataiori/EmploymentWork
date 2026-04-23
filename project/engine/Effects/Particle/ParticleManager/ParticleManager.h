@@ -294,6 +294,11 @@ private:
 
 		UINT vertexCount = 32; // ← 追加（描画に使うインスタンスあたりの頂点数）
 
+		// ===== Phase1 追加 =====
+        // このグループが使う頂点形状（Plane / Ring / Cylinder など）
+        // EnsureGroupForPreset() で preset.emitterSettings.vertexType から設定される
+		VertexDataType vertexType = VertexDataType::Plane;
+
 		// インスタンシングデータを書き込むためのポインタ
 		ParticleForGPU* instancingDataPtr = nullptr;
 
@@ -311,6 +316,16 @@ private:
 		Curve1D colorCurve;
 
 	};
+
+	// ===== 形状ごとの頂点バッファ生成 =====
+
+    // 指定形状の頂点バッファを vertexBuffers_ に登録する
+	void BuildVertexBuffer(VertexDataType type);
+
+	// 形状ごとの頂点データ配列を生成して返す（リソースは作らない）
+	std::vector<VertexData> MakePlaneVertices();
+	std::vector<VertexData> MakeRingVertices();
+	std::vector<VertexData> MakeCylinderVertices();
 
 	/// <summary>
 	/// パーティクル生成器
@@ -413,6 +428,22 @@ private:
 	Material* materialData = nullptr;
 	// バッファリソースの使い道を補完するビュー
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+
+	// ===== Phase1 追加: 形状ごとの頂点バッファ =====
+    // Plane / Ring / Cylinder それぞれに対応する頂点バッファをまとめて管理する
+
+    // 1形状分の頂点バッファ情報
+	struct VertexBufferSet {
+		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+		D3D12_VERTEX_BUFFER_VIEW view{};
+		uint32_t vertexCount = 0;
+	};
+
+	// 形状 → 頂点バッファのマップ
+	// 起動時に Plane / Ring / Cylinder の3つを作っておき、
+	// 描画時にグループの vertexType で引いて切り替える
+	std::unordered_map<VertexDataType, VertexBufferSet> vertexBuffers_;
+
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> instancingResource;
 
