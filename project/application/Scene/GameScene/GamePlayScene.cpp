@@ -207,6 +207,28 @@ void GamePlayScene::UpdateCamera()
 	if (!followCameraLocked_) {
 		followCamera->Update();
 	}
+
+	if (stage_) {
+		stage_->Update();
+	}
+	if (skybox) {
+		skybox->Update();
+	}
+	if (ground) {
+		ground->Update();
+	}
+	if (sky) {
+		sky->Update();
+	}
+	if (Colosseum) {
+		Colosseum->Update();
+	}
+	if (player_) {
+		player_->UpdateVisual();
+	}
+	if (enemy_) {
+		enemy_->UpdateVisual();
+	}
 }
 
 // ================================================

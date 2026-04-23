@@ -26,6 +26,7 @@ public:
 	/// <summary>
 	/// 更新
 	/// </summary>
+	void UpdateCamera() override;
 	void Update() override;
 
 	/// <summary>

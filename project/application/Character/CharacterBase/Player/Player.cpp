@@ -176,6 +176,19 @@ void Player::Update()
 	/*poweder->Update();*/
 }
 
+void Player::UpdateVisual()
+{
+	object3d_->SetTranslate(transform.translate);
+	object3d_->SetRotate(transform.rotate);
+	object3d_->SetScale(transform.scale);
+	object3d_->Update();
+
+	if (sword_) {
+		sword_->SetHitEnabled(false);
+		sword_->Update();
+	}
+}
+
 void Player::BackGroundDraw()
 {
 }

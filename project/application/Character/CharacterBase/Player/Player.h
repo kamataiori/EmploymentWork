@@ -27,6 +27,7 @@ public:
 	/// 更新処理
 	/// </summary>
 	void Update() override;
+	void UpdateVisual();
 
 	/// <summary>
 	/// 背景スプライト処理

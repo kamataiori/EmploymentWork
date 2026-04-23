@@ -147,6 +147,52 @@ void TitleScene::Finalize()
 {
 }
 
+void TitleScene::UpdateCamera()
+{
+	const Vector3 target = transform.translate + orbitTargetOffset_;
+
+	const float x = target.x + std::sin(orbitAngle_) * orbitRadius_;
+	const float z = target.z + std::cos(orbitAngle_) * orbitRadius_;
+	const float y = target.y + orbitHeight_;
+
+	camera1->SetTranslate({ x, y, z });
+
+	Vector3 to = target - Vector3{ x, y, z };
+	to = Normalize(to);
+
+	const float yaw = std::atan2(to.x, to.z);
+	const float pitch = std::atan2(-to.y, std::sqrt(to.x * to.x + to.z * to.z));
+
+	camera1->SetRotate({ pitch, yaw, 0.0f });
+	camera1->Update();
+
+	if (ground) {
+		ground->Update();
+	}
+	if (sky) {
+		sky->Update();
+	}
+	if (sneak) {
+		sneak->SetTranslate(transform.translate);
+		sneak->SetRotate(transform.rotate);
+		sneak->SetScale(transform.scale);
+		sneak->Update();
+	}
+	if (sword) {
+		sword->SetScale(swordTransform.scale);
+		sword->SetRotate(swordTransform.rotate);
+		sword->SetTranslate(swordTransform.translate);
+		sword->SetParentJoint(sneak.get(), "Fist.R");
+		sword->Update();
+	}
+	if (titleTop_) {
+		titleTop_->Update();
+	}
+	if (titleBottom_) {
+		titleBottom_->Update();
+	}
+}
+
 void TitleScene::Update()
 {
 	// ===== タイトルスプライト更新（フェーズで切替）=====
