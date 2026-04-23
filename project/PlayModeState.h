@@ -85,6 +85,9 @@ public:
 		isPlaying_ = false;
 	}
 
+
+	void InitializePlaying();
+
 	/// <summary>
 	/// 起動直後に「停止状態」を確定させるための初期化
 	/// MyGame::Initialize で呼ぶ想定

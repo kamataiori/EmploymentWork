@@ -39,8 +39,13 @@ void MyGame::Initialize()
 	//    (ただしシーン切替直後の1フレームだけは強制的にUpdateを呼ぶ)
 	SceneManager::GetInstance()->SetPlayModeState(playModeState_.get());
 
-	// 起動直後は "停止状態" を確定させる 
+#ifdef USE_IMGUI
+	// エディタ有効ビルドは停止状態から開始（Play ボタンで再生）
 	playModeState_->InitializeStopped();
+#else
+	// エディタ無効ビルドは起動直後から再生状態
+	playModeState_->InitializePlaying();
+#endif
 
 #ifdef USE_IMGUI
 	// ImGuiManagerの初期化
