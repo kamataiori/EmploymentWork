@@ -294,7 +294,6 @@ private:
 
 		UINT vertexCount = 32; // ← 追加（描画に使うインスタンスあたりの頂点数）
 
-		// ===== Phase1 追加 =====
         // このグループが使う頂点形状（Plane / Ring / Cylinder など）
         // EnsureGroupForPreset() で preset.emitterSettings.vertexType から設定される
 		VertexDataType vertexType = VertexDataType::Plane;

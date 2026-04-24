@@ -1,11 +1,11 @@
 {
     "emitterSettings": {
         "blendMode": 2,
-        "textureFilePath": "Resources/ParticleTexture/smoke.png",
-        "vertexType": 0
+        "textureFilePath": "Resources/ParticleTexture/gradationLine.png",
+        "vertexType": 2
     },
     "emitterSpawn": {
-        "count": 104,
+        "count": 1,
         "frequency": 1.0,
         "repeat": false,
         "useLocalSpace": false,

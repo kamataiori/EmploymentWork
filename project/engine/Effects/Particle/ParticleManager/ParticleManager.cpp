@@ -483,6 +483,9 @@ void ParticleManager::Initialize(VertexDataType type)
 	//頂点データをリソースにコピー
 	std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());
 
+	BuildVertexBuffer(VertexDataType::Plane);
+	BuildVertexBuffer(VertexDataType::Ring);
+	BuildVertexBuffer(VertexDataType::Cylinder);
 }
 
 void ParticleManager::Update()
@@ -546,7 +549,7 @@ void ParticleManager::Draw()
 
 	// プリミティブトポロジ & VBV は共通
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+	/*commandList->IASetVertexBuffers(0, 1, &vertexBufferView);*/
 
 	SrvManager* srvManager = SrvManager::GetInstance();
 
@@ -557,7 +560,19 @@ void ParticleManager::Draw()
 			continue;
 		}
 
-		// ★ このグループ専用のブレンドモードから PSO を取得
+		// グループの形状に対応する頂点バッファを取得 =====
+		auto vbIt = vertexBuffers_.find(group.vertexType);
+		if (vbIt == vertexBuffers_.end()) {
+			// 未対応形状（Trailなど）はスキップ
+			group.instanceCount = 0;
+			continue;
+		}
+		const auto& vb = vbIt->second;
+
+		// グループごとに頂点バッファを切り替え
+		commandList->IASetVertexBuffers(0, 1, &vb.view);
+
+		// このグループ専用のブレンドモードから PSO を取得
 		auto psoIt = pipelineStateCache_.find(group.blendMode);
 		if (psoIt == pipelineStateCache_.end() || !psoIt->second) {
 			// 念のため、無ければノーマルにフォールバック
@@ -569,10 +584,9 @@ void ParticleManager::Draw()
 			}
 		}
 
-		// ★ グループごとに PSO をセット
+		// グループごとに PSO をセット
 		commandList->SetPipelineState(psoIt->second.Get());
 
-		// （ここから下は今と同じでOK）
 		Vector2 textureLeftTop = group.textureLeftTop;
 		Vector2 textureSize = group.textureSize;
 
@@ -584,7 +598,7 @@ void ParticleManager::Draw()
 		commandList->SetGraphicsRootDescriptorTable(2, srvManager->GetGPUDescriptorHandle(group.srvIndex));
 		commandList->SetGraphicsRootDescriptorTable(1, srvManager->GetGPUDescriptorHandle(group.instancingSrvIndex));
 
-		commandList->DrawInstanced(group.vertexCount, group.instanceCount, 0, 0);
+		commandList->DrawInstanced(vb.vertexCount, group.instanceCount, 0, 0);
 
 		group.instanceCount = 0;
 	}
@@ -1746,21 +1760,157 @@ void ParticleManager::InstancingMaxResource()
 
 void ParticleManager::BuildVertexBuffer(VertexDataType type)
 {
+	//指定形状の頂点バッファを作成し、vertexBuffers_ マップに登録する
+	// 1. 頂点データを生成（形状ごとに関数を呼び分け）
+	std::vector<VertexData> verts;
+	switch (type) {
+	case VertexDataType::Plane:
+		verts = MakePlaneVertices();
+		break;
+	case VertexDataType::Ring:
+		verts = MakeRingVertices();
+		break;
+	case VertexDataType::Cylinder:
+		verts = MakeCylinderVertices();
+		break;
+	default:
+		// 未対応形状（Trailなど）はここでは作らない
+		return;
+	}
+
+	if (verts.empty()) return;
+
+	// 2. GPUリソースを作成
+	VertexBufferSet set;
+	const UINT byteSize = static_cast<UINT>(sizeof(VertexData) * verts.size());
+
+	// 既存コードの作法に合わせて dxCommon_ のヘルパーでバッファ確保
+	set.resource = dxCommon_->CreateBufferResource(byteSize);
+
+	// 3. CPU側データを GPU リソースにコピー
+	VertexData* mapped = nullptr;
+	set.resource->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
+	std::memcpy(mapped, verts.data(), byteSize);
+	set.resource->Unmap(0, nullptr);
+
+	// 4. Vertex Buffer View をセットアップ
+	set.view.BufferLocation = set.resource->GetGPUVirtualAddress();
+	set.view.SizeInBytes = byteSize;
+	set.view.StrideInBytes = sizeof(VertexData);
+	set.vertexCount = static_cast<uint32_t>(verts.size());
+
+	// 5. マップに登録
+	vertexBuffers_[type] = std::move(set);
 }
 
 std::vector<ParticleManager::VertexData> ParticleManager::MakePlaneVertices()
 {
-	return std::vector<VertexData>();
+	std::vector<VertexData> v(6);
+
+	v[0].position = { 1.0f,  1.0f, 0.0f, 1.0f };
+	v[0].texcoord = { 0.0f, 0.0f };
+	v[0].normal = { 0.0f, 0.0f, 1.0f };
+
+	v[1].position = { -1.0f,  1.0f, 0.0f, 1.0f };
+	v[1].texcoord = { 1.0f, 0.0f };
+	v[1].normal = { 0.0f, 0.0f, 1.0f };
+
+	v[2].position = { 1.0f, -1.0f, 0.0f, 1.0f };
+	v[2].texcoord = { 0.0f, 1.0f };
+	v[2].normal = { 0.0f, 0.0f, 1.0f };
+
+	v[3].position = { 1.0f, -1.0f, 0.0f, 1.0f };
+	v[3].texcoord = { 0.0f, 1.0f };
+	v[3].normal = { 0.0f, 0.0f, 1.0f };
+
+	v[4].position = { -1.0f,  1.0f, 0.0f, 1.0f };
+	v[4].texcoord = { 1.0f, 0.0f };
+	v[4].normal = { 0.0f, 0.0f, 1.0f };
+
+	v[5].position = { -1.0f, -1.0f, 0.0f, 1.0f };
+	v[5].texcoord = { 1.0f, 1.0f };
+	v[5].normal = { 0.0f, 0.0f, 1.0f };
+
+	return v;
 }
 
 std::vector<ParticleManager::VertexData> ParticleManager::MakeRingVertices()
 {
-	return std::vector<VertexData>();
+	const uint32_t kRingDivide = 32;
+	const float kOuterRadius = 1.0f;
+	const float kInnerRadius = 0.2f;
+	const float radianPerDivide = 2.0f * std::numbers::pi_v<float> / float(kRingDivide);
+
+	std::vector<VertexData> v;
+	v.reserve(kRingDivide * 6);  // 1分割あたり2三角形 = 6頂点
+
+	for (uint32_t index = 0; index < kRingDivide; ++index) {
+		float sin = std::sin(index * radianPerDivide);
+		float cos = std::cos(index * radianPerDivide);
+		float sinNext = std::sin((index + 1) * radianPerDivide);
+		float cosNext = std::cos((index + 1) * radianPerDivide);
+
+		float u = float(index) / float(kRingDivide);
+		float uNext = float(index + 1) / float(kRingDivide);
+
+		// 外→内の三角形1
+		v.push_back({ { -sin * kOuterRadius,     cos * kOuterRadius,     0.0f, 1.0f }, { u,     0.0f }, { 0.0f, 0.0f, 1.0f } });
+		v.push_back({ { -sinNext * kOuterRadius, cosNext * kOuterRadius, 0.0f, 1.0f }, { uNext, 0.0f }, { 0.0f, 0.0f, 1.0f } });
+		v.push_back({ { -sin * kInnerRadius,     cos * kInnerRadius,     0.0f, 1.0f }, { u,     1.0f }, { 0.0f, 0.0f, 1.0f } });
+
+		// 三角形2（内→外）
+		v.push_back({ { -sin * kInnerRadius,     cos * kInnerRadius,     0.0f, 1.0f }, { u,     1.0f }, { 0.0f, 0.0f, 1.0f } });
+		v.push_back({ { -sinNext * kOuterRadius, cosNext * kOuterRadius, 0.0f, 1.0f }, { uNext, 0.0f }, { 0.0f, 0.0f, 1.0f } });
+		v.push_back({ { -sinNext * kInnerRadius, cosNext * kInnerRadius, 0.0f, 1.0f }, { uNext, 1.0f }, { 0.0f, 0.0f, 1.0f } });
+	}
+
+	return v;
 }
 
 std::vector<ParticleManager::VertexData> ParticleManager::MakeCylinderVertices()
 {
-	return std::vector<VertexData>();
+	const uint32_t kCylinderDivide = 32;
+	const float kHeight = 1.0f;
+	const float kRadius = 0.5f;
+	const float radianPerDivide = 2.0f * std::numbers::pi_v<float> / float(kCylinderDivide);
+
+	std::vector<VertexData> v;
+	v.reserve(kCylinderDivide * 12);  // 側面6 + 上面3 + 下面3 = 12頂点
+
+	for (uint32_t i = 0; i < kCylinderDivide; ++i) {
+		float theta = i * radianPerDivide;
+		float nextTheta = (i + 1) * radianPerDivide;
+
+		float sinTheta = std::sin(theta), cosTheta = std::cos(theta);
+		float sinNext = std::sin(nextTheta), cosNext = std::cos(nextTheta);
+
+		Vector3 bottom1 = { kRadius * cosTheta, -kHeight / 2, kRadius * sinTheta };
+		Vector3 bottom2 = { kRadius * cosNext,  -kHeight / 2, kRadius * sinNext };
+		Vector3 top1 = { kRadius * cosTheta,  kHeight / 2, kRadius * sinTheta };
+		Vector3 top2 = { kRadius * cosNext,   kHeight / 2, kRadius * sinNext };
+
+		// 側面（三角形1）
+		v.push_back({ { bottom1.x, bottom1.y, bottom1.z, 1.0f }, { 0.0f, 1.0f }, { cosTheta, 0.0f, sinTheta } });
+		v.push_back({ { bottom2.x, bottom2.y, bottom2.z, 1.0f }, { 1.0f, 1.0f }, { cosNext,  0.0f, sinNext  } });
+		v.push_back({ { top1.x,    top1.y,    top1.z,    1.0f }, { 0.0f, 0.0f }, { cosTheta, 0.0f, sinTheta } });
+
+		// 側面（三角形2）
+		v.push_back({ { top1.x,    top1.y,    top1.z,    1.0f }, { 0.0f, 0.0f }, { cosTheta, 0.0f, sinTheta } });
+		v.push_back({ { bottom2.x, bottom2.y, bottom2.z, 1.0f }, { 1.0f, 1.0f }, { cosNext,  0.0f, sinNext  } });
+		v.push_back({ { top2.x,    top2.y,    top2.z,    1.0f }, { 1.0f, 0.0f }, { cosNext,  0.0f, sinNext  } });
+
+		// 上面
+		v.push_back({ { 0.0f,   kHeight / 2, 0.0f,   1.0f }, { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f } });
+		v.push_back({ { top1.x, top1.y,      top1.z, 1.0f }, { 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } });
+		v.push_back({ { top2.x, top2.y,      top2.z, 1.0f }, { 1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } });
+
+		// 下面
+		v.push_back({ { 0.0f,      -kHeight / 2, 0.0f,      1.0f }, { 0.5f, 0.5f }, { 0.0f, -1.0f, 0.0f } });
+		v.push_back({ { bottom2.x, bottom2.y,    bottom2.z, 1.0f }, { 0.0f, 0.0f }, { 0.0f, -1.0f, 0.0f } });
+		v.push_back({ { bottom1.x, bottom1.y,    bottom1.z, 1.0f }, { 1.0f, 0.0f }, { 0.0f, -1.0f, 0.0f } });
+	}
+
+	return v;
 }
 
 ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate)
@@ -1882,10 +2032,8 @@ ParticleManager::ParticleGroup& ParticleManager::EnsureGroupForPreset(const Part
 		SetFlipYToGroup(groupName, preset.render.flipY);
 		SetLifeTimeToGroup(groupName, preset.particleUpdate.lifeTime);
 		SetColorToGroup(groupName, preset.render.color);
-
 		// ビルボードは現在マネージャ全体設定
 		SetUseBillboard(preset.render.useBillboard);
-
 		// 重力フラグをグループに反映
 		SetGravityToGroup(groupName, preset.particleUpdate.useGravity);
 	}
@@ -1904,6 +2052,15 @@ ParticleManager::ParticleGroup& ParticleManager::EnsureGroupForPreset(const Part
 	// カーブも常に最新のものをコピー
 	group.scaleCurve = preset.particleUpdate.scaleCurve;
 	group.colorCurve = preset.render.colorCurve;
+
+	// ===== プリセットの形状情報をグループに反映 =====
+	group.vertexType = preset.emitterSettings.vertexType;
+
+	// 形状に対応する頂点バッファから vertexCount を取得
+	auto vbIt = vertexBuffers_.find(group.vertexType);
+	if (vbIt != vertexBuffers_.end()) {
+		group.vertexCount = vbIt->second.vertexCount;
+	}
 
 	return group;
 }
