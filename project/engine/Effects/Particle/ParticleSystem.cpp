@@ -9,10 +9,7 @@ ParticleSystem::ParticleSystem(const std::string& name)
     transform_.translate = { 0.0f, 0.0f, 0.0f };
 }
 
-ParticleEmitterInstance* ParticleSystem::AddEmitter(
-    ParticleEmitterInstance* emitter,
-    float startTime,
-    bool autoPlay)
+ParticleEmitterInstance* ParticleSystem::AddEmitter(ParticleEmitterInstance* emitter,float startTime,float duration,bool autoPlay)
 {
     if (!emitter) {
         return nullptr;
@@ -20,8 +17,10 @@ ParticleEmitterInstance* ParticleSystem::AddEmitter(
     EmitterEntry entry;
     entry.emitter = emitter;
     entry.startTime = startTime;
+    entry.duration = duration;
     entry.autoPlay = autoPlay;
     entry.playedOnce = false;
+    entry.stoppedOnce = false;
 
     emitters_.push_back(entry);
     return emitter;
@@ -52,6 +51,7 @@ void ParticleSystem::Play()
     // すべての Emitter を初期状態に戻してから、時間に応じて再生させる
     for (auto& e : emitters_) {
         e.playedOnce = false;
+        e.stoppedOnce = false;
         if (e.emitter) {
             e.emitter->Reset();
             e.emitter->Stop(); // startTime に達するまでは止めておく
@@ -77,6 +77,7 @@ void ParticleSystem::Reset()
 
     for (auto& e : emitters_) {
         e.playedOnce = false;
+        e.stoppedOnce = false;
         if (e.emitter) {
             e.emitter->Reset();
             e.emitter->Stop();
@@ -101,33 +102,53 @@ void ParticleSystem::Update(float dt)
             continue;
         }
 
-        // すでに一度再生した Emitter はスキップ（シンプルな一回再生）
-        if (e.playedOnce) {
-            continue;
-        }
+		// ===== Play 判定 =====
+		// まだ Play していない Emitter を、startTime に達したら Play する
+		if (!e.playedOnce) {
+			if (time_ >= e.startTime) {
+				if (e.autoPlay) {
+					e.emitter->Reset();
+					e.emitter->Play();
+				}
+				e.playedOnce = true;
+			}
+		}
 
-        // startTime に達していなければまだ再生しない
-        if (time_ < e.startTime) {
-            continue;
-        }
+		// ===== Stop 判定 =====
+		// duration > 0 の場合、startTime + duration 経過で自動停止
+		// すでに Play 済みで、まだ Stop していない Emitter のみ対象
+		if (e.playedOnce && !e.stoppedOnce && e.duration > 0.0f) {
+			const float stopTime = e.startTime + e.duration;
+			if (time_ >= stopTime) {
+				e.emitter->Stop();
+				e.stoppedOnce = true;
+			}
+		}
+	}
 
-        if (e.autoPlay) {
-            e.emitter->Reset();
-            e.emitter->Play();
-        }
+	// ===== ここから System 自体のループ処理 =====
+	if (duration_ > 0.0f && time_ >= duration_) {
+		if (loop_) {
+			Play();
+		}
+		else {
+			playing_ = false;
+		}
+	}
+}
 
-        e.playedOnce = true;
-    }
+ParticleSystem::EmitterEntry* ParticleSystem::FindEntryByPresetName(const std::string& presetName)
+{
+	for (auto& e : emitters_) {
+		if (!e.emitter) continue;
 
-    // ===== ここから System 自体のループ処理 =====
-    if (duration_ > 0.0f && time_ >= duration_) {
-        if (loop_) {
-            // 再生し直す。time_ や Emitter 状態を初期化
-            Play();
-        }
-        else {
-            // 1 回で終了
-            playing_ = false;
-        }
-    }
+		// emitter から preset 名を取得
+		const auto* preset = e.emitter->GetPreset();
+		if (!preset) continue;
+
+		if (preset->name == presetName) {
+			return &e;
+		}
+	}
+	return nullptr;
 }

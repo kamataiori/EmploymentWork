@@ -1,17 +1,17 @@
 {
     "emitterSettings": {
-        "blendMode": 2,
-        "textureFilePath": "Resources/ParticleTexture/ring.png",
+        "blendMode": 1,
+        "textureFilePath": "",
         "vertexType": 0
     },
     "emitterSpawn": {
-        "count": 1,
+        "count": 10,
         "frequency": 1.0,
         "repeat": false,
         "useLocalSpace": false,
-        "useRandomPosition": true
+        "useRandomPosition": false
     },
-    "name": "NE_2",
+    "name": "NE2",
     "particleSpawn": {
         "initialOffset": [
             0.0,
@@ -69,7 +69,7 @@
         }
     },
     "particleUpdate": {
-        "lifeTime": 2.380000114440918,
+        "lifeTime": 1.0,
         "rotationRandom": {
             "max": [
                 0.0,
@@ -85,7 +85,7 @@
         },
         "rotationSpeed": [
             0.0,
-            0.6899999976158142,
+            0.0,
             0.0
         ],
         "scaleRandom": {
@@ -109,7 +109,7 @@
         "useGravity": false,
         "velocity": [
             0.0,
-            1.0199999809265137,
+            0.0,
             0.0
         ],
         "velocityRandom": {
@@ -128,29 +128,14 @@
     },
     "render": {
         "color": [
-            0.0,
             1.0,
-            0.4324324131011963,
+            1.0,
+            1.0,
             1.0
         ],
         "colorGradient": {
             "enabled": false,
-            "keys": [
-                [
-                    0.0,
-                    0.0,
-                    1.0,
-                    0.4324324131011963,
-                    1.0
-                ],
-                [
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.4324324131011963,
-                    1.0
-                ]
-            ]
+            "keys": []
         },
         "flipY": false,
         "gradientTimeCurve": {

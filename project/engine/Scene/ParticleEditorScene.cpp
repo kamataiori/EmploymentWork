@@ -369,31 +369,31 @@ void ParticleEditorScene::Update()
 				continue;
 			}
 
-			// Emit 間隔が 0 以下なら「一度だけ Emit して停止」
+			// System の再生管理は ParticleSystem 側（startTime/duration）に任せる
+			//   ここでは「再生開始のトリガー」だけを担当する
+			// Emit 間隔が 0 以下なら「押した瞬間に1回だけ Play」
 			if (sys.emitInterval <= 0.0f) {
 				particle->EmitSystemByName(sys.name, emitterTransform);
 
-				if (sys.loop) {
-					// Loop + interval<=0 の場合は「毎フレームEmit」扱い。
-					// 重いようなら、ここで適当なクールタイムを設けても良い。
-				}
-				else {
+				if (!sys.loop) {
+					// 1回再生なら即座に playing を落とす
+					// System 側の自然終了を待たず、UI として停止状態に
+					// System のパーティクルが消えるまで見た目は動き続ける
 					sys.playing = false;
 				}
+				// Loop の場合は System 側の loop_ 設定に任せてもよいし、
+				// ここで emitTimer を使って再発火制御してもよい,今回は前者
 			}
 			else {
-				// タイマー減算
+				// タイマー減算して周期的に Emit
 				sys.emitTimer -= dt;
 				if (sys.emitTimer <= 0.0f) {
-					// Emit
 					particle->EmitSystemByName(sys.name, emitterTransform);
 
 					if (sys.loop) {
-						// 指定間隔で繰り返し
 						sys.emitTimer += sys.emitInterval;
 					}
 					else {
-						// 1回だけ
 						sys.playing = false;
 					}
 				}

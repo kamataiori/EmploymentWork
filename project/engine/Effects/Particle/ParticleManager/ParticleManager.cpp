@@ -1209,8 +1209,22 @@ ParticleEmitterInstance* ParticleManager::AddEmitterToSystem(const std::string& 
 		return nullptr;
 	}
 
+	// ===== pendingSettings から startTime/duration を取得 =====
+	float startTime = 0.0f;
+	float duration = -1.0f;
+	bool  autoPlay = true;
+
+	for (const auto& p : system->GetPendingSettings()) {
+		if (p.presetName == presetName) {
+			startTime = p.startTime;
+			duration = p.duration;
+			autoPlay = p.autoPlay;
+			break;
+		}
+	}
+
 	// (3) System に登録（所有権は ParticleManager 側に残したまま）
-	system->AddEmitter(emitter);
+	system->AddEmitter(emitter, startTime, duration, autoPlay);
 
 	return emitter;
 }
@@ -1296,12 +1310,56 @@ bool ParticleManager::SaveSystemToJson(const std::string& systemName, const std:
 
 	nlohmann::json j;
 
-	// System 名
+	// ===== 基本情報 =====
 	j["name"] = system->GetName();
 
-	// 紐付いているプリセット名一覧
+	// ===== Phase2 追加: System 全体の設定 =====
+	j["loop"] = system->IsLoop();
+	j["duration"] = system->GetDuration();
+
+	// ===== emitters 配列形式で保存 =====
+	// プリセット名と startTime/duration をセットで保存する
+	nlohmann::json emittersJson = nlohmann::json::array();
+
 	const auto& presetNames = system->GetPresetNames();
-	j["presets"] = presetNames; // vector<string> はそのまま入れられる
+
+	for (const std::string& presetName : presetNames) {
+		// デフォルト値
+		float startTime = 0.0f;
+		float duration = -1.0f;
+		bool  autoPlay = true;
+
+		// 既存の Emitter から startTime/duration を取得
+		auto* entry = system->FindEntryByPresetName(presetName);
+		if (entry) {
+			startTime = entry->startTime;
+			duration = entry->duration;
+			autoPlay = entry->autoPlay;
+		}
+		else {
+			// Emitter がまだ作られていない場合、pendingSettings から取得
+			for (const auto& p : system->GetPendingSettings()) {
+				if (p.presetName == presetName) {
+					startTime = p.startTime;
+					duration = p.duration;
+					autoPlay = p.autoPlay;
+					break;
+				}
+			}
+		}
+
+		nlohmann::json e;
+		e["preset"] = presetName;
+		e["startTime"] = startTime;
+		e["duration"] = duration;
+		e["autoPlay"] = autoPlay;
+
+		emittersJson.push_back(e);
+	}
+
+	j["emitters"] = emittersJson;
+
+	j["presets"] = presetNames;
 
 	std::ofstream ofs(path);
 	if (!ofs) {
@@ -1348,16 +1406,62 @@ bool ParticleManager::LoadSystemFromJson(const std::string& systemName, const st
 		return false;
 	}
 
-	// いったんプリセット名リストをクリア
+	// いったんプリセット名リストと pending 設定をクリア
 	system->ClearPresetNames();
+	system->ClearPendingSettings();
 
-	auto it = j.find("presets");
-	if (it != j.end() && it->is_array()) {
-		for (auto& elem : *it) {
-			if (elem.is_string()) {
-				std::string presetName = elem.get<std::string>();
-				if (!presetName.empty()) {
-					system->AddPresetName(presetName);
+	// ===== System 全体の設定 =====
+	if (j.contains("loop")) {
+		system->SetLoop(j.value("loop", false));
+	}
+	if (j.contains("duration")) {
+		system->SetDuration(j.value("duration", 0.0f));
+	}
+
+	// ===== emitters 配列を優先的に読む =====
+	auto emittersIt = j.find("emitters");
+	if (emittersIt != j.end() && emittersIt->is_array()) {
+		
+		for (const auto& elem : *emittersIt) {
+			if (!elem.is_object()) continue;
+
+			std::string presetName = elem.value("preset", std::string());
+			if (presetName.empty()) continue;
+
+			float startTime = elem.value("startTime", 0.0f);
+			float duration = elem.value("duration", -1.0f);
+			bool  autoPlay = elem.value("autoPlay", true);
+
+			// System 側に登録
+			system->AddPresetName(presetName);
+
+			// startTime/duration は pendingSettings に保存（Emitter 作成時に反映）
+			ParticleSystem::PendingEmitterSetting setting;
+			setting.presetName = presetName;
+			setting.startTime = startTime;
+			setting.duration = duration;
+			setting.autoPlay = autoPlay;
+			system->GetPendingSettings().push_back(setting);
+		}
+	}
+	else {
+		// ===== presets 配列のみ=====
+		auto presetsIt = j.find("presets");
+		if (presetsIt != j.end() && presetsIt->is_array()) {
+			for (const auto& elem : *presetsIt) {
+				if (elem.is_string()) {
+					std::string presetName = elem.get<std::string>();
+					if (!presetName.empty()) {
+						system->AddPresetName(presetName);
+
+						// デフォルト値で pending 設定も追加
+						ParticleSystem::PendingEmitterSetting setting;
+						setting.presetName = presetName;
+						setting.startTime = 0.0f;
+						setting.duration = -1.0f;
+						setting.autoPlay = true;
+						system->GetPendingSettings().push_back(setting);
+					}
 				}
 			}
 		}
@@ -1430,32 +1534,27 @@ void ParticleManager::EmitSystem(const std::string& systemName, const Transform&
 	// この System に紐付いているプリセット名一覧を取得
 	const auto& presetNames = system->GetPresetNames();
 
-	// System に既にエミッターが登録されているか確認
-	const auto& emitters = system->GetEmitters();
-
-	if (!emitters.empty()) {
-		// ★ 既にエミッターが存在する → Transform だけ更新する
-		//   パーティクルの生成は EmitterInstance 内部の自動Emit（UpdateParticles）に任せる
-		//   ここで SpawnParticles を呼ぶと二重Emitになるので呼ばない
-		for (auto& entry : emitters) {
-			if (entry.emitter) {
-				entry.emitter->SetTransform(transform);
-			}
-		}
-	}
-	else {
-		// ★ 初回のみ：エミッターを新規作成して System に登録
+	// Emitter がまだ作られていなければ新規作成
+	// 作成自体は初回のみ。その後は再作成しない
+	if (system->GetEmitters().empty()) {
 		for (const std::string& presetName : presetNames) {
 			AddEmitterToSystem(systemName, presetName, transform);
 		}
+	}
 
-		// 作成したエミッターを即再生開始
-		for (auto& entry : system->GetEmitters()) {
-			if (entry.emitter) {
-				entry.emitter->SetTransform(transform);
-				entry.emitter->Play();
-			}
+	// 各エミッターの Transform を最新に更新
+	// エミッター位置が毎フレーム変わる場合に備える
+	for (auto& entry : system->GetEmitters()) {
+		if (entry.emitter) {
+			entry.emitter->SetTransform(transform);
 		}
+	}
+
+	// 個別 Play をやめて、System 全体を Play する
+	// ParticleSystem::Update() 側で startTime に応じて各 Emitter が Play される
+	// 既に再生中なら何もしない（毎フレーム呼ばれても再起動しないように）
+	if (!system->IsPlaying()) {
+		system->Play();
 	}
 }
 

@@ -24,9 +24,12 @@ class ParticleSystem
 public:
 	struct EmitterEntry {
 		ParticleEmitterInstance* emitter = nullptr;
-		float startTime = 0.0f;   // System の time_ 基準でいつ再生開始するか
-		bool  autoPlay = true;   // 再生開始時に自動で Play するか
-		bool  playedOnce = false; // 一度 Play したかどうか
+		float startTime = 0.0f;          // System time_ 基準でいつ Play するか
+		float duration = -1.0f;          // 発火してから何秒で Stop するか
+		//   -1.0f 以下なら「停止しない」
+		bool  autoPlay = true;           // startTime に達したら自動で Play するか
+		bool  playedOnce = false;        // 一度 Play したかどうか
+		bool  stoppedOnce = false;       // 一度 Stop したかどうか
 	};
 
 	using EmitterList = std::vector<EmitterEntry>;
@@ -51,6 +54,7 @@ public:
 	ParticleEmitterInstance* AddEmitter(
 		ParticleEmitterInstance* emitter,
 		float startTime = 0.0f,
+		float duration = -1.0f,
 		bool autoPlay = true
 	);
 
@@ -80,6 +84,27 @@ public:
 	// ※ Emitter の Update(dt) はここでは呼ばない
 	void Update(float dt);
 
+	// ===== JSON 保存/読込用 =====
+
+	// プリセット名から対応する EmitterEntry を探す（なければ nullptr）
+	// JSON 読込時に「プリセット名 → startTime/duration」をセットするのに使う
+	EmitterEntry* FindEntryByPresetName(const std::string& presetName);
+
+	// プリセット名と startTime/duration を指定して「予約エントリ」を追加
+	// JSON 読込時に使う。実際の emitter は EmitSystem() の時に作成される
+	struct PendingEmitterSetting {
+		std::string presetName;
+		float startTime = 0.0f;
+		float duration = -1.0f;
+		bool  autoPlay = true;
+	};
+
+	// JSON から読んだ設定をここに溜めておく
+	// EmitSystem() 初回の Emitter 作成時にこの設定が参照される
+	std::vector<PendingEmitterSetting>& GetPendingSettings() { return pendingSettings_; }
+	const std::vector<PendingEmitterSetting>& GetPendingSettings() const { return pendingSettings_; }
+	void ClearPendingSettings() { pendingSettings_.clear(); }
+
 private:
 	std::string name_;
 	Transform   transform_{};
@@ -97,4 +122,8 @@ private:
 	// System の長さとループ設定
 	float duration_ = 0.0f;  // 0 のままなら「ループ判定しない」
 	bool  loop_ = false;
+
+	// JSON 読込時の「未作成エミッタの設定」一覧
+	// EmitSystem() で Emitter を作成するときに参照し、startTime/duration を設定する
+	std::vector<PendingEmitterSetting> pendingSettings_;
 };

@@ -1,12 +1,12 @@
 {
     "emitterSettings": {
         "blendMode": 2,
-        "textureFilePath": "Resources/ParticleTexture/gradationLine.png",
-        "vertexType": 2
+        "textureFilePath": "Resources/ParticleTexture/smoke.png",
+        "vertexType": 0
     },
     "emitterSpawn": {
-        "count": 1,
-        "frequency": 1.0,
+        "count": 76,
+        "frequency": 1.9700000286102295,
         "repeat": false,
         "useLocalSpace": false,
         "useRandomPosition": true
@@ -109,7 +109,7 @@
         "useGravity": false,
         "velocity": [
             0.0,
-            1.3600000143051147,
+            1.409999966621399,
             0.0
         ],
         "velocityRandom": {
@@ -138,16 +138,16 @@
             "keys": [
                 [
                     0.0,
+                    0.15053772926330566,
                     1.0,
-                    0.9266408681869507,
                     0.0,
                     1.0
                 ],
                 [
                     1.0,
-                    1.0,
-                    0.06949806213378906,
                     0.0,
+                    1.0,
+                    0.9892473220825195,
                     1.0
                 ]
             ]

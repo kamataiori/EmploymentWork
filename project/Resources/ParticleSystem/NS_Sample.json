@@ -1,6 +1,23 @@
 {
+    "duration": 0.0,
+    "emitters": [
+        {
+            "autoPlay": true,
+            "duration": -1.0,
+            "preset": "NE_Sample",
+            "startTime": 0.0
+        },
+        {
+            "autoPlay": true,
+            "duration": -1.0,
+            "preset": "NE2",
+            "startTime": 0.0
+        }
+    ],
+    "loop": false,
     "name": "NS_Sample",
     "presets": [
-        "NE_Sample"
+        "NE_Sample",
+        "NE2"
     ]
 }
