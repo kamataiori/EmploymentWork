@@ -36,10 +36,10 @@ public:
 
 	void SetIndex(int i) { index_ = i; }
 
-	// ★ 分裂移動が完了して待機中かどうか（Enemy側から確認用）
+	// 分裂移動が完了して待機中かどうか（Enemy側から確認用）
 	bool IsReadyToShot() const { return phase_ == Phase::SplitWait; }
 
-	// ★ Enemy側から発射許可を出す
+	// Enemy側から発射許可を出す
 	void Fire();
 
 	// カメラ設定をパーティクルにも渡す
@@ -63,8 +63,8 @@ private:
 
 	float radius_ = 0.8f;
 
-	float riseHeight_ = 0.02f;
-	float riseSpeed_ = 20.0f;
+	float riseHeight_ = 0.01f;
+	float riseSpeed_ = 80.0f;
 
 	float splitRadius_ = 10.0f;
 	float splitMoveSpeed_ = 20.0f;
@@ -77,10 +77,10 @@ private:
 
 	bool isDead_ = false;
 
-	// ★ フェーズ間の待機タイマー
+	// フェーズ間の待機タイマー
 	float phaseTimer_ = 0.0f;
 
-	// ★ 上昇後に止まる時間（調整用）
+	// 上昇後に止まる時間（調整用）
 	float riseWaitDuration_ = 0.5f;
 
 	//==========================

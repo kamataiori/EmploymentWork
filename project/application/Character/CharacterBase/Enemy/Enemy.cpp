@@ -410,10 +410,10 @@ void Enemy::SpawnSplitBurstToPlayer(const Vector3& playerPos)
 	Vector3 start = transform.translate;
 	start.y += 2.0f;
 
-	const float riseHeight = 12.0f;
-	const float riseSpeed = 18.0f;
+	const float riseHeight = 10.0f;
+	const float riseSpeed = 40.0f;
 	const float splitRadius = 4.0f;
-	const float shotSpeed = 28.0f;
+	const float shotSpeed = 60.0f;
 
 	for (int i = 0; i < 4; ++i) {
 		auto b = std::make_unique<EnemySplitBullet>(GetBaseScene());
@@ -431,13 +431,13 @@ void Enemy::SpawnSplitBurstToPlayer(const Vector3& playerPos)
 void Enemy::SpawnSplitBurstAngry(const Vector3& playerPos)
 {
 	Vector3 start = transform.translate;
-	start.y += 2.0f;
+	start.y += 1.0f;
 
 	// 通常より速く・広く・多い
-	const float riseHeight = 14.0f;
-	const float riseSpeed = 22.0f;
+	const float riseHeight = 10.0f;
+	const float riseSpeed = 50.0f;
 	const float splitRadius = 6.0f;
-	const float shotSpeed = 35.0f;
+	const float shotSpeed = 70.0f;
 	const int   bulletCount = 8;    // 通常4発 → 8発
 
 	for (int i = 0; i < bulletCount; ++i) {

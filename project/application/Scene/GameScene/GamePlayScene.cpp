@@ -66,9 +66,9 @@ void GamePlayScene::Initialize()
 	player_ = std::make_unique<Player>(this);
 	enemy_ = std::make_unique<Enemy>(this);
 
-	followCamera = std::make_unique<FollowCamera>(player_.get(), 6.0f, 4.5f);
-	followCamera->SetFarClip(3000.0f);
-	followCamera->SetFovY(90.0f);
+	followCamera = std::make_unique<FollowCamera>(player_.get(), 5.0f, 2.5f);
+	//followCamera->SetFarClip(3000.0f);
+	followCamera->SetFovY(80.0f);
 
 	player_->Initialize();
 	enemy_->Initialize();

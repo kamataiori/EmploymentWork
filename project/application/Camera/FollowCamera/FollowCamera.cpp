@@ -40,8 +40,8 @@ void FollowCamera::Update()
 
 	// カメラ位置計算の部分を変更
 	// カメラを左にずらす（マイナス方向）
-	const float camShiftX = -std::cos(angle) * 2.2f;
-	const float camShiftZ = std::sin(angle) * 2.2f;
+	const float camShiftX = -std::cos(angle) * 1.3f;
+	const float camShiftZ = std::sin(angle) * 1.3f;
 
 	Vector3 desiredPos = {
 		targetPos.x + std::sin(angle) * followDistance + camShiftX,
@@ -78,7 +78,7 @@ void FollowCamera::Update()
 	{
 		const float tt = 1.0f - std::exp(-lookYSmooth_ * dt);
 		lookY_ = lookY_ + (targetPos.y - lookY_) * tt;
-		lookAt.y = lookY_ + 0.5f; // 胸の高さ
+		lookAt.y = lookY_ + 1.3f; // 胸の高さ
 	}
 
 	// =============================
@@ -105,7 +105,7 @@ void FollowCamera::Update()
 	float pitch = std::atan2(-dir.y, horizontalLength);
 
 	// Pitch クランプ（下向きのみ）
-	pitch = std::clamp(pitch, 0.60f, 0.65f);
+	pitch = std::clamp(pitch, 0.18f, 0.35f);
 	transform.rotate.x = pitch;
 
 	Camera::Update();

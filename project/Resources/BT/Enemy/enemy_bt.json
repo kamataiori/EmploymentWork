@@ -138,11 +138,11 @@
       "label": "ChargeDash_1",
       "param": {
         "chargeDash": {
-          "chargeTime": 0.7,
+          "chargeTime": 0.4,
           "cooldownTime": 2.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.5,
+          "dashDistance": 40.0,
+          "dashSpeed": 45.0,
+          "recoverTime": 0.3,
           "turnLerp": 0.25
         },
         "customName": "",
@@ -160,11 +160,11 @@
       "label": "ChargeDash_2",
       "param": {
         "chargeDash": {
-          "chargeTime": 0.7,
+          "chargeTime": 0.4,
           "cooldownTime": 2.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.5,
+          "dashDistance": 40.0,
+          "dashSpeed": 45.0,
+          "recoverTime": 0.3,
           "turnLerp": 0.25
         },
         "customName": "",

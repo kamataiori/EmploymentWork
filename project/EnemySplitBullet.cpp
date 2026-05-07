@@ -68,7 +68,7 @@ void EnemySplitBullet::InitializeBurst(
 
 void EnemySplitBullet::Fire()
 {
-	// ★ SplitWait 状態のときだけ発射に移行する
+	// SplitWait 状態のときだけ発射に移行する
 	if (phase_ == Phase::SplitWait)
 	{
 		phase_ = Phase::Shot;
@@ -129,7 +129,7 @@ void EnemySplitBullet::Update()
 			Vector3 toP = lockPlayerPos_ - transform.translate;
 			shotDir_ = NormalizeSafe(toP);
 
-			// ★ ここでShotに行かず、発射許可を待つ
+			// ここでShotに行かず、発射許可を待つ
 			phase_ = Phase::SplitWait;
 		}
 		else
