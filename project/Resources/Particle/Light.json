@@ -1,17 +1,17 @@
 {
     "emitterSettings": {
         "blendMode": 2,
-        "textureFilePath": "Resources/ParticleTexture/Energy.png",
+        "textureFilePath": "Resources/ParticleTexture/Lightning.png",
         "vertexType": 0
     },
     "emitterSpawn": {
-        "count": 10,
-        "frequency": 1.0,
-        "repeat": false,
+        "count": 4,
+        "frequency": 4.269999980926514,
+        "repeat": true,
         "useLocalSpace": false,
         "useRandomPosition": false
     },
-    "name": "TEST",
+    "name": "Light",
     "particleSpawn": {
         "initialOffset": [
             0.0,
@@ -20,16 +20,16 @@
         ],
         "initialOffsetRandom": {
             "max": [
-                0.0,
-                0.0,
-                0.0
+                2.5,
+                2.5,
+                2.5
             ],
             "min": [
                 0.0,
                 0.0,
                 0.0
             ],
-            "useRandom": false
+            "useRandom": true
         },
         "initialRotate": [
             0.0,
@@ -51,19 +51,19 @@
         },
         "initialScale": [
             1.0,
-            1.0,
+            2.759999990463257,
             1.0
         ],
         "initialScaleRandom": {
             "max": [
+                1.0,
                 0.0,
-                0.0,
-                0.0
+                1.0
             ],
             "min": [
-                0.0,
-                0.0,
-                0.0
+                1.0,
+                1.0,
+                1.0
             ],
             "useRandom": false
         }

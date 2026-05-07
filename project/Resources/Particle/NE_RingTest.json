@@ -1,17 +1,17 @@
 {
     "emitterSettings": {
         "blendMode": 2,
-        "textureFilePath": "Resources/ParticleTexture/Energy.png",
-        "vertexType": 0
+        "textureFilePath": "Resources/ParticleTexture/Glare.png",
+        "vertexType": 1
     },
     "emitterSpawn": {
-        "count": 10,
+        "count": 1,
         "frequency": 1.0,
         "repeat": false,
         "useLocalSpace": false,
         "useRandomPosition": false
     },
-    "name": "TEST",
+    "name": "NE_RingTest",
     "particleSpawn": {
         "initialOffset": [
             0.0,
@@ -38,14 +38,14 @@
         ],
         "initialRotateRandom": {
             "max": [
-                0.0,
-                0.0,
-                0.0
+                0.8600000143051147,
+                0.5,
+                0.9800000190734863
             ],
             "min": [
-                0.0,
-                0.0,
-                0.0
+                -0.6399999856948853,
+                -1.2999999523162842,
+                -1.0199999809265137
             ],
             "useRandom": false
         },
@@ -69,17 +69,17 @@
         }
     },
     "particleUpdate": {
-        "lifeTime": 1.0,
+        "lifeTime": 3.7200000286102295,
         "rotationRandom": {
             "max": [
-                0.0,
-                0.0,
-                0.0
+                0.9599999785423279,
+                1.2400000095367432,
+                0.8399999737739563
             ],
             "min": [
-                0.0,
-                0.0,
-                0.0
+                0.4000000059604645,
+                0.7599999904632568,
+                0.5799999833106995
             ],
             "useRandom": false
         },

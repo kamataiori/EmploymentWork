@@ -401,12 +401,6 @@ void ParticleEditorScene::Update()
 		}
 	}
 
-
-	if (Input::GetInstance()->TriggerKey(DIK_G)) {
-		// シーン切り替え
-		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
-	}
-
 	// デバッグ
 	Debug();
 }

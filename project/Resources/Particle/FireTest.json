@@ -1,7 +1,7 @@
 {
     "emitterSettings": {
         "blendMode": 2,
-        "textureFilePath": "Resources/ParticleTexture/Energy.png",
+        "textureFilePath": "Resources/ParticleTexture/smoke2.png",
         "vertexType": 0
     },
     "emitterSpawn": {
@@ -11,7 +11,7 @@
         "useLocalSpace": false,
         "useRandomPosition": false
     },
-    "name": "TEST",
+    "name": "FireTest",
     "particleSpawn": {
         "initialOffset": [
             0.0,
@@ -128,9 +128,9 @@
     },
     "render": {
         "color": [
-            1.0,
-            1.0,
-            1.0,
+            0.26523298025131226,
+            0.2565748691558838,
+            0.2547757625579834,
             1.0
         ],
         "colorGradient": {
