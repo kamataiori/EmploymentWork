@@ -57,6 +57,7 @@ void GamePlayScene::Initialize()
 	Colosseum->Initialize();
 	Colosseum->SetModel("Colosseum.obj");
 	Colosseum->SetTranslate({ 0.0f,-10.0f,0.0f });
+	Colosseum->SetScale({ 0.7f,0.7f,0.7f });
 
 	stage_ = std::make_unique<SceneController>(this);
 	stage_->LoadScene("stage");
@@ -224,10 +225,10 @@ void GamePlayScene::UpdateCamera()
 		Colosseum->Update();
 	}
 	if (player_) {
-		player_->UpdateVisual();
+		//player_->UpdateVisual();
 	}
 	if (enemy_) {
-		enemy_->UpdateVisual();
+		//enemy_->UpdateVisual();
 	}
 }
 
@@ -439,7 +440,7 @@ void GamePlayScene::ForeGroundDraw()
 		return;
 	}
 
-	ex->Draw();
+	//ex->Draw();
 	player_->ForeGroundDraw();
 	enemy_->ForeGroundDraw();
 	uiManager_->Draw();

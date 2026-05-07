@@ -233,7 +233,8 @@ void Enemy::Update()
 		if (transform.scale.y < 0.0f) transform.scale.y = 0.0f;
 		if (transform.scale.z < 0.0f) transform.scale.z = 0.0f;
 
-		if (deathSystem_) {
+		// 生存中もパーティクル更新（ヒットエフェクト用）
+		if (!isDead_ && deathSystem_) {
 			deathSystem_->Update();
 		}
 
@@ -314,7 +315,7 @@ void Enemy::Draw()
 	for (auto& b : splitBullets_) {
 		b->Draw();
 	}
-	// ★ 雑魚敵描画
+	// 雑魚敵描画
 	for (auto& m : minions_) {
 		m->Draw();
 	}
@@ -334,7 +335,8 @@ void Enemy::AnimationDraw()
 
 void Enemy::ParticleDraw()
 {
-	if (isDead_) {
+	// 生存中・死亡時どちらでもパーティクル描画
+	if (deathSystem_) {
 		deathSystem_->Draw();
 	}
 	for (auto& b : splitBullets_) {
@@ -360,6 +362,13 @@ void Enemy::OnCollision()
 	if (!isDead_) {
 		SetAnimationIfChanged(animation_.HitReact);
 		hitReactTimer_ = kHitReactDuration_;
+
+		// 被弾時のヒットパーティクルを発生
+		if (deathSystem_) {
+			Transform hitParticleTransform = transform;
+			hitParticleTransform.translate.y += 3.5f; // 胴体あたりの高さ
+			deathSystem_->EmitSystemByName("ADE", hitParticleTransform);
+		}
 	}
 }
 
