@@ -12,6 +12,7 @@
 #include "ParticleEmitterInstance.h"
 #include "ParticleSystem.h"
 #include "ParticlePreset.h"
+#include "ParticlePresetLibrary.h"
 
 #include <random>
 #include <string>
@@ -82,10 +83,10 @@ public:
 	/// <param name="emitterTransform">発生元の Transform（位置/回転/スケール）</param>
 	void EmitByPresetName(const std::string& presetName, const Transform& emitterTransform);
 
-	const std::string& GetCurrentEditingPresetName() const { return currentEditingPresetName_; }
+	const std::string& GetCurrentEditingPresetName() const { return presetLibrary_.GetCurrentEditingName(); }
 
 	// setter
-	void SetCurrentEditingPresetName(const std::string& name) { currentEditingPresetName_ = name; }
+	void SetCurrentEditingPresetName(const std::string& name) { presetLibrary_.SetCurrentEditingName(name); }
 
 	// プリセット取得（編集用）
 	ParticlePreset* FindPreset(const std::string& name);
@@ -152,10 +153,9 @@ public:
 
 private:
 
-	std::unordered_map<std::string, ParticlePreset> presets_;  // name -> プリセット
-
-	// プリセットエディタで最後に触っていたプリセット名
-	std::string currentEditingPresetName_;
+	// プリセット管理は ParticlePresetLibrary に集約
+	// （JSON 保存/読込・名前検索・プリセット保有を担当）
+	ParticlePresetLibrary presetLibrary_;
 
 	// ===== 新しいエミッター / システム管理用コンテナ =====
 
