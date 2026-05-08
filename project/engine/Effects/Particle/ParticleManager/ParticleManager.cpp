@@ -1008,10 +1008,6 @@ void ParticleManager::LoadAllPresets(const std::string& directory)
 	}
 }
 
-void ParticleManager::SavePreset(const ParticleEmitter& preset)
-{
-}
-
 void ParticleManager::EmitByPresetName(const std::string& presetName,
 	const Transform& emitterTransform)
 {

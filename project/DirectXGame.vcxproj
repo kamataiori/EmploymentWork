@@ -190,7 +190,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Scene\TitleScene\TitleScene.cpp" />
     <ClCompile Include="engine\SRVManager\SrvManager.cpp" />
     <ClCompile Include="engine\Effects\PostEffect\OffscreenRendering.cpp" />
-    <ClCompile Include="engine\Effects\Particle\ParticleEmitter\ParticleEmitter.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticleManager\ParticleManager.cpp" />
     <ClCompile Include="engine\Effects\PostEffect\PostEffect.cpp" />
     <ClCompile Include="engine\Scene\ParticleEditorScene.cpp" />
@@ -334,7 +333,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Scene\TitleScene\TitleScene.h" />
     <ClInclude Include="engine\SRVManager\SrvManager.h" />
     <ClInclude Include="engine\Effects\PostEffect\OffscreenRendering.h" />
-    <ClInclude Include="engine\Effects\Particle\ParticleEmitter\ParticleEmitter.h" />
     <ClInclude Include="engine\Effects\Particle\ParticleManager\ParticleManager.h" />
     <ClInclude Include="engine\Effects\PostEffect\PostEffect.h" />
     <ClInclude Include="engine\Scene\ParticleEditorScene.h" />

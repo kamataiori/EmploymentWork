@@ -9,7 +9,6 @@
 #include "MathFunctions.h"
 #include "engine/TimeManager.h"
 
-#include "ParticleEmitter.h"
 #include "ParticleEmitterInstance.h"
 #include "ParticleSystem.h"
 #include "ParticlePreset.h"
@@ -75,7 +74,6 @@ public:
 
 	/// ディレクトリ内のすべてのプリセットを読み込む（今後のため）
 	void LoadAllPresets(const std::string& directory = "Resources/Particle");
-	void SavePreset(const ParticleEmitter& preset);
 
 	/// <summary>
 	/// JSON プリセット名からパーティクルを発生させる
@@ -170,10 +168,7 @@ private:
 	// System を使った Emit（ステップ2で実装）
 	void EmitSystem(const std::string& systemName, const Transform& transform);
 
-	// ループ処理（EmitterInstance / System の Update）
-	void Update(float dt);
-
-	// 新EmitterInstanceのパーティクルをインスタンシングバッファへ書き込む
+	// EmitterInstanceのパーティクルをインスタンシングバッファへ書き込む
 	void PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& billboardMatrix);
 
 	/// <summary>

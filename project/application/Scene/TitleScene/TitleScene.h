@@ -2,7 +2,6 @@
 #include "BaseScene.h"
 #include "Object3d.h"
 #include "ParticleManager.h"
-#include "ParticleEmitter.h"
 #include "DrawLine.h"
 #include "DrawTriangle.h"
 #include "Sprite.h"

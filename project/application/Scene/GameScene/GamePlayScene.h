@@ -8,7 +8,6 @@
 #include "Audio.h"
 #include "Light.h"
 #include "ParticleManager.h"
-#include "ParticleEmitter.h"
 #include "Player.h"
 #include "DrawLine.h"
 #include "CollisionManager.h"

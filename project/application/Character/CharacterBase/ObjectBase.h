@@ -7,7 +7,6 @@
 #include <PostEffectManager.h>
 #include <CollisionTypeIdDef.h>
 #include "ParticleManager.h"
-#include "ParticleEmitter.h"
 #include "engine/TimeManager.h"
 
 class ObjectBase

@@ -144,9 +144,6 @@
     <ClCompile Include="engine\Effects\Particle\ParticleManager\ParticleManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="engine\Effects\Particle\ParticleEmitter\ParticleEmitter.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="engine\Effects\PostEffect\OffscreenRendering.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -570,9 +567,6 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\Effects\Particle\ParticleEmitter\ParticleEmitter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\Effects\PostEffect\OffscreenRendering.h">
