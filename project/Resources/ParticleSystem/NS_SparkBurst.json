@@ -1,0 +1,16 @@
+{
+    "duration": 0.0,
+    "emitters": [
+        {
+            "autoPlay": true,
+            "duration": -1.0,
+            "preset": "SparkBurst",
+            "startTime": 0.0
+        }
+    ],
+    "loop": false,
+    "name": "NS_SparkBurst",
+    "presets": [
+        "SparkBurst"
+    ]
+}
