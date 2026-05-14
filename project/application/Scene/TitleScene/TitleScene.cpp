@@ -72,6 +72,7 @@ void TitleScene::Initialize()
 	ground->Initialize();
 	ground->SetModel("ground.obj");
 	ground->SetTranslate({ 0.0f,-2.0f,0.0f });
+	ground->SetEnableLighting(false);
 
 	sky = std::make_unique<Object3d>(this);
 	sky->Initialize();

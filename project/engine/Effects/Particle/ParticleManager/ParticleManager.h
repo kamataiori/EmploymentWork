@@ -13,6 +13,7 @@
 #include "ParticleSystem.h"
 #include "ParticlePreset.h"
 #include "ParticlePresetLibrary.h"
+#include "ParticleSystemManager.h"
 
 #include <random>
 #include <string>
@@ -156,6 +157,9 @@ private:
 	// プリセット管理は ParticlePresetLibrary に集約
 	// （JSON 保存/読込・名前検索・プリセット保有を担当）
 	ParticlePresetLibrary presetLibrary_;
+
+	// System 管理を専用クラスに委譲
+	ParticleSystemManager systemManager_;
 
 	// ===== 新しいエミッター / システム管理用コンテナ =====
 
