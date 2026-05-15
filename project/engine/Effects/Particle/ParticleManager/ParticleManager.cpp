@@ -54,8 +54,8 @@ void ParticleManager::Update()
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
 	// ========= カメラ行列の計算 =========
-	// ★ カメラが持っている ViewProjection 行列をそのまま使う
-	//    これにより fov / aspect / near / far の不一致が起きない
+	// カメラが持っている ViewProjection 行列をそのまま使う
+	// これにより fov / aspect / near / far の不一致が起きない
 	Matrix4x4 viewProjectionMatrix = camera_->GetViewProjectionMatrix();
 
 	// ビルボード用にカメラ行列も取得
@@ -80,11 +80,7 @@ void ParticleManager::Update()
 	}
 
 	// 1) System を更新（Emitter の Play/Stop タイミング制御だけ）
-	for (auto& system : systems_) {
-		if (system) {
-			system->Update(dt);
-		}
-	}
+	systemManager_.UpdateAll(dt);
 
 	// 2) すべての EmitterInstance を更新（シミュレーション）
 	UpdateEmitters(dt);
@@ -629,34 +625,23 @@ void ParticleManager::UpdateEmitters(float dt)
 
 ParticleSystem* ParticleManager::CreateSystem(const std::string& systemName)
 {
-	// すでに同名 System があればそれを返す
-	if (auto* existing = FindSystem(systemName)) {
-		return existing;
-	}
-
-	// 新しく System を作成して登録
-	auto system = std::make_unique<ParticleSystem>(systemName);
-	ParticleSystem* rawPtr = system.get();
-	systems_.push_back(std::move(system));
-	return rawPtr;
+	return systemManager_.Create(systemName);
 }
 
 ParticleSystem* ParticleManager::FindSystem(const std::string& systemName)
 {
-	for (auto& system : systems_) {
-		if (system && system->GetName() == systemName) {
-			return system.get();
-		}
-	}
-	return nullptr;
+	return systemManager_.Find(systemName);
 }
 
 ParticleEmitterInstance* ParticleManager::AddEmitterToSystem(const std::string& systemName, const std::string& presetName, const Transform& emitterTransform)
 {
-	// (1) System を確保
-	ParticleSystem* system = FindSystem(systemName);
+	// EmitterInstance の生成 → ParticleManager の責務
+	// System への登録 → ParticleSystemManager に委譲
+
+	// (1) System を確保（pendingSettings 取得のために必要）
+	ParticleSystem* system = systemManager_.Find(systemName);
 	if (!system) {
-		system = CreateSystem(systemName);
+		system = systemManager_.Create(systemName);
 	}
 	if (!system) {
 		Logger::Log("ParticleManager::AddEmitterToSystem : failed to create/find system : "
@@ -664,7 +649,7 @@ ParticleEmitterInstance* ParticleManager::AddEmitterToSystem(const std::string& 
 		return nullptr;
 	}
 
-	// (2) プリセットから EmitterInstance を 1つ作成
+	// (2) プリセットから EmitterInstance を作成（DirectX 依存なので Manager の責務）
 	ParticleEmitterInstance* emitter =
 		CreateEmitterInstanceFromPreset(presetName, emitterTransform);
 
@@ -674,7 +659,7 @@ ParticleEmitterInstance* ParticleManager::AddEmitterToSystem(const std::string& 
 		return nullptr;
 	}
 
-	// ===== pendingSettings から startTime/duration を取得 =====
+	// (3) pendingSettings から startTime/duration を取得
 	float startTime = 0.0f;
 	float duration = -1.0f;
 	bool  autoPlay = true;
@@ -688,62 +673,30 @@ ParticleEmitterInstance* ParticleManager::AddEmitterToSystem(const std::string& 
 		}
 	}
 
-	// (3) System に登録（所有権は ParticleManager 側に残したまま）
-	system->AddEmitter(emitter, startTime, duration, autoPlay);
+	// (4) System への登録は ParticleSystemManager に委譲
+	systemManager_.RegisterEmitter(systemName, emitter, startTime, duration, autoPlay);
 
 	return emitter;
 }
 
 void ParticleManager::RegisterSystemPreset(const std::string& systemName, const std::string& presetName)
 {
-	if (systemName.empty() || presetName.empty()) {
-		return;
-	}
-
-	// System を確保（なければ作る）
-	ParticleSystem* system = FindSystem(systemName);
-	if (!system) {
-		system = CreateSystem(systemName);
-	}
-	if (!system) {
-		Logger::Log("ParticleManager::RegisterSystemPreset : failed to create/find system : "
-			+ systemName + "\n");
-		return;
-	}
-
-	// System 側にプリセット名を登録
-	system->AddPresetName(presetName);
+	systemManager_.RegisterPreset(systemName, presetName);
 }
 
 const std::vector<std::string>* ParticleManager::GetSystemPresets(const std::string& systemName) const
 {
-	if (systemName.empty()) { return nullptr; }
-
-	// const 関数なので systems_ を const で読む
-	for (const auto& system : systems_) {
-		if (system && system->GetName() == systemName) {
-			return &system->GetPresetNames();
-		}
-	}
-	return nullptr;
+	return systemManager_.GetPresets(systemName);
 }
 
 std::vector<std::string> ParticleManager::GetAllSystemNames() const
 {
-	std::vector<std::string> result;
-	result.reserve(systems_.size());
-
-	for (const auto& system : systems_) {
-		if (system) {
-			result.push_back(system->GetName());
-		}
-	}
-	return result;
+	return systemManager_.GetAllNames();
 }
 
 void ParticleManager::ClearAllSystems()
 {
-	systems_.clear();
+	systemManager_.ClearAll();
 }
 
 void ParticleManager::EmitSystemByName(const std::string& systemName, const Transform& emitterTransform)
@@ -754,278 +707,39 @@ void ParticleManager::EmitSystemByName(const std::string& systemName, const Tran
 
 bool ParticleManager::SaveSystemToJson(const std::string& systemName, const std::string& directory)
 {
-	if (systemName.empty()) {
-		return false;
-	}
-
-	ParticleSystem* system = FindSystem(systemName);
-	if (!system) {
-		Logger::Log("SaveSystemToJson : system not found : " + systemName + "\n");
-		return false;
-	}
-
-	namespace fs = std::filesystem;
-
-	// ディレクトリがなければ作る
-	if (!fs::exists(directory)) {
-		fs::create_directories(directory);
-	}
-
-	fs::path path = fs::path(directory) / (systemName + ".json");
-
-	nlohmann::json j;
-
-	// ===== 基本情報 =====
-	j["name"] = system->GetName();
-
-	// ===== Phase2 追加: System 全体の設定 =====
-	j["loop"] = system->IsLoop();
-	j["duration"] = system->GetDuration();
-
-	// ===== emitters 配列形式で保存 =====
-	// プリセット名と startTime/duration をセットで保存する
-	nlohmann::json emittersJson = nlohmann::json::array();
-
-	const auto& presetNames = system->GetPresetNames();
-
-	for (const std::string& presetName : presetNames) {
-		// デフォルト値
-		float startTime = 0.0f;
-		float duration = -1.0f;
-		bool  autoPlay = true;
-
-		// 既存の Emitter から startTime/duration を取得
-		auto* entry = system->FindEntryByPresetName(presetName);
-		if (entry) {
-			startTime = entry->startTime;
-			duration = entry->duration;
-			autoPlay = entry->autoPlay;
-		}
-		else {
-			// Emitter がまだ作られていない場合、pendingSettings から取得
-			for (const auto& p : system->GetPendingSettings()) {
-				if (p.presetName == presetName) {
-					startTime = p.startTime;
-					duration = p.duration;
-					autoPlay = p.autoPlay;
-					break;
-				}
-			}
-		}
-
-		nlohmann::json e;
-		e["preset"] = presetName;
-		e["startTime"] = startTime;
-		e["duration"] = duration;
-		e["autoPlay"] = autoPlay;
-
-		emittersJson.push_back(e);
-	}
-
-	j["emitters"] = emittersJson;
-
-	j["presets"] = presetNames;
-
-	std::ofstream ofs(path);
-	if (!ofs) {
-		Logger::Log("SaveSystemToJson : failed to open file : " + path.string() + "\n");
-		return false;
-	}
-
-	ofs << j.dump(4);
-	return true;
+	return systemManager_.SaveToJson(systemName, directory);
 }
 
 bool ParticleManager::LoadSystemFromJson(const std::string& systemName, const std::string& directory)
 {
-	if (systemName.empty()) {
-		return false;
-	}
-
-	namespace fs = std::filesystem;
-	fs::path path = fs::path(directory) / (systemName + ".json");
-
-	if (!fs::exists(path)) {
-		Logger::Log("LoadSystemFromJson : file not found : " + path.string() + "\n");
-		return false;
-	}
-
-	std::ifstream ifs(path);
-	if (!ifs) {
-		Logger::Log("LoadSystemFromJson : failed to open file : " + path.string() + "\n");
-		return false;
-	}
-
-	nlohmann::json j;
-	ifs >> j;
-
-	std::string nameInJson = j.value("name", systemName);
-	if (nameInJson.empty()) {
-		nameInJson = systemName;
-	}
-
-	// System を作成 or 取得
-	ParticleSystem* system = CreateSystem(nameInJson);
-	if (!system) {
-		Logger::Log("LoadSystemFromJson : failed to create system : " + nameInJson + "\n");
-		return false;
-	}
-
-	// いったんプリセット名リストと pending 設定をクリア
-	system->ClearPresetNames();
-	system->ClearPendingSettings();
-
-	// ===== System 全体の設定 =====
-	if (j.contains("loop")) {
-		system->SetLoop(j.value("loop", false));
-	}
-	if (j.contains("duration")) {
-		system->SetDuration(j.value("duration", 0.0f));
-	}
-
-	// ===== emitters 配列を優先的に読む =====
-	auto emittersIt = j.find("emitters");
-	if (emittersIt != j.end() && emittersIt->is_array()) {
-		
-		for (const auto& elem : *emittersIt) {
-			if (!elem.is_object()) continue;
-
-			std::string presetName = elem.value("preset", std::string());
-			if (presetName.empty()) continue;
-
-			float startTime = elem.value("startTime", 0.0f);
-			float duration = elem.value("duration", -1.0f);
-			bool  autoPlay = elem.value("autoPlay", true);
-
-			// System 側に登録
-			system->AddPresetName(presetName);
-
-			// startTime/duration は pendingSettings に保存（Emitter 作成時に反映）
-			ParticleSystem::PendingEmitterSetting setting;
-			setting.presetName = presetName;
-			setting.startTime = startTime;
-			setting.duration = duration;
-			setting.autoPlay = autoPlay;
-			system->GetPendingSettings().push_back(setting);
-		}
-	}
-	else {
-		// ===== presets 配列のみ=====
-		auto presetsIt = j.find("presets");
-		if (presetsIt != j.end() && presetsIt->is_array()) {
-			for (const auto& elem : *presetsIt) {
-				if (elem.is_string()) {
-					std::string presetName = elem.get<std::string>();
-					if (!presetName.empty()) {
-						system->AddPresetName(presetName);
-
-						// デフォルト値で pending 設定も追加
-						ParticleSystem::PendingEmitterSetting setting;
-						setting.presetName = presetName;
-						setting.startTime = 0.0f;
-						setting.duration = -1.0f;
-						setting.autoPlay = true;
-						system->GetPendingSettings().push_back(setting);
-					}
-				}
-			}
-		}
-	}
-
-	return true;
+	return systemManager_.LoadFromJson(systemName, directory);
 }
 
 void ParticleManager::LoadAllSystems(const std::string& directory)
 {
-	namespace fs = std::filesystem;
-
-	ClearAllSystems();
-
-	if (!fs::exists(directory)) {
-		return;
-	}
-
-	for (auto& entry : fs::directory_iterator(directory)) {
-		if (!entry.is_regular_file()) {
-			continue;
-		}
-
-		fs::path path = entry.path();
-		if (path.extension() != ".json") {
-			continue;
-		}
-
-		// ファイル名(拡張子なし)を systemName として扱う
-		std::string systemName = path.stem().string();
-		LoadSystemFromJson(systemName, directory);
-	}
+	systemManager_.LoadAll(directory);
 }
 
 bool ParticleManager::RenameSystem(const std::string& oldName, const std::string& newName)
 {
-	if (oldName.empty() || newName.empty() || oldName == newName) {
-		return false;
-	}
-
-	ParticleSystem* target = FindSystem(oldName);
-	if (!target) {
-		return false;
-	}
-
-	// 同名チェック
-	for (const auto& sys : systems_) {
-		if (sys && sys.get() != target && sys->GetName() == newName) {
-			Logger::Log("ParticleManager::RenameSystem : name already exists : " + newName + "\n");
-			return false;
-		}
-	}
-
-	target->SetName(newName);
-	return true;
+	return systemManager_.Rename(oldName, newName);
 }
 
 void ParticleManager::EmitSystem(const std::string& systemName, const Transform& transform)
 {
-	if (systemName.empty()) {
-		return;
-	}
-
-	// まず System が存在するかチェック
-	ParticleSystem* system = FindSystem(systemName);
-	if (!system) {
-		return;
-	}
-
-	// この System に紐付いているプリセット名一覧を取得
-	const auto& presetNames = system->GetPresetNames();
-
-	// Emitter がまだ作られていなければ新規作成
-	// 作成自体は初回のみ。その後は再作成しない
-	if (system->GetEmitters().empty()) {
-		for (const std::string& presetName : presetNames) {
-			AddEmitterToSystem(systemName, presetName, transform);
-		}
-	}
-
-	// 各エミッターの Transform を最新に更新
-	// エミッター位置が毎フレーム変わる場合に備える
-	for (auto& entry : system->GetEmitters()) {
-		if (entry.emitter) {
-			entry.emitter->SetTransform(transform);
-		}
-	}
-
-	// 個別 Play をやめて、System 全体を Play する
-	// ParticleSystem::Update() 側で startTime に応じて各 Emitter が Play される
-	// 既に再生中なら何もしない（毎フレーム呼ばれても再起動しないように）
-	if (!system->IsPlaying()) {
-		system->Play();
-	}
+	systemManager_.EmitSystem(
+		systemName,
+		transform,
+		[this, systemName](const std::string& presetName, const Transform& tf)
+		-> ParticleEmitterInstance*
+		{
+			// ParticleManager の AddEmitterToSystem を呼ぶ
+			// （CreateEmitterInstanceFromPreset → emitterInstances_ への登録が行われる）
+			return AddEmitterToSystem(systemName, presetName, tf);
+		});
 }
 
-void ParticleManager::PopulateInstancesFromEmitters(
-	const Matrix4x4& viewProjectionMatrix,
-	const Matrix4x4& billboardMatrix)
+void ParticleManager::PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix,const Matrix4x4& billboardMatrix)
 {
 	for (auto& emitterPtr : emitterInstances_) {
 		if (!emitterPtr) {
@@ -1210,9 +924,7 @@ void ParticleManager::CreateCylinderVertexData() {
 }
 
 
-void ParticleManager::CreateParticleGroup(const std::string name,
-	const std::string textureFilePath,
-	BlendMode blendMode)
+void ParticleManager::CreateParticleGroup(const std::string name,const std::string textureFilePath,BlendMode blendMode)
 {
 	// ----------------------------------------
 	// 同名グループの二重登録チェック

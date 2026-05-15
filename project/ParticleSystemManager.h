@@ -2,6 +2,7 @@
 #include "ParticleSystem.h"
 #include "ParticleEmitterInstance.h"
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -51,12 +52,13 @@ public:
 
 	/// 既に生成済みの EmitterInstance を System に紐づける
 	/// @note Emitter の生成・所有は呼び出し側（ParticleManager）が行う
-	void RegisterEmitter(
-		const std::string& systemName,
-		ParticleEmitterInstance* emitter,
-		float startTime = 0.0f,
-		float duration = -1.0f,
-		bool autoPlay = true);
+	void RegisterEmitter(const std::string& systemName,ParticleEmitterInstance* emitter,float startTime = 0.0f,float duration = -1.0f,bool autoPlay = true);
+
+	// ===== System の Emit（再生開始） =====
+
+	/// System を Emit（再生）する
+	/// emitterFactory プリセット名から EmitterInstance を生成する関数
+	void EmitSystem(const std::string& systemName,const Transform& transform,const std::function<ParticleEmitterInstance* (const std::string& presetName,const Transform& transform)>& emitterFactory);
 
 	// ===== JSON 保存/読込 =====
 

@@ -1,4 +1,14 @@
 {
+    "duration": 0.0,
+    "emitters": [
+        {
+            "autoPlay": true,
+            "duration": -1.0,
+            "preset": "NE_Sample",
+            "startTime": 0.0
+        }
+    ],
+    "loop": false,
     "name": "ADE",
     "presets": [
         "NE_Sample"

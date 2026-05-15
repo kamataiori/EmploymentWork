@@ -166,9 +166,6 @@ private:
 	// 新しいエミッターインスタンス（Niagara でいう Emitter Instance）
 	std::vector<std::unique_ptr<ParticleEmitterInstance>> emitterInstances_;
 
-	// 将来的に複数エミッターをまとめる ParticleSystem（Niagara System 相当）
-	std::vector<std::unique_ptr<ParticleSystem>> systems_;
-
 	// System を使った Emit（ステップ2で実装）
 	void EmitSystem(const std::string& systemName, const Transform& transform);
 

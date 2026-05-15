@@ -1,14 +1,14 @@
 {
-    "duration": 0.0,
+    "duration": 6.900000095367432,
     "emitters": [
         {
             "autoPlay": true,
-            "duration": -1.0,
+            "duration": 6.949999809265137,
             "preset": "SparkBurst",
             "startTime": 0.0
         }
     ],
-    "loop": false,
+    "loop": true,
     "name": "NS_SparkBurst",
     "presets": [
         "SparkBurst"
