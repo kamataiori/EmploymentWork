@@ -69,7 +69,7 @@ private:
 	float fps_ = 0.0f;
 	float frameTimeMs_ = 0.0f;
 
-	// 平均FPS用（直近60フレームの履歴）
+	// 平均FPS用
 	std::deque<float> fpsHistory_;
 	float averageFps_ = 0.0f;
 	static constexpr size_t kFpsHistorySize = 60;
