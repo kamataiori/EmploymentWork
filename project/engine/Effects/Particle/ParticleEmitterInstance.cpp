@@ -79,8 +79,8 @@ void ParticleEmitterInstance::SpawnParticles()
 	for (uint32_t i = 0; i < spawn.count; ++i) {
 		Particle p{};
 
-		// ★ Local Space の場合: 原点(0,0,0)からの相対座標
-		// ★ World Space の場合: エミッタのワールド座標が基準
+		// Local Space の場合: 原点(0,0,0)からの相対座標
+		// World Space の場合: エミッタのワールド座標が基準
 		Vector3 pos = spawn.useLocalSpace ? Vector3{ 0,0,0 } : emitterTransform_.translate;
 
 		// --- EmitterSpawn 側のランダム位置（既存） ---

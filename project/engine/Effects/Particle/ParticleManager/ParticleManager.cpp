@@ -480,6 +480,21 @@ void ParticleManager::LoadAllPresets(const std::string& directory)
 	presetLibrary_.LoadAll(directory);
 }
 
+void ParticleManager::RegisterPreset(const ParticlePreset& preset)
+{
+	if (preset.name.empty()) {
+		Logger::Log("ParticleManager::RegisterPreset : preset.name is empty. skipped.\n");
+		return;
+	}
+
+	// (1) presetLibrary_ にメモリ登録
+	presetLibrary_.Add(preset);
+
+	// (2) 描画グループを準備（テクスチャ / ブレンドモードなどをセットアップ）
+	//     EmitterInstance がパーティクルを出す前に、描画先グループが必要
+	EnsureGroupForPreset(preset);
+}
+
 void ParticleManager::EmitByPresetName(const std::string& presetName,const Transform& emitterTransform)
 {
 	// ---- プリセット検索 or 読み込み ----
@@ -569,6 +584,35 @@ void ParticleManager::EmitByPresetName(const std::string& presetName,const Trans
 			p.initialColor = p.color;
 		}
 	}
+}
+
+ParticleEmitterInstance* ParticleManager::EmitPreset(const std::string& presetName, const Transform& emitterTransform)
+{
+	// (1) プリセットが登録されているか確認
+	const ParticlePreset* preset = presetLibrary_.Find(presetName);
+	if (!preset) {
+		Logger::Log("ParticleManager::EmitPreset : preset not registered -> "
+			+ presetName + "\n");
+		return nullptr;
+	}
+
+	// (2) 描画グループが準備されているか確認・準備
+	//     （RegisterPreset 時に呼んでいるはずだが、保険として呼ぶ）
+	EnsureGroupForPreset(*preset);
+
+	// (3) EmitterInstance を生成（emitterInstances_ に登録される）
+	ParticleEmitterInstance* instance =
+		CreateEmitterInstanceFromPreset(presetName, emitterTransform);
+	if (!instance) {
+		// CreateEmitterInstanceFromPreset 側でログを出しているので、ここでは追加しない
+		return nullptr;
+	}
+
+	// (4) 即再生開始
+	//     Initialize 時に playing_=true になっているので、Play() は念のため
+	instance->Play();
+
+	return instance;
 }
 
 ParticlePreset* ParticleManager::FindPreset(const std::string& name)

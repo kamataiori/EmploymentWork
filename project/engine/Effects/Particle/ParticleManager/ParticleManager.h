@@ -77,12 +77,23 @@ public:
 	/// ディレクトリ内のすべてのプリセットを読み込む（今後のため）
 	void LoadAllPresets(const std::string& directory = "Resources/Particle");
 
+	// ===== コードから直接プリセットを登録する =====
+	/// コードで組み立てた ParticlePreset を登録する
+	/// （JSON を経由せず、メモリ上に直接登録する）
+	/// 登録後は EmitPreset() / EmitByPresetName() で名前指定して使える
+	void RegisterPreset(const ParticlePreset& preset);
+
 	/// <summary>
 	/// JSON プリセット名からパーティクルを発生させる
 	/// </summary>
 	/// <param name="presetName">JSON ファイル名と同じプリセット名</param>
 	/// <param name="emitterTransform">発生元の Transform（位置/回転/スケール）</param>
 	void EmitByPresetName(const std::string& presetName, const Transform& emitterTransform);
+
+	/// 登録済みプリセットから、単発の EmitterInstance を作って即再生する
+	/// System に属さない単独の Emitter として動作する
+	/// @return 作成された EmitterInstance（操作したい場合のみ使う。捨てても OK）
+	ParticleEmitterInstance* EmitPreset(const std::string& presetName,const Transform& emitterTransform);
 
 	const std::string& GetCurrentEditingPresetName() const { return presetLibrary_.GetCurrentEditingName(); }
 
