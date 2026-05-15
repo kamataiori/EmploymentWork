@@ -6,7 +6,7 @@ FollowCamera::FollowCamera(ObjectBase* target, float followDistance, float heigh
 	followDistance(followDistance),
 	heightOffset(heightOffset),
 	shoulderOffset(0.0f),
-	sensitivity_(0.005f),
+	sensitivity_(0.0025f),
 	dampPosY_(true),
 	posYSmooth_(12.0f),
 	lockLookY_(false),

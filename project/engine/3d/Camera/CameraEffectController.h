@@ -154,6 +154,12 @@ public:
 
     void StopZoom() { zoom_.Stop(); }
 
+    // 攻撃時のパンチズーム（一瞬寄って戻る）
+	void StartZoomPunch(float zoomAmount = 0.1f, float inDuration = 0.05f, float outDuration = 0.15f)
+	{
+		zoom_.StartPunch(zoomAmount, inDuration, outDuration);
+	}
+
     // ==============================
     //  移動（CameraMove）API
     // ==============================

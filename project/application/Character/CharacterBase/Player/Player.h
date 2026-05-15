@@ -7,6 +7,7 @@
 #include "PlayerIWeapon.h"
 #include <PlayerWeaponOBB.h>
 #include "Sword.h"
+#include "Camera/CameraEffectController.h"
 
 class Player : public ObjectBase
 {
@@ -63,6 +64,10 @@ public:
 	/// カメラをセット
 	/// </summary>
 	void SetCamera(Camera* camera) override;
+
+	void SetCameraEffect(CameraEffectController* effect) { cameraEffect_ = effect; }
+
+	CameraEffectController* GetCameraEffect() const { return cameraEffect_; }
 
 	// 任意のタイミングでキー再生したいとき用（攻撃側から呼ぶ想定）
 	void PlayAnimaKey(PlayerAnimKey key);
@@ -190,5 +195,7 @@ private:
 
 
 	std::unique_ptr<Sword> sword_;
+
+	CameraEffectController* cameraEffect_ = nullptr;
 
 };

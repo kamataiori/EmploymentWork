@@ -45,6 +45,11 @@ void PlayerWeaponOBB::Update()
 					PlayerAnimKey::Attack03
 				};
 				owner_->RequestAnimaKey(comboKeys[normalComboIndex_], 10, activeDuration_);
+
+				// ズーム演出
+				if (auto* effect = owner_->GetCameraEffect()) {
+					effect->StartZoomPunch(0.04f, 0.06f, 0.18f);
+				}
 			}
 
 			normalComboIndex_ = (normalComboIndex_ + 1) % 3;
@@ -96,6 +101,11 @@ void PlayerWeaponOBB::NormalAttack()
 			PlayerAnimKey::Attack03
 		};
 		owner_->RequestAnimaKey(comboKeys[normalComboIndex_], 10, activeDuration_);
+
+		// ズーム演出
+		if (auto* effect = owner_->GetCameraEffect()) {
+			effect->StartZoomPunch(0.04f, 0.06f, 0.18f);
+		}
 	}
 
 	// 次の段へ

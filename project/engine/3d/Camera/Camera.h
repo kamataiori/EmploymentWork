@@ -30,6 +30,9 @@ public:
 	//------演出用加算API------
 	void AddTranslate(const Vector3& offset);
 	void AddRotate(const Vector3& offset);
+	void SetFovYRad(float fovY_rad) {
+		horizontalViewingAngle = fovY_rad;
+	}
 
 	//------getter------//
 	const Matrix4x4& GetWorldMatrix() const { return worldMatrix; }

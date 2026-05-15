@@ -73,6 +73,7 @@ void GamePlayScene::Initialize()
 	player_->Initialize();
 	enemy_->Initialize();
 	enemy_->SetTargetTransform(&player_->GetTransform());
+	player_->SetCameraEffect(cameraEffect_.get());
 
 	// 全オブジェクトに followCamera をセット
 	sky->SetCamera(followCamera.get());

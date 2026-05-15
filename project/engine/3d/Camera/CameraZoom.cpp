@@ -46,10 +46,12 @@ void CameraZoom::StartSimple(float duration, float targetFov, Tween::EasingFunc 
 
 void CameraZoom::Stop()
 {
-    active_ = false;
-    elapsed_ = 0.0f;
-    duration_ = 0.0f;
-    capturedStartFov_ = false;
+	active_ = false;
+	elapsed_ = 0.0f;
+	duration_ = 0.0f;
+	capturedStartFov_ = false;
+	punchMode_ = false;
+	punchReturning_ = false;
 }
 
 void CameraZoom::Update(Camera* camera, float deltaTime)
@@ -61,32 +63,100 @@ void CameraZoom::Update(Camera* camera, float deltaTime)
     UpdateInternal(camera, deltaTime);
 }
 
+void CameraZoom::StartPunch(float zoomAmount, float inDuration, float outDuration)
+{
+	// 行きフェーズ用のパラメータをセット
+	punchMode_ = true;
+	punchReturning_ = false;
+	punchInDuration_ = inDuration;
+	punchOutDuration_ = outDuration;
+
+	// 共通の補間状態を初期化
+	active_ = true;
+	elapsed_ = 0.0f;
+	duration_ = inDuration;
+	easing_ = Tween::Easing::EaseOutQuad;
+
+	// 開始FOVは次のUpdateでカメラから取得
+	useCurrentFov_ = true;
+	capturedStartFov_ = false;
+
+	// ターゲットは「現在FOV - zoomAmount」（後でカメラから取得して計算）
+	// 一旦zoomAmountを保存しておく（targetFov_を流用）
+	targetFov_ = -zoomAmount; // 負の値で「相対ズーム量」のマーカーとして使う
+}
+
 void CameraZoom::UpdateInternal(Camera* camera, float deltaTime)
 {
-    // useCurrentFov が true の場合、最初のフレームだけカメラから開始 FOV を取得する
-    if (useCurrentFov_ && !capturedStartFov_) {
-        startFov_ = camera->GetFovYRad();
-        capturedStartFov_ = true;
-    }
+	// ===== パンチモード専用処理 =====
+	if (punchMode_) {
+		// 行きフェーズ開始時：FOVを取得して目標FOVを計算
+		if (!capturedStartFov_) {
+			punchOriginalFov_ = camera->GetFovYRad();
+			startFov_ = punchOriginalFov_;
+			// targetFov_には -zoomAmount が入っているので
+			float zoomAmount = -targetFov_;
+			punchHoldFov_ = punchOriginalFov_ - zoomAmount;  // 寄った時のFOV
+			targetFov_ = punchHoldFov_;
+			capturedStartFov_ = true;
+		}
 
-    elapsed_ += deltaTime;
-    float t = elapsed_ / duration_;
-    if (t >= 1.0f) {
-        t = 1.0f;
-    }
+		elapsed_ += deltaTime;
+		float t = elapsed_ / duration_;
+		if (t >= 1.0f) t = 1.0f;
 
-    // t(0～1) をイージングで変換して FOV を補間
-    float fov = Tween::Evaluate<float>(
-        startFov_,
-        targetFov_,
-        t,
-        easing_ ? easing_ : Tween::Easing::Linear
-    );
+		float fov = Tween::Evaluate<float>(
+			startFov_,
+			targetFov_,
+			t,
+			easing_ ? easing_ : Tween::Easing::Linear
+		);
 
-    camera->SetFovY(fov);
-    camera->Camera::Update();  // FOV 変更を反映するために行列を再計算
+		// ラジアン→度数に変換してから渡す
+		camera->SetFovYRad(fov);
+		camera->Camera::Update();
 
-    if (t >= 1.0f) {
-        active_ = false;
-    }
+		if (t >= 1.0f) {
+			if (!punchReturning_) {
+				// 行き終了 → 戻りフェーズへ
+				punchReturning_ = true;
+				startFov_ = punchHoldFov_;
+				targetFov_ = punchOriginalFov_;
+				duration_ = punchOutDuration_;
+				elapsed_ = 0.0f;
+				easing_ = Tween::Easing::EaseInQuad;
+			}
+			else {
+				// 戻り終了 → パンチ完全終了
+				punchMode_ = false;
+				punchReturning_ = false;
+				active_ = false;
+			}
+		}
+		return;
+	}
+
+	// ===== 通常のズーム処理（既存のまま） =====
+	if (useCurrentFov_ && !capturedStartFov_) {
+		startFov_ = camera->GetFovYRad();
+		capturedStartFov_ = true;
+	}
+
+	elapsed_ += deltaTime;
+	float t = elapsed_ / duration_;
+	if (t >= 1.0f) t = 1.0f;
+
+	float fov = Tween::Evaluate<float>(
+		startFov_,
+		targetFov_,
+		t,
+		easing_ ? easing_ : Tween::Easing::Linear
+	);
+
+	camera->SetFovYRad(fov);
+	camera->Camera::Update();
+
+	if (t >= 1.0f) {
+		active_ = false;
+	}
 }
