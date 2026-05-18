@@ -24,7 +24,7 @@ void MyGame::Initialize()
 	transitionService_->SetUIManager(uiManager_.get());
 	SceneManager::GetInstance()->SetTransitionService(transitionService_.get());
 
-	SceneManager::GetInstance()->ChangeScene("PARTICLE");
+	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 
 	// Play/Stop 状態を生成
 	playModeState_ = std::make_unique<PlayModeState>();

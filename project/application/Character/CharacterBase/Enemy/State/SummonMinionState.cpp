@@ -53,7 +53,7 @@ bool SummonMinionState::Update(Enemy* enemy, float dt)
 		// 硬直時間
 		timer_ += dt;
 		if (timer_ >= waitDuration_) {
-			return false; // ★ 完了
+			return false; // 完了
 		}
 		break;
 	}

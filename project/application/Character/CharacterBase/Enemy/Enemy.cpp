@@ -473,7 +473,9 @@ void Enemy::SpawnBigBullet(const Vector3& targetPos)
 void Enemy::SpawnMinion(const Vector3& spawnPos)
 {
 	auto m = std::make_unique<MinionEnemy>(GetBaseScene());
-	m->SetCamera(GetCamera());
+	// InitializeMinion 内の object3d_->Initialize() がカメラを上書きするため、
+	// SetCamera は必ず InitializeMinion の後に呼ぶ
 	m->InitializeMinion(spawnPos, target_);
+	m->SetCamera(GetCamera());
 	minions_.push_back(std::move(m));
 }

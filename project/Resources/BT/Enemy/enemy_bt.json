@@ -41,7 +41,7 @@
         "thresholdDistance": 2.0,
         "lastActionName": ""
       },
-      "posX": 0.0,
+      "posX": 250.0,
       "posY": 0.0
     },
     {
@@ -63,13 +63,13 @@
         "thresholdDistance": 2.0,
         "lastActionName": ""
       },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 520.0,
+      "posY": -120.0
     },
     {
       "id": 4,
-      "kind": 1,
-      "label": "Sequence_Loop",
+      "kind": 4,
+      "label": "SummonMinion",
       "param": {
         "chargeDash": {
           "chargeTime": 0.7,
@@ -81,17 +81,17 @@
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 0,
+        "stateType": 17,
         "thresholdDistance": 2.0,
         "lastActionName": ""
       },
-      "posX": 0.0,
+      "posX": 520.0,
       "posY": 0.0
     },
     {
       "id": 5,
       "kind": 4,
-      "label": "ShootSplitBullet",
+      "label": "WaitMinionDead",
       "param": {
         "chargeDash": {
           "chargeTime": 0.7,
@@ -103,100 +103,12 @@
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 8,
+        "stateType": 18,
         "thresholdDistance": 2.0,
         "lastActionName": ""
       },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 6,
-      "kind": 4,
-      "label": "IdleWait_1",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 0.7,
-          "cooldownTime": 2.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.5,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 15,
-        "thresholdDistance": 2.0,
-        "lastActionName": ""
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 7,
-      "kind": 4,
-      "label": "ChargeDash_1",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 0.4,
-          "cooldownTime": 2.0,
-          "dashDistance": 40.0,
-          "dashSpeed": 45.0,
-          "recoverTime": 0.3,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 1,
-        "thresholdDistance": 2.0,
-        "lastActionName": ""
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 9,
-      "kind": 4,
-      "label": "ChargeDash_2",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 0.4,
-          "cooldownTime": 2.0,
-          "dashDistance": 40.0,
-          "dashSpeed": 45.0,
-          "recoverTime": 0.3,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 1,
-        "thresholdDistance": 2.0,
-        "lastActionName": ""
-      },
-      "posX": 0.0,
-      "posY": 0.0
-    },
-    {
-      "id": 10,
-      "kind": 4,
-      "label": "IdleWait_3",
-      "param": {
-        "chargeDash": {
-          "chargeTime": 0.7,
-          "cooldownTime": 2.0,
-          "dashDistance": 20.0,
-          "dashSpeed": 25.0,
-          "recoverTime": 0.5,
-          "turnLerp": 0.25
-        },
-        "customName": "",
-        "decoratorType": "Inverter",
-        "stateType": 15,
-        "thresholdDistance": 2.0,
-        "lastActionName": ""
-      },
-      "posX": 0.0,
-      "posY": 0.0
+      "posX": 520.0,
+      "posY": 120.0
     }
   ],
   "links": [
@@ -217,28 +129,8 @@
     },
     {
       "id": 13,
-      "fromNodeId": 4,
+      "fromNodeId": 2,
       "toNodeId": 5
-    },
-    {
-      "id": 14,
-      "fromNodeId": 4,
-      "toNodeId": 6
-    },
-    {
-      "id": 15,
-      "fromNodeId": 4,
-      "toNodeId": 7
-    },
-    {
-      "id": 17,
-      "fromNodeId": 4,
-      "toNodeId": 9
-    },
-    {
-      "id": 18,
-      "fromNodeId": 4,
-      "toNodeId": 10
     }
   ],
   "groups": [],

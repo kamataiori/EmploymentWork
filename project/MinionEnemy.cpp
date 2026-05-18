@@ -25,11 +25,13 @@ MinionEnemy::MinionEnemy(BaseScene* scene)
 {
 }
 
-void MinionEnemy::InitializeMinion(
-	const Vector3& spawnPos,
-	const Transform* targetTransform
-)
+void MinionEnemy::InitializeMinion(const Vector3& spawnPos,const Transform* targetTransform)
 {
+	ModelManager::GetInstance()->LoadModel("minion.obj");
+
+	object3d_->Initialize();
+	object3d_->SetModel("minion.obj");
+
 	targetTransform_ = targetTransform;
 
 	// 地面の位置を記憶
@@ -40,6 +42,10 @@ void MinionEnemy::InitializeMinion(
 	transform.translate.y -= spawnDepth_;
 	transform.rotate = { 0,0,0 };
 	transform.scale = { 1,1,1 };
+
+	object3d_->SetTranslate(transform.translate);
+	object3d_->SetRotate(transform.rotate);
+	object3d_->SetScale(transform.scale);
 
 	phase_ = Phase::Spawn;
 	isDead_ = false;
@@ -113,11 +119,18 @@ void MinionEnemy::Update()
 	Sphere& sp = multiCollider_->MutableSphere(0);
 	sp.center = transform.translate;
 	sp.radius = radius_;
+
+	object3d_->SetTranslate(transform.translate);
+	object3d_->SetScale(transform.scale);
+	object3d_->SetRotate(transform.rotate);
+	object3d_->Update();
 }
 
 void MinionEnemy::Draw()
 {
 	multiCollider_->Draw();
+
+	object3d_->Draw();
 }
 
 void MinionEnemy::OnCollision(const CollisionInfo& info)
