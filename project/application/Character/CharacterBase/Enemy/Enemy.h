@@ -204,10 +204,16 @@ private:
 	// 雑魚敵リスト
 	std::list<std::unique_ptr<MinionEnemy>> minions_;
 
+	// 現在突進シーケンスを実行中の雑魚敵（1体ずつ順番に動かす）
+	MinionEnemy* activeMinion_ = nullptr;
+
 	// SplitBullet の順次発射制御
 	float splitFireTimer_ = 0.0f;
 	float splitFireInterval_ = 0.3f;
 	bool  splitFireActive_ = false;
 
 	void UpdateSplitBulletFiring(float dt);
+
+	// 雑魚敵を1体ずつ順番に突進させるコーディネーター
+	void UpdateMinionCoordinator();
 };

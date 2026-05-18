@@ -7,9 +7,9 @@
 //------------------------------------------------------
 // ・ボスの召喚攻撃で出現
 // ・地面の下から上昇して出現（Spawn演出）
-// ・出現後、プレイヤーに向かって直進
-// ・体当たりでダメージを与える
-// ・プレイヤーの攻撃でHPが0になったら消える
+// ・コーディネーター(Enemy)に選ばれた1体ずつが
+//   プレイヤーへ突進 → 上昇 → てっぺんで高速回転 → 急降下(ドッスン) → 衝撃波
+// ・自分の番でない間は完全静止で待機
 //======================================================
 class MinionEnemy : public ObjectBase
 {
@@ -19,11 +19,8 @@ public:
 
 	void Initialize() override {}
 
-	// 実際の初期化（出現位置とターゲットを指定）
-	void InitializeMinion(
-		const Vector3& spawnPos,
-		const Transform* targetTransform
-	);
+	// 実際の初期化（出現位置を指定）
+	void InitializeMinion(const Vector3& spawnPos);
 
 	void Update() override;
 
@@ -39,37 +36,73 @@ public:
 	bool IsDead() const { return isDead_; }
 
 	void SetCamera(Camera* camera) override;
-	void SetTargetTransform(const Transform* t) { targetTransform_ = t; }
+
+	//--- コーディネーター(Enemy)用インターフェイス ---
+	// 出現演出が完了しているか
+	bool IsSpawnFinished() const { return phase_ != Phase::Spawn; }
+	// 突進～急降下シーケンスの実行中か
+	bool IsAttacking() const { return attackActive_; }
+	// 待機(Idle)中か
+	bool IsIdle() const { return phase_ == Phase::Idle; }
+	// 突進開始（targetPos = 突進先として取得したプレイヤー位置）
+	void BeginAttack(const Vector3& targetPos);
+	// このラウンドで既に突進し終えたか
+	bool HasActed() const { return actedThisRound_; }
+	void SetActed(bool v) { actedThisRound_ = v; }
+	// 次のラウンドへ：行動済みフラグをリセット
+	void ResetRound() { actedThisRound_ = false; }
 
 private:
 	enum class Phase {
-		Spawn,   // 地面の下から上昇中
-		Chase,   // プレイヤーに向かって追跡中
+		Spawn,      // 地面の下から上昇中
+		Idle,       // 待機（完全静止）
+		Charge,     // プレイヤー位置へ突進
+		Rise,       // 突進先で上昇
+		SpinTop,    // てっぺんで停止して高速回転
+		Slam,       // 急降下
+		Shockwave,  // 着地直後の衝撃波
 	};
 
 	Phase phase_ = Phase::Spawn;
 
-	const Transform* targetTransform_ = nullptr;
-
 	bool isDead_ = false;
+	bool attackActive_ = false;   // Charge～Shockwave 実行中
+	bool actedThisRound_ = false; // コーディネーターが管理
 
 	// HP
 	int hp_ = 1;
 	static constexpr int kMaxHP_ = 1;
 
 	// 出現演出
-	Vector3 surfacePos_{};          // 地面の高さ（目標位置）
-	float spawnDepth_ = 3.0f;       // 地面からどれだけ下に埋まった状態で始まるか
-	float riseSpeed_ = 4.0f;        // 上昇速度
+	Vector3 surfacePos_{};         // 立ち位置（出現の目標。地面＋groundOffsetY_）
+	float groundY_ = 0.0f;         // 立ち位置のY（上昇/急降下の基準）
+	float groundOffsetY_ = 1.0f;   // 地面からの持ち上げ量（足元を地面に合わせる）
+	float spawnDepth_ = 3.0f;      // 立ち位置からどれだけ埋まって始まるか
+	float spawnRiseSpeed_ = 4.0f;  // 出現上昇速度
 
-	// 移動
-	float moveSpeed_ = 8.0f;
-	float turnLerp_ = 0.1f;
+	// 突進（Charge）
+	Vector3 chargeTargetXZ_{};     // 突進先（BeginAttackで取得したプレイヤー位置）
+	float chargeSpeed_ = 40.0f;    // 突進速度（一気に詰め寄る）
+	float turnLerp_ = 0.35f;       // 向き補間
+	float reachThreshold_ = 0.6f;  // 到達とみなす距離
+
+	// 上昇（Rise：ドッスン準備）
+	float liftSpeed_ = 12.0f;      // 上昇速度
+	float riseHeight_ = 12.0f;     // 地面からの到達高さ
+
+	// てっぺんでの高速回転（SpinTop）
+	float spinSpeed_ = 42.0f;      // 回転速度(rad/s)
+	float spinTurns_ = 4.0f;       // 回転する周回数
+	float spinAccumulated_ = 0.0f; // 回転した累積角度(rad)
+
+	// 急降下（Slam：ドッスン）
+	float slamSpeed_ = 60.0f;      // 急降下速度
+
+	// 衝撃波（Shockwave）
+	float shockwaveRadius_ = 3.0f;   // 着地時の範囲ダメージ半径
+	float shockwaveDuration_ = 0.25f;// 衝撃波の継続時間
+	float shockwaveTimer_ = 0.0f;
 
 	// コライダー
 	float radius_ = 0.8f;
-
-	// 寿命
-	float lifeTimer_ = 0.0f;
-	static constexpr float kMaxLifeTime_ = 15.0f;
 };

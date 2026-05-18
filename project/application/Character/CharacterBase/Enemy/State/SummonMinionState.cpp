@@ -21,18 +21,21 @@ bool SummonMinionState::Update(Enemy* enemy, float dt)
 	{
 	case Phase::Summon:
 	{
-		// ボスの周囲に均等配置で雑魚敵を召喚
+		// ボスの半径 spawnRadius_ 以内にランダムで雑魚敵を召喚
 		Vector3 bossPos = enemy->GetTransform().translate;
 
-		// 雑魚敵を等間隔の角度で配置
-		float angleStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(summonCount_);
+		static std::mt19937 rng(std::random_device{}());
+		std::uniform_real_distribution<float> angleDist(0.0f, 2.0f * std::numbers::pi_v<float>);
+		std::uniform_real_distribution<float> unitDist(0.0f, 1.0f);
 
 		for (int i = 0; i < summonCount_; ++i) {
-			float angle = angleStep * static_cast<float>(i);
+			float angle = angleDist(rng);
+			// sqrt を掛けて円の内部に一様分布させる
+			float r = spawnRadius_ * std::sqrt(unitDist(rng));
 
 			Vector3 spawnPos = bossPos;
-			spawnPos.x += std::cos(angle) * spawnRadius_;
-			spawnPos.z += std::sin(angle) * spawnRadius_;
+			spawnPos.x += std::cos(angle) * r;
+			spawnPos.z += std::sin(angle) * r;
 			spawnPos.y = bossPos.y; // 地面に合わせる
 
 			enemy->SpawnMinion(spawnPos);

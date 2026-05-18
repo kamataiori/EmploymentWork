@@ -8,6 +8,8 @@
 #include <EnemySplitBullet.h>
 #include <MinionEnemy.h>
 #include "State/EnemyStateManager.h"
+#include <random>
+#include <vector>
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
@@ -149,12 +151,18 @@ void Enemy::Update()
 			{
 				(*it)->Update();
 				if ((*it)->IsDead()) {
+					if (it->get() == activeMinion_) {
+						activeMinion_ = nullptr;
+					}
 					it = minions_.erase(it);
 				}
 				else {
 					++it;
 				}
 			}
+
+			// ★ 雑魚敵を1体ずつ順番に突進させる
+			UpdateMinionCoordinator();
 
 			UpdateSplitBulletFiring(dt);
 		}
@@ -475,7 +483,77 @@ void Enemy::SpawnMinion(const Vector3& spawnPos)
 	auto m = std::make_unique<MinionEnemy>(GetBaseScene());
 	// InitializeMinion 内の object3d_->Initialize() がカメラを上書きするため、
 	// SetCamera は必ず InitializeMinion の後に呼ぶ
-	m->InitializeMinion(spawnPos, target_);
+	m->InitializeMinion(spawnPos);
 	m->SetCamera(GetCamera());
 	minions_.push_back(std::move(m));
+}
+
+// 雑魚敵を1体ずつ順番に突進させるコーディネーター
+//  ・出現演出が終わった雑魚敵をランダムに1体選び、突進～急降下させる
+//  ・その1体が終わるまで他は待機（完全静止）
+//  ・全員が突進し終えたら次のラウンドへ（再び1体ずつ繰り返す）
+void Enemy::UpdateMinionCoordinator()
+{
+	if (minions_.empty()) {
+		activeMinion_ = nullptr;
+		return;
+	}
+
+	// activeMinion_ がまだリストに存在するか確認（死亡時の保険）
+	if (activeMinion_) {
+		bool alive = false;
+		for (auto& m : minions_) {
+			if (m.get() == activeMinion_) { alive = true; break; }
+		}
+		if (!alive) activeMinion_ = nullptr;
+	}
+
+	// 突進中の雑魚敵がいれば、それが終わるまで待つ
+	if (activeMinion_) {
+		if (activeMinion_->IsAttacking()) {
+			return;
+		}
+		// 突進シーケンス完了 → このラウンドの行動済みにする
+		activeMinion_->SetActed(true);
+		activeMinion_ = nullptr;
+	}
+
+	// 次に突進させる候補（出現演出済み・未行動・待機中）を集める
+	std::vector<MinionEnemy*> candidates;
+	bool anySpawning = false;
+	for (auto& m : minions_) {
+		if (!m->IsSpawnFinished()) {
+			anySpawning = true; // まだ出現演出中の雑魚敵がいる
+			continue;
+		}
+		if (!m->HasActed() && m->IsIdle()) {
+			candidates.push_back(m.get());
+		}
+	}
+
+	if (!candidates.empty()) {
+		// ランダムに1体選び、現在のプレイヤー位置へ突進させる
+		static std::mt19937 rng(std::random_device{}());
+		std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
+		MinionEnemy* next = candidates[dist(rng)];
+
+		Vector3 targetPos = next->GetTransform().translate;
+		if (target_) {
+			targetPos = target_->translate;
+		}
+
+		next->BeginAttack(targetPos);
+		activeMinion_ = next;
+		return;
+	}
+
+	// 候補なし：出現演出中の雑魚敵が残っているなら、その完了を待つ
+	if (anySpawning) {
+		return;
+	}
+
+	// 全員が突進し終えた → 次のラウンドへ（行動済みフラグをリセット）
+	for (auto& m : minions_) {
+		m->ResetRound();
+	}
 }

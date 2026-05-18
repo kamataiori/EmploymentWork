@@ -25,20 +25,20 @@ MinionEnemy::MinionEnemy(BaseScene* scene)
 {
 }
 
-void MinionEnemy::InitializeMinion(const Vector3& spawnPos,const Transform* targetTransform)
+void MinionEnemy::InitializeMinion(const Vector3& spawnPos)
 {
 	ModelManager::GetInstance()->LoadModel("minion.obj");
 
 	object3d_->Initialize();
 	object3d_->SetModel("minion.obj");
 
-	targetTransform_ = targetTransform;
-
-	// 地面の位置を記憶
+	// 立ち位置を記憶（モデルの足元が地面に来るよう少し持ち上げる）
 	surfacePos_ = spawnPos;
+	surfacePos_.y += groundOffsetY_;
+	groundY_ = surfacePos_.y;
 
 	// 地面の下からスタート
-	transform.translate = spawnPos;
+	transform.translate = surfacePos_;
 	transform.translate.y -= spawnDepth_;
 	transform.rotate = { 0,0,0 };
 	transform.scale = { 1,1,1 };
@@ -49,8 +49,10 @@ void MinionEnemy::InitializeMinion(const Vector3& spawnPos,const Transform* targ
 
 	phase_ = Phase::Spawn;
 	isDead_ = false;
+	attackActive_ = false;
+	actedThisRound_ = false;
 	hp_ = kMaxHP_;
-	lifeTimer_ = 0.0f;
+	shockwaveTimer_ = 0.0f;
 
 	// コライダー（Sphere）
 	multiCollider_->Clear();
@@ -63,62 +65,124 @@ void MinionEnemy::InitializeMinion(const Vector3& spawnPos,const Transform* targ
 	multiCollider_->SetHitCallbackEx([this](const CollisionInfo& info) { this->OnCollision(info); });
 }
 
+void MinionEnemy::BeginAttack(const Vector3& targetPos)
+{
+	// 待機中以外から呼ばれても無視する
+	if (phase_ != Phase::Idle) return;
+
+	// 突進先を確定（XZのみ採用。高さは自分の地面に合わせる）
+	chargeTargetXZ_ = { targetPos.x, groundY_, targetPos.z };
+	phase_ = Phase::Charge;
+	attackActive_ = true;
+}
+
 void MinionEnemy::Update()
 {
 	if (isDead_) return;
 
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-	// 寿命チェック（Spawn中もカウントする）
-	lifeTimer_ += dt;
-	if (lifeTimer_ >= kMaxLifeTime_) {
-		isDead_ = true;
-		return;
-	}
-
 	switch (phase_)
 	{
 	case Phase::Spawn:
 	{
 		// 地面の下から上昇
-		transform.translate.y += riseSpeed_ * dt;
+		transform.translate.y += spawnRiseSpeed_ * dt;
 
-		// 地面の高さに到達したら追跡開始
+		// 地面の高さに到達したら待機へ
 		if (transform.translate.y >= surfacePos_.y) {
 			transform.translate.y = surfacePos_.y;
-			phase_ = Phase::Chase;
+			phase_ = Phase::Idle;
 		}
 		break;
 	}
 
-	case Phase::Chase:
+	case Phase::Idle:
+		// 完全静止。コーディネーター(Enemy)の BeginAttack を待つ。
+		break;
+
+	case Phase::Charge:
 	{
-		// プレイヤーに向かって移動
-		if (targetTransform_) {
-			Vector3 toTarget = targetTransform_->translate - transform.translate;
-			toTarget.y = 0.0f;
-			float dist = Length(toTarget);
+		// 取得済みのプレイヤー位置へ突進
+		Vector3 toTarget = chargeTargetXZ_ - transform.translate;
+		toTarget.y = 0.0f;
+		float dist = Length(toTarget);
 
-			if (dist > 0.5f) {
-				Vector3 dir = NormalizeSafe(toTarget);
+		if (dist <= reachThreshold_) {
+			// 到達 → 一旦止まって上昇へ
+			transform.translate.x = chargeTargetXZ_.x;
+			transform.translate.z = chargeTargetXZ_.z;
+			phase_ = Phase::Rise;
+		}
+		else {
+			Vector3 dir = NormalizeSafe(toTarget);
 
-				// 向き補間
-				float desiredYaw = std::atan2(dir.x, dir.z);
-				transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_);
+			// 進行方向を向く
+			float desiredYaw = std::atan2(dir.x, dir.z);
+			transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, turnLerp_);
 
-				// 移動
-				transform.translate.x += dir.x * moveSpeed_ * dt;
-				transform.translate.z += dir.z * moveSpeed_ * dt;
-			}
+			// 行き過ぎないようにクランプ
+			float step = chargeSpeed_ * dt;
+			if (step > dist) step = dist;
+			transform.translate.x += dir.x * step;
+			transform.translate.z += dir.z * step;
+		}
+		break;
+	}
+
+	case Phase::Rise:
+	{
+		// 突進先でY座標上に上昇
+		transform.translate.y += liftSpeed_ * dt;
+		if (transform.translate.y >= groundY_ + riseHeight_) {
+			transform.translate.y = groundY_ + riseHeight_;
+			phase_ = Phase::SpinTop;
+			spinAccumulated_ = 0.0f;
+		}
+		break;
+	}
+
+	case Phase::SpinTop:
+	{
+		// てっぺんで停止したまま高速回転（spinTurns_ 周）
+		float d = spinSpeed_ * dt;
+		transform.rotate.y += d;
+		spinAccumulated_ += d;
+		if (spinAccumulated_ >= spinTurns_ * 2.0f * 3.1415926535f) {
+			phase_ = Phase::Slam;
+		}
+		break;
+	}
+
+	case Phase::Slam:
+	{
+		// 急降下（回転はしない）
+		transform.translate.y -= slamSpeed_ * dt;
+		if (transform.translate.y <= groundY_) {
+			transform.translate.y = groundY_;
+			phase_ = Phase::Shockwave;
+			shockwaveTimer_ = 0.0f;
+		}
+		break;
+	}
+
+	case Phase::Shockwave:
+	{
+		// 着地点に範囲ダメージ（下のコライダー更新で半径を拡大）
+		shockwaveTimer_ += dt;
+		if (shockwaveTimer_ >= shockwaveDuration_) {
+			// 突進シーケンス完了 → 待機へ戻る
+			phase_ = Phase::Idle;
+			attackActive_ = false;
 		}
 		break;
 	}
 	}
 
-	// コライダー更新
+	// コライダー更新（衝撃波中のみ半径を拡大して範囲ダメージにする）
 	Sphere& sp = multiCollider_->MutableSphere(0);
 	sp.center = transform.translate;
-	sp.radius = radius_;
+	sp.radius = (phase_ == Phase::Shockwave) ? shockwaveRadius_ : radius_;
 
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetScale(transform.scale);
