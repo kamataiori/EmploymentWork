@@ -86,7 +86,7 @@ private:
 	float turnLerp_ = 0.35f;       // 向き補間
 	float reachThreshold_ = 0.6f;  // 到達とみなす距離
 
-	// 上昇（Rise：ドッスン準備）
+	// 上昇（Rise：急降下準備）
 	float liftSpeed_ = 12.0f;      // 上昇速度
 	float riseHeight_ = 12.0f;     // 地面からの到達高さ
 
@@ -95,7 +95,7 @@ private:
 	float spinTurns_ = 4.0f;       // 回転する周回数
 	float spinAccumulated_ = 0.0f; // 回転した累積角度(rad)
 
-	// 急降下（Slam：ドッスン）
+	// 急降下（Slam）
 	float slamSpeed_ = 60.0f;      // 急降下速度
 
 	// 衝撃波（Shockwave）

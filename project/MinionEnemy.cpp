@@ -98,7 +98,7 @@ void MinionEnemy::Update()
 	}
 
 	case Phase::Idle:
-		// 完全静止。コーディネーター(Enemy)の BeginAttack を待つ。
+		// 完全静止。Enemyの BeginAttack を待つ。
 		break;
 
 	case Phase::Charge:
