@@ -121,6 +121,12 @@ public:
 
     void SetAnimationOneShot(const std::string& name) { if (model_) model_->SetAnimationOneShot(name); }
 
+    // アニメ再生速度の倍率を設定（1.0=等倍 / >1で速く / <1で遅く）
+    void SetAnimationSpeed(float s) { if (model_) model_->SetAnimationSpeed(s); }
+
+    // 現在アニメの進行度 0.0〜1.0 を取得（当たり判定の同期に使う）
+    float GetAnimationProgress() const { return model_ ? model_->GetAnimationProgress() : 0.0f; }
+
 private:
 
     /// <summary>

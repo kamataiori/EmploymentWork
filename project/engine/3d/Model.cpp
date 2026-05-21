@@ -48,7 +48,8 @@ void Model::Update()
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
 	if (currentAnimation_) {
-		animationTime += dt;
+		// 速度倍率を掛けて進める（アニメ単位でスロー/早送りできる）
+		animationTime += dt * animationSpeed_;
 
 		if (isOneShot_) {
 			// 一回だけ：duration でクランプして止める（最後のポーズ保持）

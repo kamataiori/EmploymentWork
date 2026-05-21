@@ -1,5 +1,5 @@
 #include "Player.h"
-#include "PlayerWeaponOBB.h"
+#include "PlayerWeapon.h"
 #include <FollowCamera.h>
 #include "engine/TimeManager.h"
 
@@ -40,7 +40,7 @@ void Player::Initialize()
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
 
-	weapon_ = std::make_unique<PlayerWeaponOBB>();
+	weapon_ = std::make_unique<PlayerWeapon>();
 	weapon_->SetOwner(this);
 	weapon_->SetPlayerTransform(&transform);
 	weapon_->Initialize();
@@ -62,7 +62,10 @@ void Player::Initialize()
 	// 種別登録
 	multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayer));
 	// コールバック登録
-	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
+	// 相手の種別を見て被弾を判定するため Ex 版で登録する
+	// （SetHitCallback だと種別情報が捨てられ、何に当たっても無条件で被弾する）
+	multiCollider_->SetHitCallbackEx(
+		[this](const CollisionInfo& info) { this->OnCollision(info); });
 
 	sword_ = std::make_unique<Sword>(baseScene_);
 	sword_->Initialize();
@@ -94,6 +97,7 @@ void Player::Update()
 		isDead_ = true;
 		deathTimer_ = kDeathDuration_;
 		inputLocked_ = true;
+		object3d_->SetAnimationSpeed(1.0f); // 攻撃の速度倍率が残らないよう等倍に戻す
 		object3d_->SetAnimationOneShot("Death");
 	}
 
@@ -127,7 +131,8 @@ void Player::Update()
 	// playerの基本となる動き
 	Move();
 
-	bool weaponAttacking = false;
+	bool weaponAttacking = false;  // 攻撃モーション中（アニメ上書き禁止用）
+	bool weaponHitActive = false;  // 当たり判定を出してよい区間
 
 	if (weapon_) {
 		weapon_->Update();
@@ -138,8 +143,9 @@ void Player::Update()
 			weapon_->Ultimate();
 		}
 
-		if (auto w = dynamic_cast<PlayerWeaponOBB*>(weapon_.get())) {
+		if (auto w = dynamic_cast<PlayerWeapon*>(weapon_.get())) {
 			weaponAttacking = w->IsAttacking();
+			weaponHitActive = w->IsHitActive();
 		}
 	}
 
@@ -163,7 +169,7 @@ void Player::Update()
 
 	// Player 本体更新後に Sword を更新
 	if (sword_) {
-		sword_->SetHitEnabled(weaponAttacking);
+		sword_->SetHitEnabled(weaponHitActive);
 		sword_->Update();
 	}
 
@@ -255,6 +261,16 @@ void Player::OnCollision()
 
 	// 当たった時にフラグON
 	isCollided_ = true;
+}
+
+void Player::OnCollision(const CollisionInfo& info)
+{
+	// 敵グループ（敵本体・雑魚・敵弾・範囲攻撃）からの接触のみ被弾する。
+	// プレイヤー自身の武器や弾（kPlayerWeapon 等）では被弾しない。
+	const auto otherType = static_cast<CollisionTypeIdDef>(info.otherType);
+	if (GetGroup(otherType) == CollisionGroup::Enemy) {
+		OnCollision();
+	}
 }
 
 void Player::Move()
@@ -472,13 +488,16 @@ void Player::PlayAnimaKey(PlayerAnimKey key)
 	SetAnimationIfChanged(animaCtrl_.Resolve(key));
 }
 
-void Player::RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec)
+void Player::RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec, float speed)
 {
 	// 低い優先度からの上書きは禁止（攻撃中に移動で潰さない）
 	if (priority < currentAnimaPriority_) return;
 
 	PlayAnimaKey(key);
 	currentAnimaPriority_ = priority;
+
+	// このアニメの再生速度を反映（移動系は既定の 1.0 で等倍に戻る）
+	object3d_->SetAnimationSpeed(speed);
 
 	// ロックは長い方を採用で上書き
 	if (lockSec > 0.0f) {

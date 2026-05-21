@@ -5,7 +5,7 @@
 #include "PlayerAnimation.h"
 #include "PlayerAnimKey.h"
 #include "PlayerIWeapon.h"
-#include <PlayerWeaponOBB.h>
+#include <PlayerWeapon.h>
 #include "Sword.h"
 #include "Camera/CameraEffectController.h"
 
@@ -61,6 +61,12 @@ public:
 	void OnCollision() override;
 
 	/// <summary>
+	/// 当たり判定の呼出し（相手情報付き）
+	/// 敵グループからの接触のみ被弾として扱う
+	/// </summary>
+	void OnCollision(const CollisionInfo& info) override;
+
+	/// <summary>
 	/// カメラをセット
 	/// </summary>
 	void SetCamera(Camera* camera) override;
@@ -72,14 +78,23 @@ public:
 	// 任意のタイミングでキー再生したいとき用（攻撃側から呼ぶ想定）
 	void PlayAnimaKey(PlayerAnimKey key);
 
-	void RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec = 0.0f);
+	// speed: アニメ再生速度の倍率（1.0=等倍 / >1で速く / <1で遅く）
+	void RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec = 0.0f, float speed = 1.0f);
 
 	bool IsAnimaLocked() const { return animaLockTimer_ > 0.0f; }
 
+	// 現在アニメの進行度 0.0〜1.0（武器側が当たり判定区間の判定に使う）
+	float GetAnimationProgress() const { return object3d_->GetAnimationProgress(); }
+
+	// 攻撃アニメ終了時に呼ぶ：優先度/ロックを解除し、移動アニメへ戻れるようにする
+	void EndAttackState() { animaLockTimer_ = 0.0f; currentAnimaPriority_ = 0; }
+
 	PlayerIWeapon* GetWeapon() { return weapon_.get(); }
 
+	// 攻撃中（攻撃アニメ再生中）のみコライダーを返す。
+	// 非攻撃時は nullptr を返し、Scene 側で登録されない＝判定が出ない。
 	MultiCollider* GetWeaponCollider() {
-		if (!sword_) return nullptr;
+		if (!sword_ || !sword_->IsHitEnabled()) return nullptr;
 		return sword_->GetMultiCollider();
 	}
 

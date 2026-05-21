@@ -24,6 +24,8 @@ public:
 	void SetLocalOffset(const Vector3& t, const Vector3& r, const Vector3& s);
 
 	void SetHitEnabled(bool enabled) { hitEnabled_ = enabled; }
+	// 攻撃中で当たり判定が有効か（Scene のコライダー登録判定に使う）
+	bool IsHitEnabled() const { return hitEnabled_; }
 
 	MultiCollider* GetMultiCollider() const { return multiCollider_.get(); }
 

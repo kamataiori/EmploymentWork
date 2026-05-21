@@ -80,7 +80,10 @@ void Enemy::Initialize()
 
 	*multiCollider_ = MultiCollider(first);
 	multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
-	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
+	// 相手の種別を見て被弾を判定するため Ex 版で登録する
+	// （SetHitCallback だと種別情報が捨てられ、何に当たっても無条件で被弾する）
+	multiCollider_->SetHitCallbackEx(
+		[this](const CollisionInfo& info) { this->OnCollision(info); });
 
 	uiManager_ = std::make_unique<UIManager>();
 	const float winW = 1280.0f;
