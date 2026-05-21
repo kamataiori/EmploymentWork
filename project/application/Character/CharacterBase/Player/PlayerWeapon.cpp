@@ -13,9 +13,9 @@
 //======================================================
 const PlayerWeapon::AttackInfo PlayerWeapon::kNormalAttacks_[3] = {
 	//  key,                      speed, hitStart, hitEnd, comboAt
-	{ PlayerAnimKey::Attack01,     1.2f,    0.25f,  0.45f,  0.60f }, // 速い小振り
-	{ PlayerAnimKey::Attack02,     1.0f,    0.30f,  0.55f,  0.65f }, // 標準
-	{ PlayerAnimKey::Attack03,     0.8f,    0.40f,  0.70f,  0.80f }, // ゆっくり大振り
+	{ PlayerAnimKey::Attack01,     1.3f,    0.25f,  0.45f,  0.60f }, // 速い小振り
+	{ PlayerAnimKey::Attack02,     1.15f,    0.30f,  0.55f,  0.65f }, // 少し速い小振り
+	{ PlayerAnimKey::Attack03,     0.9f,    0.40f,  0.70f,  0.80f }, // 少しゆっくり大振り
 };
 
 void PlayerWeapon::Initialize()
