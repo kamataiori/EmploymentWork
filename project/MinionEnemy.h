@@ -107,7 +107,8 @@ private:
 	float shockwaveTimer_ = 0.0f;
 
 	// 急降下後の硬直（Recover）：着地直後の無防備時間＝プレイヤーの反撃チャンス
-	float recoverDuration_ = 0.7f;   // 硬直の長さ（秒）
+	float recoverDuration_ = 0.7f;        // 硬直の長さ（秒）＝反撃チャンスの長さ
+	float scaleRecoverDuration_ = 0.3f;   // 潰れスケールが通常へ戻るまでの時間（硬直より短く）
 	float recoverTimer_ = 0.0f;
 	Vector3 impactScale_ = { 1.3f, 0.6f, 1.3f }; // 着地で潰れるスケール（Recoverで通常へ戻す）
 
