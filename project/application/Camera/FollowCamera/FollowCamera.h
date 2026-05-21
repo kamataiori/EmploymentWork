@@ -94,12 +94,15 @@ private: // メンバ変数
 	// --- カメラ操作 ---
 	float keyOrbitSpeed_ = 0.01f;    // キーボードでの周回速度（rad/frame）
 
-	// --- 見下ろし角(pitch)のクランプ ---
-	float pitchMin_ = 0.0f;          // 最小（頭を画面中央に映せる角度まで許容）
-	float pitchMax_ = 0.35f;         // 最大（下を向きすぎない）
+	// --- 上下の見下ろし角(pitch)：マウス上下で操作 ---
+	float cameraPitch_ = 0.0f;         // 現在の見下ろし角（マウスYで変化。rad）
+	float pitchSensitivity_ = 0.0025f; // マウス上下の感度
+	float pitchMin_ = -0.25f;          // 上限（負＝見上げ側）
+	float pitchMax_ = 0.5f;            // 下限（下を向きすぎないため）
 
 	bool initializedAngle_ = false;
 	bool initializedPosY_ = false;
+	bool initializedPitch_ = false;
 
 	// --- 注視点Yの追従を弱める設定 ---
 	bool  lockLookY_ = true;          // true: 注視点Yを固定（追従しない）

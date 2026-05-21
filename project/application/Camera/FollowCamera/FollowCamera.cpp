@@ -27,13 +27,25 @@ void FollowCamera::Update()
 		initializedAngle_ = true;
 	}
 
+	// 初回だけ：初期の高さ(heightOffset)から見下ろし角を逆算して合わせる
+	if (!initializedPitch_) {
+		cameraPitch_ = std::atan2(heightOffset - lookHeight_, followDistance);
+		cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
+		initializedPitch_ = true;
+	}
+
 	// =============================
 	// 入力：周回角（カメラオービット）
 	// =============================
 	if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= keyOrbitSpeed_;
 	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += keyOrbitSpeed_;
 
+	// 左右：水平の周回角
 	angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
+
+	// 上下：見下ろし角（マウスを下げると見下ろし、上げると見上げ）
+	cameraPitch_ += Input::GetInstance()->GetMouseDelta().y * pitchSensitivity_;
+	cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
 
 	const Vector3& targetPos = target->GetTransform().translate;
 
@@ -42,9 +54,13 @@ void FollowCamera::Update()
 	const float camShiftX = -std::cos(angle) * cameraSideShift_;
 	const float camShiftZ = std::sin(angle) * cameraSideShift_;
 
+	// 縦方向：注視点の高さを基準に、見下ろし角ぶんだけカメラを持ち上げる。
+	// これでマウス上下に応じてカメラが縦に周回する。
+	const float camHeight = lookHeight_ + followDistance * std::tan(cameraPitch_);
+
 	Vector3 desiredPos = {
 		targetPos.x + std::sin(angle) * followDistance + camShiftX,
-		targetPos.y + heightOffset,
+		targetPos.y + camHeight,
 		targetPos.z + std::cos(angle) * followDistance + camShiftZ
 	};
 
@@ -69,7 +85,7 @@ void FollowCamera::Update()
 	}
 
 	// =============================
-	// 注視点：プレイヤーの胸あたりを見る
+	// 注視点：プレイヤーの頭あたりを見る
 	// =============================
 	Vector3 lookAt = targetPos;
 
