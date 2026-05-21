@@ -250,10 +250,12 @@ void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 				{
 					// thresholdDistance を待機秒数として流用（0なら7秒デフォルト）
 					float waitSec = (p.thresholdDistance > 0.0f) ? p.thresholdDistance : 7.0f;
+					// 待機は「攻撃」ではないので last_action に記録しない
+					// （記録すると NotLastAction が攻撃名を見失う）
 					return std::make_unique<ExecuteStateLeaf>(
 						blackboard_.get(),
 						[waitSec]() { return std::make_unique<IdleWaitState>(waitSec); },
-						"IdleWait");
+						"");
 				}
 				case LeafStateType::SummonMinionNormal:
 					return std::make_unique<ExecuteStateLeaf>(
