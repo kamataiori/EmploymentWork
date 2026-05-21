@@ -166,6 +166,7 @@ void Enemy::Update()
 			// ★ 雑魚敵の更新
 			for (auto it = minions_.begin(); it != minions_.end(); )
 			{
+				(*it)->SetPlayerTarget(target_); // 待機中の向き追従用
 				(*it)->Update();
 				if ((*it)->IsDead()) {
 					if (it->get() == activeMinion_) {

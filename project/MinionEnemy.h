@@ -51,6 +51,8 @@ public:
 	void SetActed(bool v) { actedThisRound_ = v; }
 	// 次のラウンドへ：行動済みフラグをリセット
 	void ResetRound() { actedThisRound_ = false; }
+	// 待機中にプレイヤーの方を向くための参照を渡す（毎フレーム更新でよい）
+	void SetPlayerTarget(const Transform* t) { playerTarget_ = t; }
 
 private:
 	enum class Phase {
@@ -61,6 +63,7 @@ private:
 		SpinTop,    // てっぺんで停止して高速回転
 		Slam,       // 急降下
 		Shockwave,  // 着地直後の衝撃波
+		Recover,    // 急降下後の硬直（無防備な反撃チャンス）
 	};
 
 	Phase phase_ = Phase::Spawn;
@@ -102,6 +105,18 @@ private:
 	float shockwaveRadius_ = 3.0f;   // 着地時の範囲ダメージ半径
 	float shockwaveDuration_ = 0.25f;// 衝撃波の継続時間
 	float shockwaveTimer_ = 0.0f;
+
+	// 急降下後の硬直（Recover）：着地直後の無防備時間＝プレイヤーの反撃チャンス
+	float recoverDuration_ = 0.7f;   // 硬直の長さ（秒）
+	float recoverTimer_ = 0.0f;
+	Vector3 impactScale_ = { 1.3f, 0.6f, 1.3f }; // 着地で潰れるスケール（Recoverで通常へ戻す）
+
+	// 生きた待機（Idle演出）：完全静止にせず、ホバー揺れ＋プレイヤー追従
+	const Transform* playerTarget_ = nullptr; // プレイヤー参照（向き追従用）
+	float idleTime_ = 0.0f;          // 待機演出の経過時間
+	float idleBobAmplitude_ = 0.3f;  // ホバー上下動の振幅
+	float idleBobSpeed_ = 3.0f;      // ホバー上下動の速さ(rad/s)
+	float idleTurnLerp_ = 0.04f;     // プレイヤーへ向く補間の強さ
 
 	// コライダー
 	float radius_ = 0.8f;

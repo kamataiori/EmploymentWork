@@ -72,6 +72,7 @@ void MinionEnemy::BeginAttack(const Vector3& targetPos)
 
 	// 突進先を確定（XZのみ採用。高さは自分の地面に合わせる）
 	chargeTargetXZ_ = { targetPos.x, groundY_, targetPos.z };
+	transform.translate.y = groundY_; // 待機のホバー揺れ位置から地面へ戻して突進開始
 	phase_ = Phase::Charge;
 	attackActive_ = true;
 }
@@ -98,8 +99,27 @@ void MinionEnemy::Update()
 	}
 
 	case Phase::Idle:
-		// 完全静止。Enemyの BeginAttack を待つ。
+	{
+		// 生きた待機：完全静止にせず、ゆるくホバー上下動しつつプレイヤーを向く。
+		// Enemy の BeginAttack を待つ点は同じ。
+		idleTime_ += dt;
+
+		// ホバー上下動（groundY_ から上方向にだけ揺れる）
+		const float bob = (1.0f - std::cos(idleTime_ * idleBobSpeed_)) * 0.5f * idleBobAmplitude_;
+		transform.translate.y = groundY_ + bob;
+
+		// ゆっくりプレイヤーの方を向く
+		if (playerTarget_) {
+			Vector3 toPlayer = playerTarget_->translate - transform.translate;
+			toPlayer.y = 0.0f;
+			if (Length(toPlayer) > 1e-4f) {
+				Vector3 dir = NormalizeSafe(toPlayer);
+				const float desiredYaw = std::atan2(dir.x, dir.z);
+				transform.rotate.y = LerpAngleRad(transform.rotate.y, desiredYaw, idleTurnLerp_);
+			}
+		}
 		break;
+	}
 
 	case Phase::Charge:
 	{
@@ -160,6 +180,7 @@ void MinionEnemy::Update()
 		transform.translate.y -= slamSpeed_ * dt;
 		if (transform.translate.y <= groundY_) {
 			transform.translate.y = groundY_;
+			transform.scale = impactScale_; // 着地の衝撃で潰れる（Recoverで戻す）
 			phase_ = Phase::Shockwave;
 			shockwaveTimer_ = 0.0f;
 		}
@@ -171,9 +192,31 @@ void MinionEnemy::Update()
 		// 着地点に範囲ダメージ（下のコライダー更新で半径を拡大）
 		shockwaveTimer_ += dt;
 		if (shockwaveTimer_ >= shockwaveDuration_) {
-			// 突進シーケンス完了 → 待機へ戻る
-			phase_ = Phase::Idle;
+			// 衝撃波おわり → 硬直(Recover)へ。
+			// attackActive_ をここで false にするので、コーディネーターは
+			// 従来どおりこのタイミングで次の雑魚敵を選ぶ（突進間隔は変わらない）。
+			phase_ = Phase::Recover;
+			recoverTimer_ = 0.0f;
 			attackActive_ = false;
+		}
+		break;
+	}
+
+	case Phase::Recover:
+	{
+		// 急降下後の硬直：無防備で動けない＝プレイヤーの反撃チャンス。
+		// 潰れスケールの戻りは硬直より短い scaleRecoverDuration_ で素早く立ち直らせる。
+		recoverTimer_ += dt;
+		float t = recoverTimer_ / scaleRecoverDuration_;
+		if (t > 1.0f) t = 1.0f;
+		transform.scale.x = impactScale_.x + (1.0f - impactScale_.x) * t;
+		transform.scale.y = impactScale_.y + (1.0f - impactScale_.y) * t;
+		transform.scale.z = impactScale_.z + (1.0f - impactScale_.z) * t;
+
+		if (recoverTimer_ >= recoverDuration_) {
+			transform.scale = { 1.0f, 1.0f, 1.0f };
+			idleTime_ = 0.0f;       // 待機演出を最初から
+			phase_ = Phase::Idle;
 		}
 		break;
 	}
