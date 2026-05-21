@@ -172,8 +172,8 @@ private:
 		int jumpCount = 0;                    // 現在ジャンプ回数
 		const int kMaxJumpCount = 1;          // 最大ジャンプ回数
 		bool canJump_ = true;                 // Spaceキーが離されたことを確認するフラグ
-		const float kInitialVelocity = 0.45f; // 初速
-		const float kGravity = 0.02f;         // 重力
+		const float kInitialVelocity = 0.19f;  // 初速（頂点 ≈ v^2/2g ≈ 1.44ユニット）
+		const float kGravity = 0.0125f;        // 重力（滞空 ≈ 2v/g ≈ 0.5秒）
 		const float kGroundHeight = 0.0f;     // 地面高さ
 	};
 	// インスタンス
