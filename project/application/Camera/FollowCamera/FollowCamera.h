@@ -51,6 +51,16 @@ public: // カメラの高さ関係
 	float GetHeightOffset() const { return heightOffset; }
 
 	/// <summary>
+	/// 注視点の高さ（画面中央に映る点。頭の高さ）を設定
+	/// </summary>
+	void SetLookHeight(float h) { lookHeight_ = h; }
+
+	/// <summary>
+	/// 注視点の高さを取得
+	/// </summary>
+	float GetLookHeight() const { return lookHeight_; }
+
+	/// <summary>
 	/// カメラの回転角度（Y軸）を設定
 	/// </summary>
 	void SetAngle(float a) { angle = a; }
@@ -74,7 +84,19 @@ private: // メンバ変数
 	float heightOffset = 1.5f;    // カメラの高さオフセット
 	float angle = 3.14f;    // カメラの回転角度（Y軸）
 	float sensitivity_ = 0.001f; // 初期値：感度
-	float shoulderOffset = 1.2f;  // 肩越し
+
+	// --- 注視点（画面中央に映る点）---
+	float lookHeight_ = 2.4f;        // 注視点の高さ（プレイヤー基準・頭の高さ）
+
+	// --- 肩越し（カメラ／注視点の横ずらし量）---
+	float cameraSideShift_ = 1.3f;   // 横へずらす量（大きいほどキャラが画面端寄り）
+
+	// --- カメラ操作 ---
+	float keyOrbitSpeed_ = 0.01f;    // キーボードでの周回速度（rad/frame）
+
+	// --- 見下ろし角(pitch)のクランプ ---
+	float pitchMin_ = 0.0f;          // 最小（頭を画面中央に映せる角度まで許容）
+	float pitchMax_ = 0.35f;         // 最大（下を向きすぎない）
 
 	bool initializedAngle_ = false;
 	bool initializedPosY_ = false;

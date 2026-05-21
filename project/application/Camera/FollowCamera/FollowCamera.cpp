@@ -5,7 +5,6 @@ FollowCamera::FollowCamera(ObjectBase* target, float followDistance, float heigh
 	: target(target),
 	followDistance(followDistance),
 	heightOffset(heightOffset),
-	shoulderOffset(0.0f),
 	sensitivity_(0.0025f),
 	dampPosY_(true),
 	posYSmooth_(12.0f),
@@ -31,8 +30,8 @@ void FollowCamera::Update()
 	// =============================
 	// 入力：周回角（カメラオービット）
 	// =============================
-	if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= 0.01f;
-	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += 0.01f;
+	if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= keyOrbitSpeed_;
+	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += keyOrbitSpeed_;
 
 	angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
 
@@ -40,8 +39,8 @@ void FollowCamera::Update()
 
 	// カメラ位置計算の部分を変更
 	// カメラを左にずらす（マイナス方向）
-	const float camShiftX = -std::cos(angle) * 1.3f;
-	const float camShiftZ = std::sin(angle) * 1.3f;
+	const float camShiftX = -std::cos(angle) * cameraSideShift_;
+	const float camShiftZ = std::sin(angle) * cameraSideShift_;
 
 	Vector3 desiredPos = {
 		targetPos.x + std::sin(angle) * followDistance + camShiftX,
@@ -78,19 +77,14 @@ void FollowCamera::Update()
 	{
 		const float tt = 1.0f - std::exp(-lookYSmooth_ * dt);
 		lookY_ = lookY_ + (targetPos.y - lookY_) * tt;
-		lookAt.y = lookY_ + 1.3f; // 胸の高さ
+		lookAt.y = lookY_ + lookHeight_; // 画面中央に映る高さ（頭の高さ）
 	}
 
 	// =============================
 	// 肩越し（右肩カメラ）：
-	// 注視点を「カメラの右方向」にずらすことでキャラを画面左寄りに見せる
+	// 注視点を横方向にずらすことでキャラを画面端寄りに見せる
 	// カメラ位置は円のまま変えないので距離は絶対変わらない
 	// =============================
-	// angle に対する右方向（forward を -90° 回転）
-	const float rightX = std::cos(angle);
-	const float rightZ = -std::sin(angle);
-
-	// 注視点も同じ方向（左）にずらす
 	lookAt.x += camShiftX;
 	lookAt.z += camShiftZ;
 
@@ -105,7 +99,7 @@ void FollowCamera::Update()
 	float pitch = std::atan2(-dir.y, horizontalLength);
 
 	// Pitch クランプ（下向きのみ）
-	pitch = std::clamp(pitch, 0.18f, 0.35f);
+	pitch = std::clamp(pitch, pitchMin_, pitchMax_);
 	transform.rotate.x = pitch;
 
 	Camera::Update();
