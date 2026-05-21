@@ -10,6 +10,7 @@ class EnemyDropBullet;
 class EnemySplitBullet;
 class UIManager;
 class EnemyStateManager;
+class CameraEffectController;
 
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
@@ -141,6 +142,20 @@ public:
 	// 雑魚敵を1体召喚（SummonMinionState から呼ばれる）
 	void SpawnMinion(const Vector3& spawnPos);
 
+	//=== 範囲攻撃判定（回転薙ぎ払い・ジャンプ急降下などで共用）===
+	// State から呼ばれ、ボス周囲に範囲攻撃判定を展開/閉じる
+	void ActivateAreaAttack(float radius);
+	void DeactivateAreaAttack();
+	// 判定が出ている間だけ非nullを返す（Scene 側でコライダー登録に使う）
+	MultiCollider* GetActiveAreaAttackCollider() const;
+
+	// カメラ演出（着地時の振動などに使う）。Scene から注入される
+	void SetCameraEffect(CameraEffectController* fx) { cameraEffect_ = fx; }
+	CameraEffectController* GetCameraEffect() const { return cameraEffect_; }
+
+	// 回転薙ぎ払いの着地エフェクト（土煙）を pos に発生させる
+	void SpawnSpinLandEffect(const Vector3& pos);
+
 	// リストの公開（Scene側でコライダー登録用）
 	const std::list<std::unique_ptr<MinionEnemy>>& GetMinions() const { return minions_; }
 
@@ -203,6 +218,16 @@ private:
 
 	// 雑魚敵リスト
 	std::list<std::unique_ptr<MinionEnemy>> minions_;
+
+	// 回転薙ぎ払いの攻撃判定（EnemyAreaAttack 型の球コライダー）
+	// 本体コライダーとは別物。Spin 中だけ Scene へ登録される
+	std::unique_ptr<MultiCollider> spinHitbox_;
+	bool  spinHitboxActive_ = false;
+	float spinHitboxRadius_ = 6.0f;
+	void UpdateSpinHitbox();
+
+	// カメラ演出コントローラ（Scene 所有。Enemy は参照のみ）
+	CameraEffectController* cameraEffect_ = nullptr;
 
 	// 現在突進シーケンスを実行中の雑魚敵（1体ずつ順番に動かす）
 	MinionEnemy* activeMinion_ = nullptr;

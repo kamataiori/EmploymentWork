@@ -74,6 +74,7 @@ void GamePlayScene::Initialize()
 	enemy_->Initialize();
 	enemy_->SetTargetTransform(&player_->GetTransform());
 	player_->SetCameraEffect(cameraEffect_.get());
+	enemy_->SetCameraEffect(cameraEffect_.get());
 
 	// 全オブジェクトに followCamera をセット
 	sky->SetCamera(followCamera.get());
@@ -380,6 +381,11 @@ void GamePlayScene::Update()
 		collisionManager_->RegisterCollider(wcol);
 	}
 	collisionManager_->RegisterCollider(enemy_->GetMultiCollider());
+
+	// 回転薙ぎ払いの攻撃判定（出ている間だけ登録される）
+	if (auto* areaAttack = enemy_->GetActiveAreaAttackCollider()) {
+		collisionManager_->RegisterCollider(areaAttack);
+	}
 
 	for (auto& b : enemy_->GetDropBullets()) {
 		collisionManager_->RegisterCollider(b->GetMultiCollider());

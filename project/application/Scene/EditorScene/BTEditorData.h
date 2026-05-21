@@ -64,6 +64,9 @@ namespace BTEditor {
 		IdleWait = 15, // その場で待機（攻撃の隙）
 		SummonMinionNormal = 17, // 通常時の雑魚召喚
 		WaitMinionDead = 18, // 雑魚が全滅するまで待機
+		SpinAttack = 19, // 回転薙ぎ払い（近接撃退技）
+		JumpSlam = 20, // ジャンプ急降下叩きつけ（間合いを詰める追撃技）
+		FeintAttack = 21, // フェイント攻撃（読み合い技）
 		Custom = 99, // 将来拡張用
 	};
 
@@ -88,6 +91,9 @@ namespace BTEditor {
 		case LeafStateType::IdleWait:              return "IdleWait";
 		case LeafStateType::SummonMinionNormal:    return "SummonMinion";
 		case LeafStateType::WaitMinionDead:        return "WaitMinionDead";
+		case LeafStateType::SpinAttack:            return "SpinAttack";
+		case LeafStateType::JumpSlam:              return "JumpSlam";
+		case LeafStateType::FeintAttack:           return "FeintAttack";
 		case LeafStateType::Custom:        return "Custom";
 		default:                           return "Unknown";
 		}

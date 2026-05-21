@@ -24,8 +24,8 @@
     },
     {
       "id": 2,
-      "kind": 1,
-      "label": "Sequence",
+      "kind": 5,
+      "label": "RandomSelector",
       "param": {
         "chargeDash": {
           "chargeTime": 0.7,
@@ -47,7 +47,7 @@
     {
       "id": 3,
       "kind": 4,
-      "label": "FindTarget",
+      "label": "SpinAttack",
       "param": {
         "chargeDash": {
           "chargeTime": 0.7,
@@ -59,7 +59,7 @@
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 3,
+        "stateType": 19,
         "thresholdDistance": 2.0,
         "lastActionName": ""
       },
@@ -69,7 +69,7 @@
     {
       "id": 4,
       "kind": 4,
-      "label": "SummonMinion",
+      "label": "JumpSlam",
       "param": {
         "chargeDash": {
           "chargeTime": 0.7,
@@ -81,7 +81,7 @@
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 17,
+        "stateType": 20,
         "thresholdDistance": 2.0,
         "lastActionName": ""
       },
@@ -91,7 +91,7 @@
     {
       "id": 5,
       "kind": 4,
-      "label": "WaitMinionDead",
+      "label": "FeintAttack",
       "param": {
         "chargeDash": {
           "chargeTime": 0.7,
@@ -103,7 +103,7 @@
         },
         "customName": "",
         "decoratorType": "Inverter",
-        "stateType": 18,
+        "stateType": 21,
         "thresholdDistance": 2.0,
         "lastActionName": ""
       },

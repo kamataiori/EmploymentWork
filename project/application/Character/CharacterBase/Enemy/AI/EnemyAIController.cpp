@@ -26,6 +26,9 @@
 #include "BehaviorTree/Leaves/ExecuteStateLeaf.h"
 #include <Enemy/State/ChargeDashState.h>
 #include <Enemy/State/SummonMinionState.h>
+#include "application/Character/CharacterBase/Enemy/State/SpinAttackState.h"
+#include "application/Character/CharacterBase/Enemy/State/JumpSlamState.h"
+#include "application/Character/CharacterBase/Enemy/State/FeintAttackState.h"
 #include "application/Character/CharacterBase/Enemy/State/ShootSplitBulletState.h"
 #include "application/Character/CharacterBase/Enemy/State/ThrowBigBulletState.h"
 #include "application/Character/CharacterBase/Enemy/State/IdleWaitState.h"
@@ -262,6 +265,60 @@ void EnemyAIController::RebuildFromGraph(const BTEditor::BTGraph& graph)
 						blackboard_.get(),
 						[]() { return std::make_unique<WaitMinionDeadState>(); },
 						"WaitMinionDead");
+				case LeafStateType::SpinAttack:
+				{
+					// 回転薙ぎ払い（近接撃退技）
+					SpinAttackParam sp;
+					// 怒り状態なら溜め短縮・回転高速化で圧を強める
+					{
+						Enemy* _owner = blackboard_.get() ? blackboard_->get_value<Enemy*>("enemy") : nullptr;
+						if (_owner && _owner->IsAngry()) {
+							sp.windUpTime *= 0.6f;
+							sp.spinSpeed *= 1.3f;
+							sp.recoverTime *= 0.7f;
+						}
+					}
+					return std::make_unique<ExecuteStateLeaf>(
+						blackboard_.get(),
+						[sp]() { return std::make_unique<SpinAttackState>(sp); },
+						"SpinAttack");
+				}
+				case LeafStateType::JumpSlam:
+				{
+					// ジャンプ急降下叩きつけ（間合いを詰める追撃技）
+					JumpSlamParam jp;
+					// 怒り状態なら溜め短縮・跳躍高速化で圧を強める
+					{
+						Enemy* _owner = blackboard_.get() ? blackboard_->get_value<Enemy*>("enemy") : nullptr;
+						if (_owner && _owner->IsAngry()) {
+							jp.windUpTime *= 0.6f;
+							jp.leapTime *= 0.8f;
+							jp.recoverTime *= 0.7f;
+						}
+					}
+					return std::make_unique<ExecuteStateLeaf>(
+						blackboard_.get(),
+						[jp]() { return std::make_unique<JumpSlamState>(jp); },
+						"JumpSlam");
+				}
+				case LeafStateType::FeintAttack:
+				{
+					// フェイント攻撃（読み合い技）
+					FeintAttackParam fp;
+					// 怒り状態なら誘い・硬直を短縮し、より読みにくくする
+					{
+						Enemy* _owner = blackboard_.get() ? blackboard_->get_value<Enemy*>("enemy") : nullptr;
+						if (_owner && _owner->IsAngry()) {
+							fp.windUpTime *= 0.7f;
+							fp.feintHoldTime *= 0.7f;
+							fp.recoverTime *= 0.7f;
+						}
+					}
+					return std::make_unique<ExecuteStateLeaf>(
+						blackboard_.get(),
+						[fp]() { return std::make_unique<FeintAttackState>(fp); },
+						"FeintAttack");
+				}
 				default:
 					return nullptr;
 				}

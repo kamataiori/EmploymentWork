@@ -106,6 +106,20 @@ void Enemy::Initialize()
 	deathParticleTransform_ = transform;
 
 	stateManager_ = std::make_unique<EnemyStateManager>();
+
+	// 回転薙ぎ払いの攻撃判定（球）。本体とは別コライダー
+	{
+		Sphere sp{};
+		sp.center = transform.translate;
+		sp.radius = 0.0f;
+
+		Shape sh{};
+		sh.kind = ShapeKind::Sphere;
+		sh.sphere = sp;
+
+		spinHitbox_ = std::make_unique<MultiCollider>(sh);
+		spinHitbox_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::EnemyAreaAttack));
+	}
 }
 
 void Enemy::Update()
@@ -182,6 +196,9 @@ void Enemy::Update()
 
 	obb.size = { obbSize_.x, obbSize_.y, obbSize_.z };
 
+	// 回転薙ぎ払いの攻撃判定をボスへ追従させる
+	UpdateSpinHitbox();
+
 	if (hitReactTimer_ > 0.0f) {
 		hitReactTimer_ -= dt;
 		if (hitReactTimer_ <= 0.0f) {
@@ -205,6 +222,12 @@ void Enemy::Update()
 	ImGui::Text("Minion count: %d", (int)minions_.size());
 	ImGui::End();*/
 #endif
+
+	// パーティクル更新（ヒット/死亡/着地エフェクト共通）
+	// 生存中も毎フレーム呼ばないとアニメーションしないため、ここで一括更新する
+	if (deathSystem_) {
+		deathSystem_->Update();
+	}
 
 	// 死亡演出
 	if (isDead_) {
@@ -240,11 +263,6 @@ void Enemy::Update()
 		if (transform.scale.x < 0.0f) transform.scale.x = 0.0f;
 		if (transform.scale.y < 0.0f) transform.scale.y = 0.0f;
 		if (transform.scale.z < 0.0f) transform.scale.z = 0.0f;
-
-		// 生存中もパーティクル更新（ヒットエフェクト用）
-		if (!isDead_ && deathSystem_) {
-			deathSystem_->Update();
-		}
 
 		if (deathTimer_ >= kDeathToTitleDelay_) {
 			SceneManager::GetInstance()->ChangeScene("TITLE");
@@ -486,6 +504,51 @@ void Enemy::SpawnMinion(const Vector3& spawnPos)
 	m->InitializeMinion(spawnPos);
 	m->SetCamera(GetCamera());
 	minions_.push_back(std::move(m));
+}
+
+// 回転薙ぎ払いの着地エフェクト（衝撃波）を発生させる
+void Enemy::SpawnSpinLandEffect(const Vector3& pos)
+{
+	if (!deathSystem_) return;
+
+	// 敵と同じスケール感で衝撃波を出す（ADEエフェクトと同じ流儀）
+	Transform t = transform;
+	t.translate = pos;
+	t.translate.y += 0.3f; // 地面に少し埋まらないよう持ち上げる
+	t.rotate = { 0.0f, 0.0f, 0.0f };
+
+	// 回転薙ぎ払い専用の衝撃波プリセット（Resources/Particle/SpinShockwave.json）
+	deathSystem_->EmitByPresetName("SpinShockwave", t);
+}
+
+// 範囲攻撃判定を展開する（回転薙ぎ払い・ジャンプ急降下などから呼ばれる）
+void Enemy::ActivateAreaAttack(float radius)
+{
+	spinHitboxRadius_ = radius;
+	spinHitboxActive_ = true;
+	UpdateSpinHitbox();
+}
+
+// 範囲攻撃判定を閉じる
+void Enemy::DeactivateAreaAttack()
+{
+	spinHitboxActive_ = false;
+	UpdateSpinHitbox();
+}
+
+// 判定が出ている間だけ非nullを返す
+MultiCollider* Enemy::GetActiveAreaAttackCollider() const
+{
+	return spinHitboxActive_ ? spinHitbox_.get() : nullptr;
+}
+
+// 攻撃判定（球）をボス本体に追従させる
+void Enemy::UpdateSpinHitbox()
+{
+	if (!spinHitbox_) return;
+	Sphere& sp = spinHitbox_->MutableSphere(0);
+	sp.center = transform.translate + colliderOffset_; // 胴体中心あたり
+	sp.radius = spinHitboxActive_ ? spinHitboxRadius_ : 0.0f;
 }
 
 // 雑魚敵を1体ずつ順番に突進させるコーディネーター

@@ -399,6 +399,15 @@
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\ChargeDashState.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\SpinAttackState.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\JumpSlamState.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="application\Character\CharacterBase\Enemy\State\FeintAttackState.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -851,6 +860,15 @@
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\ChargeDashParam.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\SpinAttackParam.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\JumpSlamParam.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Enemy\AI\FeintAttackParam.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
     <ClInclude Include="EnemyDropBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -864,6 +882,15 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\ChargeDashState.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\SpinAttackState.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\JumpSlamState.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Enemy\State\FeintAttackState.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.h">
