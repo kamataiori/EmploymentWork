@@ -73,6 +73,27 @@ public:
 		}
 	};
 
+	/// <summary>
+	/// パンチズーム用パラメータ（溜め → 寄り → 戻り の3フェーズ）
+	///
+	/// ・溜め（pre）  … preZoomAmount まで preDuration かけてゆっくり寄る
+	/// ・寄り（in）    … 残り（zoomAmount まで）を inDuration で一気に寄る
+	/// ・戻り（out）   … 元の FOV へ outDuration で戻る
+	///
+	/// preDuration を 0 にすると溜めフェーズを省略し、従来どおりの2フェーズになる。
+	/// </summary>
+	struct PunchParams
+	{
+		float zoomAmount = 0.10f;    // 最終的な寄り幅（ラジアン）
+		float preZoomAmount = 0.0f;     // 溜めフェーズで先に寄る量（ラジアン）
+		float preDuration = 0.0f;     // 溜めフェーズの時間（秒、0で省略）
+		float inDuration = 0.06f;    // 寄りフェーズの時間（秒）
+		float outDuration = 0.18f;    // 戻りフェーズの時間（秒）
+		Tween::EasingFunc preEasing = Tween::Easing::Linear;       // 溜めのイージング
+		Tween::EasingFunc inEasing = Tween::Easing::EaseOutQuad;  // 寄りのイージング
+		Tween::EasingFunc outEasing = Tween::Easing::EaseInQuad;   // 戻りのイージング
+	};
+
 public:
 	/// <summary>デフォルトコンストラクタ</summary>
 	CameraZoom();
@@ -110,6 +131,25 @@ public:
     /// <param name="outDuration">戻りの時間（秒）</param>
 	void StartPunch(float zoomAmount, float inDuration = 0.05f, float outDuration = 0.15f);
 
+	/// <summary>
+	/// パンチズーム（イージング指定版）
+	/// 行き／戻りのイージングを個別に指定できる。
+	/// 例：行きを EaseInExpo にすると「ゆっくり溜め → 一瞬で寄る」演出になる。
+	/// </summary>
+	/// <param name="zoomAmount">ズーム量（ラジアン）</param>
+	/// <param name="inDuration">行きの時間（秒）</param>
+	/// <param name="outDuration">戻りの時間（秒）</param>
+	/// <param name="inEasing">行きのイージング関数</param>
+	/// <param name="outEasing">戻りのイージング関数</param>
+	void StartPunch(float zoomAmount, float inDuration, float outDuration,
+		Tween::EasingFunc inEasing, Tween::EasingFunc outEasing);
+
+	/// <summary>
+	/// パンチズーム（溜め → 寄り → 戻り の3フェーズ版）
+	/// 「最初はゆっくりズーム → 一気にぐんっと寄る → 戻る」のような演出に使う。
+	/// </summary>
+	void StartPunch(const PunchParams& params);
+
 private:
 	/// <summary>
 	/// 実際の補間ロジック（内部用）
@@ -127,11 +167,19 @@ private:
 	bool  useCurrentFov_;   // Start 時に useCurrentFov を指定されたか
 	bool  capturedStartFov_; // 「カメラから開始 FOV を取得済みか」のフラグ
 
-	// ===== パンチモード（行って戻る）専用 =====
-	bool  punchMode_ = false;     // パンチモード中か
-	float punchHoldFov_ = 0.0f;   // 一番ズームした時のFOV
-	float punchOriginalFov_ = 0.0f; // 元のFOV（戻り先）
-	float punchInDuration_ = 0.0f;  // 行きの時間
-	float punchOutDuration_ = 0.0f; // 戻りの時間
+	// ===== パンチモード（溜め → 寄り → 戻り）専用 =====
+	bool  punchMode_ = false;       // パンチモード中か
+	bool  punchPrePhase_ = false;   // 溜めフェーズ中か
 	bool  punchReturning_ = false;  // 戻りフェーズ中か
+	float punchOriginalFov_ = 0.0f; // 元のFOV（戻り先）
+	float punchPreFov_ = 0.0f;      // 溜めフェーズ終了時の中間FOV
+	float punchHoldFov_ = 0.0f;     // 一番ズームした時のFOV
+	float punchZoomAmount_ = 0.0f;    // 最終的な寄り幅
+	float punchPreZoomAmount_ = 0.0f; // 溜めフェーズの寄り幅
+	float punchPreDuration_ = 0.0f; // 溜めフェーズの時間
+	float punchInDuration_ = 0.0f;  // 寄りフェーズの時間
+	float punchOutDuration_ = 0.0f; // 戻りフェーズの時間
+	Tween::EasingFunc punchPreEasing_ = Tween::Easing::Linear;      // 溜めのイージング
+	Tween::EasingFunc punchInEasing_ = Tween::Easing::EaseOutQuad;  // 寄りのイージング
+	Tween::EasingFunc punchOutEasing_ = Tween::Easing::EaseInQuad;  // 戻りのイージング
 };

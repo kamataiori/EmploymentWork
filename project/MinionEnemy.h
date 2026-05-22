@@ -90,8 +90,8 @@ private:
 	float reachThreshold_ = 0.6f;  // 到達とみなす距離
 
 	// 上昇（Rise：急降下準備）
-	float liftSpeed_ = 12.0f;      // 上昇速度
-	float riseHeight_ = 12.0f;     // 地面からの到達高さ
+	float liftSpeed_ = 20.0f;      // 上昇速度
+	float riseHeight_ = 10.0f;     // 地面からの到達高さ
 
 	// てっぺんでの高速回転（SpinTop）
 	float spinSpeed_ = 42.0f;      // 回転速度(rad/s)

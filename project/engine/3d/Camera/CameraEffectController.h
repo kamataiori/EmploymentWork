@@ -22,6 +22,7 @@ public:
     using ShakeMode = CameraShake::ShakeMode;
     using ShakeParams = CameraShake::Params;
     using ZoomParams = CameraZoom::Params;
+    using ZoomPunchParams = CameraZoom::PunchParams;
     using MoveParams = CameraMove::Params;
 
     /// <summary>
@@ -158,6 +159,19 @@ public:
 	void StartZoomPunch(float zoomAmount = 0.1f, float inDuration = 0.05f, float outDuration = 0.15f)
 	{
 		zoom_.StartPunch(zoomAmount, inDuration, outDuration);
+	}
+
+	// 攻撃時のパンチズーム（行き／戻りのイージング指定版）
+	void StartZoomPunch(float zoomAmount, float inDuration, float outDuration,
+		Tween::EasingFunc inEasing, Tween::EasingFunc outEasing)
+	{
+		zoom_.StartPunch(zoomAmount, inDuration, outDuration, inEasing, outEasing);
+	}
+
+	// 攻撃時のパンチズーム（溜め → 寄り → 戻り の3フェーズ版）
+	void StartZoomPunch(const ZoomPunchParams& params)
+	{
+		zoom_.StartPunch(params);
 	}
 
     // ==============================

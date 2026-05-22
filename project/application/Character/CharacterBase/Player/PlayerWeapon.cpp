@@ -36,9 +36,40 @@ void PlayerWeapon::StartAttack(int index)
 		// lockSec は使わない（攻撃の継続は進行度で管理する）。速度倍率を渡す。
 		owner_->RequestAnimaKey(a.key, 10, 0.0f, a.speed);
 
-		// ズーム演出
+		// ズーム演出（攻撃時の一瞬寄って戻るパンチズーム）
 		if (auto* effect = owner_->GetCameraEffect()) {
-			effect->StartZoomPunch(0.04f, 0.06f, 0.18f);
+			// Attack01 / Attack02 の寄り幅（従来どおり）
+			constexpr float kDefaultZoomAmount = 0.04f;
+
+			if (a.key == PlayerAnimKey::Attack03) {
+				// Attack03 専用演出：「最初はゆっくりズーム → 一気にぐんっと寄る → 素早く戻す」
+				//   溜め … 控えめな量を Linear でじわっと寄せて助走をつける
+				//   寄り … 残りを一気に EaseOutExpo で「ぐんっ」と寄せる
+				//   戻り … EaseOutCubic で素早く戻す
+				constexpr float kAttack03ZoomAmount = 0.10f;  // 最終的な寄り幅
+				constexpr float kAttack03PreZoomAmount = 0.025f; // 溜めで先に寄る量
+				constexpr float kAttack03PreDuration = 0.50f;  // 溜めの時間（ゆっくり）
+				constexpr float kAttack03InDuration = 0.08f;  // 一気に寄る時間
+				constexpr float kAttack03OutDuration = 0.18f;  // 戻る時間
+
+				CameraEffectController::ZoomPunchParams punch{};
+				punch.zoomAmount = kAttack03ZoomAmount;
+				punch.preZoomAmount = kAttack03PreZoomAmount;
+				punch.preDuration = kAttack03PreDuration;
+				punch.inDuration = kAttack03InDuration;
+				punch.outDuration = kAttack03OutDuration;
+				punch.preEasing = Tween::Easing::Linear;       // 溜め：等速でじわっと
+				punch.inEasing = Tween::Easing::EaseOutExpo;  // 寄り：一気にぐんっと
+				punch.outEasing = Tween::Easing::EaseOutCubic; // 戻り：素早く
+				effect->StartZoomPunch(punch);
+			}
+			else {
+				// Attack01 / Attack02：従来どおりの素直なパンチズーム
+				constexpr float kDefaultInDuration = 0.06f;
+				constexpr float kDefaultOutDuration = 0.18f;
+				effect->StartZoomPunch(kDefaultZoomAmount,
+					kDefaultInDuration, kDefaultOutDuration);
+			}
 		}
 	}
 }
