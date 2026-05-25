@@ -17,6 +17,7 @@
 #include <DrawTriangle.h>
 #include <Skinning.h>
 #include "PostEffectManager.h"
+#include "CursorService.h"
 
 static const int kWindowWidth = 1280;
 static const int kWindowHeight = 720;
@@ -81,6 +82,9 @@ protected:
 	std::unique_ptr<ModelCommon> modelCommon = nullptr;
 	// スキニング共通部の初期化
 	std::unique_ptr<Skinning> skinningCommon = nullptr;
+
+	// マウスカーソル制御 (シーン毎に表示/非表示・閉じ込めを切り替える)
+	std::unique_ptr<CursorService> cursorService_ = nullptr;
 
 	// シーンファクトリー
 	AbstractSceneFactory* sceneFactory_ = nullptr;

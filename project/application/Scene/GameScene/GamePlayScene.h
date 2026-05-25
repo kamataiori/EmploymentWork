@@ -35,6 +35,10 @@ public:
 	void Debug() override;
 	void CheckAllCollisions();
 
+	// マウスカーソル設定: ゲームプレイ中は非表示+ウィンドウ内に閉じ込める
+	bool ShouldShowCursor() const override { return false; }
+	bool ShouldConfineCursor() const override { return true; }
+
 	void SetCamera1(std::unique_ptr<Camera> newCamera) { camera1 = std::move(newCamera); }
 	Camera* GetCamera1() const { return camera1.get(); }
 
@@ -109,6 +113,13 @@ private:
 	std::unique_ptr<SceneController>  stage_;
 	std::unique_ptr<Sprite>           ex;
 	std::unique_ptr<UIManager>        uiManager_;
+
+	// PauseScreen の所有は uiManager_。こちらは状態監視用の非所有参照。
+	PauseScreen* pauseScreenRef_ = nullptr;
+	bool wasPausedLastFrame_ = false;
+
+	// ポーズ状態の変化を見てカーソルを切替える
+	void SyncCursorWithPauseState();
 
 	bool  gameOverStarted_ = false;
 	float vignetteTimer_ = 0.0f;

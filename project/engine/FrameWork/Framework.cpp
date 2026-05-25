@@ -9,6 +9,12 @@ void Framework::Initialize()
 	// 入力の初期化
 	Input::GetInstance()->Initialize(winApp.get());
 
+	// カーソルサービスの生成・初期化 (WinApp初期化後・シーン生成前に行う)
+	cursorService_ = std::make_unique<CursorService>();
+	cursorService_->Initialize(winApp->GetHwnd());
+	// シーン切替時にカーソル設定を反映できるよう SceneManager にも貸し出す
+	SceneManager::GetInstance()->SetCursorService(cursorService_.get());
+
 	// オーディオの初期化
 	audio = std::make_unique<Audio>();
 	audio->Initialize();
@@ -64,6 +70,8 @@ void Framework::Finalize()
 	TextureManager::GetInstance()->Finalize();
 	// モデルマネージャーの終了処理
 	ModelManager::GetInstance()->Finalize();
+	// SceneManager に貸し出していた CursorService 参照を切る (ダングリング防止)
+	SceneManager::GetInstance()->SetCursorService(nullptr);
 	// シーンマネージャーの終了処理
 	SceneManager::GetInstance()->Finalize();
 	// DrawLineの終了処理
@@ -98,6 +106,11 @@ void Framework::Update()
 
 	// 入力の更新
 	Input::GetInstance()->Update();
+
+	// カーソルサービスの更新 (ウィンドウ移動/リサイズ・フォーカス変化に追従)
+	if (cursorService_) {
+		cursorService_->Update();
+	}
 
 	// DrawLineの更新
 	DrawLine::GetInstance()->Update();

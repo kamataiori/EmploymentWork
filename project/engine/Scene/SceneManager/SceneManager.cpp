@@ -3,6 +3,7 @@
 #include "engine/Scene/ChangeEffect/SceneTransitionService.h"
 #include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
 #include "PlayModeState.h"
+#include "CursorService.h"  // 完全型 (前方宣言だけだと ApplySceneRequest を呼べない)
 
 SceneManager* SceneManager::instance = nullptr;
 
@@ -52,6 +53,13 @@ void SceneManager::Update()
 
 		// 次シーンを初期化する
 		scene_->Initialize();
+
+		// シーンが要求するカーソル設定 (表示/非表示, 閉じ込め) を反映
+		if (cursorService_) {
+			cursorService_->ApplySceneRequest(
+				scene_->ShouldShowCursor(),
+				scene_->ShouldConfineCursor());
+		}
 
 		// ★ 切替直後に UpdateCamera と LateUpdate を強制実行する
 		//    これにより、停止中(Stop)でも初期フレームから

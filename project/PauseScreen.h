@@ -29,6 +29,9 @@ public:
     // ポーズ中だけモーダル扱い（ゲーム更新を止めたい）
     bool IsModal() const override { return isPaused_; }
 
+    // 外部からポーズ状態を問い合わせる用 (シーン側がカーソル等を切り替える)
+    bool IsPaused() const { return isPaused_; }
+
 private:
     // ポーズ画面内の表示状態
     enum class PauseView {

@@ -102,6 +102,15 @@ void MyGame::Update()
 	editorLayout_->BeginFrame();
 #endif // USE_IMGUI
 
+#ifdef USE_IMGUI
+	// エディタ停止中はカーソルを強制解放する (シーン要求より優先)
+	// → ImGui パネルを自由に操作できる。Play 押下で初めてシーン設定が反映される。
+	if (cursorService_) {
+		const bool stoppedInEditor = (playModeState_ && !playModeState_->IsPlaying());
+		cursorService_->SetEditorOverride(stoppedInEditor);
+	}
+#endif // USE_IMGUI
+
 	// 基底クラスの更新処理
 	// (内部で SceneManager::Update も呼ばれ、そこで Play/Stop 判定される)
 	Framework::Update();

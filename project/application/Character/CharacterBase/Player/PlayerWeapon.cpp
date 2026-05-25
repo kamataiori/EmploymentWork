@@ -58,9 +58,9 @@ void PlayerWeapon::StartAttack(int index)
 				punch.preDuration = kAttack03PreDuration;
 				punch.inDuration = kAttack03InDuration;
 				punch.outDuration = kAttack03OutDuration;
-				punch.preEasing = Tween::Easing::Linear;       // 溜め：等速でじわっと
-				punch.inEasing = Tween::Easing::EaseOutExpo;  // 寄り：一気にぐんっと
-				punch.outEasing = Tween::Easing::EaseOutCubic; // 戻り：素早く
+				punch.preEasing = Tween::Easing::Linear;       // 溜め
+				punch.inEasing = Tween::Easing::EaseOutExpo;  // 寄り
+				punch.outEasing = Tween::Easing::EaseOutCubic; // 戻り
 				effect->StartZoomPunch(punch);
 			}
 			else {

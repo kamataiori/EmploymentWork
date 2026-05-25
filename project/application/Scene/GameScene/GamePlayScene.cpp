@@ -1,6 +1,7 @@
 #include "GamePlayScene.h"
 #include <Input.h>
 #include "SceneManager.h"
+#include "CursorService.h"
 #include <OffscreenRendering.h>
 #include <MyGame.h>
 #include "engine/TimeManager.h"
@@ -123,11 +124,39 @@ void GamePlayScene::Initialize()
 	uiManager_ = std::make_unique<UIManager>();
 	auto pause = std::make_unique<PauseScreen>();
 	pause->Initialize({ 1280.0f, 720.0f }, "TITLE");
+	pauseScreenRef_ = pause.get();  // 所有は uiManager_、こちらは状態監視のための非所有参照
 	uiManager_->Add(std::move(pause));
+
+	// 初期状態はポーズではないので、シーン要求どおりカーソル非表示+閉じ込め
+	wasPausedLastFrame_ = false;
 }
 
 void GamePlayScene::Finalize()
 {
+}
+
+void GamePlayScene::SyncCursorWithPauseState()
+{
+	if (!pauseScreenRef_) return;
+
+	const bool isPausedNow = pauseScreenRef_->IsPaused();
+	if (isPausedNow == wasPausedLastFrame_) {
+		return; // 状態が変わっていなければ何もしない
+	}
+	wasPausedLastFrame_ = isPausedNow;
+
+	SceneManager* sm = GetSceneManager();
+	if (!sm) return;
+	CursorService* cursor = sm->GetCursorService();
+	if (!cursor) return;
+
+	if (isPausedNow) {
+		// ポーズ中: メニュー操作のためカーソル表示・閉じ込め解除
+		cursor->ApplySceneRequest(true, false);
+	} else {
+		// ポーズ解除: シーン本来の設定に戻す (非表示+閉じ込め)
+		cursor->ApplySceneRequest(ShouldShowCursor(), ShouldConfineCursor());
+	}
 }
 
 // ================================================
@@ -241,6 +270,9 @@ void GamePlayScene::UpdateCamera()
 void GamePlayScene::Update()
 {
 	uiManager_->Update();
+
+	// ポーズ状態の変化を検知してカーソル設定を切り替える
+	SyncCursorWithPauseState();
 
 	if (uiManager_->IsModalActive()) {
 		return;

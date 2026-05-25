@@ -76,6 +76,19 @@ public:
 	/// <summary>シーンマネージャーをシーンに貸し出すためのSetter</summary>
 	virtual void SetSceneManager(SceneManager* sceneManager) { sceneManager_ = sceneManager; }
 
+	/// <summary>
+	/// このシーン中にマウスカーソルを表示するかどうか。
+	/// デフォルトは true (タイトル/メニュー/エディタ等の汎用シーン向け)。
+	/// ゲームプレイのようにカーソルを隠したいシーンで override する。
+	/// </summary>
+	virtual bool ShouldShowCursor() const { return true; }
+
+	/// <summary>
+	/// このシーン中にマウスカーソルをウィンドウ内に閉じ込めるか。
+	/// デフォルトは false。FPS/TPS等のゲームプレイで true に override する。
+	/// </summary>
+	virtual bool ShouldConfineCursor() const { return false; }
+
 	/// <summary>Lightのゲッター</summary>
 	Light* GetLight() const {
 		return light.get();
@@ -104,6 +117,10 @@ public:
 
 	void SetEnableDockedImGui(bool enable) { enableDockedImGui_ = enable; }
 	bool IsDockedImGuiEnabled() const { return enableDockedImGui_; }
+
+protected:
+	// 派生シーンから SceneManager を参照したい時に使う (CursorService等の注入されたサービスへの橋渡し)
+	SceneManager* GetSceneManager() const { return sceneManager_; }
 
 private:
 	std::vector<std::string> leftDockWindows_;

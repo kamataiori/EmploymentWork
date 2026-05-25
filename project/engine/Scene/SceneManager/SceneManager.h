@@ -7,6 +7,7 @@
 struct TransitionRequest;
 class SceneTransitionService;
 class PlayModeState;
+class CursorService;
 
 class SceneManager
 {
@@ -96,6 +97,18 @@ public:
 	/// </summary>
 	void SetPlayModeState(PlayModeState* state) { playModeState_ = state; }
 
+	/// <summary>
+	/// カーソル制御サービスを注入する (所有しない)。
+	/// シーン切替時に新シーンの ShouldShowCursor / ShouldConfineCursor を反映する。
+	/// </summary>
+	void SetCursorService(CursorService* service) { cursorService_ = service; }
+
+	/// <summary>
+	/// カーソル制御サービスを取得する (シーン途中で表示状態を変えたい時に使う)。
+	/// 注入されていなければ nullptr を返す。
+	/// </summary>
+	CursorService* GetCursorService() const { return cursorService_; }
+
 private:
 
 	// 今のシーン (実行中シーン)
@@ -115,4 +128,7 @@ private:
 
 	// Play/Stop 状態 (外部から注入。nullなら常に再生扱い)
 	PlayModeState* playModeState_ = nullptr;
+
+	// マウスカーソル制御 (外部から注入。所有はしない)
+	CursorService* cursorService_ = nullptr;
 };
