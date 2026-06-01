@@ -1,6 +1,7 @@
 #include "PlayerWeapon.h"
 #include <Input.h>
 #include "Player.h"
+#include "engine/TimeManager.h"
 
 //======================================================
 // ノーマル攻撃3段のテーブル
@@ -76,7 +77,20 @@ void PlayerWeapon::StartAttack(int index)
 
 void PlayerWeapon::Update()
 {
-	if (!attacking_ || !owner_) return;
+	if (!owner_) return;
+
+	// ===== スキル「回転斬り」進行 =====
+	// スキルは「秒」で管理する（剣の弧の長さ・当たり判定ON時間を一定にするため）。
+	if (skillActive_) {
+		skillElapsed_ += TimeManager::GetInstance()->GetDeltaTime();
+		if (skillElapsed_ >= kSkillDuration_) {
+			skillActive_ = false;
+			owner_->EndAttackState(); // 優先度/ロックを解除して移動アニメへ戻す
+		}
+		return; // スキル中は通常攻撃のコンボ進行は行わない
+	}
+
+	if (!attacking_) return;
 
 	// アニメ進行度（再生速度を変えても 0〜1 で進む）
 	const float progress = owner_->GetAnimationProgress();
@@ -104,6 +118,9 @@ void PlayerWeapon::Draw()
 
 void PlayerWeapon::NormalAttack()
 {
+	// スキル「回転斬り」中は通常攻撃を出せない
+	if (skillActive_) return;
+
 	Input* input = Input::GetInstance();
 
 	// ===== 攻撃中：長押しでも次段を予約できる =====
@@ -138,19 +155,44 @@ bool PlayerWeapon::IsHitActive() const
 
 void PlayerWeapon::Skill()
 {
-	const bool nowF = Input::GetInstance()->PushKey(DIK_E);
-	if (nowF && !IsSkill_) {                  // 立ち上がりだけ
-		if (owner_) {
-			// 回避に入るので攻撃状態は打ち切る（当たり判定も消える）
-			attacking_ = false;
-			comboReserve_ = false;
-			owner_->RequestAnimaKey(PlayerAnimKey::Roll, 10, 0.8f);
-		}
-	}
-	IsSkill_ = nowF;
+	const bool nowE = Input::GetInstance()->PushKey(DIK_E);
+	const bool triggered = (nowE && !IsSkill_); // 押した瞬間(立ち上がり)だけ
+	IsSkill_ = nowE;
+
+	if (!triggered) return;
+	if (skillActive_) return; // 多重発動はしない
+	if (!owner_) return;
+
+	StartSkill();
+}
+
+void PlayerWeapon::StartSkill()
+{
+	// 進行中の通常攻撃は打ち切る（攻撃の当たり判定も消える）
+	attacking_ = false;
+	comboReserve_ = false;
+
+	skillActive_ = true;
+	skillElapsed_ = 0.0f;
+
+	// Attack02 を再生。
+	//   priority = kSkillAnimaPriority_(20) … ノーマル攻撃(10)より高く上書き防止
+	//   lockSec  = kSkillDuration_          … スキル中は移動アニメで上書きされない
+	owner_->RequestAnimaKey(PlayerAnimKey::Attack02,
+		kSkillAnimaPriority_, kSkillDuration_, kSkillAnimSpeed_);
+}
+
+float PlayerWeapon::GetSkillProgress() const
+{
+	if (!skillActive_) return 0.0f;
+	const float t = skillElapsed_ / kSkillDuration_;
+	if (t < 0.0f) return 0.0f;
+	if (t > 1.0f) return 1.0f;
+	return t;
 }
 
 void PlayerWeapon::Ultimate()
 {
-
+	// スキル中は発動しない
+	if (skillActive_) return;
 }

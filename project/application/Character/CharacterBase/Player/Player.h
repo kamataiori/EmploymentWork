@@ -92,11 +92,14 @@ public:
 
 	PlayerIWeapon* GetWeapon() { return weapon_.get(); }
 
-	// 攻撃中（攻撃アニメ再生中）のみコライダーを返す。
-	// 非攻撃時は nullptr を返し、Scene 側で登録されない＝判定が出ない。
+	// 攻撃中（攻撃アニメ再生中）またはスキル(回転斬り)中のみコライダーを返す。
+	// それ以外は nullptr を返し、Scene 側で登録されない＝判定が出ない。
 	MultiCollider* GetWeaponCollider() {
-		if (!sword_ || !sword_->IsHitEnabled()) return nullptr;
-		return sword_->GetMultiCollider();
+		if (!sword_) return nullptr;
+		if (sword_->IsHitEnabled() || sword_->IsSpinArcActive()) {
+			return sword_->GetMultiCollider();
+		}
+		return nullptr;
 	}
 
 	void SetAnimation(const std::string& name)

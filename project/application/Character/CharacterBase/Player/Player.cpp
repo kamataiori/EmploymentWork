@@ -84,7 +84,7 @@ void Player::Initialize()
 
 void Player::Update()
 {
-	// ===== Δt（スロー対応） =====
+	// ===== Δt =====
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
 	// ===== デバッグ：Xキーで即死 =====
@@ -131,8 +131,10 @@ void Player::Update()
 	// playerの基本となる動き（移動コンポーネントに委譲）
 	mover_->Update(inputLocked_);
 
-	bool weaponAttacking = false;  // 攻撃モーション中（アニメ上書き禁止用）
-	bool weaponHitActive = false;  // 当たり判定を出してよい区間
+	bool weaponAttacking = false;     // 攻撃モーション中（アニメ上書き禁止用）
+	bool weaponHitActive = false;     // 通常攻撃の当たり判定を出してよい区間
+	bool weaponSkillActive = false;   // スキル(回転斬り)発動中か
+	float weaponSkillProgress = 0.0f; // スキルの進行度 0〜1（剣の弧の位置計算用）
 
 	if (weapon_) {
 		weapon_->Update();
@@ -146,6 +148,8 @@ void Player::Update()
 		if (auto w = dynamic_cast<PlayerWeapon*>(weapon_.get())) {
 			weaponAttacking = w->IsAttacking();
 			weaponHitActive = w->IsHitActive();
+			weaponSkillActive = w->IsSkillActive();
+			weaponSkillProgress = w->GetSkillProgress();
 		}
 	}
 
@@ -169,6 +173,20 @@ void Player::Update()
 
 	// Player 本体更新後に Sword を更新
 	if (sword_) {
+		// ===== スキル「回転斬り」：剣を手から離して弧を描かせる =====
+		// PlayerWeapon が持つスキル状態を Sword に橋渡しする。
+		// IsSpinArcActive() を見ることで開始/終了のエッジを安全に扱う。
+		if (weaponSkillActive && !sword_->IsSpinArcActive()) {
+			sword_->BeginSpinArc();                       // 発動：手から切り離す
+		}
+		if (sword_->IsSpinArcActive()) {
+			sword_->SetSpinArcProgress(weaponSkillProgress); // 進行度を反映
+		}
+		if (!weaponSkillActive && sword_->IsSpinArcActive()) {
+			sword_->EndSpinArc();                         // 終了：手に戻す
+		}
+
+		// 通常攻撃のヒット区間（スキル中は Sword 側が常時ONにする）
 		sword_->SetHitEnabled(weaponHitActive);
 		sword_->Update();
 	}

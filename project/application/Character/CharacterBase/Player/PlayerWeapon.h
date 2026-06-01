@@ -41,6 +41,12 @@ public:
 	// ウィンドウはアニメ進行度(0〜1)で持つので、再生速度を変えても同期する。
 	bool IsHitActive() const;
 
+	// ===== スキル「回転斬り」 =====
+	// 発動中か（剣の弧モードと連動。Player が Sword の駆動に使う）
+	bool IsSkillActive() const { return skillActive_; }
+	// スキルの進行度 0〜1（剣の弧の位置計算に使う）
+	float GetSkillProgress() const;
+
 private:
 
 	//--------------------------------------------------
@@ -61,10 +67,21 @@ private:
 	// 指定した段の攻撃を開始する
 	void StartAttack(int index);
 
+	// スキル「回転斬り」を開始する
+	void StartSkill();
+
 private:
 
 	// この進行度に達したら攻撃終了とみなす（ワンショットは終端で1.0に張り付く）
 	static constexpr float kAttackEndProgress_ = 0.999f;
+
+	// ---- スキル「回転斬り」設定 ----
+	// スキルの長さ[秒]。この間ずっと剣の弧＋当たり判定が続く。
+	static constexpr float kSkillDuration_ = 1.1f;
+	// スキル中に再生する Attack02 の速度倍率（弧の長さに合わせて調整）
+	static constexpr float kSkillAnimSpeed_ = 1.0f;
+	// スキルのアニメ優先度（ノーマル攻撃=10 より高くして上書きされないようにする）
+	static constexpr int   kSkillAnimaPriority_ = 20;
 
 	// ---- 攻撃状態 ----
 	bool attacking_ = false;       // 攻撃モーション中か
@@ -72,6 +89,10 @@ private:
 
 	// ---- コンボ ----
 	bool comboReserve_ = false;    // 次の攻撃を予約しているか
+
+	// ---- スキル「回転斬り」状態 ----
+	bool  skillActive_ = false;    // スキル発動中か
+	float skillElapsed_ = 0.0f;    // 発動からの経過時間[秒]
 
 	// 入力エッジ検出用
 	bool IsSkill_ = false;
