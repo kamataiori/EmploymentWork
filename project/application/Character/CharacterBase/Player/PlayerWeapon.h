@@ -3,24 +3,31 @@
 #include "CollisionTypeIdDef.h"
 #include "PlayerBullet.h"
 #include "PlayerAnimKey.h"
+#include "IPlayerSkill.h"
 
 #include <memory>
 #include <vector>
 #include <unordered_set>
 
+class Sword;
+
 //======================================================
 // PlayerWeapon
 //------------------------------------------------------
-// プレイヤーの武器・攻撃制御クラス（PlayerIWeapon 実装）
-// ノーマル攻撃のコンボ管理・スキル入力などを担当する。
+// プレイヤーの武器・攻撃制御クラス（PlayerIWeapon 実装）。
 //
-// 当たり判定とコンボ判定は「アニメ進行度(0〜1)」に紐づける。
-// 再生速度を変えても進行度は同じ%で進むため、当たり判定が自動で同期する。
+// 役割は「調停」：
+//   - ノーマル攻撃のコンボ管理（当たり判定はアニメ進行度0〜1に紐づく）
+//   - スキル(IPlayerSkill)の所有・入力ルーティング・排他制御
+//     （スキルの中身＝振り付けは各スキルクラスが持つ）
 //======================================================
 class PlayerWeapon : public PlayerIWeapon{
 public:
 
 	PlayerWeapon() {}
+
+	// 弧スキルなどが駆動する剣を注入する（Player が所有。借りるだけ）
+	void SetSword(Sword* sword) { sword_ = sword; }
 
 	void Initialize() override;
 
@@ -41,11 +48,10 @@ public:
 	// ウィンドウはアニメ進行度(0〜1)で持つので、再生速度を変えても同期する。
 	bool IsHitActive() const;
 
-	// ===== スキル「回転斬り」 =====
-	// 発動中か（剣の弧モードと連動。Player が Sword の駆動に使う）
-	bool IsSkillActive() const { return skillActive_; }
-	// スキルの進行度 0〜1（剣の弧の位置計算に使う）
-	float GetSkillProgress() const;
+private:
+
+	// いずれかのスキルが発動中か（攻撃やスキルの多重発動を防ぐ排他制御に使う）
+	bool IsAnySkillActive() const { return eSkill_ && eSkill_->IsActive(); }
 
 private:
 
@@ -67,21 +73,10 @@ private:
 	// 指定した段の攻撃を開始する
 	void StartAttack(int index);
 
-	// スキル「回転斬り」を開始する
-	void StartSkill();
-
 private:
 
 	// この進行度に達したら攻撃終了とみなす（ワンショットは終端で1.0に張り付く）
 	static constexpr float kAttackEndProgress_ = 0.999f;
-
-	// ---- スキル「回転斬り」設定 ----
-	// スキルの長さ[秒]。この間ずっと剣の弧＋当たり判定が続く。
-	static constexpr float kSkillDuration_ = 1.1f;
-	// スキル中に再生する Attack02 の速度倍率（弧の長さに合わせて調整）
-	static constexpr float kSkillAnimSpeed_ = 1.0f;
-	// スキルのアニメ優先度（ノーマル攻撃=10 より高くして上書きされないようにする）
-	static constexpr int   kSkillAnimaPriority_ = 20;
 
 	// ---- 攻撃状態 ----
 	bool attacking_ = false;       // 攻撃モーション中か
@@ -90,12 +85,15 @@ private:
 	// ---- コンボ ----
 	bool comboReserve_ = false;    // 次の攻撃を予約しているか
 
-	// ---- スキル「回転斬り」状態 ----
-	bool  skillActive_ = false;    // スキル発動中か
-	float skillElapsed_ = 0.0f;    // 発動からの経過時間[秒]
-
-	// 入力エッジ検出用
+	// 入力エッジ検出用（E キーの押した瞬間を取る）
 	bool IsSkill_ = false;
+
+	// ---- 借り物（所有しない） ----
+	Sword* sword_ = nullptr;       // スキルが駆動する剣
+
+	// ---- スキル ----
+	// E キーのスキル（回転斬り）。IPlayerSkill 越しに扱い、追加時は別クラスを足すだけ。
+	std::unique_ptr<IPlayerSkill> eSkill_;
 
 	// デバッグ用フラグ
 	bool showDebug_ = true;

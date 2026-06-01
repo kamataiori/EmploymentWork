@@ -237,6 +237,9 @@
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerMover.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="application\Character\CharacterBase\Player\SpinSlashSkill.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="engine\Collision\MultiCollider.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -693,6 +696,12 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerMover.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Player\IPlayerSkill.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Player\SpinSlashSkill.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\Collision\MultiCollider.h">

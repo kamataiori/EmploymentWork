@@ -1,6 +1,8 @@
 #include "PlayerWeapon.h"
 #include <Input.h>
 #include "Player.h"
+#include "Sword.h"
+#include "SpinSlashSkill.h"
 #include "engine/TimeManager.h"
 
 //======================================================
@@ -21,7 +23,11 @@ const PlayerWeapon::AttackInfo PlayerWeapon::kNormalAttacks_[3] = {
 
 void PlayerWeapon::Initialize()
 {
-
+	// E キーのスキル（回転斬り）を生成し、依存（プレイヤー・剣）を注入する。
+	// IPlayerSkill で保持するので、スキル追加時はここに別クラスを足すだけでよい。
+	auto spinSlash = std::make_unique<SpinSlashSkill>();
+	spinSlash->Initialize(owner_, sword_);
+	eSkill_ = std::move(spinSlash);
 }
 
 void PlayerWeapon::StartAttack(int index)
@@ -79,35 +85,33 @@ void PlayerWeapon::Update()
 {
 	if (!owner_) return;
 
-	// ===== スキル「回転斬り」進行 =====
-	// スキルは「秒」で管理する（剣の弧の長さ・当たり判定ON時間を一定にするため）。
-	if (skillActive_) {
-		skillElapsed_ += TimeManager::GetInstance()->GetDeltaTime();
-		if (skillElapsed_ >= kSkillDuration_) {
-			skillActive_ = false;
-			owner_->EndAttackState(); // 優先度/ロックを解除して移動アニメへ戻す
-		}
-		return; // スキル中は通常攻撃のコンボ進行は行わない
-	}
-
-	if (!attacking_) return;
-
-	// アニメ進行度（再生速度を変えても 0〜1 で進む）
-	const float progress = owner_->GetAnimationProgress();
-	const AttackInfo& cur = kNormalAttacks_[activeAttackIndex_];
-
-	// ===== コンボ予約があり、受付進行度を超えたら次段へ =====
-	if (comboReserve_ && activeAttackIndex_ < 2 && progress >= cur.comboAt) {
-		StartAttack(activeAttackIndex_ + 1);
+	// ===== スキル発動中はスキルが武器を駆動する =====
+	// （剣のワールド配置・当たり判定はスキル側で行う。通常攻撃の処理は止める）
+	if (IsAnySkillActive()) {
+		eSkill_->Update(TimeManager::GetInstance()->GetDeltaTime());
 		return;
 	}
 
-	// ===== 攻撃アニメが終端まで進んだら攻撃終了 =====
-	if (progress >= kAttackEndProgress_) {
-		attacking_ = false;
-		comboReserve_ = false;
-		owner_->EndAttackState(); // 優先度を解除して移動アニメへ戻れるようにする
+	// ===== 通常攻撃の進行（コンボ／終了） =====
+	if (attacking_) {
+		// アニメ進行度（再生速度を変えても 0〜1 で進む）
+		const float progress = owner_->GetAnimationProgress();
+		const AttackInfo& cur = kNormalAttacks_[activeAttackIndex_];
+
+		// コンボ予約があり、受付進行度を超えたら次段へ
+		if (comboReserve_ && activeAttackIndex_ < 2 && progress >= cur.comboAt) {
+			StartAttack(activeAttackIndex_ + 1);
+		}
+		// 攻撃アニメが終端まで進んだら攻撃終了
+		else if (progress >= kAttackEndProgress_) {
+			attacking_ = false;
+			comboReserve_ = false;
+			owner_->EndAttackState(); // 優先度を解除して移動アニメへ戻れるようにする
+		}
 	}
+
+	// 通常攻撃の当たり判定ウィンドウを剣へ反映（非攻撃時は false ＝判定なし）
+	if (sword_) sword_->SetHitEnabled(IsHitActive());
 }
 
 
@@ -118,8 +122,8 @@ void PlayerWeapon::Draw()
 
 void PlayerWeapon::NormalAttack()
 {
-	// スキル「回転斬り」中は通常攻撃を出せない
-	if (skillActive_) return;
+	// スキル中は通常攻撃を出せない
+	if (IsAnySkillActive()) return;
 
 	Input* input = Input::GetInstance();
 
@@ -160,39 +164,18 @@ void PlayerWeapon::Skill()
 	IsSkill_ = nowE;
 
 	if (!triggered) return;
-	if (skillActive_) return; // 多重発動はしない
-	if (!owner_) return;
+	if (IsAnySkillActive()) return; // 多重発動はしない
+	if (!eSkill_) return;
 
-	StartSkill();
-}
-
-void PlayerWeapon::StartSkill()
-{
-	// 進行中の通常攻撃は打ち切る（攻撃の当たり判定も消える）
+	// 進行中の通常攻撃は打ち切ってからスキルへ移行する
 	attacking_ = false;
 	comboReserve_ = false;
 
-	skillActive_ = true;
-	skillElapsed_ = 0.0f;
-
-	// Attack02 を再生。
-	//   priority = kSkillAnimaPriority_(20) … ノーマル攻撃(10)より高く上書き防止
-	//   lockSec  = kSkillDuration_          … スキル中は移動アニメで上書きされない
-	owner_->RequestAnimaKey(PlayerAnimKey::Attack02,
-		kSkillAnimaPriority_, kSkillDuration_, kSkillAnimSpeed_);
-}
-
-float PlayerWeapon::GetSkillProgress() const
-{
-	if (!skillActive_) return 0.0f;
-	const float t = skillElapsed_ / kSkillDuration_;
-	if (t < 0.0f) return 0.0f;
-	if (t > 1.0f) return 1.0f;
-	return t;
+	eSkill_->Start();
 }
 
 void PlayerWeapon::Ultimate()
 {
 	// スキル中は発動しない
-	if (skillActive_) return;
+	if (IsAnySkillActive()) return;
 }

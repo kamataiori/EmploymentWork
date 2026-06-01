@@ -34,11 +34,6 @@ void Player::Initialize()
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
 
-	weapon_ = std::make_unique<PlayerWeapon>();
-	weapon_->SetOwner(this);
-	weapon_->SetPlayerTransform(&transform);
-	weapon_->Initialize();
-
 	// コライダーを生成
 	// --- 原点が足元 → 股下(例: 上方向0.9f) にオフセット ---
 	colliderOffset_ = { 0.0f, 1.0f, 0.0f };
@@ -73,6 +68,13 @@ void Player::Initialize()
 	sword_->SetPlayerTransform(&transform);
 	// ボーン名は実際の名前に合わせて修正が必要
 	sword_->AttachTo(object3d_.get(), "Fist.R");
+
+	// 武器（攻撃・スキルの調停）を生成。スキルが駆動する剣を注入してから初期化する。
+	weapon_ = std::make_unique<PlayerWeapon>();
+	weapon_->SetOwner(this);
+	weapon_->SetPlayerTransform(&transform);
+	static_cast<PlayerWeapon*>(weapon_.get())->SetSword(sword_.get());
+	weapon_->Initialize();
 
 
 	//poweder = std::make_unique<ParticleManager>();
@@ -132,11 +134,9 @@ void Player::Update()
 	mover_->Update(inputLocked_);
 
 	bool weaponAttacking = false;     // 攻撃モーション中（アニメ上書き禁止用）
-	bool weaponHitActive = false;     // 通常攻撃の当たり判定を出してよい区間
-	bool weaponSkillActive = false;   // スキル(回転斬り)発動中か
-	float weaponSkillProgress = 0.0f; // スキルの進行度 0〜1（剣の弧の位置計算用）
 
 	if (weapon_) {
+		// 武器の更新（通常攻撃の進行＋スキルの駆動はこの中で完結する）
 		weapon_->Update();
 
 		if (!inputLocked_) {
@@ -147,9 +147,6 @@ void Player::Update()
 
 		if (auto w = dynamic_cast<PlayerWeapon*>(weapon_.get())) {
 			weaponAttacking = w->IsAttacking();
-			weaponHitActive = w->IsHitActive();
-			weaponSkillActive = w->IsSkillActive();
-			weaponSkillProgress = w->GetSkillProgress();
 		}
 	}
 
@@ -172,22 +169,9 @@ void Player::Update()
 	object3d_->Update();
 
 	// Player 本体更新後に Sword を更新
+	// （当たり判定ON/OFF・サイズ・ワールド配置は weapon_/スキルが既に設定済み。
+	//   ここではその状態を反映するだけ）
 	if (sword_) {
-		// ===== スキル「回転斬り」：剣を手から離して弧を描かせる =====
-		// PlayerWeapon が持つスキル状態を Sword に橋渡しする。
-		// IsSpinArcActive() を見ることで開始/終了のエッジを安全に扱う。
-		if (weaponSkillActive && !sword_->IsSpinArcActive()) {
-			sword_->BeginSpinArc();                       // 発動：手から切り離す
-		}
-		if (sword_->IsSpinArcActive()) {
-			sword_->SetSpinArcProgress(weaponSkillProgress); // 進行度を反映
-		}
-		if (!weaponSkillActive && sword_->IsSpinArcActive()) {
-			sword_->EndSpinArc();                         // 終了：手に戻す
-		}
-
-		// 通常攻撃のヒット区間（スキル中は Sword 側が常時ONにする）
-		sword_->SetHitEnabled(weaponHitActive);
 		sword_->Update();
 	}
 

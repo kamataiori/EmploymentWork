@@ -92,11 +92,10 @@ public:
 
 	PlayerIWeapon* GetWeapon() { return weapon_.get(); }
 
-	// 攻撃中（攻撃アニメ再生中）またはスキル(回転斬り)中のみコライダーを返す。
+	// 当たり判定が有効なとき（通常攻撃のヒット区間／スキル中）のみコライダーを返す。
 	// それ以外は nullptr を返し、Scene 側で登録されない＝判定が出ない。
 	MultiCollider* GetWeaponCollider() {
-		if (!sword_) return nullptr;
-		if (sword_->IsHitEnabled() || sword_->IsSpinArcActive()) {
+		if (sword_ && sword_->IsHitEnabled()) {
 			return sword_->GetMultiCollider();
 		}
 		return nullptr;
