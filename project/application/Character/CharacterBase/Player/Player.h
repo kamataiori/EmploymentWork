@@ -6,6 +6,7 @@
 #include "PlayerAnimKey.h"
 #include "PlayerIWeapon.h"
 #include <PlayerWeapon.h>
+#include "PlayerMover.h"
 #include "Sword.h"
 #include "Camera/CameraEffectController.h"
 
@@ -118,25 +119,6 @@ public:
 
 	bool  IsDead()         const { return isDead_; }
 	float GetDeathTimer()  const { return deathTimer_; }
-private:
-
-	/// <summary>
-	/// 全player共通の動き
-	/// </summary>
-	void Move();
-
-	/// <summary>
-	/// playerのジャンプ処理
-	/// </summary>
-	void Jump();
-
-	/// <summary>
-	/// playerのブリンク(ダッシュ)処理
-	/// </summary>
-	void Blink();
-
-
-
 protected:
 
 	// アニメーションを設定する関数
@@ -148,36 +130,9 @@ private:
 	std::string currentAnimationName_;
 	PlayerAnimation animaCtrl_;
 
-	// 移動制御に関する構造体
-	struct MoveControl {
-		float speed = 0.25f;                    // 移動速度
-		Vector3 direction{};                   // 入力から得た移動方向
-		float dashSpeed = 1.0f;                // ダッシュ時の速度
-		bool isDashing = false;                // ダッシュ中かどうか
-		bool hasDashed_ = false;               // 1回だけダッシュ許可
-		bool isDashKeyHeld_ = false;           // キーがまだ押されているかどうか
-		const float kDashDuration = 0.2f;      // ダッシュ継続時間
-		float dashTimer = 0.0f;                // 残りダッシュ時間
-		Vector3 dashDir = { 0.0f, 0.0f, 0.0f };// ダッシュ開始時の向き
-		const float kDashCooldown = 0.25f; // 連打防止の再装填時間
-		float dashCooldown = 0.0f;
-	};
-	bool isMoving_ = false;
-	MoveControl move_;  // 移動制御
-
-	// ジャンプに関するデータ構造体
-	struct JumpControl {
-		bool isJumping = false;               // ジャンプ中か
-		float velocity = 0.0f;                // 上下速度
-		int jumpCount = 0;                    // 現在ジャンプ回数
-		const int kMaxJumpCount = 1;          // 最大ジャンプ回数
-		bool canJump_ = true;                 // Spaceキーが離されたことを確認するフラグ
-		const float kInitialVelocity = 0.19f;  // 初速（頂点 ≈ v^2/2g ≈ 1.44ユニット）
-		const float kGravity = 0.0125f;        // 重力（滞空 ≈ 2v/g ≈ 0.5秒）
-		const float kGroundHeight = 0.0f;     // 地面高さ
-	};
-	// インスタンス
-	JumpControl jump_;
+	// 移動・ジャンプ・ブリンクを担当するコンポーネント
+	// （Player の transform を借りて動かす。詳細は PlayerMover.h を参照）
+	std::unique_ptr<PlayerMover> mover_;
 
 	// 1回目だけデフォルトTransformを入れる
 	bool isFirstInitialize_ = true;

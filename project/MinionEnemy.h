@@ -1,6 +1,9 @@
 #pragma once
 #include "ObjectBase.h"
 #include <CollisionTypeIdDef.h>
+#include "Sprite.h"
+#include <array>
+#include <memory>
 
 //======================================================
 // MinionEnemy（雑魚敵）
@@ -26,7 +29,7 @@ public:
 
 	void BackGroundDraw() override {}
 	void Draw() override;
-	void ForeGroundDraw() override {}
+	void ForeGroundDraw() override;
 	void ParticleDraw() override {}
 	void AnimationDraw() override {}
 
@@ -64,6 +67,7 @@ private:
 		Slam,       // 急降下
 		Shockwave,  // 着地直後の衝撃波
 		Recover,    // 急降下後の硬直（無防備な反撃チャンス）
+		Hit,        // 被弾ヒット演出（固まって小刻みシェイク → 消滅）
 	};
 
 	Phase phase_ = Phase::Spawn;
@@ -72,9 +76,22 @@ private:
 	bool attackActive_ = false;   // Charge～Shockwave 実行中
 	bool actedThisRound_ = false; // コーディネーターが管理
 
-	// HP
-	int hp_ = 1;
-	static constexpr int kMaxHP_ = 1;
+	// HP（HP.png 1枚 = 1HP ピップ表示）
+	static constexpr int kMaxHP_ = 5;
+	static constexpr int kDamagePerHit_ = 2;               // プレイヤー攻撃1ヒットで減るHP量（5HPに対して3ヒットで撃破）
+	int hp_ = kMaxHP_;
+
+	// ===== 個体ごとの頭上HPピップ（HP.pngを実寸で横に並べる） =====
+	std::array<std::unique_ptr<Sprite>, kMaxHP_> hpPips_;
+	bool hpBarVisible_ = false;
+	void UpdateHpBar();                                    // 毎フレーム：ピップ位置と表示可否を更新
+	static constexpr float kHpBarHeadOffsetY_ = 2.2f;      // 立ち位置から頭上までのワールドYオフセット
+	static constexpr float kHpPipWidth_ = 4.0f;            // HP.png 実寸の幅（拡大しない）
+	static constexpr float kHpPipHeight_ = 8.0f;           // HP.png 実寸の高さ
+	static constexpr float kHpPipSpacing_ = 1.0f;          // ピップ間のすき間（スクリーン単位）
+	static constexpr float kHpBarMinClipW_ = 1e-5f;        // クリップ空間で背後判定する閾値
+	// ピップに乗算する色（ユーザー指定の緑）。{1,1,1,1} ならテクスチャ色そのまま
+	static constexpr Vector4 kHpPipColor_ = { 0.0f, 1.0f, 0.0f, 1.0f };
 
 	// 出現演出
 	Vector3 surfacePos_{};         // 立ち位置（出現の目標。地面＋groundOffsetY_）
@@ -121,4 +138,16 @@ private:
 
 	// コライダー
 	float radius_ = 0.8f;
+
+	// 被弾ヒット演出（その場で固まり、小刻みにシェイクしてから消える）
+	Vector3 hitBasePos_{};                            // シェイク中心となる基準位置
+	float hitTimer_ = 0.0f;                           // ヒット演出の経過時間
+	static constexpr float kHitDuration_ = 0.5f;     // 演出全体の長さ（秒）
+	static constexpr float kHitShakeAmplitude_ = 0.30f; // シェイクの振幅（ワールド単位）
+	static constexpr float kHitShakeFreqX_ = 60.0f;   // X方向のシェイク周波数(rad/s)
+	static constexpr float kHitShakeFreqZRatio_ = 1.3f; // Z方向の周波数倍率（X基準）
+	static constexpr float kHitShakeFreqYRatio_ = 0.9f; // Y方向の周波数倍率（X基準）
+	static constexpr float kHitShakeYAttenuation_ = 0.5f; // Y方向シェイクの振幅減衰係数
+	static constexpr float kHitShakePhaseZ_ = 1.7f;   // Z方向の初期位相（X とずらすため）
+	static constexpr float kHitShakePhaseY_ = 0.5f;   // Y方向の初期位相
 };

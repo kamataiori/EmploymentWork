@@ -205,6 +205,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerBullet.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerIWeapon.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerWeapon.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\PlayerMover.cpp" />
     <ClCompile Include="engine\Collision\ShapeIntersect.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticleEmitterInstance.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticleModule.cpp" />
@@ -357,6 +358,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerBullet.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerIWeapon.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\PlayerWeapon.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\PlayerMover.h" />
     <ClInclude Include="engine\Effects\Particle\Particle.h" />
     <ClInclude Include="engine\Effects\Particle\ParticleEmitterInstance.h" />
     <ClInclude Include="engine\Effects\Particle\ParticleModule.h" />

@@ -356,6 +356,10 @@ void Enemy::ForeGroundDraw()
 	if (uiManager_) {
 		uiManager_->Draw();
 	}
+	// 雑魚敵の頭上HPバーは個体ごとに前景パスで描画する
+	for (auto& m : minions_) {
+		m->ForeGroundDraw();
+	}
 }
 
 void Enemy::AnimationDraw()

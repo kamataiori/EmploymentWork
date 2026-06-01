@@ -1,5 +1,7 @@
 #include "MinionEnemy.h"
 #include "engine/TimeManager.h"
+#include "engine/3d/Camera/Camera.h"
+#include <WinApp.h>
 #include <cmath>
 
 static float WrapDeltaRad(float a) {
@@ -53,6 +55,19 @@ void MinionEnemy::InitializeMinion(const Vector3& spawnPos)
 	actedThisRound_ = false;
 	hp_ = kMaxHP_;
 	shockwaveTimer_ = 0.0f;
+
+	// 頭上HPピップ（HP.pngを実寸サイズで kMaxHP_ 枚作成し、横並びで表示する）
+	// 位置はUpdate内で毎フレーム頭上に追従させる
+	for (int i = 0; i < kMaxHP_; ++i) {
+		hpPips_[i] = std::make_unique<Sprite>();
+		hpPips_[i]->Initialize("Resources/HP.png");
+		// Initialize内のAdjustTextureSizeで自動的にテクスチャ実寸になるが、
+		// 明示的にも実寸を再指定して拡大されないことを保証する
+		hpPips_[i]->SetSize({ kHpPipWidth_, kHpPipHeight_ });
+		hpPips_[i]->SetAnchorPoint({ 0.0f, 0.5f }); // 左端基準で横並べしやすくする
+		hpPips_[i]->SetColor(kHpPipColor_);           // ユーザー指定の緑で乗算
+	}
+	hpBarVisible_ = false; // 出現演出中は非表示。地表に着いたら表示
 
 	// コライダー（Sphere）
 	multiCollider_->Clear();
@@ -220,6 +235,29 @@ void MinionEnemy::Update()
 		}
 		break;
 	}
+
+	case Phase::Hit:
+	{
+		// 固まったまま小刻みにシェイク → 時間切れで死亡(削除)
+		// X/Y/Z で周波数と位相をずらして合成し、機械的にならない揺れにする
+		hitTimer_ += dt;
+
+		const float t = hitTimer_;
+		const float ox = std::sin(t * kHitShakeFreqX_) * kHitShakeAmplitude_;
+		const float oz = std::sin(t * kHitShakeFreqX_ * kHitShakeFreqZRatio_ + kHitShakePhaseZ_)
+			* kHitShakeAmplitude_;
+		const float oy = std::sin(t * kHitShakeFreqX_ * kHitShakeFreqYRatio_ + kHitShakePhaseY_)
+			* kHitShakeAmplitude_ * kHitShakeYAttenuation_;
+
+		transform.translate.x = hitBasePos_.x + ox;
+		transform.translate.y = hitBasePos_.y + oy;
+		transform.translate.z = hitBasePos_.z + oz;
+
+		if (hitTimer_ >= kHitDuration_) {
+			isDead_ = true;
+		}
+		break;
+	}
 	}
 
 	// コライダー更新（衝撃波中のみ半径を拡大して範囲ダメージにする）
@@ -231,6 +269,58 @@ void MinionEnemy::Update()
 	object3d_->SetScale(transform.scale);
 	object3d_->SetRotate(transform.rotate);
 	object3d_->Update();
+
+	// 頭上HPバーの追従と表示更新
+	UpdateHpBar();
+}
+
+void MinionEnemy::UpdateHpBar()
+{
+	// 出現演出中・被弾死亡演出中はバーを隠す（地中から伸びるバーは不自然なため）
+	const bool visible = !isDead_
+		&& phase_ != Phase::Spawn
+		&& phase_ != Phase::Hit;
+	hpBarVisible_ = visible;
+	if (!visible) return;
+
+	// カメラ未設定なら投影できないので位置更新はスキップ
+	if (!camera_) return;
+
+	// 頭上ワールド位置 → クリップ空間
+	const Matrix4x4& vp = camera_->GetViewProjectionMatrix();
+	const Vector3 headPos = {
+		transform.translate.x,
+		transform.translate.y + kHpBarHeadOffsetY_,
+		transform.translate.z,
+	};
+	const float cx = headPos.x * vp.m[0][0] + headPos.y * vp.m[1][0] + headPos.z * vp.m[2][0] + vp.m[3][0];
+	const float cy = headPos.x * vp.m[0][1] + headPos.y * vp.m[1][1] + headPos.z * vp.m[2][1] + vp.m[3][1];
+	const float cw = headPos.x * vp.m[0][3] + headPos.y * vp.m[1][3] + headPos.z * vp.m[2][3] + vp.m[3][3];
+
+	// カメラ背後（w<=0）の場合は描画しない
+	if (cw <= kHpBarMinClipW_) {
+		hpBarVisible_ = false;
+		return;
+	}
+
+	const float ndcX = cx / cw;
+	const float ndcY = cy / cw;
+
+	const float screenW = static_cast<float>(WinApp::kClientWidth);
+	const float screenH = static_cast<float>(WinApp::kClientHeight);
+	const float sx = (ndcX + 1.0f) * 0.5f * screenW;
+	const float sy = (1.0f - ndcY) * 0.5f * screenH;
+
+	// 全ピップを並べたときの合計幅から、中央寄せの左端を求める
+	const float barWidth = kMaxHP_ * kHpPipWidth_ + (kMaxHP_ - 1) * kHpPipSpacing_;
+	const float leftX = sx - barWidth * 0.5f;
+
+	// 各ピップを横に並べる（実寸維持。サイズは触らない）
+	for (int i = 0; i < kMaxHP_; ++i) {
+		const float px = leftX + i * (kHpPipWidth_ + kHpPipSpacing_);
+		hpPips_[i]->SetPosition({ px, sy });
+		hpPips_[i]->Update();
+	}
 }
 
 void MinionEnemy::Draw()
@@ -240,17 +330,34 @@ void MinionEnemy::Draw()
 	object3d_->Draw();
 }
 
+void MinionEnemy::ForeGroundDraw()
+{
+	// HPピップは2Dスプライトなので、前景パスで個体ごとに描画する
+	// 残HP分だけ左から描く（被弾でhp_が減ると右端から欠けていく）
+	if (!hpBarVisible_) return;
+	for (int i = 0; i < hp_ && i < kMaxHP_; ++i) {
+		hpPips_[i]->Draw();
+	}
+}
+
 void MinionEnemy::OnCollision(const CollisionInfo& info)
 {
+	// 既にヒット演出に入っている、または死亡確定後は無視（同じ攻撃で多段ヒットしないため）
+	if (isDead_ || phase_ == Phase::Hit) return;
+
 	auto other = static_cast<CollisionTypeIdDef>(info.otherType);
 
 	if (other == CollisionTypeIdDef::kPlayerWeapon ||
 		other == CollisionTypeIdDef::kPlayerAttack ||
 		other == CollisionTypeIdDef::PlayerBullet)
 	{
-		hp_ -= 1;
+		hp_ -= kDamagePerHit_;
 		if (hp_ <= 0) {
-			isDead_ = true;
+			// すぐ消さず、ヒットストップ演出（固まり＋小刻みシェイク）へ
+			phase_ = Phase::Hit;
+			hitTimer_ = 0.0f;
+			hitBasePos_ = transform.translate; // シェイクの基準点
+			attackActive_ = false;             // 進行中の攻撃も停止
 		}
 	}
 }
