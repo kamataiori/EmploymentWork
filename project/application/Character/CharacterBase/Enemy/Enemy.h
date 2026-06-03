@@ -1,8 +1,10 @@
 #pragma once
 #include "ObjectBase.h"
 #include "MultiCollider.h"
+#include "ITarget.h"
 #include <memory>
 #include <list>
+#include <vector>
 #include <MinionEnemy.h>
 
 class EnemyAIController;
@@ -30,7 +32,7 @@ struct SkeltonAnimationSet {
 	std::string Yes = "Yes";
 };
 
-class Enemy : public ObjectBase
+class Enemy : public ObjectBase, public ITarget, public IEnemyTargetProvider
 {
 public:
 
@@ -104,6 +106,15 @@ public:
 	void SetTargetTransform(const Transform* t) { target_ = t; }
 
 	bool IsDead() const { return isDead_; }
+
+	//=== ITarget（プレイヤーの攻撃対象としてのインターフェイス）===
+	// 生存判定・狙う座標・ダメージ適用を、敵の具体型を意識せず使えるようにする。
+	bool IsAlive() const override { return !isDead_; }
+	Vector3 GetTargetCenter() const override { return transform.translate + colliderOffset_; }
+	void ApplyDamage(int amount) override;
+
+	//=== IEnemyTargetProvider（自分＋配下の雑魚を攻撃対象として束ねる）===
+	void CollectAliveTargets(std::vector<ITarget*>& out) override;
 
 	// HPフェーズ
 	enum class EnemyPhase { Phase1, Phase2, Phase3 };

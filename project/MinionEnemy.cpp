@@ -351,14 +351,22 @@ void MinionEnemy::OnCollision(const CollisionInfo& info)
 		other == CollisionTypeIdDef::kPlayerAttack ||
 		other == CollisionTypeIdDef::PlayerBullet)
 	{
-		hp_ -= kDamagePerHit_;
-		if (hp_ <= 0) {
-			// すぐ消さず、ヒットストップ演出（固まり＋小刻みシェイク）へ
-			phase_ = Phase::Hit;
-			hitTimer_ = 0.0f;
-			hitBasePos_ = transform.translate; // シェイクの基準点
-			attackActive_ = false;             // 進行中の攻撃も停止
-		}
+		ApplyDamage(kDamagePerHit_);
+	}
+}
+
+void MinionEnemy::ApplyDamage(int amount)
+{
+	// 既にヒット演出に入っている、または死亡確定後は無視（多段ヒット防止）
+	if (isDead_ || phase_ == Phase::Hit) return;
+
+	hp_ -= amount;
+	if (hp_ <= 0) {
+		// すぐ消さず、ヒットストップ演出（固まり＋小刻みシェイク）へ
+		phase_ = Phase::Hit;
+		hitTimer_ = 0.0f;
+		hitBasePos_ = transform.translate; // シェイクの基準点
+		attackActive_ = false;             // 進行中の攻撃も停止
 	}
 }
 

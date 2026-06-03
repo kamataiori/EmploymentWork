@@ -10,6 +10,8 @@
 #include "Sword.h"
 #include "Camera/CameraEffectController.h"
 
+class IEnemyTargetProvider;
+
 class Player : public ObjectBase
 {
 public:
@@ -119,6 +121,17 @@ public:
 	/// </summary>
 	bool IsInputLocked() const { return inputLocked_; }
 
+	/// <summary>
+	/// 無敵のセット（true=被弾無効）。アルティメット突進中などに使う。
+	/// </summary>
+	void SetInvincible(bool invincible) { invincible_ = invincible; }
+	bool IsInvincible() const { return invincible_; }
+
+	/// <summary>
+	/// 攻撃対象の供給元を注入する（武器→アルティメットへ橋渡しする）。
+	/// </summary>
+	void SetEnemyTargetProvider(IEnemyTargetProvider* provider);
+
 	bool  IsDead()         const { return isDead_; }
 	float GetDeathTimer()  const { return deathTimer_; }
 protected:
@@ -154,6 +167,9 @@ private:
 	// 演出中の入力ロックフラグ
 	// =============================
 	bool inputLocked_ = false;
+
+	// 無敵フラグ（true の間は OnCollision での被弾を無視する）
+	bool invincible_ = false;
 
 	// HP関連
 	int hp_ = 10000;                     // 現在HP

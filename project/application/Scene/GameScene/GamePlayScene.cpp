@@ -74,6 +74,8 @@ void GamePlayScene::Initialize()
 	player_->Initialize();
 	enemy_->Initialize();
 	enemy_->SetTargetTransform(&player_->GetTransform());
+	// アルティメット（突進乱舞）の攻撃対象供給元としてボス（自身＋配下の雑魚を束ねる）を注入
+	player_->SetEnemyTargetProvider(enemy_.get());
 	player_->SetCameraEffect(cameraEffect_.get());
 	enemy_->SetCameraEffect(cameraEffect_.get());
 

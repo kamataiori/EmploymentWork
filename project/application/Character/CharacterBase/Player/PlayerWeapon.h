@@ -40,6 +40,8 @@ public:
 	void Skill() override;
 	void Ultimate() override;
 
+	void SetEnemyTargetProvider(IEnemyTargetProvider* provider) override;
+
 	// 攻撃モーション中か（アニメ上書き禁止の判定に使う）
 	bool IsAttacking() const { return attacking_; }
 	bool HasComboReserve() const { return comboReserve_; }
@@ -51,7 +53,9 @@ public:
 private:
 
 	// いずれかのスキルが発動中か（攻撃やスキルの多重発動を防ぐ排他制御に使う）
-	bool IsAnySkillActive() const { return eSkill_ && eSkill_->IsActive(); }
+	bool IsAnySkillActive() const {
+		return (eSkill_ && eSkill_->IsActive()) || (ultSkill_ && ultSkill_->IsActive());
+	}
 
 private:
 
@@ -87,6 +91,8 @@ private:
 
 	// 入力エッジ検出用（E キーの押した瞬間を取る）
 	bool IsSkill_ = false;
+	// 入力エッジ検出用（Q キーの押した瞬間を取る）
+	bool isUltimate_ = false;
 
 	// ---- 借り物（所有しない） ----
 	Sword* sword_ = nullptr;       // スキルが駆動する剣
@@ -94,6 +100,9 @@ private:
 	// ---- スキル ----
 	// E キーのスキル（回転斬り）。IPlayerSkill 越しに扱い、追加時は別クラスを足すだけ。
 	std::unique_ptr<IPlayerSkill> eSkill_;
+
+	// Q キーのアルティメット（突進乱舞）。E スキルと同じく IPlayerSkill 越しに扱う。
+	std::unique_ptr<IPlayerSkill> ultSkill_;
 
 	// デバッグ用フラグ
 	bool showDebug_ = true;

@@ -1,5 +1,6 @@
 #pragma once
 #include "ObjectBase.h"
+#include "ITarget.h"
 #include <CollisionTypeIdDef.h>
 #include "Sprite.h"
 #include <array>
@@ -14,7 +15,7 @@
 //   プレイヤーへ突進 → 上昇 → てっぺんで高速回転 → 急降下(ドッスン) → 衝撃波
 // ・自分の番でない間は完全静止で待機
 //======================================================
-class MinionEnemy : public ObjectBase
+class MinionEnemy : public ObjectBase, public ITarget
 {
 public:
 	MinionEnemy(BaseScene* scene);
@@ -37,6 +38,12 @@ public:
 	void OnCollision(const CollisionInfo& info) override;
 
 	bool IsDead() const { return isDead_; }
+
+	//=== ITarget（プレイヤーの攻撃対象としてのインターフェイス）===
+	// 撃破演出(Phase::Hit)に入った時点で対象から外す（多重ヒット・再突進を防ぐ）。
+	bool IsAlive() const override { return !isDead_ && phase_ != Phase::Hit; }
+	Vector3 GetTargetCenter() const override { return transform.translate + Vector3{ 0.0f, 1.0f, 0.0f }; }
+	void ApplyDamage(int amount) override;
 
 	void SetCamera(Camera* camera) override;
 

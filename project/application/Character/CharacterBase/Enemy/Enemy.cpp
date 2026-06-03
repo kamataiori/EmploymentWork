@@ -380,10 +380,18 @@ void Enemy::ParticleDraw()
 
 void Enemy::OnCollision()
 {
-	hp_ -= kDamagePerHit_;
+	// 通常の被弾（プレイヤー武器との衝突）は既定ダメージで処理する。
+	ApplyDamage(kDamagePerHit_);
+}
+
+void Enemy::ApplyDamage(int amount)
+{
+	if (isDead_) return;
+
+	hp_ -= amount;
 	if (hp_ < 0) hp_ = 0;
 
-	if (hp_ <= 0 && !isDead_) {
+	if (hp_ <= 0) {
 		object3d_->SetAnimationOneShot(animation_.Death);
 		hitReactTimer_ = 0.0f;
 		isDead_ = true;
@@ -393,16 +401,25 @@ void Enemy::OnCollision()
 		return;
 	}
 
-	if (!isDead_) {
-		SetAnimationIfChanged(animation_.HitReact);
-		hitReactTimer_ = kHitReactDuration_;
+	SetAnimationIfChanged(animation_.HitReact);
+	hitReactTimer_ = kHitReactDuration_;
 
-		// 被弾時のヒットパーティクルを発生
-		if (deathSystem_) {
-			Transform hitParticleTransform = transform;
-			hitParticleTransform.translate.y += 3.5f; // 胴体あたりの高さ
-			deathSystem_->EmitSystemByName("ADE", hitParticleTransform);
-		}
+	// 被弾時のヒットパーティクルを発生
+	if (deathSystem_) {
+		Transform hitParticleTransform = transform;
+		hitParticleTransform.translate.y += 3.5f; // 胴体あたりの高さ
+		deathSystem_->EmitSystemByName("ADE", hitParticleTransform);
+	}
+}
+
+void Enemy::CollectAliveTargets(std::vector<ITarget*>& out)
+{
+	// 自分（ボス）が生きていれば対象に加える。
+	if (!isDead_) out.push_back(this);
+
+	// 配下の雑魚のうち生存しているものを加える。
+	for (auto& m : minions_) {
+		if (m && m->IsAlive()) out.push_back(m.get());
 	}
 }
 

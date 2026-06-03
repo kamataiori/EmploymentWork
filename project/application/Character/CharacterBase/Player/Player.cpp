@@ -84,6 +84,12 @@ void Player::Initialize()
 	//poweder->LoadAllPresets();
 }
 
+void Player::SetEnemyTargetProvider(IEnemyTargetProvider* provider)
+{
+	// 武器（調停役）経由でアルティメットへ供給元を渡す。
+	if (weapon_) weapon_->SetEnemyTargetProvider(provider);
+}
+
 void Player::Update()
 {
 	// ===== Δt =====
@@ -234,6 +240,7 @@ void Player::OnCollision()
 	if (hp_ < 0) hp_ = 0;*/
 
 	if (isDead_) return; // 死亡中は被弾無視
+	if (invincible_) return; // 無敵中（アルティメット突進中など）は被弾無視
 
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;

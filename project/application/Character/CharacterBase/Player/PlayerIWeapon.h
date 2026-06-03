@@ -3,6 +3,7 @@
 #include "MultiCollider.h"
 
 class Player;
+class IEnemyTargetProvider;
 
 class PlayerIWeapon
 {
@@ -33,6 +34,11 @@ public:
 	/// アルティメット
 	/// </summary>
 	virtual void Ultimate() = 0;
+
+	/// <summary>
+	/// アルティメットが攻撃対象を引くための供給元を注入する。
+	/// </summary>
+	virtual void SetEnemyTargetProvider(IEnemyTargetProvider* provider) = 0;
 
 	void SetPlayerTransform(Transform* transform) { playerTransform_ = transform; }
 
