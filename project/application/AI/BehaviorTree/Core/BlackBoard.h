@@ -32,6 +32,29 @@ public:
         }
     }
 
+    //==================================================
+    // try_get_value
+    // ・keyが存在しない/型が違う場合でも例外を投げず false
+    // ・成功時は out に値を入れて true
+    //==================================================
+    template<typename T>
+    bool try_get_value(const std::string& key, T& out) const
+    {
+        auto it = mData.find(key);
+        if (it == mData.end()) {
+            return false;
+        }
+
+        // any_cast<T>(&) なら例外を投げずに nullptr / pointer で判定できる
+        const T* p = std::any_cast<T>(&(it->second));
+        if (!p) {
+            return false;
+        }
+
+        out = *p;
+        return true;
+    }
+
     bool has_key(const std::string& key) const
     {
         return mData.find(key) != mData.end();

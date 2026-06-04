@@ -4,22 +4,24 @@
 enum class PlayerAnimKey : uint32_t {
     // locomotion
     Idle,
+    Walk,
     Run,
     RunWeapon,
     Roll,
-    Walk,
 
     // combat
+    Attack01,
+    Attack02,
+    Attack03,
     SwordAttack,
     SwordAttackFast,
-    AttackA,
-    AttackB,
     Punch,
 
     // others
     IdleAttacking,
+    IdleWeapon,
     PickUp,
-    Hit1,
-    Hit2,
+    RecieveHit,
+    RecieveHit2,
     Death,
 };

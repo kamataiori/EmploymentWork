@@ -48,7 +48,7 @@ void Light::InitializePointLight()
 
     // デフォルト値の設定
     pointLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-    pointLightData->position = { 0.0f, 2.0f, 0.0f };
+    pointLightData->position = { 10000.0f, 10000.0f, 0.0f };
     pointLightData->intensity = 0.0f;
     pointLightData->radius = 20.0f;
     pointLightData->decay = 10.0f;
@@ -64,7 +64,7 @@ void Light::InitializeSpotLight()
 
     // デフォルト値の設定
     spotLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-    spotLightData->position = { 2.0f, 1.25f, 0.0f };
+    spotLightData->position = { 20000.0f, 10000.25f, 0.0f };
     spotLightData->direction = Normalize({ -1.0f, -1.0f, 0.0f });
     spotLightData->intensity = 0.0f;
     spotLightData->distance = 7.0f;

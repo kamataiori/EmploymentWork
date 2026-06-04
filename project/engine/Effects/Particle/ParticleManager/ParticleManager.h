@@ -9,10 +9,11 @@
 #include "MathFunctions.h"
 #include "engine/TimeManager.h"
 
-#include "ParticleEmitter.h"
 #include "ParticleEmitterInstance.h"
 #include "ParticleSystem.h"
 #include "ParticlePreset.h"
+#include "ParticlePresetLibrary.h"
+#include "ParticleSystemManager.h"
 
 #include <random>
 #include <string>
@@ -53,7 +54,7 @@ public:
 	/// <summary>
 	/// パーティクルグループの生成
 	/// </summary>
-	void CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode  = kBlendModeNormal);
+	void CreateParticleGroup(const std::string name, const std::string textureFilePath, BlendMode blendMode = kBlendModeNormal);
 
 	// カメラの設定
 	void SetCamera(Camera* camera) { this->camera_ = camera; }
@@ -75,7 +76,12 @@ public:
 
 	/// ディレクトリ内のすべてのプリセットを読み込む（今後のため）
 	void LoadAllPresets(const std::string& directory = "Resources/Particle");
-	void SavePreset(const ParticleEmitter& preset);
+
+	// ===== コードから直接プリセットを登録する =====
+	/// コードで組み立てた ParticlePreset を登録する
+	/// （JSON を経由せず、メモリ上に直接登録する）
+	/// 登録後は EmitPreset() / EmitByPresetName() で名前指定して使える
+	void RegisterPreset(const ParticlePreset& preset);
 
 	/// <summary>
 	/// JSON プリセット名からパーティクルを発生させる
@@ -84,10 +90,15 @@ public:
 	/// <param name="emitterTransform">発生元の Transform（位置/回転/スケール）</param>
 	void EmitByPresetName(const std::string& presetName, const Transform& emitterTransform);
 
-	const std::string& GetCurrentEditingPresetName() const { return currentEditingPresetName_; }
+	/// 登録済みプリセットから、単発の EmitterInstance を作って即再生する
+	/// System に属さない単独の Emitter として動作する
+	/// @return 作成された EmitterInstance（操作したい場合のみ使う。捨てても OK）
+	ParticleEmitterInstance* EmitPreset(const std::string& presetName,const Transform& emitterTransform);
+
+	const std::string& GetCurrentEditingPresetName() const { return presetLibrary_.GetCurrentEditingName(); }
 
 	// setter
-	void SetCurrentEditingPresetName(const std::string& name) { currentEditingPresetName_ = name; }
+	void SetCurrentEditingPresetName(const std::string& name) { presetLibrary_.SetCurrentEditingName(name); }
 
 	// プリセット取得（編集用）
 	ParticlePreset* FindPreset(const std::string& name);
@@ -109,7 +120,7 @@ public:
 
 	// ---- System 管理用API（新規） ----
 
-    // System を 1 つ作成してコンテナに登録
+	// System を 1 つ作成してコンテナに登録
 	ParticleSystem* CreateSystem(const std::string& systemName);
 
 	// 既に存在する System を名前で取得（なければ nullptr）
@@ -123,9 +134,9 @@ public:
 		const Transform& emitterTransform);
 
 	// ----------------------------------------
-    // Systemにプリセットを登録する簡易API
-    // （JSONは変えず、コード／エディタ側から設定する用）
-    // ----------------------------------------
+	// Systemにプリセットを登録する簡易API
+	// （JSONは変えず、コード／エディタ側から設定する用）
+	// ----------------------------------------
 	void RegisterSystemPreset(const std::string& systemName,
 		const std::string& presetName);
 
@@ -142,9 +153,9 @@ public:
 	void EmitSystemByName(const std::string& systemName, const Transform& emitterTransform);
 
 	// --- System JSON 保存/読み込み ---
-	bool SaveSystemToJson(const std::string& systemName,const std::string& directory = "Resources/ParticleSystem");
+	bool SaveSystemToJson(const std::string& systemName, const std::string& directory = "Resources/ParticleSystem");
 
-	bool LoadSystemFromJson(const std::string& systemName,const std::string& directory = "Resources/ParticleSystem");
+	bool LoadSystemFromJson(const std::string& systemName, const std::string& directory = "Resources/ParticleSystem");
 
 	void LoadAllSystems(const std::string& directory = "Resources/ParticleSystem");
 
@@ -154,27 +165,23 @@ public:
 
 private:
 
-	std::unordered_map<std::string, ParticlePreset> presets_;  // name -> プリセット
+	// プリセット管理は ParticlePresetLibrary に集約
+	// （JSON 保存/読込・名前検索・プリセット保有を担当）
+	ParticlePresetLibrary presetLibrary_;
 
-	// プリセットエディタで最後に触っていたプリセット名
-	std::string currentEditingPresetName_;
+	// System 管理を専用クラスに委譲
+	ParticleSystemManager systemManager_;
 
 	// ===== 新しいエミッター / システム管理用コンテナ =====
 
 	// 新しいエミッターインスタンス（Niagara でいう Emitter Instance）
 	std::vector<std::unique_ptr<ParticleEmitterInstance>> emitterInstances_;
 
-	// 将来的に複数エミッターをまとめる ParticleSystem（Niagara System 相当）
-	std::vector<std::unique_ptr<ParticleSystem>> systems_;
-
 	// System を使った Emit（ステップ2で実装）
 	void EmitSystem(const std::string& systemName, const Transform& transform);
 
-	// ループ処理（EmitterInstance / System の Update）
-	void Update(float dt);
-
-	// 新EmitterInstanceのパーティクルをインスタンシングバッファへ書き込む
-	void PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix,const Matrix4x4& billboardMatrix);
+	// EmitterInstanceのパーティクルをインスタンシングバッファへ書き込む
+	void PopulateInstancesFromEmitters(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& billboardMatrix);
 
 	/// <summary>
 	/// 頂点リソースの生成、バッファービューの作成
@@ -294,6 +301,10 @@ private:
 
 		UINT vertexCount = 32; // ← 追加（描画に使うインスタンスあたりの頂点数）
 
+        // このグループが使う頂点形状（Plane / Ring / Cylinder など）
+        // EnsureGroupForPreset() で preset.emitterSettings.vertexType から設定される
+		VertexDataType vertexType = VertexDataType::Plane;
+
 		// インスタンシングデータを書き込むためのポインタ
 		ParticleForGPU* instancingDataPtr = nullptr;
 
@@ -311,6 +322,16 @@ private:
 		Curve1D colorCurve;
 
 	};
+
+	// ===== 形状ごとの頂点バッファ生成 =====
+
+    // 指定形状の頂点バッファを vertexBuffers_ に登録する
+	void BuildVertexBuffer(VertexDataType type);
+
+	// 形状ごとの頂点データ配列を生成して返す（リソースは作らない）
+	std::vector<VertexData> MakePlaneVertices();
+	std::vector<VertexData> MakeRingVertices();
+	std::vector<VertexData> MakeCylinderVertices();
 
 	/// <summary>
 	/// パーティクル生成器
@@ -345,7 +366,7 @@ private:
 public:
 
 	// プリセットの内容に合わせて ParticleGroup を準備し、
-    // カーブやフラグ類を反映したうえで参照を返す共通ヘルパー
+	// カーブやフラグ類を反映したうえで参照を返す共通ヘルパー
 	ParticleGroup& EnsureGroupForPreset(const ParticlePreset& preset);
 
 	/// <summary>
@@ -413,6 +434,22 @@ private:
 	Material* materialData = nullptr;
 	// バッファリソースの使い道を補完するビュー
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+
+	// ===== Phase1 追加: 形状ごとの頂点バッファ =====
+    // Plane / Ring / Cylinder それぞれに対応する頂点バッファをまとめて管理する
+
+    // 1形状分の頂点バッファ情報
+	struct VertexBufferSet {
+		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+		D3D12_VERTEX_BUFFER_VIEW view{};
+		uint32_t vertexCount = 0;
+	};
+
+	// 形状 → 頂点バッファのマップ
+	// 起動時に Plane / Ring / Cylinder の3つを作っておき、
+	// 描画時にグループの vertexType で引いて切り替える
+	std::unordered_map<VertexDataType, VertexBufferSet> vertexBuffers_;
+
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> instancingResource;
 

@@ -6,6 +6,8 @@
 
 struct TransitionRequest;
 class SceneTransitionService;
+class PlayModeState;
+class CursorService;
 
 class SceneManager
 {
@@ -54,8 +56,17 @@ public:
 		sceneFactory_ = factory;
 	}
 
+	// シーンファクトリーのGetter (EditorLayout等のUIから参照する用)
+	AbstractSceneFactory* GetSceneFactory() const { return sceneFactory_; }
+
 	// 現在のシーンを取得
 	BaseScene* GetCurrentScene() const { return scene_; }
+
+	/// <summary>
+	/// 現在アクティブなシーン名を取得
+	/// (ChangeScene で指定された名前を覚えている)
+	/// </summary>
+	const std::string& GetCurrentSceneName() const { return currentSceneName_; }
 
 	/// <summary>
 	/// 次シーン予約
@@ -63,15 +74,40 @@ public:
 	/// <param name="sceneName"></param>
 	void ChangeScene(const std::string& sceneName);
 
-	// -----Scene切り替え演出----- // 
+	/// <summary>
+	/// 現在のシーンを同じ名前で作り直す
+	/// (UE5のPlayボタンによるシーンリセット相当)
+	/// </summary>
+	void ReloadCurrentScene();
 
-	// 遷移要求の窓口（Sceneから呼ぶのは基本これ）
-	// SceneManagerは演出の生成を知らず、Serviceに委譲する
+	// -----Scene切り替え演出----- //
+
 	void SetTransitionService(SceneTransitionService* service) { transitionService_ = service; }
-
 	void RequestChangeScene(const std::string& nextSceneName, const TransitionRequest& req);
-
 	bool IsTransitioning() const;
+
+	// -----Play/Stop制御----- //
+
+	/// <summary>
+	/// Play/Stop 状態を監視対象として設定する
+	/// (セットされていれば、停止中は scene_->Update() がスキップされる。
+	///  ただしシーン切替直後の1フレームだけは強制的にUpdateを呼び、
+	///  描画可能な状態を保証する)
+	/// 所有権は持たない
+	/// </summary>
+	void SetPlayModeState(PlayModeState* state) { playModeState_ = state; }
+
+	/// <summary>
+	/// カーソル制御サービスを注入する (所有しない)。
+	/// シーン切替時に新シーンの ShouldShowCursor / ShouldConfineCursor を反映する。
+	/// </summary>
+	void SetCursorService(CursorService* service) { cursorService_ = service; }
+
+	/// <summary>
+	/// カーソル制御サービスを取得する (シーン途中で表示状態を変えたい時に使う)。
+	/// 注入されていなければ nullptr を返す。
+	/// </summary>
+	CursorService* GetCursorService() const { return cursorService_; }
 
 private:
 
@@ -81,10 +117,18 @@ private:
 	// 次のシーン
 	BaseScene* nextScene_ = nullptr;
 
+	// 最後に ChangeScene に渡された名前 (現在アクティブなシーン名)
+	std::string currentSceneName_;
+
 	// シーンファクトリー (借りてくる)
 	AbstractSceneFactory* sceneFactory_ = nullptr;
 
-	// 遷移実行はここに委譲する（所有はしない）
+	// 遷移実行はここに委譲する(所有はしない)
 	SceneTransitionService* transitionService_ = nullptr;
-};
 
+	// Play/Stop 状態 (外部から注入。nullなら常に再生扱い)
+	PlayModeState* playModeState_ = nullptr;
+
+	// マウスカーソル制御 (外部から注入。所有はしない)
+	CursorService* cursorService_ = nullptr;
+};

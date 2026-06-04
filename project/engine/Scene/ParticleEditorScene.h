@@ -15,17 +15,29 @@ inline constexpr const char* kWindowName_Camera = "Camera Control";
 
 // Niagara風 UI 用の簡易データ
 struct NiagaraSystemUI {
-    std::string name;
-    float posX = 0.0f;
-    float posY = 0.0f;
-    float width = 140.0f;
-    float height = 120.0f;
+	std::string name;
+	float posX = 0.0f;
+	float posY = 0.0f;
+	float width = 140.0f;
+	float height = 120.0f;
 
-    // System の再生制御用
-    bool  playing = false;  // 再生中かどうか
-    bool  loop = false;  // ループ再生するか
-    float emitInterval = 0.2f;   // Emit 間隔(秒)
-    float emitTimer = 0.0f;   // 内部タイマー
+	// System の再生制御用
+	bool  playing = false;
+	bool  loop = false;
+	float emitInterval = 0.2f;
+	float emitTimer = 0.0f;
+
+	// ===== System 内の各プリセットごとの時間設定 =====
+	struct EmitterEntryUI {
+		std::string presetName;
+		float startTime = 0.0f;
+		float duration = -1.0f;   // -1.0 = 停止しない（無制限）
+		bool  autoPlay = true;
+	};
+	std::vector<EmitterEntryUI> emitterEntries;
+
+	// System 全体の duration（Phase2-3 で追加した System 全体の長さ）
+	float systemDuration = 0.0f;
 };
 
 struct NiagaraEmitterUI {

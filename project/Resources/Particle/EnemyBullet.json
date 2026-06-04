@@ -1,0 +1,162 @@
+{
+    "emitterSettings": {
+        "blendMode": 2,
+        "textureFilePath": "Resources/ParticleTexture/circle.png",
+        "vertexType": 0
+    },
+    "emitterSpawn": {
+        "count": 50,
+        "frequency": 0.03,
+        "repeat": true,
+        "useRandomPosition": false,
+        "useLocalSpace": true
+    },
+    "name": "EnemyBullet",
+    "particleSpawn": {
+        "initialOffset": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialOffsetRandom": {
+            "max": [
+                0.3,
+                0.3,
+                0.3
+            ],
+            "min": [
+                -0.3,
+                -0.3,
+                -0.3
+            ],
+            "useRandom": true
+        },
+        "initialRotate": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialRotateRandom": {
+            "max": [
+                3.14,
+                3.14,
+                3.14
+            ],
+            "min": [
+                -3.14,
+                -3.14,
+                -3.14
+            ],
+            "useRandom": true
+        },
+        "initialScale": [
+            0.4,
+            0.4,
+            0.4
+        ],
+        "initialScaleRandom": {
+            "max": [
+                0.5,
+                0.5,
+                0.5
+            ],
+            "min": [
+                0.2,
+                0.2,
+                0.2
+            ],
+            "useRandom": true
+        }
+    },
+    "particleUpdate": {
+        "lifeTime": 0.15,
+        "rotationRandom": {
+            "max": [
+                0.5,
+                0.5,
+                0.5
+            ],
+            "min": [
+                -0.5,
+                -0.5,
+                -0.5
+            ],
+            "useRandom": true
+        },
+        "rotationSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scaleRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "scaleSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "useGravity": false,
+        "velocity": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "velocityRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        }
+    },
+    "render": {
+        "color": [
+            0.19305014610290527,
+            1.0,
+            0.0,
+            1.0
+        ],
+        "colorGradient": {
+            "enabled": false,
+            "keys": [
+                [
+                    0.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            ]
+        },
+        "flipY": false,
+        "gradientTimeCurve": {
+            "enabled": false,
+            "keys": []
+        },
+        "useBillboard": true
+    }
+}

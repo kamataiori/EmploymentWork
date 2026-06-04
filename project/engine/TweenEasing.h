@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include "TitleScene.h"
 
 /// <summary>
 /// 汎用 Tween / Easing 用のユーティリティ

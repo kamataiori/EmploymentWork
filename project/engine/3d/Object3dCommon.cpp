@@ -211,9 +211,9 @@ void Object3dCommon::BlendState()
 	blendDesc_.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
 	blendDesc_.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;*/
 	//α値のブレンド設定で基本的には使わない
-	blendDesc_.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendDesc_.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ZERO;
 	blendDesc_.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-	blendDesc_.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+	blendDesc_.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ONE;
 }
 
 void Object3dCommon::RasterizerState()

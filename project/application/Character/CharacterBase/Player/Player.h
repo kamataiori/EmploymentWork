@@ -1,91 +1,211 @@
 #pragma once
-#include <memory>
-#include "PlayerBase.h"
-#include "FollowCamera.h"
-#include "PlayerType.h"
+#include "ObjectBase.h"
+#include "Collider.h"
+#include "MultiCollider.h"
 #include "PlayerAnimation.h"
-#include <PlayerRogue.h>
-#include <PlayerWarrior.h>
+#include "PlayerAnimKey.h"
+#include "PlayerIWeapon.h"
+#include <PlayerWeapon.h>
+#include "PlayerMover.h"
+#include "Sword.h"
+#include "Camera/CameraEffectController.h"
 
-class Player {
+class IEnemyTargetProvider;
+class ParticleManager;
+class ParticleEmitterInstance;
+
+class Player : public ObjectBase
+{
 public:
 
-    /// <summary>
-    /// コンストラクタ
-    /// </summary>
-    Player(BaseScene* scene);
+	/// <summary>
+	/// コンストラクタ
+	/// </summary>
+	/// <param name="baseScene_"></param>
+	Player(BaseScene* baseScene_) : ObjectBase(baseScene_) {}
 
-    /// <summary>
-    /// 初期化処理。カメラを受け取り、初期プレイヤーを生成
-    /// </summary>
-    /// <param name=\"camera\">FollowCamera（Scene側で生成）</param>
-    void Initialize(FollowCamera* camera);
+	// 前方宣言した型を unique_ptr で持つため、デストラクタは cpp 側で定義する
+	~Player() override;
 
+	/// <summary>
+	/// 初期化処理
+	/// </summary>
+	void Initialize() override;
 
-    /// <summary>
-    /// プレイヤーの更新処理
-    /// </summary>
-    void Update();
+	/// <summary>
+	/// 更新処理
+	/// </summary>
+	void Update() override;
+	void UpdateVisual();
 
-    /// <summary>
-    /// 背景スプライト処理
-    /// </summary>
-    void BackGroundDraw();
+	/// <summary>
+	/// 背景スプライト処理
+	/// </summary>
+	void BackGroundDraw() override;
 
-    /// <summary>
-    /// 通常描画処理
-    /// </summary>
-    void Draw();
+	/// <summary>
+	/// 通常のObject専用の描画処理
+	/// </summary>
+	void Draw() override;
 
-    /// <summary>
-    /// 前景スプライト処理
-    /// </summary>
-    void ForeGroundDraw();
+	/// <summary>
+	/// 前景スプライト処理
+	/// </summary>
+	void ForeGroundDraw() override;
 
-    /// <summary>
-    /// アニメーションモデル用の描画処理
-    /// </summary>
-    void AnimationDraw();
+	/// <summary>
+	/// Skinningのモデル専用の描画処理
+	/// </summary>
+	void AnimationDraw() override;
 
-    /// <summary>
-    /// パーティクル専用の描画処理
-    /// </summary>
-    void ParticlDraw();
+	/// <summary>
+	/// パーティクル専用の描画処理
+	/// </summary>
+	void ParticleDraw() override;
 
-    /// <summary>
-    /// 当たり判定ヒット時の応答処理
-    /// </summary>
-    void OnCollision();
+	/// <summary>
+	/// 当たり判定の呼出し
+	/// </summary>
+	void OnCollision() override;
 
-    /// <summary>
-    /// プレイヤーを別の種類に切り替える
-    /// </summary>
-    /// <param name=\"type\">新しいプレイヤーの種類</param>
-    void ChangePlayer(PlayerType type);
+	/// <summary>
+	/// 当たり判定の呼出し（相手情報付き）
+	/// 敵グループからの接触のみ被弾として扱う
+	/// </summary>
+	void OnCollision(const CollisionInfo& info) override;
 
-    /// <summary>
-    /// 現在のプレイヤー（PlayerBase）を取得
-    /// </summary>
-    /// <returns>PlayerBase*（主に外部からアクセス用）</returns>
-    PlayerBase* Get() const { return currentPlayer_; }
+	/// <summary>
+	/// カメラをセット
+	/// </summary>
+	void SetCamera(Camera* camera) override;
 
-    ObjectBase* GetCurrentCharacter() const;
+	void SetCameraEffect(CameraEffectController* effect) { cameraEffect_ = effect; }
 
+	CameraEffectController* GetCameraEffect() const { return cameraEffect_; }
+
+	// 任意のタイミングでキー再生したいとき用（攻撃側から呼ぶ想定）
+	void PlayAnimaKey(PlayerAnimKey key);
+
+	// speed: アニメ再生速度の倍率（1.0=等倍 / >1で速く / <1で遅く）
+	void RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec = 0.0f, float speed = 1.0f);
+
+	bool IsAnimaLocked() const { return animaLockTimer_ > 0.0f; }
+
+	// 現在アニメの進行度 0.0〜1.0（武器側が当たり判定区間の判定に使う）
+	float GetAnimationProgress() const { return object3d_->GetAnimationProgress(); }
+
+	// 攻撃アニメ終了時に呼ぶ：優先度/ロックを解除し、移動アニメへ戻れるようにする
+	void EndAttackState() { animaLockTimer_ = 0.0f; currentAnimaPriority_ = 0; }
+
+	PlayerIWeapon* GetWeapon() { return weapon_.get(); }
+
+	// 当たり判定が有効なとき（通常攻撃のヒット区間／スキル中）のみコライダーを返す。
+	// それ以外は nullptr を返し、Scene 側で登録されない＝判定が出ない。
+	MultiCollider* GetWeaponCollider() {
+		if (sword_ && sword_->IsHitEnabled()) {
+			return sword_->GetMultiCollider();
+		}
+		return nullptr;
+	}
+
+	void SetAnimation(const std::string& name)
+	{
+		if (name.empty()) return;
+		if (currentAnimationName_ == name) return;
+		object3d_->SetAnimation(name);
+		currentAnimationName_ = name;
+	}
+
+	/// <summary>
+	/// 入力ロックのセット（true=演出中・入力無効 / false=通常）
+	/// </summary>
+	void SetInputLocked(bool locked) { inputLocked_ = locked; }
+
+	/// <summary>
+	/// 入力ロック状態を取得
+	/// </summary>
+	bool IsInputLocked() const { return inputLocked_; }
+
+	/// <summary>
+	/// 無敵のセット（true=被弾無効）。アルティメット突進中などに使う。
+	/// </summary>
+	void SetInvincible(bool invincible) { invincible_ = invincible; }
+	bool IsInvincible() const { return invincible_; }
+
+	/// <summary>
+	/// 攻撃対象の供給元を注入する（武器→アルティメットへ橋渡しする）。
+	/// </summary>
+	void SetEnemyTargetProvider(IEnemyTargetProvider* provider);
+
+	bool  IsDead()         const { return isDead_; }
+	float GetDeathTimer()  const { return deathTimer_; }
+
+	// HP の取得（左下のHP UI 表示などに使う）
+	int GetHp()    const { return hp_; }
+	int GetMaxHp() const { return kMaxHP_; }
+protected:
+
+	// アニメーションを設定する関数
+	void SetAnimationIfChanged(const std::string& name);
 
 private:
 
-    // Sceneへの参照
-    BaseScene* scene_ = nullptr;
-    // 追従カメラ（Scene側で管理）
-    FollowCamera* camera_ = nullptr;
-    // 現在のプレイヤー
-    PlayerBase* currentPlayer_ = nullptr;
-    // 現在のプレイヤーの種類
-    PlayerType currentType_ = PlayerType::Warrior;
+	// アニメーションの名前
+	std::string currentAnimationName_;
+	PlayerAnimation animaCtrl_;
 
-    std::unique_ptr<PlayerWarrior> warrior_;
-    std::unique_ptr<PlayerRogue> rogue_;
+	// 移動・ジャンプ・ブリンクを担当するコンポーネント
+	// （Player の transform を借りて動かす。詳細は PlayerMover.h を参照）
+	std::unique_ptr<PlayerMover> mover_;
 
-    PlayerAnimation anim_;
+	// 1回目だけデフォルトTransformを入れる
+	bool isFirstInitialize_ = true;
+
+	std::unique_ptr<PlayerIWeapon> weapon_{};
+	int currentAnimaPriority_ = 0;  // 0=移動系, 10=攻撃, 20=スキル…など
+	float animaLockTimer_ = 0.0f;
+
+	// コライダー
+	float sphereRadius_ = 1.0f;
+	Vector3 colliderOffset_ = {};   // 原点からのオフセット(上方向)
+	Vector3 colliderTranslate_ = {}; // 当たり判定中心座標
+
+	bool isCollided_ = false;  // 当たり判定フラグ
+
+	// =============================
+	// 演出中の入力ロックフラグ
+	// =============================
+	bool inputLocked_ = false;
+
+	// 無敵フラグ（true の間は OnCollision での被弾を無視する）
+	bool invincible_ = false;
+
+	// HP関連
+	int hp_ = 275;                       // 現在HP
+	const int kMaxHP_ = 275;             // 最大HP
+	const int kDamagePerHit_ = 10;       // 1回の衝突ダメージ
+
+	// ===== 死亡演出 =====
+	bool isDead_ = false;
+	float deathTimer_ = 0.0f;
+	const float kDeathDuration_ = 3.0f; // Deathアニメの長さに合わせて調整
+
+
+	std::unique_ptr<Sword> sword_;
+
+	CameraEffectController* cameraEffect_ = nullptr;
+
+	// =============================
+	// 通常状態の剣オーラ用パーティクル
+	// =============================
+	// 剣（持ち手のボーン）から立ち上るオーラを、何もしていない通常状態のときだけ出す。
+	std::unique_ptr<ParticleManager> swordAura_;
+	// swordAura_ が保持する持続エミッタへの参照（毎フレーム位置だけ追従させる）
+	ParticleEmitterInstance* auraEmitter_ = nullptr;
+	// Play/Stop は状態が切り替わった瞬間だけ呼ぶための現在再生フラグ
+	bool auraPlaying_ = false;
+
+	// SwordAura.json のプリセット名（ファイル名と一致）
+	const std::string kSwordAuraPresetName_ = "SwordAura";
 
 };

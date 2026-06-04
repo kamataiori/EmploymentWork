@@ -2,7 +2,6 @@
 #include "BaseScene.h"
 #include "Object3d.h"
 #include "ParticleManager.h"
-#include "ParticleEmitter.h"
 #include "DrawLine.h"
 #include "DrawTriangle.h"
 #include "Sprite.h"
@@ -58,6 +57,10 @@ public:
 	/// 衝突判定と応答
 	/// </summary>
 	void CheckAllColisions();
+
+	// マウスカーソル設定: チュートリアルもゲーム操作中なので非表示+閉じ込め
+	bool ShouldShowCursor() const override { return false; }
+	bool ShouldConfineCursor() const override { return true; }
 
 private:
 

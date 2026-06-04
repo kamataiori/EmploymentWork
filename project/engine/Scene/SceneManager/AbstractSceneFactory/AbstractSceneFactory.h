@@ -14,5 +14,11 @@ public:
 	// シーン生成
 	virtual BaseScene* CreateScene(const std::string& sceneName) = 0;
 
+	/// <summary>
+	/// 登録されているシーン名の一覧を取得
+	/// UIでのシーン切り替えなどに使用
+	/// </summary>
+	virtual std::vector<std::string> GetSceneNameList() const = 0;
+
 };
 

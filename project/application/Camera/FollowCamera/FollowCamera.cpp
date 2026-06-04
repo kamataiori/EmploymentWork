@@ -2,49 +2,125 @@
 #include <Input.h>
 
 FollowCamera::FollowCamera(ObjectBase* target, float followDistance, float heightOffset)
-    : target(target), followDistance(followDistance), heightOffset(heightOffset)
+	: target(target),
+	followDistance(followDistance),
+	heightOffset(heightOffset),
+	sensitivity_(0.0025f),
+	dampPosY_(true),
+	posYSmooth_(12.0f),
+	lockLookY_(false),
+	lookYSmooth_(10.0f),
+	lookY_(0.0f),
+	angle(0.0f)
 {
 }
 
 void FollowCamera::Update()
 {
-    if (!target) return;
+	if (!target) return;
 
-    // ← → キーでカメラ回転
-    if (Input::GetInstance()->PushKey(DIK_LEFT)) {
-        angle -= 0.03f;
-    }
-    if (Input::GetInstance()->PushKey(DIK_RIGHT)) {
-        angle += 0.03f;
-    }
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-    // マウス横移動でカメラ回転
-    angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
+	// 初回だけ：プレイヤーの後ろ（+π）にカメラを配置
+	if (!initializedAngle_) {
+		angle = target->GetTransform().rotate.y + std::numbers::pi_v<float>;
+		initializedAngle_ = true;
+	}
 
-    const Vector3& targetPos = target->GetTransform().translate;
+	// 初回だけ：初期の高さ(heightOffset)から見下ろし角を逆算して合わせる
+	if (!initializedPitch_) {
+		cameraPitch_ = std::atan2(heightOffset - lookHeight_, followDistance);
+		cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
+		initializedPitch_ = true;
+	}
 
-    // プレイヤーの向きを基準に後ろ側を計算（Y=3.14 で後ろにいるように）
-    Vector3 offset = {
-        std::sin(angle) * followDistance,
-        heightOffset,
-        std::cos(angle) * followDistance
-    };
+	// =============================
+	// 入力：周回角（カメラオービット）
+	// =============================
+	if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= keyOrbitSpeed_;
+	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += keyOrbitSpeed_;
 
-    Vector3 desiredPos = targetPos + offset;
+	// マウス操作が許可されている間だけカメラを動かす。
+	// （アルティメット発動中は mouseControlEnabled_=false でマウスのカメラ操作を止める）
+	if (mouseControlEnabled_) {
+		// 左右：水平の周回角
+		angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
 
-    // カメラを滑らかに補間移動
-   /* float smoothSpeed = 0.06f;
-    transform.translate = Lerp(transform.translate, desiredPos, smoothSpeed);*/
+		// 上下：見下ろし角（マウスを下げると見下ろし、上げると見上げ）
+		cameraPitch_ += Input::GetInstance()->GetMouseDelta().y * pitchSensitivity_;
+		cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
+	}
 
-    transform.translate = desiredPos;
+	const Vector3& targetPos = target->GetTransform().translate;
 
-    // カメラが常にプレイヤーの方向を向くように回転
-    Vector3 direction = Normalize(targetPos - transform.translate);
-    transform.rotate.y = std::atan2(direction.x, direction.z);
+	// カメラ位置計算の部分を変更
+	// カメラを左にずらす（マイナス方向）
+	const float camShiftX = -std::cos(angle) * cameraSideShift_;
+	const float camShiftZ = std::sin(angle) * cameraSideShift_;
 
-    float lookDownAngle = 0.25f;  // 下に約14度（-0.25rad ≒ -14°）
-    transform.rotate.x = lookDownAngle;
+	// 縦方向：注視点の高さを基準に、見下ろし角ぶんだけカメラを持ち上げる。
+	// これでマウス上下に応じてカメラが縦に周回する。
+	const float camHeight = lookHeight_ + followDistance * std::tan(cameraPitch_);
 
-    Camera::Update();
+	Vector3 desiredPos = {
+		targetPos.x + std::sin(angle) * followDistance + camShiftX,
+		targetPos.y + camHeight,
+		targetPos.z + std::cos(angle) * followDistance + camShiftZ
+	};
+
+	// XZ は即追従
+	transform.translate.x = desiredPos.x;
+	transform.translate.z = desiredPos.z;
+
+	// Y だけ遅らせる（初回は即セット）
+	if (dampPosY_) {
+		if (!initializedPosY_) {
+			transform.translate.y = desiredPos.y;
+			lookY_ = targetPos.y;
+			initializedPosY_ = true;
+		}
+		else {
+			const float tt = 1.0f - std::exp(-posYSmooth_ * dt);
+			transform.translate.y += (desiredPos.y - transform.translate.y) * tt;
+		}
+	}
+	else {
+		transform.translate.y = desiredPos.y;
+	}
+
+	// =============================
+	// 注視点：プレイヤーの頭あたりを見る
+	// =============================
+	Vector3 lookAt = targetPos;
+
+	// 注視点 Y を滑らかに追従
+	{
+		const float tt = 1.0f - std::exp(-lookYSmooth_ * dt);
+		lookY_ = lookY_ + (targetPos.y - lookY_) * tt;
+		lookAt.y = lookY_ + lookHeight_; // 画面中央に映る高さ（頭の高さ）
+	}
+
+	// =============================
+	// 肩越し（右肩カメラ）：
+	// 注視点を横方向にずらすことでキャラを画面端寄りに見せる
+	// カメラ位置は円のまま変えないので距離は絶対変わらない
+	// =============================
+	lookAt.x += camShiftX;
+	lookAt.z += camShiftZ;
+
+	// =============================
+	// 向き：lookAt に向ける（Yaw + Pitch）
+	// =============================
+	Vector3 dir = Normalize(lookAt - transform.translate);
+
+	transform.rotate.y = std::atan2(dir.x, dir.z);
+
+	const float horizontalLength = std::sqrt(dir.x * dir.x + dir.z * dir.z);
+	float pitch = std::atan2(-dir.y, horizontalLength);
+
+	// Pitch クランプ（下向きのみ）
+	pitch = std::clamp(pitch, pitchMin_, pitchMax_);
+	transform.rotate.x = pitch;
+
+	Camera::Update();
 }
-

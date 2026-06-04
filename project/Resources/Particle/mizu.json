@@ -1,0 +1,171 @@
+{
+    "emitterSettings": {
+        "blendMode": 1,
+        "textureFilePath": "Resources/ParticleTexture/Energy.png",
+        "vertexType": 0
+    },
+    "emitterSpawn": {
+        "count": 29,
+        "frequency": 0.0,
+        "repeat": false,
+        "useLocalSpace": false,
+        "useRandomPosition": true
+    },
+    "name": "mizu",
+    "particleSpawn": {
+        "initialOffset": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialOffsetRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "initialRotate": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialRotateRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "initialScale": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "initialScaleRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        }
+    },
+    "particleUpdate": {
+        "lifeTime": 2.9000000953674316,
+        "rotationRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "rotationSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scaleRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "scaleSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "useGravity": false,
+        "velocity": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "velocityRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        }
+    },
+    "render": {
+        "color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "colorGradient": {
+            "enabled": true,
+            "keys": [
+                [
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.10752677917480469,
+                    1.0
+                ],
+                [
+                    1.0,
+                    0.0,
+                    0.25806450843811035,
+                    1.0,
+                    1.0
+                ]
+            ]
+        },
+        "flipY": false,
+        "gradientTimeCurve": {
+            "enabled": true,
+            "keys": [
+                [
+                    0.009944750927388668,
+                    0.0
+                ],
+                [
+                    0.39116019010543823,
+                    5.0
+                ]
+            ]
+        },
+        "useBillboard": true
+    }
+}

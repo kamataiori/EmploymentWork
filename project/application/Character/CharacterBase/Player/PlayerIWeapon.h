@@ -2,7 +2,8 @@
 #include "Transform.h"
 #include "MultiCollider.h"
 
-class PlayerBase;
+class Player;
+class IEnemyTargetProvider;
 
 class PlayerIWeapon
 {
@@ -34,15 +35,20 @@ public:
 	/// </summary>
 	virtual void Ultimate() = 0;
 
+	/// <summary>
+	/// アルティメットが攻撃対象を引くための供給元を注入する。
+	/// </summary>
+	virtual void SetEnemyTargetProvider(IEnemyTargetProvider* provider) = 0;
+
 	void SetPlayerTransform(Transform* transform) { playerTransform_ = transform; }
 
-	void SetOwner(PlayerBase* owner) { owner_ = owner; }
+	void SetOwner(Player* owner) { owner_ = owner; }
 
 protected:
 
 	Transform* playerTransform_ = {};
 
-	PlayerBase* owner_ = nullptr;
+	Player* owner_ = nullptr;
 
 
 };

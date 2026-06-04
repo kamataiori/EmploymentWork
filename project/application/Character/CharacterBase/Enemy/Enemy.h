@@ -1,10 +1,19 @@
 #pragma once
 #include "ObjectBase.h"
 #include "MultiCollider.h"
+#include "ITarget.h"
 #include <memory>
+#include <list>
+#include <vector>
+#include <MinionEnemy.h>
 
 class EnemyAIController;
+class EnemyDropBullet;
+class EnemySplitBullet;
 class UIManager;
+class EnemyStateManager;
+class CameraEffectController;
+class IDamagePopupSink;
 
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
@@ -24,7 +33,7 @@ struct SkeltonAnimationSet {
 	std::string Yes = "Yes";
 };
 
-class Enemy : public ObjectBase
+class Enemy : public ObjectBase, public ITarget, public IEnemyTargetProvider
 {
 public:
 
@@ -81,21 +90,97 @@ public:
 	/// </summary>
 	void SetCamera(Camera* camera) override;
 
+	/// <summary>
+	/// イントロ演出専用：AI/弾を動かさずに見た目だけ更新する
+	/// </summary>
+	void UpdateVisual();
+
+	// 初期位置
+	const Vector3& GetHomePosition() const { return homePosition_; }
+
 	Camera* GetCamera() const { return camera_; }
 
 	// アニメーションを設定する関数
 	void SetAnimationIfChanged(const std::string& name);
 
-	// 追尾ターゲット（Player）を渡してください（例：enemy->SetTargetTransform(&player->Get()->transform);）
+	// 追尾ターゲット（Player）を渡してください
 	void SetTargetTransform(const Transform* t) { target_ = t; }
 
 	bool IsDead() const { return isDead_; }
+
+	//=== ITarget（プレイヤーの攻撃対象としてのインターフェイス）===
+	// 生存判定・狙う座標・ダメージ適用を、敵の具体型を意識せず使えるようにする。
+	bool IsAlive() const override { return !isDead_; }
+	Vector3 GetTargetCenter() const override { return transform.translate + colliderOffset_; }
+	void ApplyDamage(int amount) override;
+
+	//=== IEnemyTargetProvider（自分＋配下の雑魚を攻撃対象として束ねる）===
+	void CollectAliveTargets(std::vector<ITarget*>& out) override;
+
+	// HPフェーズ
+	enum class EnemyPhase { Phase1, Phase2, Phase3 };
+	float GetHPRatio() const { return static_cast<float>(hp_) / static_cast<float>(kMaxHP_); }
+	// 怒り状態（HP50%以下）
+	bool IsAngry() const { return GetHPRatio() <= 0.5f; }
+
+	EnemyPhase GetPhase() const {
+		float r = GetHPRatio();
+		if (r > 0.5f) return EnemyPhase::Phase1;
+		if (r > 0.25f) return EnemyPhase::Phase2;
+		return EnemyPhase::Phase3;
+	}
+
+	// 怒り時：分裂弾を多発（8発）
+	void SpawnSplitBurstAngry(const Vector3& playerPos);
+
+	// 大弾を投げる（ThrowBigBulletState から呼ばれる）
+	void SpawnBigBullet(const Vector3& targetPos);
 
 	// BT側が target_ を参照できるように getter を追加
 	const Transform* GetTargetTransform() const { return target_; }
 
 	// BT側がアニメ名を参照できるように getter を追加
 	const SkeltonAnimationSet& GetAnimSet() const { return animation_; }
+
+	// 被弾リアクション中か（BTがアニメを上書きしないため）
+	bool IsHitReact() const { return hitReactTimer_ > 0.0f; }
+
+	// Dash後の1パターン用：落下弾を生成
+	void SpawnDropBullet(const Vector3& targetPos);
+
+	// 4発バースト（上昇→分裂→直線発射）
+	void SpawnSplitBurstToPlayer(const Vector3& playerPos);
+
+	// 雑魚敵を1体召喚（SummonMinionState から呼ばれる）
+	void SpawnMinion(const Vector3& spawnPos);
+
+	//=== 範囲攻撃判定（回転薙ぎ払い・ジャンプ急降下などで共用）===
+	// State から呼ばれ、ボス周囲に範囲攻撃判定を展開/閉じる
+	void ActivateAreaAttack(float radius);
+	void DeactivateAreaAttack();
+	// 判定が出ている間だけ非nullを返す（Scene 側でコライダー登録に使う）
+	MultiCollider* GetActiveAreaAttackCollider() const;
+
+	// カメラ演出（着地時の振動などに使う）。Scene から注入される
+	void SetCameraEffect(CameraEffectController* fx) { cameraEffect_ = fx; }
+	CameraEffectController* GetCameraEffect() const { return cameraEffect_; }
+
+	// ダメージ数値ポップアップの注入口（Scene が所有。Enemy・配下minionで共有）
+	void SetDamagePopupSink(IDamagePopupSink* sink);
+
+	// 回転薙ぎ払いの着地エフェクト（土煙）を pos に発生させる
+	void SpawnSpinLandEffect(const Vector3& pos);
+
+	// リストの公開（Scene側でコライダー登録用）
+	const std::list<std::unique_ptr<MinionEnemy>>& GetMinions() const { return minions_; }
+
+	// Scene側でコライダー登録するために公開
+	const std::list<std::unique_ptr<EnemyDropBullet>>& GetDropBullets() const { return dropBullets_; }
+	const std::list<std::unique_ptr<EnemySplitBullet>>& GetSplitBullets() const { return splitBullets_; }
+
+	// ステートマネージャへのアクセス（BT の ExecuteStateLeaf が使う）
+	EnemyStateManager* GetStateManager() { return stateManager_.get(); }
+	EnemyAIController* GetAIController() const { return aiController_.get(); }
 
 private:
 
@@ -113,10 +198,20 @@ private:
 	std::unique_ptr<EnemyAIController> aiController_;
 	const Transform* target_ = nullptr; // Player の Transform を参照
 
+	std::list<std::unique_ptr<EnemyDropBullet>> dropBullets_;
+	std::list<std::unique_ptr<EnemySplitBullet>> splitBullets_;
+
+	// 生成時（Initialize時）の位置を保存しておく
+	Vector3 homePosition_{};
+
 	// HP
-	int hp_ = 250;                   // 現在HP
-	const int kMaxHP_ = 250;         // 最大HP
+	int hp_ = 300;                   // 現在HP
+	const int kMaxHP_ = 300;         // 最大HP
 	const int kDamagePerHit_ = 30;   // 被弾時のダメージ量
+
+	// 被弾時の火花パーティクル（プレイヤーの攻撃が当たった瞬間に飛び散る）
+	static constexpr const char* kHitSparkPreset_ = "HitSpark"; // Resources/Particle/HitSpark.json
+	static constexpr float kHitSparkOffsetY_ = 3.5f;            // 火花の発生高さ（胴体あたり）
 
 	// === HPバー表示用 ===
 	std::unique_ptr<UIManager> uiManager_;
@@ -137,5 +232,35 @@ private:
 
 	std::unique_ptr<ParticleManager> deathSystem_ = std::make_unique<ParticleManager>();
 
-};
+	// ステートマネージャ（BT が選んだ攻撃の実行を管理）
+	std::unique_ptr<EnemyStateManager> stateManager_;
 
+	// 雑魚敵リスト
+	std::list<std::unique_ptr<MinionEnemy>> minions_;
+
+	// 回転薙ぎ払いの攻撃判定（EnemyAreaAttack 型の球コライダー）
+	// 本体コライダーとは別物。Spin 中だけ Scene へ登録される
+	std::unique_ptr<MultiCollider> spinHitbox_;
+	bool  spinHitboxActive_ = false;
+	float spinHitboxRadius_ = 6.0f;
+	void UpdateSpinHitbox();
+
+	// カメラ演出コントローラ（Scene 所有。Enemy は参照のみ）
+	CameraEffectController* cameraEffect_ = nullptr;
+
+	// ダメージ数値ポップアップの注入口（Scene 所有。Enemy は参照のみ）
+	IDamagePopupSink* damageSink_ = nullptr;
+
+	// 現在突進シーケンスを実行中の雑魚敵（1体ずつ順番に動かす）
+	MinionEnemy* activeMinion_ = nullptr;
+
+	// SplitBullet の順次発射制御
+	float splitFireTimer_ = 0.0f;
+	float splitFireInterval_ = 0.3f;
+	bool  splitFireActive_ = false;
+
+	void UpdateSplitBulletFiring(float dt);
+
+	// 雑魚敵を1体ずつ順番に突進させるコーディネーター
+	void UpdateMinionCoordinator();
+};

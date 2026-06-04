@@ -281,42 +281,82 @@ void ParticleEditorScene::Initialize()
 
 	emitPresetName = "NewParticle"; // プリセットエディタのデフォルト名と合わせておく想定
 
-	// ===== Niagara風 System/Emitter 初期カード =====
+	// ===== System/Emitter 初期カード =====
 	niagaraSystems_.clear();
 	niagaraEmitters_.clear();
 
-	{
+	// ===== 保存済み System JSON を全部読み込む =====
+	if (particle) {
+		particle->LoadAllSystems();
+	}
+
+	// ===== 読み込んだ System を UI 側にも反映 =====
+	if (particle) {
+		std::vector<std::string> loadedNames = particle->GetAllSystemNames();
+
+		float yOffset = 40.0f;
+		for (const std::string& sysName : loadedNames) {
+			NiagaraSystemUI sysUI{};
+			sysUI.name = sysName;
+			sysUI.posX = 40.0f;
+			sysUI.posY = yOffset;
+			sysUI.width = 140.0f;
+			sysUI.height = 120.0f;
+			sysUI.playing = false;
+			sysUI.loop = false;
+			sysUI.emitInterval = 0.2f;
+			sysUI.emitTimer = 0.0f;
+
+			// ParticleSystem 側から設定を取り出して UI に反映
+			ParticleSystem* sys = particle->FindSystem(sysName);
+			if (sys) {
+				sysUI.loop = sys->IsLoop();
+				sysUI.systemDuration = sys->GetDuration();
+
+				// pendingSettings_ から emitterEntries を作る
+				for (const auto& p : sys->GetPendingSettings()) {
+					NiagaraSystemUI::EmitterEntryUI ent;
+					ent.presetName = p.presetName;
+					ent.startTime = p.startTime;
+					ent.duration = p.duration;
+					ent.autoPlay = p.autoPlay;
+					sysUI.emitterEntries.push_back(ent);
+				}
+			}
+
+			niagaraSystems_.push_back(sysUI);
+			yOffset += 140.0f;  // 次の System カードを下にずらす
+		}
+	}
+
+	// ===== JSON が一個も読まれなかった場合のフォールバック =====
+	// （既存コード：NS_Sample のデフォルトカードを作る）
+	if (niagaraSystems_.empty()) {
 		NiagaraSystemUI sys{};
 		sys.name = "NS_Sample";
 		sys.posX = 40.0f;
 		sys.posY = 40.0f;
 		sys.width = 140.0f;
 		sys.height = 120.0f;
-
-		// 再生系の初期値（お好みで）
 		sys.playing = false;
 		sys.loop = false;
 		sys.emitInterval = 0.2f;
 		sys.emitTimer = 0.0f;
-
 		niagaraSystems_.push_back(sys);
-		systemNameCounter_ = 2;
-		selectedSystemIndex_ = 0;
 	}
+
+	systemNameCounter_ = static_cast<int>(niagaraSystems_.size()) + 1;
+	selectedSystemIndex_ = niagaraSystems_.empty() ? -1 : 0;
+
+	// ===== Emitter カード（既存コード） =====
 	{
 		NiagaraEmitterUI em{};
 		em.name = "NE_Sample";
-
-		// エミッタ名とプリセット名を最初は同じにしておく
 		em.presetName = em.name;
-
-		// デフォルト System に所属させる
 		if (!niagaraSystems_.empty()) {
-			em.systemName = niagaraSystems_.front().name;  // "NS_Sample"
+			em.systemName = niagaraSystems_.front().name;
 		}
-
 		emitPresetName = em.presetName;
-
 		em.posX = 280.0f;
 		em.posY = 80.0f;
 		em.width = 160.0f;
@@ -369,42 +409,36 @@ void ParticleEditorScene::Update()
 				continue;
 			}
 
-			// Emit 間隔が 0 以下なら「一度だけ Emit して停止」
+			// System の再生管理は ParticleSystem 側（startTime/duration）に任せる
+			//   ここでは「再生開始のトリガー」だけを担当する
+			// Emit 間隔が 0 以下なら「押した瞬間に1回だけ Play」
 			if (sys.emitInterval <= 0.0f) {
 				particle->EmitSystemByName(sys.name, emitterTransform);
 
-				if (sys.loop) {
-					// Loop + interval<=0 の場合は「毎フレームEmit」扱い。
-					// 重いようなら、ここで適当なクールタイムを設けても良い。
-				}
-				else {
+				if (!sys.loop) {
+					// 1回再生なら即座に playing を落とす
+					// System 側の自然終了を待たず、UI として停止状態に
+					// System のパーティクルが消えるまで見た目は動き続ける
 					sys.playing = false;
 				}
+				// Loop の場合は System 側の loop_ 設定に任せてもよいし、
+				// ここで emitTimer を使って再発火制御してもよい,今回は前者
 			}
 			else {
-				// タイマー減算
+				// タイマー減算して周期的に Emit
 				sys.emitTimer -= dt;
 				if (sys.emitTimer <= 0.0f) {
-					// Emit
 					particle->EmitSystemByName(sys.name, emitterTransform);
 
 					if (sys.loop) {
-						// 指定間隔で繰り返し
 						sys.emitTimer += sys.emitInterval;
 					}
 					else {
-						// 1回だけ
 						sys.playing = false;
 					}
 				}
 			}
 		}
-	}
-
-
-	if (Input::GetInstance()->TriggerKey(DIK_G)) {
-		// シーン切り替え
-		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 	}
 
 	// デバッグ
@@ -1027,7 +1061,6 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 	// ---- Emitter が未選択の場合 ----
 	if (!emitterUI) {
 
-		// ★ System が選択されていれば、System 用 Inspector を表示
 		if (systemUI) {
 			ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f),
 				"System Inspector");
@@ -1039,25 +1072,17 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 				strncpy_s(buf, sizeof(buf), systemUI->name.c_str(), _TRUNCATE);
 
 				if (ImGui::InputText("System Name", buf, sizeof(buf))) {
-
 					std::string oldName = systemUI->name;
 					std::string newName = buf;
 
 					if (!newName.empty() && newName != oldName) {
-
-						// ① まず UI 側の名前は必ず更新
 						systemUI->name = newName;
-
-						// ② Emitter 側の systemName も更新
 						for (auto& e : niagaraEmitters_) {
 							if (e.systemName == oldName) {
 								e.systemName = newName;
 							}
 						}
-
-						// ③ ParticleManager に System が存在すれば、そっちの名前も変更を試みる
 						if (particle) {
-							// 失敗しても特に何もしない（ログだけ出すとかでOK）
 							particle->RenameSystem(oldName, newName);
 						}
 					}
@@ -1066,26 +1091,51 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 
 			if (ImGui::Button("Save System JSON")) {
 				if (particle) {
-					// ここで使われる systemUI->name は、↑で入力したものがそのまま入る
+					// ===== Phase2 追加: UI の編集内容を ParticleSystem に反映してから保存 =====
+					ParticleSystem* sys = particle->FindSystem(systemUI->name);
+					if (sys) {
+						// System 全体の duration / loop を反映
+						sys->SetLoop(systemUI->loop);
+						sys->SetDuration(systemUI->systemDuration);
+
+						// 各 Emitter の startTime/duration/autoPlay を反映
+						// 既存 Emitter があれば EmitterEntry を、なければ pendingSettings_ を更新
+						sys->ClearPendingSettings();
+						for (const auto& uiEntry : systemUI->emitterEntries) {
+							// pendingSettings_ に積む（次回 EmitSystem 時に Emitter 作成時に反映）
+							ParticleSystem::PendingEmitterSetting p;
+							p.presetName = uiEntry.presetName;
+							p.startTime = uiEntry.startTime;
+							p.duration = uiEntry.duration;
+							p.autoPlay = uiEntry.autoPlay;
+							sys->GetPendingSettings().push_back(p);
+
+							// 既に作成済みの Emitter なら EmitterEntry も直接更新
+							auto* entry = sys->FindEntryByPresetName(uiEntry.presetName);
+							if (entry) {
+								entry->startTime = uiEntry.startTime;
+								entry->duration = uiEntry.duration;
+								entry->autoPlay = uiEntry.autoPlay;
+							}
+						}
+					}
+
 					particle->SaveSystemToJson(systemUI->name);
 				}
 			}
 
 			ImGui::Separator();
 
-			// ループ再生 ON/OFF
+			// ===== System 全体の設定 =====
 			ImGui::Checkbox("Loop 再生", &systemUI->loop);
-
-			// Emit 間隔（秒）
-			ImGui::DragFloat("Emit 間隔 (sec)",
-				&systemUI->emitInterval,
-				0.01f, 0.0f, 10.0f);
+			ImGui::DragFloat("System Duration (sec)", &systemUI->systemDuration, 0.05f, 0.0f, 60.0f);
+			ImGui::DragFloat("Emit 間隔 (sec)", &systemUI->emitInterval, 0.01f, 0.0f, 10.0f);
 
 			// 再生 / 停止ボタン
 			if (!systemUI->playing) {
 				if (ImGui::Button("再生 (Play)")) {
 					systemUI->playing = true;
-					systemUI->emitTimer = 0.0f;  // 押した瞬間にEmitしたいので0にしておく
+					systemUI->emitTimer = 0.0f;
 				}
 			}
 			else {
@@ -1095,10 +1145,209 @@ void ParticleEditorScene::DrawNiagaraInspector(const ImVec2& pos, const ImVec2& 
 			}
 
 			ImGui::Separator();
+
+			// ===== タイムラインバー描画 =====
+			{
+				// タイムラインの全体長さを決める
+				// systemDuration が 0 の場合は、Emitter の startTime+duration の最大値で代替
+				float timelineLength = systemUI->systemDuration;
+				if (timelineLength <= 0.0f) {
+					for (const auto& ent : systemUI->emitterEntries) {
+						float endT = ent.startTime + (ent.duration > 0.0f ? ent.duration : 1.0f);
+						if (endT > timelineLength) timelineLength = endT;
+					}
+					if (timelineLength <= 0.0f) timelineLength = 2.0f;  // デフォルト2秒
+				}
+
+				ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f),
+					"Timeline (Total: %.2f sec)", timelineLength);
+
+				// タイムライン領域のサイズ
+				const float timelineHeight = 24.0f * (systemUI->emitterEntries.size() + 1);  // 目盛り+各Emitter行
+				const float padding = 8.0f;
+
+				ImVec2 timelinePos = ImGui::GetCursorScreenPos();
+				ImVec2 timelineSize = ImVec2(ImGui::GetContentRegionAvail().x - padding, timelineHeight);
+
+				// 領域確保（後続の UI が下に並ぶように）
+				ImGui::Dummy(timelineSize);
+
+				ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+				// 背景
+				drawList->AddRectFilled(
+					timelinePos,
+					ImVec2(timelinePos.x + timelineSize.x, timelinePos.y + timelineSize.y),
+					IM_COL32(40, 40, 50, 255), 4.0f);
+
+				// 時刻目盛り（1秒ごと）
+				const float pixelPerSec = timelineSize.x / timelineLength;
+				const int maxTick = static_cast<int>(timelineLength) + 1;
+				for (int i = 0; i <= maxTick; ++i) {
+					float t = static_cast<float>(i);
+					if (t > timelineLength) break;
+
+					float xPos = timelinePos.x + t * pixelPerSec;
+					// 縦線
+					drawList->AddLine(
+						ImVec2(xPos, timelinePos.y),
+						ImVec2(xPos, timelinePos.y + timelineSize.y),
+						IM_COL32(80, 80, 90, 255), 1.0f);
+					// 数字（先頭の0sは省略）
+					char tickLabel[16];
+					snprintf(tickLabel, sizeof(tickLabel), "%.0fs", t);
+					drawList->AddText(
+						ImVec2(xPos + 2.0f, timelinePos.y + 2.0f),
+						IM_COL32(160, 160, 170, 255), tickLabel);
+				}
+
+				// Emitter ごとのバー
+				const float rowHeight = 22.0f;
+				const float rowOffsetY = 22.0f;  // 目盛り行の高さ
+				const float barPadding = 2.0f;
+
+				for (size_t i = 0; i < systemUI->emitterEntries.size(); ++i) {
+					const auto& ent = systemUI->emitterEntries[i];
+
+					float startX = timelinePos.x + ent.startTime * pixelPerSec;
+
+					// duration < 0 ならタイムライン端まで伸ばす
+					float endTime = ent.duration > 0.0f
+						? (ent.startTime + ent.duration)
+						: timelineLength;
+					float endX = timelinePos.x + endTime * pixelPerSec;
+
+					// タイムライン外にはみ出ないようにクランプ
+					float maxX = timelinePos.x + timelineSize.x;
+					if (endX > maxX) endX = maxX;
+					if (startX > maxX) startX = maxX;
+
+					float yTop = timelinePos.y + rowOffsetY + i * rowHeight + barPadding;
+					float yBottom = yTop + rowHeight - barPadding * 2.0f;
+
+					// Emitter ごとに異なる色（HSV 色相をずらす）
+					float hue = static_cast<float>(i) * 0.15f;
+					ImVec4 col4 = ImColor::HSV(hue, 0.6f, 0.8f);
+					ImU32 barColor = ImGui::ColorConvertFloat4ToU32(col4);
+
+					// バー描画
+					if (endX > startX) {
+						drawList->AddRectFilled(
+							ImVec2(startX, yTop),
+							ImVec2(endX, yBottom),
+							barColor, 3.0f);
+					}
+					else {
+						// duration=0 で表示できない場合の小さなマーカー
+						drawList->AddRectFilled(
+							ImVec2(startX - 2.0f, yTop),
+							ImVec2(startX + 2.0f, yBottom),
+							barColor, 2.0f);
+					}
+
+					// プリセット名をバーの中（または左）に表示
+					ImVec2 textPos = ImVec2(startX + 4.0f, yTop + 2.0f);
+					drawList->AddText(textPos, IM_COL32(255, 255, 255, 255),
+						ent.presetName.c_str());
+				}
+
+				// 現在の再生位置カーソル（System が Playing 中のみ）
+				if (systemUI->playing && timelineLength > 0.0f) {
+					// emitTimer をベースに簡易表示
+					// ※正確な再生位置は ParticleSystem 側 time_ を使うべきだが、
+					//   まずは UI 側のタイマーで代用する
+					float currentT = systemUI->emitTimer;
+					// emitTimer が「カウントダウン」式の場合は逆算が必要
+					// ここでは「経過時間」と仮定した実装にする
+					if (currentT < 0.0f) currentT = 0.0f;
+					if (currentT > timelineLength) currentT = timelineLength;
+
+					float cursorX = timelinePos.x + currentT * pixelPerSec;
+					drawList->AddLine(
+						ImVec2(cursorX, timelinePos.y),
+						ImVec2(cursorX, timelinePos.y + timelineSize.y),
+						IM_COL32(255, 80, 80, 255), 2.0f);
+				}
+			}
+
+			ImGui::Separator();
+
+			// ===== System に登録されたプリセット一覧と時間編集 =====
+			ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.3f, 1.0f), "Emitters in System");
+			ImGui::Separator();
+
+			// ParticleSystem 側のプリセット名一覧と UI 側の emitterEntries を同期
+			// (presets が増減した場合に UI 側も追従させる)
+			if (particle) {
+				const auto* presetNames = particle->GetSystemPresets(systemUI->name);
+				if (presetNames) {
+					// 1 ParticleSystem 側にあって UI 側にないプリセットを追加
+					for (const auto& presetName : *presetNames) {
+						bool exists = false;
+						for (const auto& ent : systemUI->emitterEntries) {
+							if (ent.presetName == presetName) {
+								exists = true;
+								break;
+							}
+						}
+						if (!exists) {
+							NiagaraSystemUI::EmitterEntryUI newEntry;
+							newEntry.presetName = presetName;
+							newEntry.startTime = 0.0f;
+							newEntry.duration = -1.0f;
+							newEntry.autoPlay = true;
+							systemUI->emitterEntries.push_back(newEntry);
+						}
+					}
+					// 2 UI 側にあって ParticleSystem 側にない（削除された）ものを除外
+					systemUI->emitterEntries.erase(
+						std::remove_if(systemUI->emitterEntries.begin(),
+							systemUI->emitterEntries.end(),
+							[&](const NiagaraSystemUI::EmitterEntryUI& ent) {
+								return std::find(presetNames->begin(),
+									presetNames->end(),
+									ent.presetName) == presetNames->end();
+							}),
+						systemUI->emitterEntries.end()
+					);
+				}
+			}
+
+			if (systemUI->emitterEntries.empty()) {
+				ImGui::TextDisabled("プリセットが登録されていません。\nNE_* カードを System に登録してください。");
+			}
+			else {
+				// 各 Emitter ごとに時間設定 UI を表示
+				for (size_t idx = 0; idx < systemUI->emitterEntries.size(); ++idx) {
+					auto& uiEntry = systemUI->emitterEntries[idx];
+
+					// プリセットごとに ImGui ID を分ける（同じラベルが複数並ぶため）
+					ImGui::PushID(static_cast<int>(idx));
+
+					// プリセット名表示（読み取り専用）
+					ImGui::TextColored(ImVec4(0.8f, 1.0f, 0.8f, 1.0f),
+						"[%zu] %s", idx, uiEntry.presetName.c_str());
+
+					// startTime
+					ImGui::DragFloat("Start Time (sec)", &uiEntry.startTime,
+						0.01f, 0.0f, 60.0f, "%.2f");
+
+					// duration（-1 で無制限）
+					ImGui::DragFloat("Duration (sec, -1=無制限)", &uiEntry.duration,
+						0.05f, -1.0f, 60.0f, "%.2f");
+
+					// autoPlay
+					ImGui::Checkbox("Auto Play", &uiEntry.autoPlay);
+
+					ImGui::Separator();
+					ImGui::PopID();
+				}
+			}
+
 			ImGui::TextWrapped(
-				"この System には Editor で登録した複数のプリセットが\n"
-				"紐付いています。Loop を ON にすると、Emit 間隔ごとに\n"
-				"\"System Emit\" と同じ処理が自動で呼ばれます。");
+				"Start Time: System 再生からこの時間後に Emit 開始\n"
+				"Duration: 発火開始から何秒で停止するか (-1で無制限)\n"
+				"Save System JSON で設定が保存されます");
 
 			ImGui::End();
 			return;

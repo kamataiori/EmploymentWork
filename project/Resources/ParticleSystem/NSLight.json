@@ -1,0 +1,16 @@
+{
+    "duration": 0.0,
+    "emitters": [
+        {
+            "autoPlay": true,
+            "duration": -1.0,
+            "preset": "Light",
+            "startTime": 0.0
+        }
+    ],
+    "loop": true,
+    "name": "NSLight",
+    "presets": [
+        "Light"
+    ]
+}

@@ -1,0 +1,78 @@
+{
+    "name": "SpinShockwave",
+    "emitterSettings": {
+        "vertexType": 0,
+        "textureFilePath": "Resources/ParticleTexture/smoke.png",
+        "blendMode": 2
+    },
+    "emitterSpawn": {
+        "count": 48,
+        "frequency": 1.0,
+        "repeat": false,
+        "useRandomPosition": true,
+        "useLocalSpace": false
+    },
+    "particleSpawn": {
+        "initialScale": [0.5, 0.5, 0.5],
+        "initialRotate": [0.0, 0.0, 0.0],
+        "initialOffset": [0.0, 0.2, 0.0],
+        "initialScaleRandom": {
+            "useRandom": true,
+            "min": [0.35, 0.35, 0.35],
+            "max": [0.85, 0.85, 0.85]
+        },
+        "initialRotateRandom": {
+            "useRandom": true,
+            "min": [0.0, 0.0, -3.14159],
+            "max": [0.0, 0.0, 3.14159]
+        },
+        "initialOffsetRandom": {
+            "useRandom": false,
+            "min": [0.0, 0.0, 0.0],
+            "max": [0.0, 0.0, 0.0]
+        }
+    },
+    "particleUpdate": {
+        "lifeTime": 0.7,
+        "velocity": [0.0, 0.0, 0.0],
+        "rotationSpeed": [0.0, 0.0, 0.0],
+        "scaleSpeed": [2.6, 2.6, 2.6],
+        "useGravity": false,
+        "velocityRandom": {
+            "useRandom": true,
+            "min": [-9.0, 0.4, -9.0],
+            "max": [9.0, 2.2, 9.0]
+        },
+        "rotationRandom": {
+            "useRandom": false,
+            "min": [0.0, 0.0, 0.0],
+            "max": [0.0, 0.0, 0.0]
+        },
+        "scaleRandom": {
+            "useRandom": false,
+            "min": [0.0, 0.0, 0.0],
+            "max": [0.0, 0.0, 0.0]
+        }
+    },
+    "render": {
+        "color": [0.74, 0.68, 0.56, 1.0],
+        "useBillboard": true,
+        "flipY": false,
+        "colorCurve": {
+            "enabled": true,
+            "keys": [
+                [0.0, 1.0],
+                [0.55, 1.0],
+                [1.0, 0.0]
+            ]
+        },
+        "colorGradient": {
+            "enabled": false,
+            "keys": []
+        },
+        "gradientTimeCurve": {
+            "enabled": false,
+            "keys": []
+        }
+    }
+}

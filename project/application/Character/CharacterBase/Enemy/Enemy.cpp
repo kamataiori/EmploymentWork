@@ -1,28 +1,32 @@
 #include "Enemy.h"
 #include "application/Character/CharacterBase/Enemy/AI/EnemyAIController.h"
+#include "EnemyDropBullet.h"
 #include <CollisionTypeIdDef.h>
 #include <SceneManager.h>
 #include "engine/UI/UIManager.h"
 #include <engine/UI/UIHpBar.h>
+#include "engine/UI/IDamagePopupSink.h"
+#include <EnemySplitBullet.h>
+#include <MinionEnemy.h>
+#include "State/EnemyStateManager.h"
+#include <random>
+#include <vector>
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
 	const float c = std::cos(yaw);
 	const float s = std::sin(yaw);
-	// 右(X), 上(Y), 前(Z)
 	outAxes[0] = { c, 0.0f, -s };
 	outAxes[1] = { 0.0f, 1.0f,  0.0f };
 	outAxes[2] = { s, 0.0f,  c };
 }
 
-// 角度差分を [-π, π] に折りたたむ
 static float WrapDeltaRad(float a) {
 	while (a > 3.1415926535f) a -= 6.283185307f;
 	while (a < -3.1415926535f) a += 6.283185307f;
 	return a;
 }
 
-// 角度の線形補間（ラップ考慮）
 static float LerpAngleRad(float from, float to, float t) {
 	const float d = WrapDeltaRad(to - from);
 	return from + d * t;
@@ -37,26 +41,22 @@ Enemy::~Enemy() = default;
 
 void Enemy::Initialize()
 {
-	// モデル読み込み
 	ModelManager::GetInstance()->LoadModel("Skeleton.gltf");
 
 	object3d_->Initialize();
 	object3d_->SetModel("Skeleton.gltf");
 
-	// 初期Transform設定
 	transform.translate = { 0.0f, 0.0f,30.0f };
 	transform.rotate = { 0.0f, 3.14f, 0.0f };
 	transform.scale = { 3.0f, 3.0f, 3.0f };
 
-	// object3dにtransformを反映
+	homePosition_ = transform.translate;
+
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetRotate(transform.rotate);
 	object3d_->SetScale(transform.scale);
 	object3d_->SetAnimation(animation_.Idle);
 
-	// -------------------------
-	// AI(BT) 初期化
-	// -------------------------
 	aiController_ = std::make_unique<EnemyAIController>();
 	aiController_->Initialize(this);
 
@@ -64,7 +64,6 @@ void Enemy::Initialize()
 		return this->GetTargetTransform();
 		});
 
-	// ---- OBB コライダー初期化 ----
 	colliderCenter_ = transform.translate + colliderOffset_;
 
 	OBB obb{};
@@ -74,7 +73,7 @@ void Enemy::Initialize()
 	obb.orientations[0] = axes[0];
 	obb.orientations[1] = axes[1];
 	obb.orientations[2] = axes[2];
-	obb.size = obbSize_;  // 半径
+	obb.size = obbSize_;
 
 	Shape first{};
 	first.kind = ShapeKind::OBB;
@@ -82,14 +81,12 @@ void Enemy::Initialize()
 
 	*multiCollider_ = MultiCollider(first);
 	multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
-
-	// ヒットを Enemy::OnCollision に橋渡し
-	multiCollider_->SetHitCallback([this]() { this->OnCollision(); });
-
-	// === HPバー初期化 ===
+	// 相手の種別を見て被弾を判定するため Ex 版で登録する
+	// （SetHitCallback だと種別情報が捨てられ、何に当たっても無条件で被弾する）
+	multiCollider_->SetHitCallbackEx(
+		[this](const CollisionInfo& info) { this->OnCollision(info); });
 
 	uiManager_ = std::make_unique<UIManager>();
-	// 画面上中央
 	const float winW = 1280.0f;
 	const float barW = 420.0f;
 	const float barH = 20.0f;
@@ -106,47 +103,92 @@ void Enemy::Initialize()
 
 	uiManager_->Add(UIHpBar::Create(desc));
 
-	// -------------------------
-	// 死亡エフェクト用パーティクル（プリセット "fire" を使用）
-	// -------------------------
 	deathSystem_ = std::make_unique<ParticleManager>();
 	deathSystem_->Initialize(VertexDataType::Plane);
-
-	// プリセットと System を両方読み込む
 	deathSystem_->LoadAllPresets();
 	deathSystem_->LoadAllSystems();
-
-	// Emit 時に使う Transform の初期値
 	deathParticleTransform_ = transform;
 
+	stateManager_ = std::make_unique<EnemyStateManager>();
+
+	// 回転薙ぎ払いの攻撃判定（球）。本体とは別コライダー
+	{
+		Sphere sp{};
+		sp.center = transform.translate;
+		sp.radius = 0.0f;
+
+		Shape sh{};
+		sh.kind = ShapeKind::Sphere;
+		sh.sphere = sp;
+
+		spinHitbox_ = std::make_unique<MultiCollider>(sh);
+		spinHitbox_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::EnemyAreaAttack));
+	}
 }
 
 void Enemy::Update()
 {
-	// ====== Δt（スローモーション対応） ======
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
 	if (!isDead_) {
 
-		// -------------------------
-		// AI（BT）で制御
-		// -------------------------
 		if (!isDead_) {
 			if (aiController_) {
 				aiController_->Update(dt);
 			}
+
+			// ステートの実行
+			if (stateManager_) {
+				stateManager_->Update(this, dt);
+			}
+
+			for (auto it = dropBullets_.begin(); it != dropBullets_.end(); )
+			{
+				(*it)->Update();
+				if ((*it)->IsDead()) {
+					it = dropBullets_.erase(it);
+				}
+				else {
+					++it;
+				}
+			}
+
+			for (auto it = splitBullets_.begin(); it != splitBullets_.end(); )
+			{
+				(*it)->Update();
+				if ((*it)->IsDead()) {
+					it = splitBullets_.erase(it);
+				}
+				else {
+					++it;
+				}
+			}
+
+			// ★ 雑魚敵の更新
+			for (auto it = minions_.begin(); it != minions_.end(); )
+			{
+				(*it)->SetPlayerTarget(target_); // 待機中の向き追従用
+				(*it)->Update();
+				if ((*it)->IsDead()) {
+					if (it->get() == activeMinion_) {
+						activeMinion_ = nullptr;
+					}
+					it = minions_.erase(it);
+				}
+				else {
+					++it;
+				}
+			}
+
+			// ★ 雑魚敵を1体ずつ順番に突進させる
+			UpdateMinionCoordinator();
+
+			UpdateSplitBulletFiring(dt);
 		}
 
 	}
 
-	// 当たり判定中心を更新
-	//colliderTranslate_ = transform.translate + colliderOffset_;
 	colliderCenter_ = transform.translate + colliderOffset_;
-
-	// コライダー更新
-	/*Sphere& sp = multiCollider_->MutableSphere(0);
-	sp.center = colliderTranslate_;
-	sp.radius = sphereRadius_;*/
 
 	OBB& obb = multiCollider_->MutableOBB(0);
 	obb.center = colliderCenter_;
@@ -157,107 +199,137 @@ void Enemy::Update()
 	obb.orientations[1] = axes[1];
 	obb.orientations[2] = axes[2];
 
-	// スケールを当たりにも反映したい場合はここで掛ける
-	obb.size = { obbSize_.x /** transform.scale.x*/,
-				 obbSize_.y /** transform.scale.y*/,
-				 obbSize_.z /** transform.scale.z*/ };
+	obb.size = { obbSize_.x, obbSize_.y, obbSize_.z };
 
+	// 回転薙ぎ払いの攻撃判定をボスへ追従させる
+	UpdateSpinHitbox();
 
-	// HitReact の終了管理：一定時間で Idle に戻す
 	if (hitReactTimer_ > 0.0f) {
-		hitReactTimer_ -= dt; // 可変ならΔtを使う
+		hitReactTimer_ -= dt;
 		if (hitReactTimer_ <= 0.0f) {
 			SetAnimationIfChanged(animation_.Idle);
 			hitReactTimer_ = 0.0f;
 		}
 	}
 
-	// ------------------------
-	// オブジェクト更新処理
-	// ------------------------
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetScale(transform.scale);
 	object3d_->SetRotate(transform.rotate);
 	object3d_->Update();
 
 #ifdef USE_IMGUI
-
-	ImGui::Begin("Enemy");
+	/*ImGui::Begin("Enemy");
 	ImGui::DragFloat3("translate", &transform.translate.x, 0.01f);
-	ImGui::End();
-#endif // USE_IMGUI
+	if (stateManager_) {
+		ImGui::Text("ActionState: %s", stateManager_->GetCurrentStateName());
+		ImGui::Text("State Finished: %s", stateManager_->IsFinished() ? "true" : "false");
+	}
+	ImGui::Text("Minion count: %d", (int)minions_.size());
+	ImGui::End();*/
+#endif
 
+	// パーティクル更新（ヒット/死亡/着地エフェクト共通）
+	// 生存中も毎フレーム呼ばないとアニメーションしないため、ここで一括更新する
+	if (deathSystem_) {
+		deathSystem_->Update();
+	}
 
-	// ======== 死亡演出（縮小＋爆破＋タイトル遷移） ========
+	// 死亡演出
 	if (isDead_) {
-		// 経過時間（固定 60fps 前提）
 		deathTimer_ += dt;
 
-		// Death アニメーションを少し見せてから縮小開始
-		const float kShrinkDelay = 0.8f;  // これだけ待ってから縮小
-		const float kShrinkDuration = 1.0f;  // 縮小しきるまでの時間
+		const float kShrinkDelay = 0.8f;
+		const float kShrinkDuration = 1.0f;
 
 		if (deathTimer_ >= kShrinkDelay) {
-			// 0.0 ～ 1.0 の縮小進行度
 			float t = (deathTimer_ - kShrinkDelay) / kShrinkDuration;
 			if (t < 0.0f) t = 0.0f;
 			if (t > 1.0f) t = 1.0f;
 
-			// deathStartScale_ → 0 へ線形に縮小
 			transform.scale.x = deathStartScale_.x * (1.0f - t);
 			transform.scale.y = deathStartScale_.y * (1.0f - t);
 			transform.scale.z = deathStartScale_.z * (1.0f - t);
 
-			// スケールが 0 になったタイミングで一度だけ爆破
 			if (!hasSpawnedExplosion_ && t >= 1.0f) {
-
-				// 爆発の中心（少し上にオフセットして胸あたり）
 				explosionPos = transform.translate;
-				//explosionPos.y += 1.0f;
-
 				deathParticleTransform_.translate = explosionPos;
 				deathParticleTransform_.translate.y += 3.5f;
 				deathSystem_->EmitSystemByName("ADE", deathParticleTransform_);
-
 				hasSpawnedExplosion_ = true;
-
-
 			}
 		}
 
 #ifdef USE_IMGUI
-
-		ImGui::Begin("explosionPos");
+		/*ImGui::Begin("explosionPos");
 		ImGui::DragFloat3("translate", &explosionPos.x, 0.01f);
-		ImGui::End();
-#endif // USE_IMGUI
+		ImGui::End();*/
+#endif
 
-		// マイナススケールに落ち込まないようにクランプ
 		if (transform.scale.x < 0.0f) transform.scale.x = 0.0f;
 		if (transform.scale.y < 0.0f) transform.scale.y = 0.0f;
 		if (transform.scale.z < 0.0f) transform.scale.z = 0.0f;
 
-		// 毎フレームパーティクルを更新（Emitter は今のまま Update() 引数なし）
-		if (deathSystem_) {
-			deathSystem_->Update();
-		}
-
-
-		// 一定時間経ったら TITLE へ戻る
 		if (deathTimer_ >= kDeathToTitleDelay_) {
 			SceneManager::GetInstance()->ChangeScene("TITLE");
 		}
 		return;
 	}
 
-
-	// HP を UI に反映
 	UIElement::UIData data{};
 	data.hp = static_cast<float>(hp_);
 	data.maxHp = static_cast<float>(kMaxHP_);
-
 	uiManager_->ApplyDataToAll(data);
 	uiManager_->Update();
+}
+
+void Enemy::UpdateSplitBulletFiring(float dt)
+{
+	if (splitBullets_.empty()) {
+		splitFireActive_ = false;
+		return;
+	}
+
+	if (!splitFireActive_) {
+		bool allReady = true;
+		for (auto& b : splitBullets_) {
+			if (!b->IsReadyToShot()) {
+				allReady = false;
+				break;
+			}
+		}
+		if (allReady) {
+			splitFireActive_ = true;
+			splitFireTimer_ = 0.0f;
+			for (auto& b : splitBullets_) {
+				if (b->IsReadyToShot()) {
+					b->Fire();
+					break;
+				}
+			}
+		}
+		return;
+	}
+
+	splitFireTimer_ += dt;
+	if (splitFireTimer_ >= splitFireInterval_) {
+		splitFireTimer_ = 0.0f;
+		for (auto& b : splitBullets_) {
+			if (b->IsReadyToShot()) {
+				b->Fire();
+				break;
+			}
+		}
+		bool anyWaiting = false;
+		for (auto& b : splitBullets_) {
+			if (b->IsReadyToShot()) {
+				anyWaiting = true;
+				break;
+			}
+		}
+		if (!anyWaiting) {
+			splitFireActive_ = false;
+		}
+	}
 }
 
 void Enemy::BackGroundDraw()
@@ -266,19 +338,28 @@ void Enemy::BackGroundDraw()
 
 void Enemy::Draw()
 {
-	// コライダーの描画
 	multiCollider_->Draw();
 
-	
+	for (auto& b : dropBullets_) {
+		b->Draw();
+	}
+	for (auto& b : splitBullets_) {
+		b->Draw();
+	}
+	// 雑魚敵描画
+	for (auto& m : minions_) {
+		m->Draw();
+	}
 }
 
 void Enemy::ForeGroundDraw()
 {
-	//OutputDebugStringA("Enemy::ForeGroundDraw called\n");
-
-	// === HPバー描画 ===
 	if (uiManager_) {
 		uiManager_->Draw();
+	}
+	// 雑魚敵の頭上HPバーは個体ごとに前景パスで描画する
+	for (auto& m : minions_) {
+		m->ForeGroundDraw();
 	}
 }
 
@@ -289,67 +370,100 @@ void Enemy::AnimationDraw()
 
 void Enemy::ParticleDraw()
 {
-	if (isDead_) {
+	// 生存中・死亡時どちらでもパーティクル描画
+	if (deathSystem_) {
 		deathSystem_->Draw();
+	}
+	for (auto& b : splitBullets_) {
+		b->ParticleDraw();
+	}
+	// 雑魚敵の撃破時の爆発パーティクルを描画する
+	for (auto& m : minions_) {
+		m->ParticleDraw();
 	}
 }
 
 void Enemy::OnCollision()
 {
-	// ===== HP減少 =====
-	hp_ -= kDamagePerHit_;
+	// 通常の被弾（プレイヤー武器との衝突）は既定ダメージで処理する。
+	ApplyDamage(kDamagePerHit_);
+}
+
+void Enemy::ApplyDamage(int amount)
+{
+	if (isDead_) return;
+
+	// 与ダメージ量を敵の右上にポップアップ表示（敵への加害は全てプレイヤー由来）
+	if (damageSink_ && amount > 0) {
+		damageSink_->SpawnDamage(GetTargetCenter(), amount);
+	}
+
+	// 被弾した瞬間に火花を飛び散らせる（撃破ヒットでも出るよう、死亡判定の前に出す）
+	// EmitByPresetName は描画されないため、描画される EmitPreset 経路で出す。
+	if (deathSystem_) {
+		Transform spark = transform;
+		spark.translate.y += kHitSparkOffsetY_;
+		deathSystem_->EmitPreset(kHitSparkPreset_, spark);
+	}
+
+	hp_ -= amount;
 	if (hp_ < 0) hp_ = 0;
 
-	// ===== HPチェック =====
-	if (hp_ <= 0 && !isDead_) {
-		// 死亡アニメーション（1回再生）
+	if (hp_ <= 0) {
 		object3d_->SetAnimationOneShot(animation_.Death);
 		hitReactTimer_ = 0.0f;
-
-		// 死亡ステートに入る
 		isDead_ = true;
 		deathTimer_ = 0.0f;
-
-		// 縮小開始時のスケールを保存しておく
 		deathStartScale_ = transform.scale;
-		// 爆破はまだ
 		hasSpawnedExplosion_ = false;
-
 		return;
 	}
 
-	// ===== 被弾時アニメーション =====
-	if (!isDead_) {
-		SetAnimationIfChanged(animation_.HitReact);
-		hitReactTimer_ = kHitReactDuration_;
+	SetAnimationIfChanged(animation_.HitReact);
+	hitReactTimer_ = kHitReactDuration_;
+
+	// 被弾時のヒットパーティクルを発生
+	if (deathSystem_) {
+		Transform hitParticleTransform = transform;
+		hitParticleTransform.translate.y += 3.5f; // 胴体あたりの高さ
+		deathSystem_->EmitSystemByName("ADE", hitParticleTransform);
+	}
+}
+
+void Enemy::CollectAliveTargets(std::vector<ITarget*>& out)
+{
+	// 自分（ボス）が生きていれば対象に加える。
+	if (!isDead_) out.push_back(this);
+
+	// 配下の雑魚のうち生存しているものを加える。
+	for (auto& m : minions_) {
+		if (m && m->IsAlive()) out.push_back(m.get());
 	}
 }
 
 void Enemy::OnCollision(const CollisionInfo& info)
 {
-	// 相手のタイプIDを enum に戻す
 	const auto otherType = static_cast<CollisionTypeIdDef>(info.otherType);
-
-	// 要件：kPlayerWeapon と Enemy が当たった時にHP減少
-	// Enemy側なので「相手が kPlayerWeapon」ならダメージを入れる
-	if (otherType == CollisionTypeIdDef::kPlayerWeapon)
-	{
-		OnCollision();  // 既存のHP減少・死亡・被弾アニメ処理を使う
+	if (otherType == CollisionTypeIdDef::kPlayerWeapon) {
+		OnCollision();
 		return;
 	}
 }
 
+void Enemy::UpdateVisual()
+{
+	// AI・弾・ステートを動かさず、見た目（object3d_）だけ更新する
+	// イントロ演出中に呼ぶ専用メソッド
+	object3d_->SetTranslate(transform.translate);
+	object3d_->SetScale(transform.scale);
+	object3d_->SetRotate(transform.rotate);
+	object3d_->Update();
+}
+
 void Enemy::SetCamera(Camera* camera)
 {
-	// まずは ObjectBase 側の処理（camera_ と object3d_ にセット）
 	ObjectBase::SetCamera(camera);
-
-	// パーティクル側にも同じカメラを渡す
 	deathSystem_->SetCamera(camera);
-
-
-	// 必要なら武器や他のオブジェクトにもここで渡せる
-	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能
 }
 
 void Enemy::SetAnimationIfChanged(const std::string& name)
@@ -357,5 +471,205 @@ void Enemy::SetAnimationIfChanged(const std::string& name)
 	if (currentAnimationName_ != name) {
 		object3d_->SetAnimation(name);
 		currentAnimationName_ = name;
+	}
+}
+
+void Enemy::SpawnSplitBurstToPlayer(const Vector3& playerPos)
+{
+	Vector3 start = transform.translate;
+	start.y += 2.0f;
+
+	const float riseHeight = 10.0f;
+	const float riseSpeed = 40.0f;
+	const float splitRadius = 4.0f;
+	const float shotSpeed = 60.0f;
+
+	for (int i = 0; i < 4; ++i) {
+		auto b = std::make_unique<EnemySplitBullet>(GetBaseScene());
+		b->SetCamera(GetCamera());
+		b->SetIndex(i);
+		b->InitializeBurst(start, playerPos, riseHeight, riseSpeed, splitRadius, shotSpeed);
+		splitBullets_.push_back(std::move(b));
+	}
+
+	splitFireActive_ = false;
+	splitFireTimer_ = 0.0f;
+}
+
+// 怒り時：分裂弾を8発発射（通常の2倍）
+void Enemy::SpawnSplitBurstAngry(const Vector3& playerPos)
+{
+	Vector3 start = transform.translate;
+	start.y += 1.0f;
+
+	// 通常より速く・広く・多い
+	const float riseHeight = 10.0f;
+	const float riseSpeed = 50.0f;
+	const float splitRadius = 6.0f;
+	const float shotSpeed = 70.0f;
+	const int   bulletCount = 8;    // 通常4発 → 8発
+
+	for (int i = 0; i < bulletCount; ++i) {
+		auto b = std::make_unique<EnemySplitBullet>(GetBaseScene());
+		b->SetCamera(GetCamera());
+		b->SetIndex(i % 4);  // index は 0〜3 でループ
+		b->InitializeBurst(start, playerPos, riseHeight, riseSpeed, splitRadius, shotSpeed);
+		splitBullets_.push_back(std::move(b));
+	}
+
+	splitFireActive_ = false;
+	splitFireTimer_ = 0.0f;
+}
+
+// 大弾を生成（ThrowBigBulletState から呼ばれる）
+void Enemy::SpawnBigBullet(const Vector3& targetPos)
+{
+	Vector3 start = transform.translate;
+	start.y += 2.0f;
+
+	// EnemyDropBullet を大きめのパラメーターで生成
+	auto b = std::make_unique<EnemyDropBullet>(GetBaseScene());
+	b->SetCamera(GetCamera());
+	b->Initialize(start, targetPos);
+	// radius を大きくするため BigBullet 用スケールを設定
+	Transform bt = b->GetTransform();
+	bt.scale = { 3.0f, 3.0f, 3.0f };  // 通常弾の3倍サイズ
+	b->SetTransform(bt);
+	dropBullets_.push_back(std::move(b));
+}
+
+// 雑魚敵を1体召喚
+void Enemy::SpawnMinion(const Vector3& spawnPos)
+{
+	auto m = std::make_unique<MinionEnemy>(GetBaseScene());
+	// InitializeMinion 内の object3d_->Initialize() がカメラを上書きするため、
+	// SetCamera は必ず InitializeMinion の後に呼ぶ
+	m->InitializeMinion(spawnPos);
+	m->SetCamera(GetCamera());
+	m->SetDamagePopupSink(damageSink_); // 雑魚にもダメージ表示の注入口を渡す
+	minions_.push_back(std::move(m));
+}
+
+// ダメージ数値ポップアップの注入口をセット（自分＋既存の配下minionへ反映）
+void Enemy::SetDamagePopupSink(IDamagePopupSink* sink)
+{
+	damageSink_ = sink;
+	for (auto& m : minions_) {
+		if (m) m->SetDamagePopupSink(sink);
+	}
+}
+
+// 回転薙ぎ払いの着地エフェクト（衝撃波）を発生させる
+void Enemy::SpawnSpinLandEffect(const Vector3& pos)
+{
+	if (!deathSystem_) return;
+
+	// 敵と同じスケール感で衝撃波を出す（ADEエフェクトと同じ流儀）
+	Transform t = transform;
+	t.translate = pos;
+	t.translate.y += 0.3f; // 地面に少し埋まらないよう持ち上げる
+	t.rotate = { 0.0f, 0.0f, 0.0f };
+
+	// 回転薙ぎ払い専用の衝撃波プリセット（Resources/Particle/SpinShockwave.json）
+	deathSystem_->EmitByPresetName("SpinShockwave", t);
+}
+
+// 範囲攻撃判定を展開する（回転薙ぎ払い・ジャンプ急降下などから呼ばれる）
+void Enemy::ActivateAreaAttack(float radius)
+{
+	spinHitboxRadius_ = radius;
+	spinHitboxActive_ = true;
+	UpdateSpinHitbox();
+}
+
+// 範囲攻撃判定を閉じる
+void Enemy::DeactivateAreaAttack()
+{
+	spinHitboxActive_ = false;
+	UpdateSpinHitbox();
+}
+
+// 判定が出ている間だけ非nullを返す
+MultiCollider* Enemy::GetActiveAreaAttackCollider() const
+{
+	return spinHitboxActive_ ? spinHitbox_.get() : nullptr;
+}
+
+// 攻撃判定（球）をボス本体に追従させる
+void Enemy::UpdateSpinHitbox()
+{
+	if (!spinHitbox_) return;
+	Sphere& sp = spinHitbox_->MutableSphere(0);
+	sp.center = transform.translate + colliderOffset_; // 胴体中心あたり
+	sp.radius = spinHitboxActive_ ? spinHitboxRadius_ : 0.0f;
+}
+
+// 雑魚敵を1体ずつ順番に突進させるコーディネーター
+//  ・出現演出が終わった雑魚敵をランダムに1体選び、突進～急降下させる
+//  ・その1体が終わるまで他は待機（完全静止）
+//  ・全員が突進し終えたら次のラウンドへ（再び1体ずつ繰り返す）
+void Enemy::UpdateMinionCoordinator()
+{
+	if (minions_.empty()) {
+		activeMinion_ = nullptr;
+		return;
+	}
+
+	// activeMinion_ がまだリストに存在するか確認（死亡時の保険）
+	if (activeMinion_) {
+		bool alive = false;
+		for (auto& m : minions_) {
+			if (m.get() == activeMinion_) { alive = true; break; }
+		}
+		if (!alive) activeMinion_ = nullptr;
+	}
+
+	// 突進中の雑魚敵がいれば、それが終わるまで待つ
+	if (activeMinion_) {
+		if (activeMinion_->IsAttacking()) {
+			return;
+		}
+		// 突進シーケンス完了 → このラウンドの行動済みにする
+		activeMinion_->SetActed(true);
+		activeMinion_ = nullptr;
+	}
+
+	// 次に突進させる候補（出現演出済み・未行動・待機中）を集める
+	std::vector<MinionEnemy*> candidates;
+	bool anySpawning = false;
+	for (auto& m : minions_) {
+		if (!m->IsSpawnFinished()) {
+			anySpawning = true; // まだ出現演出中の雑魚敵がいる
+			continue;
+		}
+		if (!m->HasActed() && m->IsIdle()) {
+			candidates.push_back(m.get());
+		}
+	}
+
+	if (!candidates.empty()) {
+		// ランダムに1体選び、現在のプレイヤー位置へ突進させる
+		static std::mt19937 rng(std::random_device{}());
+		std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
+		MinionEnemy* next = candidates[dist(rng)];
+
+		Vector3 targetPos = next->GetTransform().translate;
+		if (target_) {
+			targetPos = target_->translate;
+		}
+
+		next->BeginAttack(targetPos);
+		activeMinion_ = next;
+		return;
+	}
+
+	// 候補なし：出現演出中の雑魚敵が残っているなら、その完了を待つ
+	if (anySpawning) {
+		return;
+	}
+
+	// 全員が突進し終えた → 次のラウンドへ（行動済みフラグをリセット）
+	for (auto& m : minions_) {
+		m->ResetRound();
 	}
 }

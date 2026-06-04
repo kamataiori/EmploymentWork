@@ -4,6 +4,7 @@
 
 #include <externals/imgui/imgui_impl_win32.h>
 #include <SrvManager.h>
+#include <externals/imgui/imnodes.h>
 
 void ImGuiManager::Initialize(WinApp* winApp, DirectXCommon* dxCommon)
 {
@@ -11,6 +12,8 @@ void ImGuiManager::Initialize(WinApp* winApp, DirectXCommon* dxCommon)
 
 	// ImGuiのコンテキストを生成
 	ImGui::CreateContext();
+	// imnodes のコンテキストを生成
+	ImNodes::CreateContext();
 	// ImGuiのスタイルを設定
 	ImGui::StyleColorsDark();
 
@@ -32,7 +35,7 @@ void ImGuiManager::Initialize(WinApp* winApp, DirectXCommon* dxCommon)
 	ImGui_ImplDX12_Init(
 		dxCommon_->GetDevice().Get(),
 		static_cast<int>(dxCommon_->GetBackBufferCount()),
-		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 
+		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
 		SrvManager::GetInstance()->GetSrvDescriptorHeap().Get(),
 		SrvManager::GetInstance()->GetCPUDescriptorHandle(srvIndex),
 		SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex)
@@ -73,6 +76,8 @@ void ImGuiManager::Finalize()
 	// 後始末
 	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
+	// imnodes のコンテキストを破棄（ImGui より先に）
+	ImNodes::DestroyContext();
 	ImGui::DestroyContext();
 
 	// デスクリプタヒープを解放
@@ -90,7 +95,7 @@ void ImGuiManager::Update()
 void ImGuiManager::Draw()
 {
 	// デスクリプタヒープの設定
-	ID3D12DescriptorHeap* descriptorHeaps[] = { SrvManager::GetInstance()->GetSrvDescriptorHeap().Get()};
+	ID3D12DescriptorHeap* descriptorHeaps[] = { SrvManager::GetInstance()->GetSrvDescriptorHeap().Get() };
 	dxCommon_->GetCommandList()->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	// ImGui の描画コマンドを積む

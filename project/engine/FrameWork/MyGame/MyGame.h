@@ -4,9 +4,11 @@
 #include "engine/UI/UIManager.h"
 #include "engine/Scene/ChangeEffect/SceneTransitionService.h"
 #include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
+#include "PlayModeState.h"
 
 #ifdef USE_IMGUI
 #include "ImGuiManager.h"
+#include "EditorLayout.h"
 #endif // USE_IMGUI
 
 #include <deque>
@@ -37,22 +39,13 @@ public:
 	void Draw() override;
 
 
-	/// <summary>
-	/// 
-	/// </summary>
-	void ApplyImGuiStyle();
-
-	void DrawUnityLayout();
-	void DrawCenterPanel();
-	void DrawLeftPanels();
-	void DrawRightPanels();
-	void DrawBottomPanel();
-
 private:
 
 #ifdef USE_IMGUI
 
 	std::unique_ptr<ImGuiManager> imGuiManager_ = nullptr;
+
+	std::unique_ptr<EditorLayout> editorLayout_ = nullptr;
 
 #endif // USE_IMGUI
 
@@ -76,7 +69,7 @@ private:
 	float fps_ = 0.0f;
 	float frameTimeMs_ = 0.0f;
 
-	// 平均FPS用（直近60フレームの履歴）
+	// 平均FPS用
 	std::deque<float> fpsHistory_;
 	float averageFps_ = 0.0f;
 	static constexpr size_t kFpsHistorySize = 60;
@@ -89,4 +82,8 @@ private:
 
 	// 遷移演出の生成・管理（SceneManagerは所有しない）
 	std::unique_ptr<SceneTransitionService> transitionService_;
+
+	// 再生/停止 状態 (Play/Stop)
+	// EditorLayout と SceneManager が参照する
+	std::unique_ptr<PlayModeState> playModeState_;
 };

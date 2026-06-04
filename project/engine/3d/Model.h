@@ -120,6 +120,13 @@ public:
     /// <returns>ワールド空間上の位置（存在しない場合は std::nullopt）</returns>
 	std::optional<Vector3> GetJointWorldPosition(const std::string& jointName, const Matrix4x4& modelWorldMatrix) const;
 
+	/// <summary>
+	/// 指定したジョイント名のワールド行列を取得
+	/// </summary>
+	/// <param name="jointName">ボーン名</param>
+	/// <param name="modelWorldMatrix">モデル(=Object3d)のワールド行列</param>
+	/// <returns>ワールド行列（存在しない場合は std::nullopt）</returns>
+	std::optional<Matrix4x4> GetJointWorldMatrix(const std::string& jointName, const Matrix4x4& modelWorldMatrix) const;
 
 	/// <summary>
 	/// 頂点データを作成
@@ -161,6 +168,22 @@ public:
 	void SetAnimation(const std::string& name);
 
 	void SetAnimationOneShot(const std::string& name);
+
+	// アニメーション切替の補間秒数を設定（0以下は即切替）
+	void SetBlendDuration(float sec) { blendDuration_ = (sec < 0.0f) ? 0.0f : sec; }
+
+	// アニメ再生速度の倍率（1.0=等倍 / >1で速く / <1で遅く / 0で停止）
+	void  SetAnimationSpeed(float s) { animationSpeed_ = (s < 0.0f) ? 0.0f : s; }
+	float GetAnimationSpeed() const { return animationSpeed_; }
+
+	// 現在アニメの進行度 0.0〜1.0（ワンショットは終端で1.0に張り付く）。
+	// 当たり判定を「秒」ではなく「進行度」で持たせるために使う。
+	float GetAnimationProgress() const {
+		if (!currentAnimation_ || currentAnimation_->duration <= 0.0f) return 0.0f;
+		const float p = animationTime / currentAnimation_->duration;
+		return (p < 0.0f) ? 0.0f : (p > 1.0f ? 1.0f : p);
+	}
+
 
 	/// <summary>
 	/// NodeからJointを作る関数
@@ -267,8 +290,11 @@ private:
 	AnimationData animation;
 	Skeleton skeleton;
 	AnimationData* prevAnimation_ = nullptr;
+	float prevAnimationTime_ = 0.0f;   // 切替直前のアニメ時間（クロスフェード用）
+	bool  prevIsOneShot_ = false;      // 切替直前のループ/ワンショット状態
 	float blendTime_ = 0.0f;
-	float blendDuration_ = 0.4f; // 補間に使う秒数
+	float blendDuration_ = 0.12f; // 補間に使う秒数（デフォルトは短め）
+	float animationSpeed_ = 1.0f; // アニメ再生速度の倍率
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource;
 	// Viewを作成する

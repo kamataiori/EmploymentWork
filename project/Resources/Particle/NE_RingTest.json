@@ -1,0 +1,162 @@
+{
+    "emitterSettings": {
+        "blendMode": 2,
+        "textureFilePath": "Resources/ParticleTexture/Glare.png",
+        "vertexType": 1
+    },
+    "emitterSpawn": {
+        "count": 1,
+        "frequency": 1.0,
+        "repeat": false,
+        "useLocalSpace": false,
+        "useRandomPosition": false
+    },
+    "name": "NE_RingTest",
+    "particleSpawn": {
+        "initialOffset": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialOffsetRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "initialRotate": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialRotateRandom": {
+            "max": [
+                0.8600000143051147,
+                0.5,
+                0.9800000190734863
+            ],
+            "min": [
+                -0.6399999856948853,
+                -1.2999999523162842,
+                -1.0199999809265137
+            ],
+            "useRandom": false
+        },
+        "initialScale": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "initialScaleRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        }
+    },
+    "particleUpdate": {
+        "lifeTime": 3.7200000286102295,
+        "rotationRandom": {
+            "max": [
+                0.9599999785423279,
+                1.2400000095367432,
+                0.8399999737739563
+            ],
+            "min": [
+                0.4000000059604645,
+                0.7599999904632568,
+                0.5799999833106995
+            ],
+            "useRandom": false
+        },
+        "rotationSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scaleRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "scaleSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "useGravity": false,
+        "velocity": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "velocityRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        }
+    },
+    "render": {
+        "color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "colorGradient": {
+            "enabled": false,
+            "keys": [
+                [
+                    0.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            ]
+        },
+        "flipY": false,
+        "gradientTimeCurve": {
+            "enabled": false,
+            "keys": []
+        },
+        "useBillboard": true
+    }
+}
