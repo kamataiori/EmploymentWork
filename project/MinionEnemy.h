@@ -3,6 +3,7 @@
 #include "ITarget.h"
 #include <CollisionTypeIdDef.h>
 #include "Sprite.h"
+#include "ParticleManager.h"
 #include <array>
 #include <memory>
 
@@ -31,7 +32,7 @@ public:
 	void BackGroundDraw() override {}
 	void Draw() override;
 	void ForeGroundDraw() override;
-	void ParticleDraw() override {}
+	void ParticleDraw() override;
 	void AnimationDraw() override {}
 
 	void OnCollision() override {}
@@ -41,7 +42,7 @@ public:
 
 	//=== ITarget（プレイヤーの攻撃対象としてのインターフェイス）===
 	// 撃破演出(Phase::Hit)に入った時点で対象から外す（多重ヒット・再突進を防ぐ）。
-	bool IsAlive() const override { return !isDead_ && phase_ != Phase::Hit; }
+	bool IsAlive() const override { return !isDead_ && phase_ != Phase::Hit && phase_ != Phase::Explode; }
 	Vector3 GetTargetCenter() const override { return transform.translate + Vector3{ 0.0f, 1.0f, 0.0f }; }
 	void ApplyDamage(int amount) override;
 
@@ -74,7 +75,8 @@ private:
 		Slam,       // 急降下
 		Shockwave,  // 着地直後の衝撃波
 		Recover,    // 急降下後の硬直（無防備な反撃チャンス）
-		Hit,        // 被弾ヒット演出（固まって小刻みシェイク → 消滅）
+		Hit,        // 被弾ヒット演出（固まって小刻みシェイク → 爆発へ）
+		Explode,    // シェイク後の爆発演出（パーティクル再生 → 消滅）
 	};
 
 	Phase phase_ = Phase::Spawn;
@@ -157,4 +159,11 @@ private:
 	static constexpr float kHitShakeYAttenuation_ = 0.5f; // Y方向シェイクの振幅減衰係数
 	static constexpr float kHitShakePhaseZ_ = 1.7f;   // Z方向の初期位相（X とずらすため）
 	static constexpr float kHitShakePhaseY_ = 0.5f;   // Y方向の初期位相
+
+	// 撃破時の爆発パーティクル（シェイク後に1回だけ発生）
+	std::unique_ptr<ParticleManager> particles_;          // この個体専用のパーティクル
+	float explodeTimer_ = 0.0f;                           // 爆発演出の経過時間
+	static constexpr float kExplosionLifetime_ = 0.7f;    // 爆発を見せてから消えるまでの時間（秒）
+	static constexpr const char* kExplosionPreset_ = "Explosion"; // Resources/Particle/Explosion.json
+	static constexpr float kExplosionOffsetY_ = 1.0f;     // 爆発の発生高さ（体の中心あたり）
 };

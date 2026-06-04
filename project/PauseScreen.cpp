@@ -106,8 +106,9 @@ void PauseScreen::Update()
 void PauseScreen::Draw()
 {
     // ゲーム中は右下に escBase（操作不可）
+    // ※前景UI差し替え作業のため、ゲーム中のESCヒント表示を一旦停止
     if (!isPaused_) {
-        if (escHint_) escHint_->Draw();
+        // if (escHint_) escHint_->Draw();
         return;
     }
 

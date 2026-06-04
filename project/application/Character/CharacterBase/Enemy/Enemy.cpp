@@ -376,6 +376,10 @@ void Enemy::ParticleDraw()
 	for (auto& b : splitBullets_) {
 		b->ParticleDraw();
 	}
+	// 雑魚敵の撃破時の爆発パーティクルを描画する
+	for (auto& m : minions_) {
+		m->ParticleDraw();
+	}
 }
 
 void Enemy::OnCollision()

@@ -55,6 +55,15 @@ void MinionEnemy::InitializeMinion(const Vector3& spawnPos)
 	actedThisRound_ = false;
 	hp_ = kMaxHP_;
 	shockwaveTimer_ = 0.0f;
+	explodeTimer_ = 0.0f;
+
+	// 撃破時の爆発パーティクル（この個体専用）。Explosion.json を読み込んでおく。
+	particles_ = std::make_unique<ParticleManager>();
+	particles_->Initialize(VertexDataType::Plane);
+	particles_->LoadAllPresets();
+	if (camera_) {
+		particles_->SetCamera(camera_);
+	}
 
 	// 頭上HPピップ（HP.pngを実寸サイズで kMaxHP_ 枚作成し、横並びで表示する）
 	// 位置はUpdate内で毎フレーム頭上に追従させる
@@ -254,6 +263,28 @@ void MinionEnemy::Update()
 		transform.translate.z = hitBasePos_.z + oz;
 
 		if (hitTimer_ >= kHitDuration_) {
+			// シェイク終了 → 爆発演出へ。爆発パーティクルを1回だけ発生させる。
+			phase_ = Phase::Explode;
+			explodeTimer_ = 0.0f;
+
+			if (particles_) {
+				Transform burst{};
+				burst.scale = { 1.0f, 1.0f, 1.0f };
+				burst.rotate = { 0.0f, 0.0f, 0.0f };
+				burst.translate = hitBasePos_;
+				burst.translate.y += kExplosionOffsetY_; // 体の中心あたりから噴き出す
+				// EmitterInstance 経路で出す（EmitByPresetName の particleList 経路は描画されないため）。
+				particles_->EmitPreset(kExplosionPreset_, burst);
+			}
+		}
+		break;
+	}
+
+	case Phase::Explode:
+	{
+		// 爆発パーティクルを再生しきってから消滅する（モデルは描画しない）。
+		explodeTimer_ += dt;
+		if (explodeTimer_ >= kExplosionLifetime_) {
 			isDead_ = true;
 		}
 		break;
@@ -261,9 +292,15 @@ void MinionEnemy::Update()
 	}
 
 	// コライダー更新（衝撃波中のみ半径を拡大して範囲ダメージにする）
+	// 死亡演出中（Hit/Explode）は当たり判定を消して、瀕死の個体が触れて事故らないようにする。
 	Sphere& sp = multiCollider_->MutableSphere(0);
 	sp.center = transform.translate;
-	sp.radius = (phase_ == Phase::Shockwave) ? shockwaveRadius_ : radius_;
+	if (phase_ == Phase::Hit || phase_ == Phase::Explode) {
+		sp.radius = 0.0f;
+	}
+	else {
+		sp.radius = (phase_ == Phase::Shockwave) ? shockwaveRadius_ : radius_;
+	}
 
 	object3d_->SetTranslate(transform.translate);
 	object3d_->SetScale(transform.scale);
@@ -272,6 +309,11 @@ void MinionEnemy::Update()
 
 	// 頭上HPバーの追従と表示更新
 	UpdateHpBar();
+
+	// 爆発パーティクルの更新（発生後、消滅まで毎フレーム進める）
+	if (particles_) {
+		particles_->Update();
+	}
 }
 
 void MinionEnemy::UpdateHpBar()
@@ -279,7 +321,8 @@ void MinionEnemy::UpdateHpBar()
 	// 出現演出中・被弾死亡演出中はバーを隠す（地中から伸びるバーは不自然なため）
 	const bool visible = !isDead_
 		&& phase_ != Phase::Spawn
-		&& phase_ != Phase::Hit;
+		&& phase_ != Phase::Hit
+		&& phase_ != Phase::Explode;
 	hpBarVisible_ = visible;
 	if (!visible) return;
 
@@ -327,7 +370,17 @@ void MinionEnemy::Draw()
 {
 	multiCollider_->Draw();
 
+	// 爆発演出中はモデルを消す（爆発して消滅した見た目にする）
+	if (phase_ == Phase::Explode) return;
+
 	object3d_->Draw();
+}
+
+void MinionEnemy::ParticleDraw()
+{
+	if (particles_) {
+		particles_->Draw();
+	}
 }
 
 void MinionEnemy::ForeGroundDraw()
@@ -342,8 +395,8 @@ void MinionEnemy::ForeGroundDraw()
 
 void MinionEnemy::OnCollision(const CollisionInfo& info)
 {
-	// 既にヒット演出に入っている、または死亡確定後は無視（同じ攻撃で多段ヒットしないため）
-	if (isDead_ || phase_ == Phase::Hit) return;
+	// 既にヒット/爆発演出に入っている、または死亡確定後は無視（同じ攻撃で多段ヒットしないため）
+	if (isDead_ || phase_ == Phase::Hit || phase_ == Phase::Explode) return;
 
 	auto other = static_cast<CollisionTypeIdDef>(info.otherType);
 
@@ -357,8 +410,8 @@ void MinionEnemy::OnCollision(const CollisionInfo& info)
 
 void MinionEnemy::ApplyDamage(int amount)
 {
-	// 既にヒット演出に入っている、または死亡確定後は無視（多段ヒット防止）
-	if (isDead_ || phase_ == Phase::Hit) return;
+	// 既にヒット/爆発演出に入っている、または死亡確定後は無視（多段ヒット防止）
+	if (isDead_ || phase_ == Phase::Hit || phase_ == Phase::Explode) return;
 
 	hp_ -= amount;
 	if (hp_ <= 0) {
@@ -373,4 +426,7 @@ void MinionEnemy::ApplyDamage(int amount)
 void MinionEnemy::SetCamera(Camera* camera)
 {
 	ObjectBase::SetCamera(camera);
+	if (particles_) {
+		particles_->SetCamera(camera);
+	}
 }

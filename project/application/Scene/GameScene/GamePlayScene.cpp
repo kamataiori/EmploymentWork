@@ -1,6 +1,8 @@
 #include "GamePlayScene.h"
 #include <Input.h>
 #include "SceneManager.h"
+#include "engine/UI/UITexture.h"
+#include "engine/UI/PlayerHpPipBar.h"
 #include "CursorService.h"
 #include <OffscreenRendering.h>
 #include <MyGame.h>
@@ -124,6 +126,141 @@ void GamePlayScene::Initialize()
 	ex->SetPosition({ 0.0f,100.0f });
 
 	uiManager_ = std::make_unique<UIManager>();
+
+	// 右下：プレイヤーの攻撃／スキルUI（ゲージ台座）
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/gauge_bar_ui.png";
+		d.size    = { 256.0f, 256.0f };
+		d.anchor  = { 1.0f, 1.0f };                       // 右下基準
+		d.pos     = { 1280.0f - 48.0f, 720.0f - 0.0f };   // 右下から少し内側＆下げる
+		d.layer   = 100;                                  // ポーズUI(100000)より下
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// ブーメランアイコンの左隣：フレイムダンス（スキル）アイコン
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/flameDance_ui.png";
+		d.size    = { 64.0f, 64.0f };
+		d.anchor  = { 0.5f, 0.5f };       // 中心基準
+		d.pos     = { 856.0f, 592.0f };   // ブーメランとの隙間を、ベース(左端976)とブーメラン(右端964)の隙間12pxに合わせる
+		d.layer   = 101;                  // ゲージ台座(100)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// フレイムダンスアイコンの下：操作キー表示（V）
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/V_ui.png";
+		d.size    = { 32.0f, 32.0f };     // E_ui と同じサイズ
+		d.anchor  = { 0.5f, 0.5f };       // 中心基準
+		d.pos     = { 856.0f, 660.0f };   // x はフレイムダンスの真下、y は E_ui と同じ高さ
+		d.layer   = 102;                  // フレイムダンスアイコン(101)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// 剣アイコンの左側：ブーメラン（スキル）アイコン
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/boomerang_ui.png";
+		d.size    = { 64.0f, 64.0f };
+		d.anchor  = { 0.5f, 0.5f };       // 中心基準
+		d.pos     = { 932.0f, 592.0f };   // 剣(左端996)の左側、高さは剣と同じ
+		d.layer   = 101;                  // ゲージ台座(100)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// ブーメランアイコンの下：操作キー表示（E）
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/E_ui.png";
+		d.size    = { 32.0f, 32.0f };
+		d.anchor  = { 0.5f, 0.5f };       // 中心基準
+		d.pos     = { 932.0f, 660.0f };   // x はブーメランと同じ、y は左キーと同じ高さ
+		d.layer   = 102;                  // ブーメランアイコン(101)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// ゲージ台座の上に重ねる：通常攻撃アイコン（剣）
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/sword_ui.png";
+		d.size    = { 128.0f, 128.0f };
+		d.anchor  = { 0.5f, 0.5f };       // 中心基準
+		d.pos     = { 1060.0f, 592.0f };  // ゲージ中央(約1104,592)の高さ・少し左寄り
+		d.layer   = 101;                  // ゲージ台座(100)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// 剣アイコンの右側：無限マーク
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/infinite_ui.png";
+		d.size    = { 64.0f, 64.0f };
+		d.anchor  = { 0.5f, 0.5f };       // 中心基準
+		d.pos     = { 1170.0f, 592.0f };  // 剣(右端1124)の右側、高さは剣と同じ
+		d.layer   = 101;                  // ゲージ台座(100)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// 上記2つの下に重ねる：操作キー表示（左クリック）
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/leftKey_ui.png";
+		d.size    = { 64.0f, 64.0f };
+		d.anchor  = { 0.5f, 0.5f };       // 中心基準
+		d.pos     = { 1104.0f, 660.0f };  // x はゲージ中央、y は剣アイコンの下
+		d.layer   = 102;                  // 剣アイコン(101)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// 画面中央：アルティメットのリング
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/ultRing_ui.png";
+		d.size    = { 126.0f, 126.0f };
+		d.anchor  = { 0.5f, 0.5f };       // 中心基準
+		d.pos     = { 640.0f, 592.0f };   // x は画面ど真ん中、y は剣アイコンと同じ高さ
+		d.layer   = 101;                  // ゲージ台座(100)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// アルティメットリングの下：操作キー表示（Q）
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/Q_ui.png";
+		d.size    = { 32.0f, 32.0f };
+		d.anchor  = { 0.5f, 0.5f };       // 中心基準
+		d.pos     = { 640.0f, 680.0f };   // x はリングと同じ、y は他のキーと同じ高さ
+		d.layer   = 102;                  // リング(101)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// 左下：プレイヤーのHP（HP.png 1枚＝15HP、最大275 → 19枚を横並び）
+	{
+		PlayerHpPipBar::CreateDesc d{};
+		d.pipTexPath = "Resources/HP.png";
+		d.startPos   = { 48.0f, 640.0f }; // 左端。health_ui と重ならないよう少し下げる
+		d.pipSize    = { 8.0f, 24.0f };
+		d.spacing    = 2.0f;
+		d.maxHp      = 275;
+		d.hpPerPip   = 15;
+		d.layer      = 100;
+		uiManager_->Add(PlayerHpPipBar::Create(d));
+	}
+
+	// HPバーの一番左に重ねる：HPアイコン／ラベル
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/health_ui.png";
+		d.size    = { 64.0f, 64.0f };
+		d.anchor  = { 0.0f, 0.5f };       // 左端・縦中央基準
+		d.pos     = { 48.0f, 592.0f };    // HP の一番左、高さはゲージ台座と同じ y=592
+		d.layer   = 101;                  // HPピップ(100)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+
 	auto pause = std::make_unique<PauseScreen>();
 	pause->Initialize({ 1280.0f, 720.0f }, "TITLE");
 	pauseScreenRef_ = pause.get();  // 所有は uiManager_、こちらは状態監視のための非所有参照
@@ -272,6 +409,14 @@ void GamePlayScene::UpdateCamera()
 void GamePlayScene::Update()
 {
 	uiManager_->Update();
+
+	// プレイヤーHPを左下のHP UI へ反映（PlayerHpPipBar が ApplyData で受け取る）
+	if (player_) {
+		UIElement::UIData hpData{};
+		hpData.hp = static_cast<float>(player_->GetHp());
+		hpData.maxHp = static_cast<float>(player_->GetMaxHp());
+		uiManager_->ApplyDataToAll(hpData);
+	}
 
 	// ポーズ状態の変化を検知してカーソル設定を切り替える
 	SyncCursorWithPauseState();

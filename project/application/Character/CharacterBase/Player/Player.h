@@ -134,6 +134,10 @@ public:
 
 	bool  IsDead()         const { return isDead_; }
 	float GetDeathTimer()  const { return deathTimer_; }
+
+	// HP の取得（左下のHP UI 表示などに使う）
+	int GetHp()    const { return hp_; }
+	int GetMaxHp() const { return kMaxHP_; }
 protected:
 
 	// アニメーションを設定する関数
@@ -172,8 +176,8 @@ private:
 	bool invincible_ = false;
 
 	// HP関連
-	int hp_ = 10000;                     // 現在HP
-	const int kMaxHP_ = 10000;           // 最大HP
+	int hp_ = 275;                       // 現在HP
+	const int kMaxHP_ = 275;             // 最大HP
 	const int kDamagePerHit_ = 10;       // 1回の衝突ダメージ
 
 	// ===== 死亡演出 =====

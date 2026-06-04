@@ -1,0 +1,147 @@
+{
+    "name": "Explosion",
+    "emitterSettings": {
+        "blendMode": 2,
+        "textureFilePath": "Resources/ParticleTexture/fire.png",
+        "vertexType": 0
+    },
+    "emitterSpawn": {
+        "count": 48,
+        "frequency": 0.001,
+        "repeat": false,
+        "useLocalSpace": false,
+        "useRandomPosition": true
+    },
+    "particleSpawn": {
+        "initialOffset": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialOffsetRandom": {
+            "max": [
+                0.25,
+                0.1,
+                0.25
+            ],
+            "min": [
+                -0.25,
+                -0.1,
+                -0.25
+            ],
+            "useRandom": true
+        },
+        "initialRotate": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialRotateRandom": {
+            "max": [
+                3.14,
+                3.14,
+                3.14
+            ],
+            "min": [
+                -3.14,
+                -3.14,
+                -3.14
+            ],
+            "useRandom": true
+        },
+        "initialScale": [
+            1.2,
+            1.2,
+            1.2
+        ],
+        "initialScaleRandom": {
+            "max": [
+                0.6,
+                0.6,
+                0.6
+            ],
+            "min": [
+                -0.4,
+                -0.4,
+                -0.4
+            ],
+            "useRandom": true
+        }
+    },
+    "particleUpdate": {
+        "lifeTime": 0.68,
+        "rotationRandom": {
+            "max": [
+                2.0,
+                2.0,
+                2.0
+            ],
+            "min": [
+                -2.0,
+                -2.0,
+                -2.0
+            ],
+            "useRandom": true
+        },
+        "rotationSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scaleRandom": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "useRandom": false
+        },
+        "scaleSpeed": [
+            -2.0,
+            -2.0,
+            -2.0
+        ],
+        "useGravity": false,
+        "velocity": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "velocityRandom": {
+            "max": [
+                1.5,
+                13.0,
+                1.5
+            ],
+            "min": [
+                -1.5,
+                7.0,
+                -1.5
+            ],
+            "useRandom": true
+        }
+    },
+    "render": {
+        "color": [
+            1.0,
+            0.55,
+            0.12,
+            1.0
+        ],
+        "colorGradient": {
+            "enabled": false,
+            "keys": []
+        },
+        "flipY": false,
+        "gradientTimeCurve": {
+            "enabled": false,
+            "keys": []
+        },
+        "useBillboard": true
+    }
+}

@@ -194,7 +194,7 @@ void PlayerWeapon::Skill()
 
 void PlayerWeapon::Ultimate()
 {
-	const bool nowQ = Input::GetInstance()->PushKey(DIK_Q);
+	const bool nowQ = Input::GetInstance()->PushKey(DIK_V);
 	const bool triggered = (nowQ && !isUltimate_); // 押した瞬間(立ち上がり)だけ
 	isUltimate_ = nowQ;
 
