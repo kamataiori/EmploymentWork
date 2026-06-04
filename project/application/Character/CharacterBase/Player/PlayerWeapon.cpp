@@ -24,14 +24,14 @@ const PlayerWeapon::AttackInfo PlayerWeapon::kNormalAttacks_[3] = {
 
 void PlayerWeapon::Initialize()
 {
-	// E キーのスキル（回転斬り）を生成し、依存（プレイヤー・剣）を注入する。
-	// IPlayerSkill で保持するので、スキル追加時はここに別クラスを足すだけでよい。
+	// E キーのスキル（回転斬り）を生成
+	// IPlayerSkill で保持するので、スキル追加時はここに別クラスを足すだけ
 	auto spinSlash = std::make_unique<SpinSlashSkill>();
 	spinSlash->Initialize(owner_, sword_);
 	eSkill_ = std::move(spinSlash);
 
-	// Q キーのアルティメット（突進乱舞）を生成。
-	// 攻撃対象の供給元は Scene 構築後に SetEnemyTargetProvider() で後から注入する。
+	// Q キーのアルティメットを生成
+	// 攻撃対象の供給元は Scene 構築後に SetEnemyTargetProvider() で後から
 	auto rushSlash = std::make_unique<RushSlashSkill>();
 	rushSlash->Initialize(owner_);
 	ultSkill_ = std::move(rushSlash);
@@ -39,7 +39,7 @@ void PlayerWeapon::Initialize()
 
 void PlayerWeapon::SetEnemyTargetProvider(IEnemyTargetProvider* provider)
 {
-	// アルティメット（突進乱舞）だけが敵一覧を必要とするので、そこへ橋渡しする。
+	// アルティメットだけが敵一覧を必要とするので、そこへ橋渡しする
 	if (auto* rush = dynamic_cast<RushSlashSkill*>(ultSkill_.get())) {
 		rush->SetTargetProvider(provider);
 	}
@@ -55,7 +55,7 @@ void PlayerWeapon::StartAttack(int index)
 
 	if (owner_) {
 		const AttackInfo& a = kNormalAttacks_[index];
-		// lockSec は使わない（攻撃の継続は進行度で管理する）。速度倍率を渡す。
+		// lockSec は使わない（攻撃の継続は進行度で管理する）速度倍率を渡す
 		owner_->RequestAnimaKey(a.key, 10, 0.0f, a.speed);
 
 		// ズーム演出（攻撃時の一瞬寄って戻るパンチズーム）
@@ -168,7 +168,7 @@ bool PlayerWeapon::IsHitActive() const
 	if (!attacking_ || !owner_) return false;
 
 	// 当たり判定は進行度ウィンドウ内だけ有効。
-	// 振りの当たりフレーム帯（hitStart〜hitEnd）に合わせて調整する。
+	// 振りの当たりフレーム帯（hitStart〜hitEnd）に合わせて調整する
 	const float progress = owner_->GetAnimationProgress();
 	const AttackInfo& a = kNormalAttacks_[activeAttackIndex_];
 	return (progress >= a.hitStart && progress <= a.hitEnd);
