@@ -321,10 +321,10 @@
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChaseTargetLeaf.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="IsTargetNearLeaf.cpp">
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\IsTargetNearLeaf.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PunchAttackLeaf.cpp">
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\PunchAttackLeaf.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="engine\UI\UIElement.cpp">
@@ -378,16 +378,16 @@
     <ClCompile Include="engine\Scene\ChangeEffect\Shutter\ShutterTransition.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="MenuScene.cpp">
+    <ClCompile Include="application\Scene\MenuScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PauseScreen.cpp">
+    <ClCompile Include="engine\UI\PauseScreen.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="SceneTransitionStates.cpp">
+    <ClCompile Include="engine\Scene\ChangeEffect\SceneTransitionStates.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Sword.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Player\Sword.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\StayHomeLeaf.cpp">
@@ -396,10 +396,10 @@
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChargeDashAttackLeaf.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="EnemyDropBullet.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyDropBullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="EnemySplitBullet.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemySplitBullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyActionState.cpp">
@@ -423,7 +423,7 @@
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="MinionEnemy.cpp">
+    <ClCompile Include="application\Character\CharacterBase\Enemy\MinionEnemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\SummonMinionState.cpp">
@@ -456,16 +456,16 @@
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\WaitMinionDeadState.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="EditorLayout.cpp">
+    <ClCompile Include="application\Scene\EditorScene\EditorLayout.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="PlayModeState.cpp">
+    <ClCompile Include="application\Scene\EditorScene\PlayModeState.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="ParticlePresetLibrary.cpp">
+    <ClCompile Include="engine\Effects\Particle\ParticlePresetLibrary.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="ParticleSystemManager.cpp">
+    <ClCompile Include="engine\Effects\Particle\ParticleSystemManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -809,10 +809,10 @@
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ChaseTargetLeaf.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="IsTargetNearLeaf.h">
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Leaf\IsTargetNearLeaf.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PunchAttackLeaf.h">
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Leaf\PunchAttackLeaf.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\UI\UIElement.h">
@@ -869,16 +869,16 @@
     <ClInclude Include="engine\Scene\ChangeEffect\Shutter\ShutterTransition.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="MenuScene.h">
+    <ClInclude Include="application\Scene\MenuScene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PauseScreen.h">
+    <ClInclude Include="engine\UI\PauseScreen.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="SceneTransitionStates.h">
+    <ClInclude Include="engine\Scene\ChangeEffect\SceneTransitionStates.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Sword.h">
+    <ClInclude Include="application\Character\CharacterBase\Player\Sword.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\StayHomeLeaf.h">
@@ -899,10 +899,10 @@
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\FeintAttackParam.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="EnemyDropBullet.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyDropBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="EnemySplitBullet.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemySplitBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\EnemyActionState.h">
@@ -926,7 +926,7 @@
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="MinionEnemy.h">
+    <ClInclude Include="application\Character\CharacterBase\Enemy\MinionEnemy.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\SummonMinionState.h">
@@ -965,16 +965,16 @@
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\RandomSelectorNode.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="EditorLayout.h">
+    <ClInclude Include="application\Scene\EditorScene\EditorLayout.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="PlayModeState.h">
+    <ClInclude Include="application\Scene\EditorScene\PlayModeState.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ParticlePresetLibrary.h">
+    <ClInclude Include="engine\Effects\Particle\ParticlePresetLibrary.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ParticleSystemManager.h">
+    <ClInclude Include="engine\Effects\Particle\ParticleSystemManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

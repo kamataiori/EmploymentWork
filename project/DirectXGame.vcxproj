@@ -63,7 +63,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\check;$(ProjectDir)engine\math;$(ProjectDir)vector;$(ProjectDir)matrix;$(ProjectDir)engine\directx;$(ProjectDir)engine\FrameWork\input;$(ProjectDir)\engine\logger;$(ProjectDir)engine\string;$(ProjectDir)engine\FrameWork\WinApp;$(ProjectDir)engine\FrameWork\Cursor;$(ProjectDir)engine\FrameWork\MyGame;$(ProjectDir)engine\FrameWork;$(ProjectDir)engine\Scene;$(ProjectDir)engine\Scene\SceneManager;$(ProjectDir)engine\Scene\SceneManager\AbstractSceneFactory;$(ProjectDir)engine\Scene\SceneManager\BaseScene;$(ProjectDir)engine\Scene\SceneManager\AbstractSceneFactory\SceneFactory;$(ProjectDir)engine\SRVManager;$(ProjectDir)externals\assimp\include;$(ProjectDir)application\Scene\TitleScene;$(ProjectDir)application\Scene\GameScene;$(ProjectDir)application\Character\CharacterBase;$(ProjectDir)application\Character\CharacterBase\Player;$(ProjectDir)application\Camera\FollowCamera;$(ProjectDir)engine\Effects\Particle;$(ProjectDir)engine\Effects\PostEffect;$(ProjectDir)engine\Effects\Particle\ParticleManager;$(ProjectDir)engine\Effects\Particle\ParticleEmitter;$(ProjectDir)engine\Framework\Audio;$(ProjectDir)application\Camera\FPSCamera;$(ProjectDir)engine\Collision;$(ProjectDir)engine\Debug</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\check;$(ProjectDir)engine\math;$(ProjectDir)vector;$(ProjectDir)matrix;$(ProjectDir)engine\directx;$(ProjectDir)engine\FrameWork\input;$(ProjectDir)\engine\logger;$(ProjectDir)engine\string;$(ProjectDir)engine\FrameWork\WinApp;$(ProjectDir)engine\FrameWork\Cursor;$(ProjectDir)engine\FrameWork\MyGame;$(ProjectDir)engine\FrameWork;$(ProjectDir)engine\Scene;$(ProjectDir)engine\Scene\SceneManager;$(ProjectDir)engine\Scene\SceneManager\AbstractSceneFactory;$(ProjectDir)engine\Scene\SceneManager\BaseScene;$(ProjectDir)engine\Scene\SceneManager\AbstractSceneFactory\SceneFactory;$(ProjectDir)engine\SRVManager;$(ProjectDir)externals\assimp\include;$(ProjectDir)application\Scene\TitleScene;$(ProjectDir)application\Scene\GameScene;$(ProjectDir)application\Character\CharacterBase;$(ProjectDir)application\Character\CharacterBase\Player;$(ProjectDir)application\Camera\FollowCamera;$(ProjectDir)engine\Effects\Particle;$(ProjectDir)engine\Effects\PostEffect;$(ProjectDir)engine\Effects\Particle\ParticleManager;$(ProjectDir)engine\Effects\Particle\ParticleEmitter;$(ProjectDir)engine\Framework\Audio;$(ProjectDir)application\Camera\FPSCamera;$(ProjectDir)engine\Collision;$(ProjectDir)engine\Debug;$(ProjectDir)engine\Scene\ChangeEffect;$(ProjectDir)application\Character\CharacterBase\Enemy;$(ProjectDir)application\AI\BehaviorTree\Nodes\Leaf;$(ProjectDir)application\Scene;$(ProjectDir)engine\UI;$(ProjectDir)application\Scene\EditorScene</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -85,7 +85,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\check;$(ProjectDir)engine\math;$(ProjectDir)vector;$(ProjectDir)matrix;$(ProjectDir)engine\directx;$(ProjectDir)engine\FrameWork\input;$(ProjectDir)\engine\logger;$(ProjectDir)engine\string;$(ProjectDir)engine\FrameWork\WinApp;$(ProjectDir)engine\FrameWork\Cursor;$(ProjectDir)engine\FrameWork\MyGame;$(ProjectDir)engine\FrameWork;$(ProjectDir)engine\Scene;$(ProjectDir)engine\Scene\SceneManager;$(ProjectDir)engine\Scene\SceneManager\AbstractSceneFactory;$(ProjectDir)engine\Scene\SceneManager\BaseScene;$(ProjectDir)engine\Scene\SceneManager\AbstractSceneFactory\SceneFactory;$(ProjectDir)engine\SRVManager;$(ProjectDir)externals\assimp\include;$(ProjectDir)application\Scene\TitleScene;$(ProjectDir)application\Scene\GameScene;$(ProjectDir)application\Character\CharacterBase;$(ProjectDir)application\Character\CharacterBase\Player;$(ProjectDir)application\Camera\FollowCamera;$(ProjectDir)engine\Effects\Particle;$(ProjectDir)engine\Effects\PostEffect;$(ProjectDir)engine\Effects\Particle\ParticleManager;$(ProjectDir)engine\Effects\Particle\ParticleEmitter;$(ProjectDir)engine\Framework\Audio;$(ProjectDir)application\Camera\FPSCamera;$(ProjectDir)engine\Collision;$(ProjectDir)engine\Debug</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\check;$(ProjectDir)engine\math;$(ProjectDir)vector;$(ProjectDir)matrix;$(ProjectDir)engine\directx;$(ProjectDir)engine\FrameWork\input;$(ProjectDir)\engine\logger;$(ProjectDir)engine\string;$(ProjectDir)engine\FrameWork\WinApp;$(ProjectDir)engine\FrameWork\Cursor;$(ProjectDir)engine\FrameWork\MyGame;$(ProjectDir)engine\FrameWork;$(ProjectDir)engine\Scene;$(ProjectDir)engine\Scene\SceneManager;$(ProjectDir)engine\Scene\SceneManager\AbstractSceneFactory;$(ProjectDir)engine\Scene\SceneManager\BaseScene;$(ProjectDir)engine\Scene\SceneManager\AbstractSceneFactory\SceneFactory;$(ProjectDir)engine\SRVManager;$(ProjectDir)externals\assimp\include;$(ProjectDir)application\Scene\TitleScene;$(ProjectDir)application\Scene\GameScene;$(ProjectDir)application\Character\CharacterBase;$(ProjectDir)application\Character\CharacterBase\Player;$(ProjectDir)application\Camera\FollowCamera;$(ProjectDir)engine\Effects\Particle;$(ProjectDir)engine\Effects\PostEffect;$(ProjectDir)engine\Effects\Particle\ParticleManager;$(ProjectDir)engine\Effects\Particle\ParticleEmitter;$(ProjectDir)engine\Framework\Audio;$(ProjectDir)application\Camera\FPSCamera;$(ProjectDir)engine\Collision;$(ProjectDir)engine\Debug;$(ProjectDir)engine\Scene\ChangeEffect;$(ProjectDir)application\Character\CharacterBase\Enemy;$(ProjectDir)application\AI\BehaviorTree\Nodes\Leaf;$(ProjectDir)application\Scene;$(ProjectDir)engine\UI;$(ProjectDir)application\Scene\EditorScene</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -121,9 +121,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyActionState.cpp" />
     <ClCompile Include="application\Scene\EditorScene\BTNodeGraphEditor.cpp" />
     <ClCompile Include="application\Scene\EditorScene\BTEditorScene.cpp" />
-    <ClCompile Include="EditorLayout.cpp" />
-    <ClCompile Include="EnemyDropBullet.cpp" />
-    <ClCompile Include="EnemySplitBullet.cpp" />
+    <ClCompile Include="application\Scene\EditorScene\EditorLayout.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemyDropBullet.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\EnemySplitBullet.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\EnemyStateManager.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraEffectController.cpp" />
     <ClCompile Include="engine\3d\Camera\CameraMove.cpp" />
@@ -171,7 +171,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsHPLeaf.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsAngryLeaf.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\IdleWaitState.cpp" />
-    <ClCompile Include="IsTargetNearLeaf.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\IsTargetNearLeaf.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\math\MathFunctions.cpp" />
     <ClCompile Include="engine\3d\Model.cpp" />
@@ -217,14 +217,14 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Core\NodeBase.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SelectorNode.cpp" />
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.cpp" />
-    <ClCompile Include="MenuScene.cpp" />
-    <ClCompile Include="MinionEnemy.cpp" />
+    <ClCompile Include="application\Scene\MenuScene.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\MinionEnemy.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NotLastActionLeaf.cpp" />
-    <ClCompile Include="ParticlePresetLibrary.cpp" />
-    <ClCompile Include="ParticleSystemManager.cpp" />
-    <ClCompile Include="PauseScreen.cpp" />
-    <ClCompile Include="PlayModeState.cpp" />
-    <ClCompile Include="PunchAttackLeaf.cpp" />
+    <ClCompile Include="engine\Effects\Particle\ParticlePresetLibrary.cpp" />
+    <ClCompile Include="engine\Effects\Particle\ParticleSystemManager.cpp" />
+    <ClCompile Include="engine\UI\PauseScreen.cpp" />
+    <ClCompile Include="application\Scene\EditorScene\PlayModeState.cpp" />
+    <ClCompile Include="application\AI\BehaviorTree\Nodes\Leaf\PunchAttackLeaf.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialController.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialStateMove.cpp" />
     <ClCompile Include="application\Scene\TutorialScene\TutorialScene.cpp" />
@@ -240,11 +240,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\UI\UIHpBar.cpp" />
     <ClCompile Include="engine\UI\UIManager.cpp" />
     <ClCompile Include="engine\UI\UITexture.cpp" />
-    <ClCompile Include="SceneTransitionStates.cpp" />
+    <ClCompile Include="engine\Scene\ChangeEffect\SceneTransitionStates.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\StayHomeLeaf.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\SummonMinionState.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\ShootSplitBulletState.cpp" />
-    <ClCompile Include="Sword.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\Sword.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\ThrowBigBulletState.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\State\WaitMinionDeadState.cpp" />
   </ItemGroup>
@@ -269,9 +269,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Scene\EditorScene\BTEditorData.h" />
     <ClInclude Include="application\Scene\EditorScene\BTNodeGraphEditor.h" />
     <ClInclude Include="application\Scene\EditorScene\BTEditorScene.h" />
-    <ClInclude Include="EditorLayout.h" />
-    <ClInclude Include="EnemyDropBullet.h" />
-    <ClInclude Include="EnemySplitBullet.h" />
+    <ClInclude Include="application\Scene\EditorScene\EditorLayout.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemyDropBullet.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\EnemySplitBullet.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\EnemyStateManager.h" />
     <ClInclude Include="engine\BlendMode.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\EnemyAIController.h" />
@@ -328,7 +328,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsHPLeaf.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\IsAngryLeaf.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\IdleWaitState.h" />
-    <ClInclude Include="IsTargetNearLeaf.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Leaf\IsTargetNearLeaf.h" />
     <ClInclude Include="matrix\Matrix3x3.h" />
     <ClInclude Include="matrix\Matrix4x4.h" />
     <ClInclude Include="engine\3d\Model.h" />
@@ -373,14 +373,14 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NearIdleLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeBase.h" />
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeResult.h" />
-    <ClInclude Include="MenuScene.h" />
-    <ClInclude Include="MinionEnemy.h" />
+    <ClInclude Include="application\Scene\MenuScene.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\MinionEnemy.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NotLastActionLeaf.h" />
-    <ClInclude Include="ParticlePresetLibrary.h" />
-    <ClInclude Include="ParticleSystemManager.h" />
-    <ClInclude Include="PauseScreen.h" />
-    <ClInclude Include="PlayModeState.h" />
-    <ClInclude Include="PunchAttackLeaf.h" />
+    <ClInclude Include="engine\Effects\Particle\ParticlePresetLibrary.h" />
+    <ClInclude Include="engine\Effects\Particle\ParticleSystemManager.h" />
+    <ClInclude Include="engine\UI\PauseScreen.h" />
+    <ClInclude Include="application\Scene\EditorScene\PlayModeState.h" />
+    <ClInclude Include="application\AI\BehaviorTree\Nodes\Leaf\PunchAttackLeaf.h" />
     <ClInclude Include="application\AI\BehaviorTree\Nodes\Composite\RandomSelectorNode.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="engine\3d\Skinning.h" />
@@ -406,11 +406,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\UI\UIHpBar.h" />
     <ClInclude Include="engine\UI\UIManager.h" />
     <ClInclude Include="engine\UI\UITexture.h" />
-    <ClInclude Include="SceneTransitionStates.h" />
+    <ClInclude Include="engine\Scene\ChangeEffect\SceneTransitionStates.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\StayHomeLeaf.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\SummonMinionState.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\ShootSplitBulletState.h" />
-    <ClInclude Include="Sword.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\Sword.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\State\ThrowBigBulletState.h" />
     <ClInclude Include="vector\Vector2.h" />
     <ClInclude Include="vector\Vector3.h" />
