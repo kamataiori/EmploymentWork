@@ -1,6 +1,6 @@
 # Blender 5.1.2
 # www.blender.org
-mtllib ground.mtl
+mtllib graund.mtl
 o 平面
 v -500.000000 0.000000 500.000000
 v 500.000000 0.000000 500.000000

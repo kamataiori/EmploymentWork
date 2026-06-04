@@ -209,6 +209,10 @@ private:
 	const int kMaxHP_ = 300;         // 最大HP
 	const int kDamagePerHit_ = 30;   // 被弾時のダメージ量
 
+	// 被弾時の火花パーティクル（プレイヤーの攻撃が当たった瞬間に飛び散る）
+	static constexpr const char* kHitSparkPreset_ = "HitSpark"; // Resources/Particle/HitSpark.json
+	static constexpr float kHitSparkOffsetY_ = 3.5f;            // 火花の発生高さ（胴体あたり）
+
 	// === HPバー表示用 ===
 	std::unique_ptr<UIManager> uiManager_;
 

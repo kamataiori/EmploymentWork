@@ -398,6 +398,14 @@ void Enemy::ApplyDamage(int amount)
 		damageSink_->SpawnDamage(GetTargetCenter(), amount);
 	}
 
+	// 被弾した瞬間に火花を飛び散らせる（撃破ヒットでも出るよう、死亡判定の前に出す）
+	// EmitByPresetName は描画されないため、描画される EmitPreset 経路で出す。
+	if (deathSystem_) {
+		Transform spark = transform;
+		spark.translate.y += kHitSparkOffsetY_;
+		deathSystem_->EmitPreset(kHitSparkPreset_, spark);
+	}
+
 	hp_ -= amount;
 	if (hp_ < 0) hp_ = 0;
 

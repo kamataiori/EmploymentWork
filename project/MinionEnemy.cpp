@@ -419,6 +419,16 @@ void MinionEnemy::ApplyDamage(int amount)
 		damageSink_->SpawnDamage(GetTargetCenter(), amount);
 	}
 
+	// 被弾した瞬間に火花を飛び散らせる（描画される EmitPreset 経路で出す）
+	if (particles_) {
+		Transform spark{};
+		spark.scale = { 1.0f, 1.0f, 1.0f };
+		spark.rotate = { 0.0f, 0.0f, 0.0f };
+		spark.translate = transform.translate;
+		spark.translate.y += kHitSparkOffsetY_;
+		particles_->EmitPreset(kHitSparkPreset_, spark);
+	}
+
 	hp_ -= amount;
 	if (hp_ <= 0) {
 		// すぐ消さず、ヒットストップ演出（固まり＋小刻みシェイク）へ

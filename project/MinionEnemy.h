@@ -174,4 +174,8 @@ private:
 	static constexpr float kExplosionLifetime_ = 0.7f;    // 爆発を見せてから消えるまでの時間（秒）
 	static constexpr const char* kExplosionPreset_ = "Explosion"; // Resources/Particle/Explosion.json
 	static constexpr float kExplosionOffsetY_ = 1.0f;     // 爆発の発生高さ（体の中心あたり）
+
+	// 被弾時の火花パーティクル（プレイヤーの攻撃が当たった瞬間に飛び散る）
+	static constexpr const char* kHitSparkPreset_ = "HitSpark"; // Resources/Particle/HitSpark.json
+	static constexpr float kHitSparkOffsetY_ = 1.0f;      // 火花の発生高さ（体の中心あたり）
 };
