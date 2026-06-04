@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "ITarget.h"
 #include "MathFunctions.h"
+#include "FollowCamera.h"
 
 #include <cmath>
 #include <algorithm>
@@ -32,6 +33,11 @@ void RushSlashSkill::Start()
 	// 発動中は被弾しない＆通常移動を止める（座標はこのスキルが駆動する）。
 	owner_->SetInvincible(true);
 	owner_->SetInputLocked(true);
+
+	// 発動中はマウスでカメラを動かせないようにする（突進の演出を固定する）。
+	if (auto* fc = dynamic_cast<FollowCamera*>(owner_->GetCamera())) {
+		fc->SetMouseControlEnabled(false);
+	}
 
 	BeginDash(first);
 }
@@ -162,4 +168,9 @@ void RushSlashSkill::Finish()
 	owner_->SetInvincible(false);
 	owner_->SetInputLocked(false);
 	owner_->EndAttackState();
+
+	// マウスでのカメラ操作を元に戻す。
+	if (auto* fc = dynamic_cast<FollowCamera*>(owner_->GetCamera())) {
+		fc->SetMouseControlEnabled(true);
+	}
 }

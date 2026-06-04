@@ -40,12 +40,16 @@ void FollowCamera::Update()
 	if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= keyOrbitSpeed_;
 	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += keyOrbitSpeed_;
 
-	// 左右：水平の周回角
-	angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
+	// マウス操作が許可されている間だけカメラを動かす。
+	// （アルティメット発動中は mouseControlEnabled_=false でマウスのカメラ操作を止める）
+	if (mouseControlEnabled_) {
+		// 左右：水平の周回角
+		angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
 
-	// 上下：見下ろし角（マウスを下げると見下ろし、上げると見上げ）
-	cameraPitch_ += Input::GetInstance()->GetMouseDelta().y * pitchSensitivity_;
-	cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
+		// 上下：見下ろし角（マウスを下げると見下ろし、上げると見上げ）
+		cameraPitch_ += Input::GetInstance()->GetMouseDelta().y * pitchSensitivity_;
+		cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
+	}
 
 	const Vector3& targetPos = target->GetTransform().translate;
 

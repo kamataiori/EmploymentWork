@@ -73,6 +73,13 @@ public: // カメラの高さ関係
 	void SetSensitivity(float s) { sensitivity_ = s; }
 	float GetSensitivity() const { return sensitivity_; }
 
+	/// <summary>
+	/// マウスによるカメラ操作の有効/無効を切り替える。
+	/// （アルティメット発動中など、カメラを固定したい場面で false にする）
+	/// </summary>
+	void SetMouseControlEnabled(bool v) { mouseControlEnabled_ = v; }
+	bool IsMouseControlEnabled() const { return mouseControlEnabled_; }
+
 	void SetLockLookY(bool v) { lockLookY_ = v; }
 	void SetLookYSmooth(float v) { lookYSmooth_ = v; }
 
@@ -99,6 +106,9 @@ private: // メンバ変数
 	float pitchSensitivity_ = 0.0025f; // マウス上下の感度
 	float pitchMin_ = -0.25f;          // 上限（負＝見上げ側）
 	float pitchMax_ = 0.5f;            // 下限（下を向きすぎないため）
+
+	// --- マウス操作のロック ---
+	bool mouseControlEnabled_ = true;  // false の間はマウスでカメラを動かせない
 
 	bool initializedAngle_ = false;
 	bool initializedPosY_ = false;

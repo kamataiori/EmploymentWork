@@ -81,7 +81,7 @@ private:
 
 	// ---- 調整パラメータ ----
 	const int   kHitDamage_     = 50;    // 1突進の大ダメージ（雑魚HP5は即死／ボスHP300を大きく削る）
-	const float kDashSpeed_     = 70.0f; // 突進速度[ユニット/秒]（一気に詰め寄る）
+	const float kDashSpeed_     = 120.0f; // 突進速度[ユニット/秒]（一気に詰め寄る）
 	const float kStandoffDist_  = 2.0f;  // ターゲット中心の手前どれだけで「到達」とするか
 	const float kDashTimeout_   = 1.5f;  // 1突進の上限[秒]。超えたら強制命中（無限ロック防止の保険）
 	const float kImpactDuration_ = 0.10f;// 命中ごとのヒットストップ[秒]
