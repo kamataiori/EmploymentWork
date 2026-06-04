@@ -11,6 +11,8 @@
 #include "Camera/CameraEffectController.h"
 
 class IEnemyTargetProvider;
+class ParticleManager;
+class ParticleEmitterInstance;
 
 class Player : public ObjectBase
 {
@@ -21,6 +23,9 @@ public:
 	/// </summary>
 	/// <param name="baseScene_"></param>
 	Player(BaseScene* baseScene_) : ObjectBase(baseScene_) {}
+
+	// 前方宣言した型を unique_ptr で持つため、デストラクタは cpp 側で定義する
+	~Player() override;
 
 	/// <summary>
 	/// 初期化処理
@@ -189,5 +194,18 @@ private:
 	std::unique_ptr<Sword> sword_;
 
 	CameraEffectController* cameraEffect_ = nullptr;
+
+	// =============================
+	// 通常状態の剣オーラ用パーティクル
+	// =============================
+	// 剣（持ち手のボーン）から立ち上るオーラを、何もしていない通常状態のときだけ出す。
+	std::unique_ptr<ParticleManager> swordAura_;
+	// swordAura_ が保持する持続エミッタへの参照（毎フレーム位置だけ追従させる）
+	ParticleEmitterInstance* auraEmitter_ = nullptr;
+	// Play/Stop は状態が切り替わった瞬間だけ呼ぶための現在再生フラグ
+	bool auraPlaying_ = false;
+
+	// SwordAura.json のプリセット名（ファイル名と一致）
+	const std::string kSwordAuraPresetName_ = "SwordAura";
 
 };

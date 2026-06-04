@@ -46,6 +46,9 @@ public:
 	bool IsAttacking() const { return attacking_; }
 	bool HasComboReserve() const { return comboReserve_; }
 
+	// E キーのスキル（回転斬り）が発動中か（剣オーラの演出制御などに使う）
+	bool IsESkillActive() const { return eSkill_ && eSkill_->IsActive(); }
+
 	// 当たり判定を出してよい区間か（攻撃中 かつ ヒットウィンドウ内）。
 	// ウィンドウはアニメ進行度(0〜1)で持つので、再生速度を変えても同期する。
 	bool IsHitActive() const;

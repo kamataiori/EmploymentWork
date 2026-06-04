@@ -2,6 +2,7 @@
 #include "PlayerWeapon.h"
 #include <FollowCamera.h>
 #include "engine/TimeManager.h"
+#include "ParticleManager.h"
 
 #ifdef max
 #undef max
@@ -9,6 +10,10 @@
 #ifdef min
 #undef min
 #endif
+
+// 前方宣言した ParticleManager / ParticleEmitterInstance がここでは完全型になるため、
+// unique_ptr メンバを安全に破棄できる。
+Player::~Player() = default;
 
 void Player::Initialize()
 {
@@ -77,11 +82,21 @@ void Player::Initialize()
 	weapon_->Initialize();
 
 
-	//poweder = std::make_unique<ParticleManager>();
-	//poweder->Initialize(ParticleManager::VertexDataType::Plane);
-
-	//// Resources/Particle/*.json を読み込んでおく（fire.json を想定）
-	//poweder->LoadAllPresets();
+	// ===== 通常状態の剣オーラ用パーティクル =====
+	// 何もしていないときに剣から立ち上るオーラ。持続エミッタを1つだけ生成して保持し、
+	// 毎フレーム位置の追従と Play/Stop の切り替えだけ行う。
+	swordAura_ = std::make_unique<ParticleManager>();
+	swordAura_->Initialize(VertexDataType::Plane);
+	swordAura_->LoadAllPresets(); // Resources/Particle/SwordAura.json を含めて読み込む
+	if (camera_) {
+		swordAura_->SetCamera(camera_);
+	}
+	// 持続エミッタを生成（repeat=true のプリセット）。最初は止めておき、通常状態で再生する。
+	auraEmitter_ = swordAura_->EmitPreset(kSwordAuraPresetName_, transform);
+	if (auraEmitter_) {
+		auraEmitter_->Stop();
+	}
+	auraPlaying_ = false;
 }
 
 void Player::SetEnemyTargetProvider(IEnemyTargetProvider* provider)
@@ -122,6 +137,15 @@ void Player::Update()
 		if (sword_) {
 			sword_->SetHitEnabled(false);
 			sword_->Update();
+		}
+
+		// 死亡中はオーラを止める（残っている粒子はフェードしながら消える）
+		if (swordAura_) {
+			if (auraEmitter_ && auraPlaying_) {
+				auraEmitter_->Stop();
+				auraPlaying_ = false;
+			}
+			swordAura_->Update();
 		}
 
 		return;
@@ -187,7 +211,34 @@ void Player::Update()
 	sp.center = colliderTranslate_;
 	sp.radius = sphereRadius_;
 
-	/*poweder->Update();*/
+	// ===== E スキル（回転斬り）発動中だけ剣からオーラを出す =====
+	bool eSkillActive = false;
+	if (auto w = dynamic_cast<PlayerWeapon*>(weapon_.get())) {
+		eSkillActive = w->IsESkillActive();
+	}
+	const bool auraShouldPlay = !isDead_ && eSkillActive;
+	if (swordAura_ && auraEmitter_) {
+		// 剣そのもののワールド座標へエミッタを追従させる
+		// （手に持っている間も、スキルで切り離して振り回している間も剣の位置に付いてくる）
+		Transform auraTf = transform;
+		if (sword_) {
+			auraTf.translate = sword_->GetWorldPosition();
+		}
+		auraEmitter_->SetTransform(auraTf);
+
+		// Play() は emitTimer をリセットするため、状態が切り替わった瞬間だけ呼ぶ
+		if (auraShouldPlay && !auraPlaying_) {
+			auraEmitter_->Play();
+			auraPlaying_ = true;
+		}
+		else if (!auraShouldPlay && auraPlaying_) {
+			auraEmitter_->Stop();
+			auraPlaying_ = false;
+		}
+	}
+	if (swordAura_) {
+		swordAura_->Update();
+	}
 }
 
 void Player::UpdateVisual()
@@ -225,7 +276,9 @@ void Player::AnimationDraw()
 
 void Player::ParticleDraw()
 {
-	/*poweder->Draw();*/
+	if (swordAura_) {
+		swordAura_->Draw();
+	}
 }
 
 void Player::OnCollision()
@@ -292,9 +345,9 @@ void Player::SetCamera(Camera* camera)
 	sword_->SetCamera(camera);
 
 	// パーティクル側にも同じカメラを渡す
-	/*if (poweder) {
-		poweder->SetCamera(camera);
-	}*/
+	if (swordAura_) {
+		swordAura_->SetCamera(camera);
+	}
 
 	// 必要なら武器や他のオブジェクトにもここで渡せる
 	// if (weapon_) { weapon_->SetCamera(camera); } みたいな感じで拡張可能

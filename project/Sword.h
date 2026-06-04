@@ -29,6 +29,15 @@ public:
 
 	MultiCollider* GetMultiCollider() const { return multiCollider_.get(); }
 
+	/// <summary>
+	/// 剣の現在のワールド座標を返す（親ボーン追従中・切り離して移動中のどちらも反映する）。
+	/// オーラ等のパーティクルを剣に追従させるのに使う。
+	/// </summary>
+	Vector3 GetWorldPosition() const {
+		const Matrix4x4& w = object3d_->GetWorldMatrix();
+		return { w.m[3][0], w.m[3][1], w.m[3][2] };
+	}
+
 	// プレイヤーのTransformを参照して向き(yaw)を取る
 	void SetPlayerTransform(const Transform* t) { playerTransform_ = t; }
 
