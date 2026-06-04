@@ -7,6 +7,8 @@
 #include <array>
 #include <memory>
 
+class IDamagePopupSink;
+
 //======================================================
 // MinionEnemy（雑魚敵）
 //------------------------------------------------------
@@ -64,6 +66,9 @@ public:
 	void ResetRound() { actedThisRound_ = false; }
 	// 待機中にプレイヤーの方を向くための参照を渡す（毎フレーム更新でよい）
 	void SetPlayerTarget(const Transform* t) { playerTarget_ = t; }
+
+	// ダメージ数値ポップアップの注入口（Scene 所有。Enemy 経由で渡される）
+	void SetDamagePopupSink(IDamagePopupSink* sink) { damageSink_ = sink; }
 
 private:
 	enum class Phase {
@@ -159,6 +164,9 @@ private:
 	static constexpr float kHitShakeYAttenuation_ = 0.5f; // Y方向シェイクの振幅減衰係数
 	static constexpr float kHitShakePhaseZ_ = 1.7f;   // Z方向の初期位相（X とずらすため）
 	static constexpr float kHitShakePhaseY_ = 0.5f;   // Y方向の初期位相
+
+	// ダメージ数値ポップアップの注入口（Scene 所有。参照のみ）
+	IDamagePopupSink* damageSink_ = nullptr;
 
 	// 撃破時の爆発パーティクル（シェイク後に1回だけ発生）
 	std::unique_ptr<ParticleManager> particles_;          // この個体専用のパーティクル

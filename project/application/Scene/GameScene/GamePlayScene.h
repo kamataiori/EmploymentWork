@@ -16,6 +16,7 @@
 #include "Camera/CameraEffectController.h"
 #include "SkyBox.h"
 #include "engine/UI/UIManager.h"
+#include "engine/UI/DamagePopupManager.h"
 #include "PauseScreen.h"
 
 class GamePlayScene : public BaseScene
@@ -113,6 +114,9 @@ private:
 	std::unique_ptr<SceneController>  stage_;
 	std::unique_ptr<Sprite>           ex;
 	std::unique_ptr<UIManager>        uiManager_;
+
+	// 敵への与ダメージ数値ポップアップ（敵へ注入する）
+	std::unique_ptr<DamagePopupManager> damagePopup_;
 
 	// PauseScreen の所有は uiManager_。こちらは状態監視用の非所有参照。
 	PauseScreen* pauseScreenRef_ = nullptr;

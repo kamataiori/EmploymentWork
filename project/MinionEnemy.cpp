@@ -1,6 +1,7 @@
 #include "MinionEnemy.h"
 #include "engine/TimeManager.h"
 #include "engine/3d/Camera/Camera.h"
+#include "engine/UI/IDamagePopupSink.h"
 #include <WinApp.h>
 #include <cmath>
 
@@ -412,6 +413,11 @@ void MinionEnemy::ApplyDamage(int amount)
 {
 	// 既にヒット/爆発演出に入っている、または死亡確定後は無視（多段ヒット防止）
 	if (isDead_ || phase_ == Phase::Hit || phase_ == Phase::Explode) return;
+
+	// 与ダメージ量を雑魚の右上にポップアップ表示
+	if (damageSink_ && amount > 0) {
+		damageSink_->SpawnDamage(GetTargetCenter(), amount);
+	}
 
 	hp_ -= amount;
 	if (hp_ <= 0) {

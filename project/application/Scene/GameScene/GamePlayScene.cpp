@@ -3,6 +3,7 @@
 #include "SceneManager.h"
 #include "engine/UI/UITexture.h"
 #include "engine/UI/PlayerHpPipBar.h"
+#include "engine/UI/NumberDisplay.h"
 #include "CursorService.h"
 #include <OffscreenRendering.h>
 #include <MyGame.h>
@@ -80,6 +81,11 @@ void GamePlayScene::Initialize()
 	player_->SetEnemyTargetProvider(enemy_.get());
 	player_->SetCameraEffect(cameraEffect_.get());
 	enemy_->SetCameraEffect(cameraEffect_.get());
+
+	// 与ダメージ数値ポップアップ（敵の右上に表示）を生成し、敵へ注入する
+	damagePopup_ = std::make_unique<DamagePopupManager>();
+	damagePopup_->SetCamera(followCamera.get());
+	enemy_->SetDamagePopupSink(damagePopup_.get());
 
 	// 全オブジェクトに followCamera をセット
 	sky->SetCamera(followCamera.get());
@@ -241,7 +247,7 @@ void GamePlayScene::Initialize()
 	{
 		PlayerHpPipBar::CreateDesc d{};
 		d.pipTexPath = "Resources/HP.png";
-		d.startPos   = { 48.0f, 640.0f }; // 左端。health_ui と重ならないよう少し下げる
+		d.startPos   = { 64.0f, 640.0f }; // 左端。health_ui と重ならないよう少し下げる
 		d.pipSize    = { 8.0f, 24.0f };
 		d.spacing    = 2.0f;
 		d.maxHp      = 275;
@@ -259,6 +265,43 @@ void GamePlayScene::Initialize()
 		d.pos     = { 48.0f, 592.0f };    // HP の一番左、高さはゲージ台座と同じ y=592
 		d.layer   = 101;                  // HPピップ(100)の上
 		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// health_ui の右隣：現在HP（数字・右寄せで右端固定）
+	{
+		NumberDisplay::CreateDesc d{};
+		d.dir       = "Resources/number/";
+		d.pos       = { 174.0f, 592.0f }; // 右端を x=174 に固定（桁数が変わっても右端不動）
+		d.digitSize = { 18.0f, 24.0f };
+		d.spacing   = 2.0f;
+		d.align     = NumberDisplay::Align::Right;
+		d.source    = NumberDisplay::Source::CurrentHp;
+		d.layer     = 101;
+		uiManager_->Add(NumberDisplay::Create(d));
+	}
+
+	// 現在HPとmaxHPの間：仕切り（縦棒）
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/verticalBar_ui.png";
+		d.size    = { 6.0f, 28.0f };
+		d.anchor  = { 0.0f, 0.5f };       // 左端・縦中央
+		d.pos     = { 182.0f, 592.0f };   // 現在HP(右端174)とmaxHPの間
+		d.layer   = 101;
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// verticalBar の右隣：最大HP（数字・左寄せ）
+	{
+		NumberDisplay::CreateDesc d{};
+		d.dir       = "Resources/number/";
+		d.pos       = { 196.0f, 592.0f }; // 仕切りの右から左寄せで並べる
+		d.digitSize = { 18.0f, 24.0f };
+		d.spacing   = 2.0f;
+		d.align     = NumberDisplay::Align::Left;
+		d.source    = NumberDisplay::Source::MaxHp;
+		d.layer     = 101;
+		uiManager_->Add(NumberDisplay::Create(d));
 	}
 
 	auto pause = std::make_unique<PauseScreen>();
@@ -423,6 +466,11 @@ void GamePlayScene::Update()
 
 	if (uiManager_->IsModalActive()) {
 		return;
+	}
+
+	// 与ダメージ数値ポップアップの更新（浮き上がり・フェード・寿命）
+	if (damagePopup_) {
+		damagePopup_->Update(TimeManager::GetInstance()->GetDeltaTime());
 	}
 
 	// =========================
@@ -629,6 +677,7 @@ void GamePlayScene::ForeGroundDraw()
 	//ex->Draw();
 	player_->ForeGroundDraw();
 	enemy_->ForeGroundDraw();
+	if (damagePopup_) damagePopup_->Draw(); // 敵の右上に与ダメージ数値
 	uiManager_->Draw();
 	player_->ParticleDraw();
 	enemy_->ParticleDraw();

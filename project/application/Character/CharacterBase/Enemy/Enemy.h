@@ -13,6 +13,7 @@ class EnemySplitBullet;
 class UIManager;
 class EnemyStateManager;
 class CameraEffectController;
+class IDamagePopupSink;
 
 struct SkeltonAnimationSet {
 	std::string Death = "Death";
@@ -164,6 +165,9 @@ public:
 	void SetCameraEffect(CameraEffectController* fx) { cameraEffect_ = fx; }
 	CameraEffectController* GetCameraEffect() const { return cameraEffect_; }
 
+	// ダメージ数値ポップアップの注入口（Scene が所有。Enemy・配下minionで共有）
+	void SetDamagePopupSink(IDamagePopupSink* sink);
+
 	// 回転薙ぎ払いの着地エフェクト（土煙）を pos に発生させる
 	void SpawnSpinLandEffect(const Vector3& pos);
 
@@ -239,6 +243,9 @@ private:
 
 	// カメラ演出コントローラ（Scene 所有。Enemy は参照のみ）
 	CameraEffectController* cameraEffect_ = nullptr;
+
+	// ダメージ数値ポップアップの注入口（Scene 所有。Enemy は参照のみ）
+	IDamagePopupSink* damageSink_ = nullptr;
 
 	// 現在突進シーケンスを実行中の雑魚敵（1体ずつ順番に動かす）
 	MinionEnemy* activeMinion_ = nullptr;

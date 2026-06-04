@@ -5,6 +5,7 @@
 #include <SceneManager.h>
 #include "engine/UI/UIManager.h"
 #include <engine/UI/UIHpBar.h>
+#include "engine/UI/IDamagePopupSink.h"
 #include <EnemySplitBullet.h>
 #include <MinionEnemy.h>
 #include "State/EnemyStateManager.h"
@@ -392,6 +393,11 @@ void Enemy::ApplyDamage(int amount)
 {
 	if (isDead_) return;
 
+	// 与ダメージ量を敵の右上にポップアップ表示（敵への加害は全てプレイヤー由来）
+	if (damageSink_ && amount > 0) {
+		damageSink_->SpawnDamage(GetTargetCenter(), amount);
+	}
+
 	hp_ -= amount;
 	if (hp_ < 0) hp_ = 0;
 
@@ -532,7 +538,17 @@ void Enemy::SpawnMinion(const Vector3& spawnPos)
 	// SetCamera は必ず InitializeMinion の後に呼ぶ
 	m->InitializeMinion(spawnPos);
 	m->SetCamera(GetCamera());
+	m->SetDamagePopupSink(damageSink_); // 雑魚にもダメージ表示の注入口を渡す
 	minions_.push_back(std::move(m));
+}
+
+// ダメージ数値ポップアップの注入口をセット（自分＋既存の配下minionへ反映）
+void Enemy::SetDamagePopupSink(IDamagePopupSink* sink)
+{
+	damageSink_ = sink;
+	for (auto& m : minions_) {
+		if (m) m->SetDamagePopupSink(sink);
+	}
 }
 
 // 回転薙ぎ払いの着地エフェクト（衝撃波）を発生させる
