@@ -80,6 +80,8 @@ private:
 		Slam,       // 急降下
 		Shockwave,  // 着地直後の衝撃波
 		Recover,    // 急降下後の硬直（無防備な反撃チャンス）
+		HitLag,     // 被弾直後のヒットラグ（ヒットストップ中、その場で小刻みに震える → 吹っ飛びへ）
+		Knockback,  // 被弾ノックバック（スマブラ風に吹っ飛び → 着地して待機へ復帰）
 		Hit,        // 被弾ヒット演出（固まって小刻みシェイク → 爆発へ）
 		Explode,    // シェイク後の爆発演出（パーティクル再生 → 消滅）
 	};
@@ -142,6 +144,38 @@ private:
 	float scaleRecoverDuration_ = 0.3f;   // 潰れスケールが通常へ戻るまでの時間（硬直より短く）
 	float recoverTimer_ = 0.0f;
 	Vector3 impactScale_ = { 1.3f, 0.6f, 1.3f }; // 着地で潰れるスケール（Recoverで通常へ戻す）
+
+	// 被弾直後の“ヒットラグ”：ヒットストップで世界が止まっている間、minion だけ
+	// その場で小刻みに震える（スマブラのヒットラグ＝命中時の痙攣に相当）。
+	// 世界が止まっていても震えを見せるため、シェイクは UnscaledDeltaTime で進める。
+	Vector3 hitLagBasePos_{};                              // 震えの基準位置（＝吹っ飛び開始位置）
+	float hitLagTimer_ = 0.0f;                             // ヒットラグ経過時間（実時間で計測）
+	static constexpr float kHitLagDuration_ = 0.11f;       // 震える時間（ヒットストップの止め時間に合わせる）
+	static constexpr float kHitLagShakeAmplitude_ = 0.34f; // 震えの振幅（ワールド単位）
+	static constexpr float kHitLagShakeFreq_ = 95.0f;      // 震えの周波数(rad/s：細かく速く震わせる)
+
+	// 被弾時のヒットストップ（世界を一瞬止める量）。Light プリセットより少し長めにして
+	// 「止め＋震え」をはっきり見せる。HitLag の震え時間(kHitLagDuration_)とおおよそ揃える。
+	static constexpr float kHitStopMinScale_ = 0.0f;       // 止め中の時間倍率（0=完全フリーズ）
+	static constexpr float kHitStopFreezeSeconds_ = 0.07f; // 完全フリーズを維持する秒数
+	static constexpr float kHitStopRecoverSeconds_ = 0.05f;// 通常速度へ戻す復帰秒数
+
+	// 被弾ノックバック（撃破に至らない通常ヒットで“吹っ飛ぶ”手応えを出す）。
+	// プレイヤーと反対方向へ打ち上げ → 重力で落下 → 着地して止まったら待機へ戻す。
+	// dt は TimeManager（ヒットストップ適用後）から取るので、着弾直後のフリーズ中は
+	// 動かず、止め明けと同時に“ぐんっ”と吹っ飛ぶ＝一発の手応えが際立つ。
+	Vector3 knockbackVel_{};                                  // 現在の吹っ飛び速度
+	float knockbackTimer_ = 0.0f;                             // ノックバック経過時間（復帰判定・伸び戻しに使用）
+	static constexpr float kKnockbackSpeed_ = 46.0f;          // 水平初速（プレイヤーと反対へ勢いよく速く吹っ飛ばす）
+	static constexpr float kKnockbackUp_ = 23.0f;             // 打ち上げ初速（高めに浮かせて大きな弧を描かせる）
+	static constexpr float kKnockbackGravity_ = 44.0f;        // 落下加速度
+	static constexpr float kKnockbackAirFriction_ = 0.4f;     // 空中の水平減衰係数(/s：ほぼ無摩擦で“飛ばす”)
+	static constexpr float kKnockbackGroundFriction_ = 12.0f; // 着地後の水平減衰係数(/s：着地したら素早く止める)
+	static constexpr float kKnockbackBounce_ = 0.35f;         // 着地時の跳ね返り係数（小さくバウンド）
+	static constexpr float kKnockbackSpinSpeed_ = 10.0f;      // 吹っ飛び中の回転(rad/s：飛びを邪魔しない程度に回す)
+	static constexpr float kKnockbackMaxDuration_ = 1.5f;     // 安全な最大持続（高く飛んでも着地まで飛びきれる長さ＋上限）
+	static constexpr float kKnockbackEndSpeed_ = 2.0f;        // この水平速度未満＋接地で復帰
+	static constexpr Vector3 kKnockbackStretch_ = { 0.8f, 1.3f, 0.8f }; // 打ち上げ時の伸び（着地で通常へ戻す）
 
 	// 生きた待機（Idle演出）：完全静止にせず、ホバー揺れ＋プレイヤー追従
 	const Transform* playerTarget_ = nullptr; // プレイヤー参照（向き追従用）

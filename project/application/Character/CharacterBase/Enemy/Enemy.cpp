@@ -1,4 +1,5 @@
 #include "Enemy.h"
+#include "engine/TimeManager.h"
 #include "application/Character/CharacterBase/Enemy/AI/EnemyAIController.h"
 #include "EnemyDropBullet.h"
 #include <CollisionTypeIdDef.h>
@@ -164,7 +165,7 @@ void Enemy::Update()
 				}
 			}
 
-			// ★ 雑魚敵の更新
+			// 雑魚敵の更新
 			for (auto it = minions_.begin(); it != minions_.end(); )
 			{
 				(*it)->SetPlayerTarget(target_); // 待機中の向き追従用
@@ -180,7 +181,7 @@ void Enemy::Update()
 				}
 			}
 
-			// ★ 雑魚敵を1体ずつ順番に突進させる
+			// 雑魚敵を1体ずつ順番に突進させる
 			UpdateMinionCoordinator();
 
 			UpdateSplitBulletFiring(dt);
@@ -416,11 +417,20 @@ void Enemy::ApplyDamage(int amount)
 		deathTimer_ = 0.0f;
 		deathStartScale_ = transform.scale;
 		hasSpawnedExplosion_ = false;
+
+		// トドメの一撃：強めの完全フリーズで「決まった」手応えを出す。
+		// （撃破後はシーン側で撃破スローモーションへ繋がるが、
+		//   それとは別レイヤーなので一瞬の“止め”を重ねても干渉しない）
+		TimeManager::GetInstance()->RequestHitStop(HitStopPreset::Heavy());
 		return;
 	}
 
 	SetAnimationIfChanged(animation_.HitReact);
 	hitReactTimer_ = kHitReactDuration_;
+
+	// 通常ヒット：当たった瞬間に軽くフリーズさせて打撃感を出す。
+	// アニメーションだけでは伝わりづらかった「当てている実感」をここで補う。
+	TimeManager::GetInstance()->RequestHitStop(HitStopPreset::Light());
 
 	// 被弾時のヒットパーティクルを発生
 	if (deathSystem_) {
