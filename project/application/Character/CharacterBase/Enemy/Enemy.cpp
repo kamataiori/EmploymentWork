@@ -1,4 +1,5 @@
 #include "Enemy.h"
+#include "engine/TimeManager.h"
 #include "application/Character/CharacterBase/Enemy/AI/EnemyAIController.h"
 #include "EnemyDropBullet.h"
 #include <CollisionTypeIdDef.h>
@@ -164,7 +165,7 @@ void Enemy::Update()
 				}
 			}
 
-			// ★ 雑魚敵の更新
+			// 雑魚敵の更新
 			for (auto it = minions_.begin(); it != minions_.end(); )
 			{
 				(*it)->SetPlayerTarget(target_); // 待機中の向き追従用
@@ -180,7 +181,7 @@ void Enemy::Update()
 				}
 			}
 
-			// ★ 雑魚敵を1体ずつ順番に突進させる
+			// 雑魚敵を1体ずつ順番に突進させる
 			UpdateMinionCoordinator();
 
 			UpdateSplitBulletFiring(dt);
@@ -212,8 +213,38 @@ void Enemy::Update()
 		}
 	}
 
-	object3d_->SetTranslate(transform.translate);
-	object3d_->SetScale(transform.scale);
+	// 被弾リアクション層：AI が決めた transform に“視覚オフセット”を上乗せする。
+	// transform 本体は触らないので、AI／当たり判定はリアクションの影響を受けない。
+	Vector3 visualPos = transform.translate;
+	Vector3 visualScale = transform.scale;
+	if (hitFxTimer_ > 0.0f) {
+		// ヒットストップで世界が止まっていても見せたいので、実時間で減衰させる
+		hitFxTimer_ -= TimeManager::GetInstance()->GetUnscaledDeltaTime();
+		if (hitFxTimer_ < 0.0f) hitFxTimer_ = 0.0f;
+
+		const float remain = hitFxTimer_ / kHitFxDuration_;   // 1→0（被弾直後が最大、終わりに向け減衰）
+		const float elapsed = kHitFxDuration_ - hitFxTimer_;
+
+		// 小刻みな震え（X/Y/Z で周波数・位相をずらす）
+		const float amp = kHitFxShakeAmplitude_ * remain;
+		visualPos.x += std::sin(elapsed * kHitFxShakeFreq_) * amp;
+		visualPos.y += std::sin(elapsed * kHitFxShakeFreq_ * 1.3f + 0.5f) * amp * 0.6f;
+		visualPos.z += std::cos(elapsed * kHitFxShakeFreq_ * 1.1f) * amp;
+
+		// 小さな後退（プレイヤーと反対へ怯み、減衰でバネのように戻る）
+		const float recoil = kHitFxRecoilDistance_ * remain;
+		visualPos.x += hitFxRecoilDir_.x * recoil;
+		visualPos.z += hitFxRecoilDir_.z * recoil;
+
+		// つぶれ（Yを縮め、XZを少し広げる）。被弾直後が最大で通常へ戻る。
+		const float s = kHitFxSquash_ * remain;
+		visualScale.y *= (1.0f - s);
+		visualScale.x *= (1.0f + s * 0.5f);
+		visualScale.z *= (1.0f + s * 0.5f);
+	}
+
+	object3d_->SetTranslate(visualPos);
+	object3d_->SetScale(visualScale);
 	object3d_->SetRotate(transform.rotate);
 	object3d_->Update();
 
@@ -416,11 +447,39 @@ void Enemy::ApplyDamage(int amount)
 		deathTimer_ = 0.0f;
 		deathStartScale_ = transform.scale;
 		hasSpawnedExplosion_ = false;
+
+		// トドメの一撃：強めの完全フリーズで「決まった」手応えを出す。
+		// （撃破後はシーン側で撃破スローモーションへ繋がるが、
+		//   それとは別レイヤーなので一瞬の“止め”を重ねても干渉しない）
+		TimeManager::GetInstance()->RequestHitStop(HitStopPreset::Heavy());
 		return;
 	}
 
 	SetAnimationIfChanged(animation_.HitReact);
 	hitReactTimer_ = kHitReactDuration_;
+
+	// 通常ヒット：当たった瞬間に軽くフリーズさせて打撃感を出す。
+	// アニメーションだけでは伝わりづらかった「当てている実感」をここで補う。
+	TimeManager::GetInstance()->RequestHitStop(HitStopPreset::Light());
+
+	// 被弾リアクション（仰け反り）を起動：ヒットストップ中の震え＋つぶれ＋小さな後退。
+	// 吹っ飛ばさず、プレイヤーと反対方向へ怯ませる。
+	{
+		Vector3 away{ 0.0f, 0.0f, 0.0f };
+		if (target_) {
+			away = transform.translate - target_->translate;
+			away.y = 0.0f;
+		}
+		// プレイヤー情報が無い／真上で重なる等で向きが定まらないときは、自分の正面と逆へ。
+		const float awayLen = std::sqrt(away.x * away.x + away.z * away.z);
+		if (awayLen > 1e-4f) {
+			hitFxRecoilDir_ = { away.x / awayLen, 0.0f, away.z / awayLen };
+		}
+		else {
+			hitFxRecoilDir_ = { -std::sin(transform.rotate.y), 0.0f, -std::cos(transform.rotate.y) };
+		}
+		hitFxTimer_ = kHitFxDuration_;
+	}
 
 	// 被弾時のヒットパーティクルを発生
 	if (deathSystem_) {

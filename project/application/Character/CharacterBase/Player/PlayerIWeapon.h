@@ -22,21 +22,30 @@ public:
 	// デバッグ描画など（必要なら）
 	virtual void Draw() = 0;
 
+	// 前景（2D UI）の描画。アルティメットのロックオンUIなどをスキルへ委譲する。
+	// デフォルトは何もしない（UIを持たない武器実装を壊さないよう非純粋）。
+	virtual void ForeGroundDraw() {}
+
 	// 通常攻撃トリガ
 	virtual void NormalAttack() = 0;
 
 	/// <summary>
-	/// スキル1
+	/// スキル1（E キー／回転斬り）
 	/// </summary>
 	virtual void Skill() = 0;
 
 	/// <summary>
-	/// アルティメット
+	/// スキル2（V キー／突進乱舞）
+	/// </summary>
+	virtual void Skill2() = 0;
+
+	/// <summary>
+	/// アルティメット（Q キー／内容は今後実装）
 	/// </summary>
 	virtual void Ultimate() = 0;
 
 	/// <summary>
-	/// アルティメットが攻撃対象を引くための供給元を注入する。
+	/// スキル2（突進乱舞）が攻撃対象を引くための供給元を注入する。
 	/// </summary>
 	virtual void SetEnemyTargetProvider(IEnemyTargetProvider* provider) = 0;
 

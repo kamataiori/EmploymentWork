@@ -243,6 +243,9 @@
     <ClCompile Include="application\Character\CharacterBase\Player\RushSlashSkill.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="application\Character\CharacterBase\Player\UltimateSkill.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="engine\Collision\MultiCollider.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -708,6 +711,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Character\CharacterBase\Player\RushSlashSkill.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Player\UltimateSkill.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Character\CharacterBase\ITarget.h">

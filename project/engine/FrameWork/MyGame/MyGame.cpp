@@ -97,9 +97,16 @@ void MyGame::Update()
 	// ImGuiのフレーム開始
 	imGuiManager_->Update();
 
+	// BTエディタ専用シーン (ENEMYBT) では UE5風 EditorLayout を出さず、
+	// BTエディタ画面だけを全画面で見せる
+	const bool hideEditorLayout =
+		(SceneManager::GetInstance()->GetCurrentSceneName() == "ENEMYBT");
+
 	// UE5風レイアウト(DockSpace + 各パネル)を先に構築
 	//    (再生中でも停止中でも毎フレーム動く)
-	editorLayout_->BeginFrame();
+	if (!hideEditorLayout) {
+		editorLayout_->BeginFrame();
+	}
 #endif // USE_IMGUI
 
 #ifdef USE_IMGUI
@@ -122,8 +129,10 @@ void MyGame::Update()
 	}
 
 #ifdef USE_IMGUI
-	// レイアウトの後処理
-	editorLayout_->EndFrame();
+	// レイアウトの後処理 (BeginFrame を呼んだ時だけ EndFrame する)
+	if (!hideEditorLayout) {
+		editorLayout_->EndFrame();
+	}
 
 	// ImGuiの内部コマンドを生成
 	ImGui::Render();
