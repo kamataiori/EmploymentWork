@@ -194,6 +194,20 @@ private:
 	float hitReactTimer_ = 0.0f;
 	static inline constexpr float kHitReactDuration_ = 0.2f; // 秒
 
+	// === 被弾リアクション層（仰け反り） ===
+	// 巨体ボスは雑魚のように吹っ飛ばさず、その場で「殴られた反応」を見せる。
+	// AI ステートマシンが transform を駆動しているため、ここでは transform 本体を
+	// 書き換えず、object3d_ へ渡す直前に“視覚オフセット”として上乗せして減衰させる
+	// （hitReactTimer_ と同じく AI に干渉しない作り）。
+	// ヒットストップで世界が止まっていても震えを見せたいので、実時間(unscaled)で進める。
+	float hitFxTimer_ = 0.0f;           // リアクション残り時間（実時間。0 で無効）
+	Vector3 hitFxRecoilDir_{};          // 仰け反る向き（プレイヤーと反対の水平単位ベクトル）
+	static constexpr float kHitFxDuration_ = 0.24f;        // リアクション全体の長さ（秒：のけぞりが読めるよう少し長め）
+	static constexpr float kHitFxShakeAmplitude_ = 0.22f;  // 震えの振幅（巨体なので雑魚より控えめ）
+	static constexpr float kHitFxShakeFreq_ = 95.0f;       // 震えの周波数(rad/s)
+	static constexpr float kHitFxRecoilDistance_ = 1.4f;   // 後退の最大量（はっきり仰け反らせる。吹っ飛びにはしない）
+	static constexpr float kHitFxSquash_ = 0.16f;          // つぶれ量（Yを縮め、XZを少し広げる）
+
 	// AIはここに閉じ込める
 	std::unique_ptr<EnemyAIController> aiController_;
 	const Transform* target_ = nullptr; // Player の Transform を参照

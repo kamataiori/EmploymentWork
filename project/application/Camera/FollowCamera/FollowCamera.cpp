@@ -41,13 +41,13 @@ void FollowCamera::Update()
 	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += keyOrbitSpeed_;
 
 	// マウス操作が許可されている間だけカメラを動かす。
-	// （アルティメット発動中は mouseControlEnabled_=false でマウスのカメラ操作を止める）
+	// （スキル発動中など mouseControlEnabled_=false でマウスのカメラ操作を止める）
 	if (mouseControlEnabled_) {
-		// 左右：水平の周回角
-		angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
+		// 左右：水平の周回角（スロー演出中は感度スケールでゆっくりにする）
+		angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_ * mouseSensitivityScale_;
 
 		// 上下：見下ろし角（マウスを下げると見下ろし、上げると見上げ）
-		cameraPitch_ += Input::GetInstance()->GetMouseDelta().y * pitchSensitivity_;
+		cameraPitch_ += Input::GetInstance()->GetMouseDelta().y * pitchSensitivity_ * mouseSensitivityScale_;
 		cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
 	}
 
@@ -109,6 +109,21 @@ void FollowCamera::Update()
 	lookAt.z += camShiftZ;
 
 	// =============================
+	// シネマティック上書き：通常追従ポーズと演出ポーズを weight で補間する
+	// （アルティメットの見下ろし演出などで使用。weight=0 なら完全に通常追従）
+	// =============================
+	const bool cinematic = (cineWeight_ > 0.0001f);
+	if (cinematic) {
+		const float w = std::clamp(cineWeight_, 0.0f, 1.0f);
+		transform.translate.x += (cinePos_.x - transform.translate.x) * w;
+		transform.translate.y += (cinePos_.y - transform.translate.y) * w;
+		transform.translate.z += (cinePos_.z - transform.translate.z) * w;
+		lookAt.x += (cineLook_.x - lookAt.x) * w;
+		lookAt.y += (cineLook_.y - lookAt.y) * w;
+		lookAt.z += (cineLook_.z - lookAt.z) * w;
+	}
+
+	// =============================
 	// 向き：lookAt に向ける（Yaw + Pitch）
 	// =============================
 	Vector3 dir = Normalize(lookAt - transform.translate);
@@ -118,8 +133,10 @@ void FollowCamera::Update()
 	const float horizontalLength = std::sqrt(dir.x * dir.x + dir.z * dir.z);
 	float pitch = std::atan2(-dir.y, horizontalLength);
 
-	// Pitch クランプ（下向きのみ）
-	pitch = std::clamp(pitch, pitchMin_, pitchMax_);
+	// Pitch クランプ（下向きのみ）。ただし見下ろし演出中は真下も向けるようクランプしない。
+	if (!cinematic) {
+		pitch = std::clamp(pitch, pitchMin_, pitchMax_);
+	}
 	transform.rotate.x = pitch;
 
 	Camera::Update();

@@ -75,10 +75,32 @@ public: // カメラの高さ関係
 
 	/// <summary>
 	/// マウスによるカメラ操作の有効/無効を切り替える。
-	/// （アルティメット発動中など、カメラを固定したい場面で false にする）
+	/// （スキル発動中など、カメラを固定したい場面で false にする）
 	/// </summary>
 	void SetMouseControlEnabled(bool v) { mouseControlEnabled_ = v; }
 	bool IsMouseControlEnabled() const { return mouseControlEnabled_; }
+
+	/// <summary>
+	/// マウス感度の一時的な倍率（yaw/pitch 両方に掛かる）。
+	/// アルティメットのスローモーション中など、カメラをゆっくり動かしたい場面で下げる。
+	/// 1.0=通常。演出が終わったら 1.0 に戻すこと。
+	/// </summary>
+	void SetMouseSensitivityScale(float s) { mouseSensitivityScale_ = s; }
+	float GetMouseSensitivityScale() const { return mouseSensitivityScale_; }
+
+	/// <summary>
+	/// シネマティック上書き（アルティメット等の演出用）。
+	/// 毎フレーム、演出側から「望むカメラ位置 / 注視点 / ブレンド率(0=通常追従,1=指定ポーズ)」を与える。
+	/// weight を 0→1→0 と補間すれば、追従⇔演出の出入りが滑らかになる。
+	/// </summary>
+	void SetCinematicBlend(const Vector3& pos, const Vector3& lookAt, float weight) {
+		cinePos_ = pos;
+		cineLook_ = lookAt;
+		cineWeight_ = weight;
+	}
+	/// <summary>シネマティック上書きを解除して通常追従へ戻す。</summary>
+	void ClearCinematic() { cineWeight_ = 0.0f; }
+	float GetCinematicWeight() const { return cineWeight_; }
 
 	void SetLockLookY(bool v) { lockLookY_ = v; }
 	void SetLookYSmooth(float v) { lookYSmooth_ = v; }
@@ -109,6 +131,12 @@ private: // メンバ変数
 
 	// --- マウス操作のロック ---
 	bool mouseControlEnabled_ = true;  // false の間はマウスでカメラを動かせない
+	float mouseSensitivityScale_ = 1.0f; // マウス感度の一時倍率（スロー演出中に下げる）
+
+	// --- シネマティック上書き（演出側が pos/look/weight を与える）---
+	Vector3 cinePos_{};       // 望むカメラ位置
+	Vector3 cineLook_{};      // 望む注視点
+	float   cineWeight_ = 0.0f; // 0=通常追従 / 1=指定ポーズ
 
 	bool initializedAngle_ = false;
 	bool initializedPosY_ = false;

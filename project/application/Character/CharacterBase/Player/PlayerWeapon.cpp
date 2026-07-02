@@ -4,6 +4,7 @@
 #include "Sword.h"
 #include "SpinSlashSkill.h"
 #include "RushSlashSkill.h"
+#include "UltimateSkill.h"
 #include "engine/TimeManager.h"
 
 //======================================================
@@ -24,25 +25,41 @@ const PlayerWeapon::AttackInfo PlayerWeapon::kNormalAttacks_[3] = {
 
 void PlayerWeapon::Initialize()
 {
-	// E キーのスキル（回転斬り）を生成
+	// E キーのスキル1（回転斬り）を生成
 	// IPlayerSkill で保持するので、スキル追加時はここに別クラスを足すだけ
 	auto spinSlash = std::make_unique<SpinSlashSkill>();
 	spinSlash->Initialize(owner_, sword_);
 	eSkill_ = std::move(spinSlash);
 
-	// Q キーのアルティメットを生成
+	// V キーのスキル2（突進乱舞）を生成
+	// 元はアルティメットだった枠を新スキルへ移設したもの。
 	// 攻撃対象の供給元は Scene 構築後に SetEnemyTargetProvider() で後から
 	auto rushSlash = std::make_unique<RushSlashSkill>();
 	rushSlash->Initialize(owner_);
-	ultSkill_ = std::move(rushSlash);
+	skill2_ = std::move(rushSlash);
+
+	// Q キーのアルティメット（斬奪）を生成。
+	// 敵一覧の供給元は Scene 構築後に SetEnemyTargetProvider() で後から注入する。
+	auto ultimate = std::make_unique<UltimateSkill>();
+	ultimate->Initialize(owner_);
+	ultSkill_ = std::move(ultimate);
 }
 
 void PlayerWeapon::SetEnemyTargetProvider(IEnemyTargetProvider* provider)
 {
-	// アルティメットだけが敵一覧を必要とするので、そこへ橋渡しする
-	if (auto* rush = dynamic_cast<RushSlashSkill*>(ultSkill_.get())) {
+	// 敵一覧を必要とするスキル（突進乱舞・アルティメット）へそれぞれ橋渡しする。
+	if (auto* rush = dynamic_cast<RushSlashSkill*>(skill2_.get())) {
 		rush->SetTargetProvider(provider);
 	}
+	if (auto* ult = dynamic_cast<UltimateSkill*>(ultSkill_.get())) {
+		ult->SetTargetProvider(provider);
+	}
+}
+
+void PlayerWeapon::ForeGroundDraw()
+{
+	// アルティメット発動中のロックオン枠・斬撃線はスキル側が描画する。
+	if (ultSkill_) ultSkill_->Draw();
 }
 
 void PlayerWeapon::StartAttack(int index)
@@ -106,6 +123,7 @@ void PlayerWeapon::Update()
 		const float dt = TimeManager::GetInstance()->GetDeltaTime();
 		// 同時に発動しない前提だが、発動中のスキルだけを駆動する。
 		if (eSkill_ && eSkill_->IsActive())     eSkill_->Update(dt);
+		if (skill2_ && skill2_->IsActive())     skill2_->Update(dt);
 		if (ultSkill_ && ultSkill_->IsActive()) ultSkill_->Update(dt);
 		return;
 	}
@@ -192,14 +210,34 @@ void PlayerWeapon::Skill()
 	eSkill_->Start();
 }
 
+void PlayerWeapon::Skill2()
+{
+	const bool nowV = Input::GetInstance()->PushKey(DIK_V);
+	const bool triggered = (nowV && !isSkill2_); // 押した瞬間(立ち上がり)だけ
+	isSkill2_ = nowV;
+
+	if (!triggered) return;
+	if (IsAnySkillActive()) return; // 多重発動はしない（他スキル・乱舞中は不可）
+	if (!skill2_) return;
+
+	// 進行中の通常攻撃は打ち切ってからスキル2（突進乱舞）へ移行する
+	attacking_ = false;
+	comboReserve_ = false;
+
+	skill2_->Start();
+}
+
 void PlayerWeapon::Ultimate()
 {
-	const bool nowQ = Input::GetInstance()->PushKey(DIK_V);
+	const bool nowQ = Input::GetInstance()->PushKey(DIK_Q);
 	const bool triggered = (nowQ && !isUltimate_); // 押した瞬間(立ち上がり)だけ
 	isUltimate_ = nowQ;
 
 	if (!triggered) return;
-	if (IsAnySkillActive()) return; // 多重発動はしない（E スキル・乱舞中は不可）
+	if (IsAnySkillActive()) return; // 多重発動はしない（他スキル発動中は不可）
+
+	// アルティメットの中身は今後実装する。ここに新しい IPlayerSkill を生成して
+	// ultSkill_ に持たせれば、下の Start() でそのまま発動できる。
 	if (!ultSkill_) return;
 
 	// 進行中の通常攻撃は打ち切ってからアルティメットへ移行する

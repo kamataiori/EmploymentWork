@@ -208,6 +208,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerMover.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\SpinSlashSkill.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\RushSlashSkill.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\UltimateSkill.cpp" />
     <ClCompile Include="engine\Collision\ShapeIntersect.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticleEmitterInstance.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticleModule.cpp" />
@@ -364,6 +365,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Player\IPlayerSkill.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\SpinSlashSkill.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\RushSlashSkill.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\UltimateSkill.h" />
     <ClInclude Include="application\Character\CharacterBase\ITarget.h" />
     <ClInclude Include="engine\Effects\Particle\Particle.h" />
     <ClInclude Include="engine\Effects\Particle\ParticleEmitterInstance.h" />

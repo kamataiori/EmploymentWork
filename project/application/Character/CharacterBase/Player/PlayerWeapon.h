@@ -20,6 +20,9 @@ class Sword;
 //   - ノーマル攻撃のコンボ管理（当たり判定はアニメ進行度0〜1に紐づく）
 //   - スキル(IPlayerSkill)の所有・入力ルーティング・排他制御
 //     （スキルの中身＝振り付けは各スキルクラスが持つ）
+//       Skill   : E キー（回転斬り）
+//       Skill2  : V キー（突進乱舞）
+//       Ultimate: Q キー（斬奪＝ロックオン＋線合わせ斬撃）
 //======================================================
 class PlayerWeapon : public PlayerIWeapon{
 public:
@@ -35,9 +38,13 @@ public:
 
 	void Draw() override;
 
+	// 前景UI描画：アルティメットのロックオン枠・斬撃線をスキルへ委譲する。
+	void ForeGroundDraw() override;
+
 	void NormalAttack() override;
 
 	void Skill() override;
+	void Skill2() override;
 	void Ultimate() override;
 
 	void SetEnemyTargetProvider(IEnemyTargetProvider* provider) override;
@@ -57,7 +64,9 @@ private:
 
 	// いずれかのスキルが発動中か（攻撃やスキルの多重発動を防ぐ排他制御に使う）
 	bool IsAnySkillActive() const {
-		return (eSkill_ && eSkill_->IsActive()) || (ultSkill_ && ultSkill_->IsActive());
+		return (eSkill_ && eSkill_->IsActive())
+			|| (skill2_ && skill2_->IsActive())
+			|| (ultSkill_ && ultSkill_->IsActive());
 	}
 
 private:
@@ -94,6 +103,8 @@ private:
 
 	// 入力エッジ検出用（E キーの押した瞬間を取る）
 	bool IsSkill_ = false;
+	// 入力エッジ検出用（V キーの押した瞬間を取る）
+	bool isSkill2_ = false;
 	// 入力エッジ検出用（Q キーの押した瞬間を取る）
 	bool isUltimate_ = false;
 
@@ -101,10 +112,13 @@ private:
 	Sword* sword_ = nullptr;       // スキルが駆動する剣
 
 	// ---- スキル ----
-	// E キーのスキル（回転斬り）。IPlayerSkill 越しに扱い、追加時は別クラスを足すだけ。
+	// E キーのスキル1（回転斬り）。IPlayerSkill 越しに扱い、追加時は別クラスを足すだけ。
 	std::unique_ptr<IPlayerSkill> eSkill_;
 
-	// Q キーのアルティメット（突進乱舞）。E スキルと同じく IPlayerSkill 越しに扱う。
+	// V キーのスキル2（突進乱舞）。元はアルティメットだった枠を新スキルへ移設した。
+	std::unique_ptr<IPlayerSkill> skill2_;
+
+	// Q キーのアルティメット。中身（IPlayerSkill 実装）は今後追加する予定で、現状は未割り当て。
 	std::unique_ptr<IPlayerSkill> ultSkill_;
 
 	// デバッグ用フラグ

@@ -87,7 +87,8 @@ public:
 	void PlayAnimaKey(PlayerAnimKey key);
 
 	// speed: アニメ再生速度の倍率（1.0=等倍 / >1で速く / <1で遅く）
-	void RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec = 0.0f, float speed = 1.0f);
+	// forceRestart: true で同じアニメでも必ず頭から再生し直す（同一アニメの連打用）
+	void RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec = 0.0f, float speed = 1.0f, bool forceRestart = false);
 
 	bool IsAnimaLocked() const { return animaLockTimer_ > 0.0f; }
 
@@ -127,13 +128,13 @@ public:
 	bool IsInputLocked() const { return inputLocked_; }
 
 	/// <summary>
-	/// 無敵のセット（true=被弾無効）。アルティメット突進中などに使う。
+	/// 無敵のセット（true=被弾無効）。スキル2の突進乱舞中などに使う。
 	/// </summary>
 	void SetInvincible(bool invincible) { invincible_ = invincible; }
 	bool IsInvincible() const { return invincible_; }
 
 	/// <summary>
-	/// 攻撃対象の供給元を注入する（武器→アルティメットへ橋渡しする）。
+	/// 攻撃対象の供給元を注入する（武器→スキル2の突進乱舞へ橋渡しする）。
 	/// </summary>
 	void SetEnemyTargetProvider(IEnemyTargetProvider* provider);
 

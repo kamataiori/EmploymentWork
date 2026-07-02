@@ -54,10 +54,25 @@ void BTEditorScene::Finalize()
 }
 
 //======================================================
-// Update
+// UpdateCamera（再生/停止に関わらず毎フレーム呼ばれる）
 //======================================================
-void BTEditorScene::Update()
+//   BTエディタは停止(Stop)中も操作できる必要がある。
+//   SceneManager は停止中 Update() を呼ばないが、UpdateCamera() は
+//   常に呼ばれ、かつ ImGui::Render() より前のフェーズなので、
+//   ここで入力処理と ImGui 構築を行う。
+void BTEditorScene::UpdateCamera()
 {
+#ifdef USE_IMGUI
+	// SceneManager はシーン切替フレームに UpdateCamera() を2回呼ぶ。
+	// imgui_node_editor は1フレーム2回構築するとフレーム状態が壊れるため、
+	// 同一フレーム内の二重描画をガードする。
+	const int frame = ImGui::GetFrameCount();
+	if (frame == lastDrawnFrame_) {
+		return;
+	}
+	lastDrawnFrame_ = frame;
+#endif // USE_IMGUI
+
 	req.type = TransitionType::Shutter;
 	req.fadeOutSec = 2.0f;
 	req.fadeInSec = 2.5f;
@@ -67,8 +82,20 @@ void BTEditorScene::Update()
 	if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
 		SceneManager::GetInstance()->RequestChangeScene("GAMEPLAY", req);
 	}
-#endif // USE_IMGUI
+
+	// BTエディタ ImGui を描画
 	Debug();
+#endif // USE_IMGUI
+}
+
+//======================================================
+// Update（再生中のみ呼ばれる）
+//======================================================
+void BTEditorScene::Update()
+{
+	// エディタシーンにゲームロジックは無い。
+	// 入力処理と ImGui 描画は UpdateCamera() に集約している
+	//   (停止中も UpdateCamera() は呼ばれるため、エディタが常に動く)
 }
 
 //======================================================

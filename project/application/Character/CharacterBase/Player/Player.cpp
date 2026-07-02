@@ -101,7 +101,7 @@ void Player::Initialize()
 
 void Player::SetEnemyTargetProvider(IEnemyTargetProvider* provider)
 {
-	// 武器（調停役）経由でアルティメットへ供給元を渡す。
+	// 武器（調停役）経由でスキル2（突進乱舞）へ供給元を渡す。
 	if (weapon_) weapon_->SetEnemyTargetProvider(provider);
 }
 
@@ -172,6 +172,7 @@ void Player::Update()
 		if (!inputLocked_) {
 			weapon_->NormalAttack();
 			weapon_->Skill();
+			weapon_->Skill2();
 			weapon_->Ultimate();
 		}
 
@@ -266,7 +267,8 @@ void Player::Draw()
 
 void Player::ForeGroundDraw()
 {
-
+	// アルティメット発動中のロックオン枠・斬撃線など、武器/スキルが持つ前景UIを描画する。
+	if (weapon_) weapon_->ForeGroundDraw();
 }
 
 void Player::AnimationDraw()
@@ -293,7 +295,7 @@ void Player::OnCollision()
 	if (hp_ < 0) hp_ = 0;*/
 
 	if (isDead_) return; // 死亡中は被弾無視
-	if (invincible_) return; // 無敵中（アルティメット突進中など）は被弾無視
+	if (invincible_) return; // 無敵中（スキル2の突進乱舞中など）は被弾無視
 
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
@@ -358,10 +360,13 @@ void Player::PlayAnimaKey(PlayerAnimKey key)
 	SetAnimationIfChanged(animaCtrl_.Resolve(key));
 }
 
-void Player::RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec, float speed)
+void Player::RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec, float speed, bool forceRestart)
 {
 	// 低い優先度からの上書きは禁止（攻撃中に移動で潰さない）
 	if (priority < currentAnimaPriority_) return;
+
+	// 同名でも頭から再生し直したい場合は、SetAnimationIfChanged の同名ガードを外す。
+	if (forceRestart) currentAnimationName_.clear();
 
 	PlayAnimaKey(key);
 	currentAnimaPriority_ = priority;
