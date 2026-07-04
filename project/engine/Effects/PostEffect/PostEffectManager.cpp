@@ -8,6 +8,24 @@ PostEffectManager* PostEffectManager::GetInstance() {
 void PostEffectManager::Initialize(PostEffectType type) {
     postEffect_ = std::make_unique<PostEffect>();
     postEffect_->Initialize(type);
+
+    // World レイヤーは自身のエフェクトスタックを登録簿に載せる
+    layers_.fill(nullptr);
+    layers_[static_cast<size_t>(RenderLayerId::World)] = postEffect_->GetOffscreen();
+}
+
+void PostEffectManager::RegisterLayer(RenderLayerId id, OffscreenRendering* effect) {
+    layers_[static_cast<size_t>(id)] = effect;
+}
+
+OffscreenRendering* PostEffectManager::GetEffect(RenderLayerId id) const {
+    return layers_[static_cast<size_t>(id)];
+}
+
+void PostEffectManager::SetLayerType(RenderLayerId id, PostEffectType type) {
+    if (auto* effect = layers_[static_cast<size_t>(id)]) {
+        effect->SetPostEffectType(type);
+    }
 }
 
 void PostEffectManager::Draw() {
@@ -18,6 +36,8 @@ void PostEffectManager::Draw() {
 
 void PostEffectManager::Finalize()
 {
+    // 登録簿の非所有ポインタを先に無効化（ダングリング防止）
+    layers_.fill(nullptr);
     if (postEffect_) {
         postEffect_.reset();  // PostEffect（OffscreenRendering含む）を解放
     }
@@ -213,5 +233,23 @@ void PostEffectManager::SetDissolveEdgeColor(const Vector3& color) {
 void PostEffectManager::SetDissolveTextures(const std::string& scenePath, const std::string& noisePath) {
     if (postEffect_ && postEffect_->GetOffscreen()) {
         postEffect_->GetOffscreen()->SetDissolveTextures(scenePath, noisePath);
+    }
+}
+
+void PostEffectManager::SetBloomThreshold(float threshold) {
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetBloomThreshold(threshold);
+    }
+}
+
+void PostEffectManager::SetBloomIntensity(float intensity) {
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetBloomIntensity(intensity);
+    }
+}
+
+void PostEffectManager::SetBloomIterations(int iterations) {
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetBloomIterations(iterations);
     }
 }

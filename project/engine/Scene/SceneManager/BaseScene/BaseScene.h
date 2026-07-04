@@ -70,6 +70,27 @@ public:
 	/// <summary>前景描画</summary>
 	virtual void ForeGroundDraw() = 0;
 
+	/// <summary>
+	/// このシーンが Canvas 合成方式（World/Particle を別レイヤーに分け、
+	/// UIをポストエフェクト対象外にする）を使うか。
+	/// デフォルトは false（従来の単一オフスクリーン＋全体エフェクト方式）。
+	/// Canvas方式を使うシーンだけ true に override し、下の
+	/// ParticleDraw() / UIDraw() に描画を振り分ける。
+	/// </summary>
+	virtual bool UsesCanvasCompositing() const { return false; }
+
+	/// <summary>
+	/// パーティクル専用の描画フェーズ（Canvas方式時に Particle Canvas へ描く）。
+	/// デフォルトは空。Canvas方式のシーンでパーティクル描画をここへ移す。
+	/// </summary>
+	virtual void ParticleDraw() {}
+
+	/// <summary>
+	/// UI描画フェーズ（Canvas方式時に、合成後のバックバッファへ直接描く＝エフェクト対象外）。
+	/// デフォルトは空。Canvas方式のシーンでUI描画をここへ移す。
+	/// </summary>
+	virtual void UIDraw() {}
+
 	/// <summary>デバッグ用 (Imguiなど)</summary>
 	virtual void Debug() = 0;
 
