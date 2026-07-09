@@ -41,7 +41,7 @@ void GamePlayScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("Colosseum.obj");
 
 	// レイヤー別ポストエフェクト：
-	//   オブジェクト層(World) = 素通し / パーティクル層(Particle) = Bloom
+	//   オブジェクト層(World) = そのまま / パーティクル層(Particle) = Bloom
 	//   （かける対象を変えたいときはこの数行の LayerType を書き換えるだけ）
 	auto* pe = PostEffectManager::GetInstance();
 	pe->SetLayerType(RenderLayerId::World, PostEffectType::Blur5x5);
