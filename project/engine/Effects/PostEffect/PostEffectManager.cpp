@@ -253,3 +253,15 @@ void PostEffectManager::SetBloomIterations(int iterations) {
         postEffect_->GetOffscreen()->SetBloomIterations(iterations);
     }
 }
+
+void PostEffectManager::SlashCutInitialize(float edge, float hSep, float dSep, float slide) {
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SlashCutInitialize(edge, hSep, dSep, slide);
+    }
+}
+
+void PostEffectManager::SetSlashCutProgress(float hProgress, float dProgress, float fall) {
+    if (postEffect_ && postEffect_->GetOffscreen()) {
+        postEffect_->GetOffscreen()->SetSlashCutProgress(hProgress, dProgress, fall);
+    }
+}

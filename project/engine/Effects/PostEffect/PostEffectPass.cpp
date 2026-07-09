@@ -215,6 +215,41 @@ void RandomPass::Execute(ID3D12GraphicsCommandList* commandList, uint32_t inputS
 }
 
 //========================================================================
+// SlashCutPass
+//========================================================================
+void SlashCutPass::SetStyle(float edge, float hSep, float dSep, float slide)
+{
+	if (!cb_) {
+		CreateConstantBuffer(cb_, mapped_);
+		mapped_->hProgress = 0.0f;
+		mapped_->dProgress = 0.0f;
+		mapped_->fall = 0.0f;
+		mapped_->pad = 0.0f;
+	}
+	mapped_->edge = edge;
+	mapped_->hSep = hSep;
+	mapped_->dSep = dSep;
+	mapped_->slide = slide;
+}
+
+void SlashCutPass::SetProgress(float hProgress, float dProgress, float fall)
+{
+	if (!mapped_) return;
+	mapped_->hProgress = hProgress;
+	mapped_->dProgress = dProgress;
+	mapped_->fall = fall;
+}
+
+void SlashCutPass::Execute(ID3D12GraphicsCommandList* commandList, uint32_t inputSrvIndex)
+{
+	BindCommon(commandList, inputSrvIndex);
+	if (cb_) {
+		commandList->SetGraphicsRootConstantBufferView(1, cb_->GetGPUVirtualAddress());
+	}
+	DrawFullscreen(commandList);
+}
+
+//========================================================================
 // DissolvePass
 //========================================================================
 void DissolvePass::Initialize(DirectXCommon* dxCommon)

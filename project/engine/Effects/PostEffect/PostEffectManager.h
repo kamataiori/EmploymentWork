@@ -86,6 +86,12 @@ public:
 	void SetBloomIntensity(float intensity);
 	void SetBloomIterations(int iterations);
 
+	/// <summary>
+	/// SlashCut（画面全体の斬撃分離）のsetter
+	/// </summary>
+	void SlashCutInitialize(float edge, float hSep, float dSep, float slide);
+	void SetSlashCutProgress(float hProgress, float dProgress, float fall);
+
 
 private:
 	PostEffectManager() = default;

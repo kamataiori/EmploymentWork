@@ -140,8 +140,7 @@ void TitleScene::Initialize()
 	titleBottom_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y + halfH * 0.5f });
 
 	phase_ = TitlePhase::Idle;
-	requestedShutter_ = false;
-	titleCutTimer_ = 0.0f;
+	requestedChange_ = false;
 }
 
 void TitleScene::Finalize()
@@ -263,11 +262,14 @@ void TitleScene::Update()
 	if (phase_ == TitlePhase::MoveToFront) {
 		UpdateMoveToFront(dt);
 	}
-	else if (phase_ == TitlePhase::AttackOnce) {
-		UpdateAttackOnce(dt);
+	else if (phase_ == TitlePhase::SlashH) {
+		UpdateSlashH(dt);
 	}
-	else if (phase_ == TitlePhase::TitleCut) {
-		UpdateTitleCut(dt);
+	else if (phase_ == TitlePhase::SlashD) {
+		UpdateSlashD(dt);
+	}
+	else if (phase_ == TitlePhase::GlassFall) {
+		UpdateGlassFall(dt);
 	}
 }
 
@@ -495,31 +497,58 @@ void TitleScene::UpdateMoveToFront(float dt)
 
 	orbitAngle_ = NormalizeAngle(orbitAngle_ + step);
 
-	// 充分近づいたら停止→Attackへ
+	// 充分近づいたら停止→横斬りへ
 	if (std::fabs(d) <= frontStopEps_) {
 		orbitAngle_ = desiredOrbitAngle_;
 		orbitSpeed_ = 0.0f; // 周回停止
-		StartAttackOnce();
+		StartSlashH();
 	}
 }
 
-void TitleScene::StartAttackOnce()
+void TitleScene::StartSlashH()
 {
-	phase_ = TitlePhase::AttackOnce;
-	attackTimer_ = 0.0f;
+	phase_ = TitlePhase::SlashH;
+	slashHTimer_ = 0.0f;
+	requestedChange_ = false;
 
-	// 攻撃アニメへ
+	// 横斬りアニメーション
 	sneak->SetAnimation("Attack02");
+
+	// タイトル文字を合体位置へ戻す
+	const float halfH = titleTexSize_.y * 0.5f;
+	titleTop_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y - halfH * 0.5f });
+	titleBottom_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y + halfH * 0.5f });
+
+	// 画面全体（3Dシーン）を斬る SlashCut ポストエフェクトへ切替。
+	// edge / hSep / dSep / slide。切れ目は細く、大きな動きは最後のガラス落下で出す。
+	auto* pe = PostEffectManager::GetInstance();
+	pe->SlashCutInitialize(0.006f, 0.02f, 0.02f, 0.08f);
+	pe->SetSlashCutProgress(0.0f, 0.0f, 0.0f);
+	pe->SetType(PostEffectType::SlashCut);
 }
 
-void TitleScene::UpdateAttackOnce(float dt)
+void TitleScene::UpdateSlashH(float dt)
 {
-	attackTimer_ += dt;
+	slashHTimer_ += dt;
 
-	// ここは実際のAttack02の長さに合わせて調整
-	if (attackTimer_ >= attackDuration_) {
-		sneak->SetAnimation("Idle");
-		StartTitleCut();
+	const float t = slashHTimer_ / slashHDuration_;
+	const float e = EaseOutCubic(t);
+
+	// タイトル文字：上を左上、下を右下へ（横斬り）
+	const float dx = titleCutDistance_ * e;
+	const float dy = titleCutExtraY_ * e;
+	const float halfH = titleTexSize_.y * 0.5f;
+	const Vector2 topBase = { titleCenterPos_.x, titleCenterPos_.y - halfH * 0.5f };
+	const Vector2 botBase = { titleCenterPos_.x, titleCenterPos_.y + halfH * 0.5f };
+	titleTop_->SetPosition({ topBase.x - dx, topBase.y - dy });
+	titleBottom_->SetPosition({ botBase.x + dx, botBase.y + dy });
+
+	// 画面全体：横のみ切断（斜め・落下はまだ）
+	PostEffectManager::GetInstance()->SetSlashCutProgress(e, 0.0f, 0.0f);
+
+	// 横斬り完了 → 斜め斬りへ
+	if (slashHTimer_ >= slashHDuration_) {
+		StartSlashD();
 	}
 }
 
@@ -535,46 +564,73 @@ float TitleScene::DeltaAngle(float from, float to)
 	return NormalizeAngle(to - from);
 }
 
-void TitleScene::StartTitleCut()
+void TitleScene::StartSlashD()
 {
-	phase_ = TitlePhase::TitleCut;
-	titleCutTimer_ = 0.0f;
-	requestedShutter_ = false;
+	phase_ = TitlePhase::SlashD;
+	slashDTimer_ = 0.0f;
 
-	// 分割スプライトを合体位置に戻す
-	const float halfH = titleTexSize_.y * 0.5f;
-	titleTop_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y - halfH * 0.5f });
-	titleBottom_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y + halfH * 0.5f });
+	// 斜め斬りアニメーション
+	sneak->SetAnimation("Attack03");
 }
 
-void TitleScene::UpdateTitleCut(float dt)
+void TitleScene::UpdateSlashD(float dt)
 {
-	titleCutTimer_ += dt;
+	slashDTimer_ += dt;
 
-	const float t = titleCutTimer_ / titleCutDuration_;
+	const float t = slashDTimer_ / slashDDuration_;
 	const float e = EaseOutCubic(t);
 
-	const float dx = titleCutDistance_ * e;
-	const float dy = titleCutExtraY_ * e;
+	// 画面全体：横は切断済み(1.0)のまま、斜めを進める（落下はまだ）
+	PostEffectManager::GetInstance()->SetSlashCutProgress(1.0f, e, 0.0f);
 
+	// 斜め斬り完了 → ガラス落下へ
+	if (slashDTimer_ >= slashDDuration_) {
+		StartGlassFall();
+	}
+}
+
+void TitleScene::StartGlassFall()
+{
+	phase_ = TitlePhase::GlassFall;
+	fallTimer_ = 0.0f;
+
+	sneak->SetAnimation("Idle");
+
+	// 横斬り完了時のタイトル文字位置を落下開始点として記録
 	const float halfH = titleTexSize_.y * 0.5f;
-	const Vector2 topBase = { titleCenterPos_.x, titleCenterPos_.y - halfH * 0.5f };
-	const Vector2 botBase = { titleCenterPos_.x, titleCenterPos_.y + halfH * 0.5f };
+	titleTopFallBase_ = { titleCenterPos_.x - titleCutDistance_,
+						  titleCenterPos_.y - halfH * 0.5f - titleCutExtraY_ };
+	titleBottomFallBase_ = { titleCenterPos_.x + titleCutDistance_,
+							titleCenterPos_.y + halfH * 0.5f + titleCutExtraY_ };
+}
 
-	// 上を左上、下を右下へ
-	titleTop_->SetPosition({ topBase.x - dx, topBase.y - dy });
-	titleBottom_->SetPosition({ botBase.x + dx, botBase.y + dy });
+void TitleScene::UpdateGlassFall(float dt)
+{
+	fallTimer_ += dt;
 
-	// 終わったら Shutter → SceneChange
-	if (!requestedShutter_ && titleCutTimer_ >= titleCutDuration_) {
-		requestedShutter_ = true;
+	float f = fallTimer_ / fallDuration_;
+	if (f > 1.0f) f = 1.0f;
 
-		PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
+	// 画面全体：横・斜めとも切断済み、ガラスとして落下（シェーダ側で重力 f^2）
+	PostEffectManager::GetInstance()->SetSlashCutProgress(1.0f, 1.0f, f);
+
+	// タイトル文字も割れたガラスと一緒に落下（重力 f^2＋左右へ少しドリフト）
+	const float fallDist = WinApp::kClientHeight * 1.2f;
+	const float g = f * f;
+	titleTop_->SetPosition({ titleTopFallBase_.x - 30.0f * f, titleTopFallBase_.y + fallDist * g });
+	titleBottom_->SetPosition({ titleBottomFallBase_.x + 30.0f * f, titleBottomFallBase_.y + fallDist * g });
+
+	// 落下完了 → 本編へ。黒い幕(Shutter)は廃止。
+	// ここでは SlashCut(fall=1＝真っ黒)のままにしておく。
+	// Normal への復帰はシーン入れ替えの暗転点で SceneManager が自動で行うため、
+	// ここで SetType(Normal) を呼ぶと fadeOut 中に元のタイトルが一瞬見えてしまう。
+	if (!requestedChange_ && fallTimer_ >= fallDuration_) {
+		requestedChange_ = true;
 
 		TransitionRequest req{};
-		req.type = TransitionType::Shutter;
-		req.fadeOutSec = 2.0f;
-		req.fadeInSec = 2.5f;
+		req.type = TransitionType::Fade;
+		req.fadeOutSec = 0.1f;
+		req.fadeInSec = 1.2f;
 
 		SceneManager::GetInstance()->RequestChangeScene("GAMEPLAY", req);
 	}

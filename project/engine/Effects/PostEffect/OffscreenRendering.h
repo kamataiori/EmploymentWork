@@ -22,6 +22,7 @@ enum class PostEffectType {
 	Random,
 	Dissolve,
 	Bloom,
+	SlashCut,
 	// 追加可能
 	Count
 };
@@ -115,6 +116,10 @@ public:  // publicメンバ関数
 	void SetBloomIntensity(float intensity);
 	void SetBloomIterations(int iterations);
 
+	//--------SlashCut--------//
+	void SlashCutInitialize(float edge, float hSep, float dSep, float slide);
+	void SetSlashCutProgress(float hProgress, float dProgress, float fall);
+
 private:  // privateメンバ関数
 
 	// 組み込みパスを全て生成して登録簿に格納
@@ -145,4 +150,5 @@ private:  // privateメンバ変数
 	RandomPass* random_ = nullptr;
 	DissolvePass* dissolve_ = nullptr;
 	BloomPass* bloom_ = nullptr;
+	SlashCutPass* slashCut_ = nullptr;
 };
