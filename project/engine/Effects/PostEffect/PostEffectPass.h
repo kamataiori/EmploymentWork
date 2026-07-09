@@ -244,6 +244,37 @@ private:
 };
 
 //========================================================================
+// SlashCutPass（画面全体を斬撃ラインで上下に分離してスライドさせる）
+//========================================================================
+class SlashCutPass : public PostEffectPassBase {
+public:
+	// 見た目の固定パラメータ（分離量・断面幅）を設定（定数バッファもここで確保）
+	void SetStyle(float edge, float hSep, float dSep, float slide);
+	// 演出の進捗（毎フレーム更新）：横斬り／斜め斬り／ガラス落下
+	void SetProgress(float hProgress, float dProgress, float fall);
+
+	void Execute(ID3D12GraphicsCommandList* commandList, uint32_t inputSrvIndex) override;
+
+protected:
+	std::wstring GetPixelShaderPath() const override { return L"Resources/shaders/SlashCut.PS.hlsl"; }
+	bool UseConstantBuffer() const override { return true; }
+
+private:
+	struct SlashCutCB {
+		float hProgress;
+		float dProgress;
+		float fall;
+		float edge;
+		float hSep;
+		float dSep;
+		float slide;
+		float pad;
+	};
+	Microsoft::WRL::ComPtr<ID3D12Resource> cb_;
+	SlashCutCB* mapped_ = nullptr;
+};
+
+//========================================================================
 // DissolvePass（特殊：SRVを2枚 t0/t1 使い、入力SRVは使わない）
 //========================================================================
 class DissolvePass : public PostEffectPassBase {

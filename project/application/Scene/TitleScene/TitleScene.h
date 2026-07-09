@@ -82,8 +82,9 @@ private:
 	enum class TitlePhase {
 		Idle,         // 通常：周回
 		MoveToFront,  // SPACE後：正面へ回して止める
-		AttackOnce,   // Attack02を1回
-		TitleCut,     // タイトル切断
+		SlashH,       // Attack02：横斬り（画面を横に切断）
+		SlashD,       // Attack03：斜め斬り（左上→右下に切断）
+		GlassFall,    // 斬れた画面が割れたガラスのように落下
 	};
 
 	TitlePhase phase_ = TitlePhase::Idle;
@@ -98,13 +99,15 @@ private:
 	// 描画位置（画面中央よりちょい上）
 	Vector2 titleCenterPos_ = { 0.0f, 0.0f };
 
-	// タイトル切断 演出パラメータ
-	float titleCutTimer_ = 0.0f;
-	float titleCutDuration_ = 0.35f;
+	// タイトル文字の分割スライド量
 	float titleCutDistance_ = 200.0f;
 	float titleCutExtraY_ = 18.0f;
 
-	bool requestedShutter_ = false;
+	// ガラス落下開始時のタイトル文字の基準位置（ここから落下させる）
+	Vector2 titleTopFallBase_ = { 0.0f, 0.0f };
+	Vector2 titleBottomFallBase_ = { 0.0f, 0.0f };
+
+	bool requestedChange_ = false;
 
 	// ============================
 	// 正面停止 & Attack待ち
@@ -113,8 +116,13 @@ private:
 	float frontStopEps_ = 0.02f;   // 止める誤差
 	float desiredOrbitAngle_ = 0.0f;
 
-	float attackTimer_ = 0.0f;
-	float attackDuration_ = 0.90f; // Attack02が何秒か（あとで調整）
+	// 斬撃演出タイマー
+	float slashHTimer_ = 0.0f;
+	float slashHDuration_ = 0.90f; // Attack02の長さ
+	float slashDTimer_ = 0.0f;
+	float slashDDuration_ = 0.90f; // Attack03の長さ
+	float fallTimer_ = 0.0f;
+	float fallDuration_ = 1.60f;   // ガラス落下にかける時間
 
 	// ============================
 	// 内部関数
@@ -122,11 +130,14 @@ private:
 	void StartMoveToFront();
 	void UpdateMoveToFront(float dt);
 
-	void StartAttackOnce();
-	void UpdateAttackOnce(float dt);
+	void StartSlashH();
+	void UpdateSlashH(float dt);
 
-	void StartTitleCut();
-	void UpdateTitleCut(float dt);
+	void StartSlashD();
+	void UpdateSlashD(float dt);
+
+	void StartGlassFall();
+	void UpdateGlassFall(float dt);
 
 	static float NormalizeAngle(float a);
 	static float DeltaAngle(float from, float to);

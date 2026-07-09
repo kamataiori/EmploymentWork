@@ -24,6 +24,8 @@ void OffscreenRendering::Initialize(PostEffectType type)
 	RadialBlurInitialize({ 0.5f, 0.5f }, 0.01f, 10);
 	RandomInitialize(1.0f, 100.0f, 0.5f);
 	DissolveInitialize(0.3f, 0.3f, { 0.2f, 0.4f, 0.5f });
+	// edge:断面発光幅 / hSep:横分離量 / dSep:斜め分離量 / slide:横スライド量（画面に対する割合）
+	SlashCutInitialize(0.006f, 0.03f, 0.03f, 0.08f);
 
 	// 初期エフェクトを設定
 	SetPostEffectType(type);
@@ -85,6 +87,13 @@ void OffscreenRendering::CreatePasses()
 		pass->Initialize(dxCommon_);
 		bloom_ = pass.get();
 		passes_[static_cast<size_t>(PostEffectType::Bloom)] = std::move(pass);
+	}
+	// SlashCut（画面全体を斬撃ラインで分離）
+	{
+		auto pass = std::make_unique<SlashCutPass>();
+		pass->Initialize(dxCommon_);
+		slashCut_ = pass.get();
+		passes_[static_cast<size_t>(PostEffectType::SlashCut)] = std::move(pass);
 	}
 }
 
@@ -245,4 +254,15 @@ void OffscreenRendering::SetBloomIntensity(float intensity)
 void OffscreenRendering::SetBloomIterations(int iterations)
 {
 	if (bloom_) bloom_->SetIterations(iterations);
+}
+
+//--------SlashCut--------//
+void OffscreenRendering::SlashCutInitialize(float edge, float hSep, float dSep, float slide)
+{
+	// 進捗は 0 初期化（切断は演出側から進める）
+	if (slashCut_) slashCut_->SetStyle(edge, hSep, dSep, slide);
+}
+void OffscreenRendering::SetSlashCutProgress(float hProgress, float dProgress, float fall)
+{
+	if (slashCut_) slashCut_->SetProgress(hProgress, dProgress, fall);
 }

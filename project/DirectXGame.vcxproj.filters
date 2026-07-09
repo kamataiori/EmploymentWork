@@ -1048,6 +1048,7 @@
     <FxCompile Include="Resources\shaders\BoxFilter3x3.PS.hlsl" />
     <FxCompile Include="Resources\shaders\GaussianFilter.PS.hlsl" />
     <FxCompile Include="Resources\shaders\RadialBlur.PS.hlsl" />
+    <FxCompile Include="Resources\shaders\SlashCut.PS.hlsl" />
     <FxCompile Include="Resources\shaders\DrawLine.PS.hlsl" />
     <FxCompile Include="Resources\shaders\DrawLine.VS.hlsl" />
     <FxCompile Include="Resources\shaders\DrawTriangle.VS.hlsl" />
