@@ -129,8 +129,12 @@ private:
 
 	// ---- 見下ろしカメラ演出（フェーズ2強化） ----
 	bool    arrived_    = false;   // 対象への接近が完了したか（完了でシネマティックへ）
+	bool    slowEngaged_ = false;  // 真上到着後にスローを一度だけ入れるためのフラグ
+	float   approachStartDist_ = -1.0f; // この接近の開始距離（-1=未記録）。飛び込み進捗の算出に使う
+	ITarget* approachSpinTarget_ = nullptr; // 飛び込み進捗を紐づけている対象（切替検知で測り直す）
 	float   cineT_      = 0.0f;    // 演出の進行 0→1（上空→ロックオン枠へゆっくり寄る）
 	float   cineWeight_ = 0.0f;    // 追従⇔演出のブレンド率（0=追従 / 1=演出）
+	float   camHeightDrop_ = 0.0f; // 真上到着後、カメラの高さをプレイヤーの高さへ落とす進捗（0=演出高さ / 1=プレイヤー高さ）
 	Vector3 cineHoldPos_{};        // 撃った後に追従へ戻す間、固定しておく演出カメラ位置
 	Vector3 cineHoldLook_{};       // 同・注視点
 	float   sideTarget_  = 1.0f;   // 見下ろしカメラの左右（+1=右 / -1=左）。右クリックで反転。
@@ -174,16 +178,17 @@ private:
 	// Aim中の自動フレーミング：対象を画面のどれだけ横へ寄せるか[rad]（0で正面。線合わせを残すため少し振る）。
 	const float kFrameYawOffset_   = 0.30f;
 	const float kFrameSteerSec_    = 0.35f; // 対象取得後、自動で寄せ続ける時間[秒]（以降はマウス微調整）
-	const float kFrameSteerSharp_  = 12.0f; // 寄せの俊敏さ（大きいほど速く向く）
+	const float kFrameSteerSharp_  = 20.0f; // 寄せの俊敏さ（大きいほど速く向く）
 
 	// ロックオン中の接近：対象中心のどれだけ手前まで詰めるか[ユニット]。
 	const float kApproachStandoff_ = 2.2f;
 	// 接近の速さ[ユニット/秒]（unscaled＝スロー中でもプレイヤーは実時間で滑らかに詰める）。
-	const float kApproachSpeed_    = 25.0f;
+	// Q直後は通常速度のまま一気に敵の真上へ飛び込ませるため速めにする。
+	const float kApproachSpeed_    = 60.0f;
 	// 対象をどれだけ上空から見下ろすか：対象中心より上にとる高さ[ユニット]。
 	const float kAboveHeight_      = 3.0f;
 	// 見下ろす向き(pitch)へのなじみ速さ（大きいほど素早く向く）。
-	const float kLeanSharp_        = 10.0f;
+	const float kLeanSharp_        = 16.0f;
 	// 接近完了とみなす距離[ユニット]（これ以下で見下ろしカメラ演出へ入る）。
 	const float kArriveEps_        = 0.4f;
 
@@ -194,8 +199,13 @@ private:
 	const float kSideSwapSharp_    = 6.0f;  // 右クリックで左右を入れ替えるときの移動の滑らかさ
 	const float kCineEndHeight_    = 2.5f;  // 終了：対象中心からどれだけ上へ寄るか
 	const float kCineEndBack_      = 3.0f;  // 終了：対象から水平にどれだけ引くか（真上すぎ防止）
+	// 真上到着後、カメラの高さ「だけ」をプレイヤーの肩あたりへ寄せる滑らかさ（小さいほどゆっくり降りる）。
+	const float kCamHeightDropSharp_ = 2.0f;
+	// カメラを落とし込む先の高さ：プレイヤー原点(足元)からどれだけ上か[ユニット]。
+	// MGR斬撃モードのように肩口へカメラが来るよう、肩の高さぶん上げる。
+	const float kShoulderHeight_     = 1.5f;
 	const float kCineDriftSpeed_   = 0.35f; // 上空→枠へ寄る速さ（cineT_/秒。小さいほどゆっくり）
-	const float kCineBlendSharp_   = 6.0f;  // 追従→演出へ移る滑らかさ
+	const float kCineBlendSharp_   = 12.0f; // 追従→演出へ移る滑らかさ
 	const float kCineReturnDuration_ = 0.5f; // 撃った後、演出→追従へイージングで戻る時間[秒]
 
 	// 斬った瞬間のカメラ演出（Slash中は通常速度なので等倍で効く）。

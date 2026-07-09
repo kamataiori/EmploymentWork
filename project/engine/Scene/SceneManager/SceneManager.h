@@ -41,9 +41,29 @@ public:
 	void Update();
 
 	/// <summary>
-	/// 描画
+	/// 描画（従来の一括描画：背景→描画→前景）
 	/// </summary>
 	void Draw();
+
+	/// <summary>
+	/// 現在のシーンが Canvas 合成方式を使うか
+	/// </summary>
+	bool CurrentSceneUsesCanvas() const;
+
+	/// <summary>
+	/// World描画（背景＋3D＋前景スプライト）。Canvas方式時に World Canvas へ描く。
+	/// </summary>
+	void DrawWorld();
+
+	/// <summary>
+	/// パーティクル描画。Canvas方式時に Particle Canvas へ描く。
+	/// </summary>
+	void DrawParticles();
+
+	/// <summary>
+	/// UI描画。Canvas方式時に合成後のバックバッファへ直接描く（エフェクト対象外）。
+	/// </summary>
+	void DrawUI();
 
 
 public:

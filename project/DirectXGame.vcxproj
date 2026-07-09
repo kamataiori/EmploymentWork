@@ -153,6 +153,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\Camera\Camera.cpp" />
     <ClCompile Include="engine\check\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\directx\DirectXCommon.cpp" />
+    <ClCompile Include="engine\directx\RenderTarget.cpp" />
     <ClCompile Include="engine\FrameWork\input\Input.cpp" />
     <ClCompile Include="engine\logger\Logger.cpp" />
     <ClCompile Include="engine\FrameWork\Framework.cpp" />
@@ -194,6 +195,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Scene\TitleScene\TitleScene.cpp" />
     <ClCompile Include="engine\SRVManager\SrvManager.cpp" />
     <ClCompile Include="engine\Effects\PostEffect\OffscreenRendering.cpp" />
+    <ClCompile Include="engine\Effects\PostEffect\PostEffectPass.cpp" />
+    <ClCompile Include="engine\Effects\PostEffect\PostProcessChain.cpp" />
+    <ClCompile Include="engine\Effects\PostEffect\Canvas.cpp" />
+    <ClCompile Include="engine\Effects\PostEffect\LayerCompositor.cpp" />
+    <ClCompile Include="engine\Effects\PostEffect\BloomPass.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticleManager\ParticleManager.cpp" />
     <ClCompile Include="engine\Effects\PostEffect\PostEffect.cpp" />
     <ClCompile Include="engine\Scene\ParticleEditorScene.cpp" />
@@ -305,6 +311,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\Camera\Camera.h" />
     <ClInclude Include="engine\check\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\directx\DirectXCommon.h" />
+    <ClInclude Include="engine\directx\RenderTarget.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
@@ -349,6 +356,13 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Scene\TitleScene\TitleScene.h" />
     <ClInclude Include="engine\SRVManager\SrvManager.h" />
     <ClInclude Include="engine\Effects\PostEffect\OffscreenRendering.h" />
+    <ClInclude Include="engine\Effects\PostEffect\IPostEffectPass.h" />
+    <ClInclude Include="engine\Effects\PostEffect\RenderLayer.h" />
+    <ClInclude Include="engine\Effects\PostEffect\PostEffectPass.h" />
+    <ClInclude Include="engine\Effects\PostEffect\PostProcessChain.h" />
+    <ClInclude Include="engine\Effects\PostEffect\Canvas.h" />
+    <ClInclude Include="engine\Effects\PostEffect\LayerCompositor.h" />
+    <ClInclude Include="engine\Effects\PostEffect\BloomPass.h" />
     <ClInclude Include="engine\Effects\Particle\ParticleManager\ParticleManager.h" />
     <ClInclude Include="engine\Effects\PostEffect\PostEffect.h" />
     <ClInclude Include="engine\Scene\ParticleEditorScene.h" />

@@ -33,6 +33,12 @@ public:
 	void BackGroundDraw() override;
 	void Draw() override;
 	void ForeGroundDraw() override;
+
+	// Canvas合成方式を使用（UIを非エフェクト化・パーティクルを専用レイヤーへ分離）
+	bool UsesCanvasCompositing() const override { return true; }
+	void ParticleDraw() override;   // パーティクル専用Canvasへ
+	void UIDraw() override;          // 合成後のバックバッファへ（エフェクト対象外）
+
 	void Debug() override;
 	void CheckAllCollisions();
 
@@ -86,6 +92,11 @@ private:
 
 	void UpdateIntro(float dt);
 	void DrawIntroUI();
+
+	// Bloom調整用（ImGui）
+	float bloomThreshold_ = 0.8f;
+	float bloomIntensity_ = 1.2f;
+	int   bloomIterations_ = 5;
 
 	// ================================================
 

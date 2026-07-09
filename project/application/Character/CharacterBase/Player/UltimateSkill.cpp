@@ -78,11 +78,14 @@ void UltimateSkill::Start()
 	arrived_ = false;
 	cineT_ = 0.0f;
 	cineWeight_ = 0.0f;
+	camHeightDrop_ = 0.0f; // 到着後に高さを落とす進捗を初期化
 	sideTarget_ = 1.0f;  // 既定は右
 	sideCurrent_ = 1.0f;
 	lockOnTimer_ = 0.0f; // 最初の対象へロックオン枠を集める
 	commitTimer_ = 0.0f;
 	blinkPhase_ = 0.0f;
+	slowEngaged_ = false; // スローは真上到着時に入れる（Q直後はまだ入れない）
+	approachStartDist_ = -1.0f; // 飛び込み進捗を最初から測り直す
 
 	// 発動中は被弾しない＆通常移動・通常攻撃を止める（狙いに集中させる）。
 	owner_->SetInvincible(true);
@@ -94,9 +97,9 @@ void UltimateSkill::Start()
 		fc->SetMouseSensitivityScale(kSlowCameraSensScale_);
 	}
 
-	// 敵を含む全体をスローにする。SetTimeScale は baseTimeScale_ を触るだけで
-	// ヒットストップ（上掛け層）とは乗算合成されるため既存演出を壊さない。
-	TimeManager::GetInstance()->SetTimeScale(kSlowTimeScale_);
+	// スローは「敵の真上に着いた瞬間」に入れる（Update内で arrived_ を見て一度だけ）。
+	// Q直後は通常速度のまま高速で敵の真上へ飛び込ませ、着いてから斬奪のスローに入る。
+	// （SetTimeScale はヒットストップ層と乗算合成されるため既存演出を壊さない）
 }
 
 void UltimateSkill::Update(float /*dt*/)
@@ -119,7 +122,6 @@ void UltimateSkill::Update(float /*dt*/)
 		}
 
 		const float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
-		lockOnTimer_ += unscaledDt;
 
 		// 接近が終わるまでは通常追従＋自動フレーミングでリードインする。
 		if (!arrived_ && steerTimer_ < kFrameSteerSec_) {
@@ -130,19 +132,32 @@ void UltimateSkill::Update(float /*dt*/)
 		// ロックオン中の対象へ滑らかに接近する（テレポートではなくグライド）。arrived_ を更新。
 		ApproachTarget(unscaledDt);
 
+		// 敵の真上に到着した瞬間だけスローへ入れ、以降ロックオン枠の収束時間を計る。
+		// （到着前は四角・線・スローを一切出さず、通常速度の高速接近だけを見せる）
+		if (arrived_) {
+			if (!slowEngaged_) {
+				TimeManager::GetInstance()->SetTimeScale(kSlowTimeScale_);
+				slowEngaged_ = true;
+			}
+			lockOnTimer_ += unscaledDt;
+		}
+
 		Input* input = Input::GetInstance();
 
 		// 接近完了後は追従を離れ、見下ろし演出カメラへ移行する（上空・見下ろしの位置で止める）。
 		if (auto* fc = dynamic_cast<FollowCamera*>(owner_->GetCamera())) {
 			if (arrived_) {
 				cineWeight_ = Approach(cineWeight_, 1.0f, kCineBlendSharp_, unscaledDt);
-				// 真上（見下ろし）にいるとき、右クリックでカメラの左右を反対側へ入れ替える。
+				// 到着後、カメラの高さだけを徐々にプレイヤーの高さへ落とす（水平位置は動かさない）。
+					camHeightDrop_ = Approach(camHeightDrop_, 1.0f, kCamHeightDropSharp_, unscaledDt);
+					// 真上（見下ろし）にいるとき、右クリックでカメラの左右を反対側へ入れ替える。
 				if (input->TriggerMouseButton(1)) {
 					sideTarget_ = -sideTarget_;
 				}
 			} else {
 				cineT_ = 0.0f;
 				cineWeight_ = Approach(cineWeight_, 0.0f, kCineBlendSharp_, unscaledDt);
+					camHeightDrop_ = 0.0f; // 接近中は演出の高さのまま
 			}
 			// 左右は滑らかに反対側へスライドさせる。
 			sideCurrent_ = Approach(sideCurrent_, sideTarget_, kSideSwapSharp_, unscaledDt);
@@ -180,7 +195,8 @@ void UltimateSkill::Update(float /*dt*/)
 		aligned_ = targetOnScreen_ && IsLineOnTarget();
 
 		// 左クリックで斬撃を確定。枠内なら大ダメージ、枠外なら通常ダメージ。
-		if (input->TriggerMouseButton(0)) {
+		// （真上に着いてロックオン枠が出てからのみ斬れる＝接近中の誤クリックを弾く）
+		if (arrived_ && input->TriggerMouseButton(0)) {
 			currentTarget_->ApplyDamage(aligned_ ? kSuccessDamage_ : kFailDamage_);
 
 			// 斬りモーション：縦線=Attack03 / 横線=Attack01・02（横同士は交互）。
@@ -208,6 +224,7 @@ void UltimateSkill::Update(float /*dt*/)
 
 			// 斬った瞬間だけ通常速度へ戻し、振りが終わるまで待つ（Slash 局面へ）。
 			TimeManager::GetInstance()->SetTimeScale(1.0f);
+			slowEngaged_ = false; // 次の対象へは通常速度で寄せ、真上到着で再スロー
 			phase_ = Phase::Slash;
 		}
 		break;
@@ -237,14 +254,15 @@ void UltimateSkill::Update(float /*dt*/)
 		currentTarget_ = FindNearestUnstruck(owner_->GetTransform().translate);
 		if (!currentTarget_) { Finish(); return; }
 
-		// また全体スローに戻し、新しい対象へ寄せ直して次の狙いへ（演出状態もリセット）。
-		TimeManager::GetInstance()->SetTimeScale(kSlowTimeScale_);
+		// 次の対象へは通常速度のまま高速で寄せ直し、真上到着でまた斬奪スローに入る。
+		// （slowEngaged_ は斬撃時に false 済み。ApproachTarget 到着時に再度スローを入れる）
 		steerTimer_ = 0.0f;
 		arrived_ = false;
 		cineT_ = 0.0f;
 		lockOnTimer_ = 0.0f; // 次の対象へロックオン枠を集め直す
 		commitTimer_ = 0.0f;
 		blinkPhase_ = 0.0f;
+		approachStartDist_ = -1.0f; // 次の対象への飛び込み進捗を測り直す
 		phase_ = Phase::Aim;
 		break;
 	}
@@ -254,7 +272,8 @@ void UltimateSkill::Update(float /*dt*/)
 void UltimateSkill::Draw()
 {
 	// ロックオン枠・斬撃線は狙い(Aim)中だけ出す。斬り(Slash)中はカメラ演出に集中させる。
-	if (!active_ || phase_ != Phase::Aim || !targetOnScreen_) return;
+	// さらに「敵の真上に着いてから」だけ描画する（到着前は四角・線を一切出さない）。
+	if (!active_ || phase_ != Phase::Aim || !arrived_ || !targetOnScreen_) return;
 
 	// 成功域(=貫通中)は緑、外している間は赤で「まだ」を伝える。
 	const Vector4 kAlignedColor{ 0.2f, 1.0f, 0.4f, 1.0f };
@@ -410,6 +429,13 @@ void UltimateSkill::ComputeCinematicPose(Vector3& outPos, Vector3& outLook) cons
 	const float s = SmoothStep(cineT_);
 	outPos = startPos + (endPos - startPos) * s;
 	outLook = startLook + (endLook - startLook) * s;
+
+	// 真上到着後、カメラの「高さだけ」をプレイヤーの肩あたりへ徐々に寄せる。
+	// （MGR斬撃モードのように肩口へカメラが来る画。camHeightDrop_ が 0→1 に上がるほど
+	//   outPos.y が肩の高さへ近づく。x/z は触らないのでプレイヤーへ水平に寄るのではなく、
+	//   あくまで高さだけが肩口まで下りてくる）
+	const float shoulderY = p.y + kShoulderHeight_;
+	outPos.y += (shoulderY - outPos.y) * camHeightDrop_;
 }
 
 void UltimateSkill::SteerCameraFraming(float unscaledDt)
@@ -465,16 +491,40 @@ void UltimateSkill::ApproachTarget(float unscaledDt)
 		tf.translate = tf.translate + Normalize(delta) * step;
 	}
 
-	// 向き：yaw は常に対象へ。pitch は「接近中だけ」下方を見下ろす前傾にし、
-	// 接近完了（真上・見下ろしカメラ）になったら直立(0)へ戻す。
+	// --- 飛び込み中の見せ：前傾90度＋横回転(yaw)を1回転ぶん加える ---
+	// 対象が切り替わったら飛び込み開始距離を測り直す（進捗を0からやり直す）。
+	if (approachSpinTarget_ != currentTarget_) {
+		approachSpinTarget_ = currentTarget_;
+		approachStartDist_ = -1.0f;
+	}
+	if (approachStartDist_ < 0.0f) {
+		approachStartDist_ = (std::max)(d, 1e-3f); // この接近の開始距離を記録
+	}
+	// 飛び込み進捗 0→1（開始位置→到着）。到着までにちょうど1回転させる。
+	const float progress = std::clamp(1.0f - d / approachStartDist_, 0.0f, 1.0f);
+
+	// yaw は対象を向く角度を基準にする。
 	Vector3 look = center - tf.translate;
-	const float lookHoriz = std::sqrt(look.x * look.x + look.z * look.z);
-	tf.rotate.y = std::atan2(look.x, look.z);
-	const float targetPitch = arrived_
-		? 0.0f
-		: std::atan2(-look.y, (lookHoriz > 1e-4f) ? lookHoriz : 1e-4f);
-	const float k = 1.0f - std::exp(-kLeanSharp_ * unscaledDt);
-	tf.rotate.x += (targetPitch - tf.rotate.x) * k;
+	const float faceYaw = std::atan2(look.x, look.z);
+	const float leanK = 1.0f - std::exp(-kLeanSharp_ * unscaledDt);
+
+	constexpr float kTwoPi  = 6.28318530718f; // 横回転1回転ぶん
+	constexpr float kHalfPi = 1.57079632679f; // 前傾90度
+
+	if (arrived_) {
+		// 到着後も前傾姿勢(90度)は維持する。ドリル回転だけ止めて、敵の方へ向き直す。
+		tf.rotate.x += (kHalfPi - tf.rotate.x) * leanK;       // 前傾90度を保つ
+		tf.rotate.z += (0.0f - tf.rotate.z) * leanK;          // ドリル回転を止める
+		tf.rotate.y += WrapPi(faceYaw - tf.rotate.y) * leanK; // 最短回りで敵の方を向く
+	} else {
+		// 飛び込み中：フィギュアスケーターのスピン軸＝背骨まわりのドリル回転にする。
+		// 前傾90度で背骨をワールド前方(+Z)へ寝かせ、yaw を0にして背骨を Z 軸へ揃える。
+		// こうすると外掛けの Z 回転がちょうど「背骨軸まわりの回転（ドリル）」になる。
+		// （yaw で敵を向けると背骨が Z 軸からズレ、Z 回転が前転/後転に見えてしまう）
+		tf.rotate.y = 0.0f;                              // 背骨をワールドZ軸へ揃える
+		tf.rotate.x += (kHalfPi - tf.rotate.x) * leanK;  // 前傾90度へなじませる
+		tf.rotate.z = (1.0f - progress) * kTwoPi;        // 背骨軸まわりに1回転ドリル
+	}
 
 	owner_->SetTransform(tf);
 }
@@ -491,12 +541,14 @@ void UltimateSkill::Finish()
 	cineWeight_ = 0.0f;
 	cineT_ = 0.0f;
 	arrived_ = false;
+	slowEngaged_ = false;
 
 	// 上空・見下ろし姿勢から、地上・直立へ戻して通常状態へ返す。
 	{
 		Transform tf = owner_->GetTransform();
 		tf.translate.y = groundY_;
-		tf.rotate.x = 0.0f;
+		tf.rotate.x = 0.0f; // 前傾を解除して直立へ
+		tf.rotate.z = 0.0f; // ドリルのロールも解除
 		owner_->SetTransform(tf);
 	}
 

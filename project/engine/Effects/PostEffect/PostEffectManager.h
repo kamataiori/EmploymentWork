@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
+#include <array>
 #include "PostEffect.h"
+#include "RenderLayer.h"
 
 class PostEffectManager {
 public:
@@ -15,6 +17,18 @@ public:
 
 	uint32_t GetSrvIndex() const;
 	OffscreenRendering* GetOffscreen();
+
+	// ======== レイヤー別ポストエフェクト ========
+	// 各描画レイヤー（World / Particle / …）のエフェクトスタックを登録簿で束ね、
+	// レイヤーごとに別々のエフェクトを掛けられるようにする。
+	// 所有はしない（Worldは自身のpostEffect_、CanvasはMyGameが所有）。
+
+	// レイヤーのエフェクトスタックを登録（MyGameからDI注入）
+	void RegisterLayer(RenderLayerId id, OffscreenRendering* effect);
+	// レイヤーのエフェクトスタックを取得（型別setterで調整するため・非所有）
+	OffscreenRendering* GetEffect(RenderLayerId id) const;
+	// レイヤーに掛けるエフェクトの種類を切替える（動的）
+	void SetLayerType(RenderLayerId id, PostEffectType type);
 
 	/// <summary>
 	/// Vignetteのsetter
@@ -65,6 +79,13 @@ public:
 	void SetDissolveEdgeColor(const Vector3& color);
 	void SetDissolveTextures(const std::string& scenePath, const std::string& noisePath);
 
+	/// <summary>
+	/// Bloomのsetter
+	/// </summary>
+	void SetBloomThreshold(float threshold);
+	void SetBloomIntensity(float intensity);
+	void SetBloomIterations(int iterations);
+
 
 private:
 	PostEffectManager() = default;
@@ -74,6 +95,9 @@ private:
 
 private:
 	std::unique_ptr<PostEffect> postEffect_ = nullptr;
+
+	// レイヤーID → エフェクトスタック（非所有）
+	std::array<OffscreenRendering*, kRenderLayerCount> layers_{};
 
 	float randomTime_ = 0.0f;
 };

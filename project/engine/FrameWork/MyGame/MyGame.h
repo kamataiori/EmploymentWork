@@ -2,6 +2,8 @@
 #include "SceneFactory.h"
 #include "GlobalVariables.h"
 #include "engine/UI/UIManager.h"
+#include "engine/Effects/PostEffect/Canvas.h"
+#include "engine/Effects/PostEffect/LayerCompositor.h"
 #include "engine/Scene/ChangeEffect/SceneTransitionService.h"
 #include "engine/Scene/ChangeEffect/SceneTransitionTypes.h"
 #include "PlayModeState.h"
@@ -79,6 +81,11 @@ private:
 
 	// UIはアプリ全体で1つ
 	std::unique_ptr<UIManager> uiManager_;
+
+	// パーティクル専用レイヤー（Canvas方式のシーンで使用）
+	std::unique_ptr<Canvas> particleCanvas_;
+	// レイヤー合成器（各Canvasの結果をバックバッファへ重ねる）
+	std::unique_ptr<LayerCompositor> layerCompositor_;
 
 	// 遷移演出の生成・管理（SceneManagerは所有しない）
 	std::unique_ptr<SceneTransitionService> transitionService_;

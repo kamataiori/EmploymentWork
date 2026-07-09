@@ -40,6 +40,18 @@ void GamePlayScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("skydome.obj");
 	ModelManager::GetInstance()->LoadModel("Colosseum.obj");
 
+	// レイヤー別ポストエフェクト：
+	//   オブジェクト層(World) = そのまま / パーティクル層(Particle) = Bloom
+	//   （かける対象を変えたいときはこの数行の LayerType を書き換えるだけ）
+	auto* pe = PostEffectManager::GetInstance();
+	pe->SetLayerType(RenderLayerId::World, PostEffectType::Blur5x5);
+	pe->SetLayerType(RenderLayerId::Particle, PostEffectType::Bloom);
+	if (auto* particleFx = pe->GetEffect(RenderLayerId::Particle)) {
+		particleFx->SetBloomThreshold(bloomThreshold_);   // 明るいと判定する輝度
+		particleFx->SetBloomIntensity(bloomIntensity_);   // Bloomの強さ
+		particleFx->SetBloomIterations(bloomIterations_); // ぼかしの反復回数
+	}
+
 	// カメラ
 	camera1->SetTranslate({ 0.0f, 0.0f, -20.0f });
 	cameraEffect_ = std::make_unique<CameraEffectController>();
@@ -667,6 +679,34 @@ void GamePlayScene::Draw()
 
 void GamePlayScene::ForeGroundDraw()
 {
+	// Canvas方式：ここは World（前景スプライト）のみ。
+	// パーティクルは ParticleDraw()、UIは UIDraw() へ分離した。
+	SpriteCommon::GetInstance()->CommonSetting();
+
+	// イントロ中はUI(UIDraw)側で描くのでWorld前景スプライトは出さない
+	if (intro_.isActive()) {
+		return;
+	}
+
+	//ex->Draw();
+	player_->ForeGroundDraw();
+	enemy_->ForeGroundDraw();
+}
+
+void GamePlayScene::ParticleDraw()
+{
+	// イントロ中は従来どおりパーティクルを描かない
+	if (intro_.isActive()) {
+		return;
+	}
+	// パーティクル専用Canvasへ描画される
+	player_->ParticleDraw();
+	enemy_->ParticleDraw();
+}
+
+void GamePlayScene::UIDraw()
+{
+	// 合成後のバックバッファへ直接描画（ポストエフェクト対象外）
 	SpriteCommon::GetInstance()->CommonSetting();
 
 	if (intro_.isActive()) {
@@ -674,19 +714,29 @@ void GamePlayScene::ForeGroundDraw()
 		return;
 	}
 
-	//ex->Draw();
-	player_->ForeGroundDraw();
-	enemy_->ForeGroundDraw();
 	if (damagePopup_) damagePopup_->Draw(); // 敵の右上に与ダメージ数値
 	uiManager_->Draw();
-	player_->ParticleDraw();
-	enemy_->ParticleDraw();
 }
 
 void GamePlayScene::Debug()
 {
 #ifdef _DEBUG
 	if (!IsDockedImGuiEnabled()) return;
+
+	// ===== Bloom 調整パネル（パーティクル層に掛かっているBloomを調整）=====
+	if (auto* particleFx = PostEffectManager::GetInstance()->GetEffect(RenderLayerId::Particle)) {
+		ImGui::Begin("Bloom (Particle)");
+		if (ImGui::SliderFloat("Threshold", &bloomThreshold_, 0.0f, 1.0f)) {
+			particleFx->SetBloomThreshold(bloomThreshold_);
+		}
+		if (ImGui::SliderFloat("Intensity", &bloomIntensity_, 0.0f, 8.0f)) {
+			particleFx->SetBloomIntensity(bloomIntensity_);
+		}
+		if (ImGui::SliderInt("BlurIterations", &bloomIterations_, 1, 10)) {
+			particleFx->SetBloomIterations(bloomIterations_);
+		}
+		ImGui::End();
+	}
 
 	/*ImGui::SetNextWindowPos(ImVec2(10, 80), ImGuiCond_Once);
 	ImGui::SetNextWindowSize(ImVec2(320, 220), ImGuiCond_Once);
