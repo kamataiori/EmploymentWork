@@ -161,6 +161,9 @@ public:
 	// 判定が出ている間だけ非nullを返す（Scene 側でコライダー登録に使う）
 	MultiCollider* GetActiveAreaAttackCollider() const;
 
+	// 押し戻し専用の物理プロキシコライダー（ステージとの押し戻しに使う）
+	MultiCollider* GetBodyProxyCollider() const { return bodyProxy_.get(); }
+
 	// カメラ演出（着地時の振動などに使う）。Scene から注入される
 	void SetCameraEffect(CameraEffectController* fx) { cameraEffect_ = fx; }
 	CameraEffectController* GetCameraEffect() const { return cameraEffect_; }
@@ -255,6 +258,9 @@ private:
 	// 回転薙ぎ払いの攻撃判定（EnemyAreaAttack 型の球コライダー）
 	// 本体コライダーとは別物。Spin 中だけ Scene へ登録される
 	std::unique_ptr<MultiCollider> spinHitbox_;
+
+	// 押し戻し専用の物理プロキシ（ステージとだけ当たる Capsule。ヒット用OBBとは分離）
+	std::unique_ptr<MultiCollider> bodyProxy_;
 	bool  spinHitboxActive_ = false;
 	float spinHitboxRadius_ = 6.0f;
 	void UpdateSpinHitbox();

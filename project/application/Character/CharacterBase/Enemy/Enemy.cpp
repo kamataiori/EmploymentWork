@@ -12,6 +12,7 @@
 #include "State/EnemyStateManager.h"
 #include <random>
 #include <vector>
+#include <algorithm>
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
@@ -86,6 +87,28 @@ void Enemy::Initialize()
 	// （SetHitCallback だと種別情報が捨てられ、何に当たっても無条件で被弾する）
 	multiCollider_->SetHitCallbackEx(
 		[this](const CollisionInfo& info) { this->OnCollision(info); });
+
+	// --- 押し戻し専用の物理プロキシ（ステージとだけ当たる Capsule） ---
+	// ヒット判定用の本体OBBとは分離し、押し戻し(physics)だけを担当する。
+	{
+		bodyProxy_ = std::make_unique<MultiCollider>();
+		const float radius = std::min(obbSize_.x, obbSize_.z); // 胴体の水平半径
+		const float halfSeg = (std::max)(0.0f, obbSize_.y - radius); // 芯線の半長
+		Capsule cap{};
+		cap.start = colliderCenter_ - Vector3{ 0.0f, halfSeg, 0.0f };
+		cap.end = colliderCenter_ + Vector3{ 0.0f, halfSeg, 0.0f };
+		cap.radius = radius;
+		bodyProxy_->AddCapsule(cap);
+		bodyProxy_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemyBody));
+		bodyProxy_->SetResponse(CollisionResponse::Blocking);
+		bodyProxy_->SetMovable(true);
+		bodyProxy_->SetPushOutCallback([this](const Vector3& mtv) {
+			transform.translate += mtv;
+			colliderCenter_ = transform.translate + colliderOffset_;
+			object3d_->SetTranslate(transform.translate);
+			object3d_->Update();
+		});
+	}
 
 	uiManager_ = std::make_unique<UIManager>();
 	const float winW = 1280.0f;
@@ -193,6 +216,16 @@ void Enemy::Update()
 
 	OBB& obb = multiCollider_->MutableOBB(0);
 	obb.center = colliderCenter_;
+
+	// 押し戻しプロキシ(Capsule)も胴体位置へ同期
+	if (bodyProxy_ && !bodyProxy_->GetShapes().empty()) {
+		const float radius = std::min(obbSize_.x, obbSize_.z);
+		const float halfSeg = (std::max)(0.0f, obbSize_.y - radius);
+		Capsule& cap = bodyProxy_->MutableCapsule(0);
+		cap.start = colliderCenter_ - Vector3{ 0.0f, halfSeg, 0.0f };
+		cap.end = colliderCenter_ + Vector3{ 0.0f, halfSeg, 0.0f };
+		cap.radius = radius;
+	}
 
 	Vector3 axes[3];
 	BuildYawAxes(transform.rotate.y, axes);

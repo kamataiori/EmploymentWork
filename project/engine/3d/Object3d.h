@@ -72,6 +72,9 @@ public:
     // ModelのSetter
     void SetModel(const std::string& filePath) { model_ = ModelManager::GetInstance()->FindModel(filePath); }
 
+    // Modelのgetter（メッシュ頂点からコリジョン用BVHを作る等に使う。非所有）
+    Model* GetModel() const { return model_; }
+
     // Material colorのセッター
     void SetMaterialColor(const Vector4& color);
 

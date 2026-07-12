@@ -133,6 +133,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\SceneController.cpp" />
     <ClCompile Include="engine\3d\SkyBox.cpp" />
     <ClCompile Include="engine\Collision\Collider.cpp" />
+    <ClCompile Include="engine\Collision\BVH\MeshBVH.cpp" />
     <ClCompile Include="engine\Collision\CollisionFunctions.cpp" />
     <ClCompile Include="engine\Collision\CollisionManager.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\Enemy.cpp" />
@@ -290,6 +291,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\SceneController.h" />
     <ClInclude Include="engine\3d\SkyBox.h" />
     <ClInclude Include="engine\Collision\Collider.h" />
+    <ClInclude Include="engine\Collision\BVH\MeshBVH.h" />
     <ClInclude Include="engine\Collision\CollisionFunctions.h" />
     <ClInclude Include="engine\Collision\CollisionManager.h" />
     <ClInclude Include="engine\Collision\CollisionTypeIdDef.h" />
