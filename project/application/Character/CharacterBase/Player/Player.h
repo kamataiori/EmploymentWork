@@ -109,6 +109,9 @@ public:
 		return nullptr;
 	}
 
+	// 押し戻し専用の物理プロキシコライダー（ステージとの押し戻しに使う）
+	MultiCollider* GetBodyProxyCollider() const { return bodyProxy_.get(); }
+
 	void SetAnimation(const std::string& name)
 	{
 		if (name.empty()) return;
@@ -170,6 +173,9 @@ private:
 	float sphereRadius_ = 1.0f;
 	Vector3 colliderOffset_ = {};   // 原点からのオフセット(上方向)
 	Vector3 colliderTranslate_ = {}; // 当たり判定中心座標
+
+	// 押し戻し専用の物理プロキシ（ステージとだけ当たる。ヒット判定用の本体とは分離）
+	std::unique_ptr<MultiCollider> bodyProxy_;
 
 	bool isCollided_ = false;  // 当たり判定フラグ
 

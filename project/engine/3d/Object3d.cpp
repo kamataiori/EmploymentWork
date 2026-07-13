@@ -27,15 +27,18 @@ void Object3d::Initialize()
 
 void Object3d::Update()
 {
-    // model_ から modelData を取得
-    const Model::ModelData& modelData = model_->GetModelData();
-
-    if (modelData.isAnimation) {
+    // アニメーション更新（スキニングのComputeをここでDispatchする）
+    if (model_->GetModelData().isAnimation) {
         model_->Update();
     }
 
-    //// TransformからworldMatrixを作る
-    //worldMatrix_ = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+    UpdateTransform();
+}
+
+void Object3d::UpdateTransform()
+{
+    // model_ から modelData を取得
+    const Model::ModelData& modelData = model_->GetModelData();
 
     // 自分のローカル行列
     Matrix4x4 local = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);

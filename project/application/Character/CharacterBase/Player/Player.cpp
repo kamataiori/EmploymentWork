@@ -61,6 +61,31 @@ void Player::Initialize()
 	multiCollider_->SetHitCallbackEx(
 		[this](const CollisionInfo& info) { this->OnCollision(info); });
 
+	// --- 押し戻し専用の物理プロキシ（ステージとだけ当たる Sphere） ---
+	// ヒット判定用の本体(multiCollider_)とは分離し、押し戻し(physics)だけを担当する。
+	bodyProxy_ = std::make_unique<MultiCollider>();
+	{
+		Sphere sp{};
+		sp.center = colliderTranslate_;
+		sp.radius = sphereRadius_;
+		bodyProxy_->AddSphere(sp);
+	}
+	bodyProxy_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayerBody));
+	bodyProxy_->SetResponse(CollisionResponse::Blocking);
+	bodyProxy_->SetMovable(true);
+	bodyProxy_->SetPushOutCallback([this](const Vector3& mtv) {
+		// ステージにめり込んだ分だけ押し戻す。位置と各同期物を即時反映。
+		transform.translate += mtv;
+		colliderTranslate_ = transform.translate + colliderOffset_;
+		object3d_->SetTranslate(transform.translate);
+		// このコールバックは Object3d::Update() より後、同一フレームに複数回呼ばれ得る。
+		// Update() はスキニングのDispatchとリソースバリアを含むので、ここでは行列だけ更新する。
+		object3d_->UpdateTransform();
+		if (!bodyProxy_->GetShapes().empty()) {
+			bodyProxy_->MutableSphere(0).center = colliderTranslate_;
+		}
+	});
+
 	// 移動コンポーネントを生成し、本体の Transform と接地情報を共有する
 	mover_ = std::make_unique<PlayerMover>();
 	mover_->Initialize(&transform);
@@ -109,6 +134,11 @@ void Player::Update()
 {
 	// ===== Δt =====
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
+	// ===== CCD用：移動前（＝前フレームの押し戻し後）のコライダー中心を控える =====
+	// ダッシュ等で1フレームの移動量が半径を超えると離散判定では壁をすり抜けるため、
+	// ここから現在位置までを CollisionManager にスイープさせる。
+	const Vector3 prevColliderCenter = colliderTranslate_;
 
 	// ===== デバッグ：Xキーで即死 =====
 	if (!isDead_ && Input::GetInstance()->TriggerKey(DIK_X)) {
@@ -211,6 +241,15 @@ void Player::Update()
 	Sphere& sp = multiCollider_->MutableSphere(0);
 	sp.center = colliderTranslate_;
 	sp.radius = sphereRadius_;
+
+	// 押し戻しプロキシも本体と同じ位置へ同期
+	if (bodyProxy_ && !bodyProxy_->GetShapes().empty()) {
+		Sphere& psp = bodyProxy_->MutableSphere(0);
+		psp.center = colliderTranslate_;
+		psp.radius = sphereRadius_;
+		// すり抜け防止のスイープ用に、このフレームの移動元を渡す
+		bodyProxy_->SetPrevCenter(prevColliderCenter);
+	}
 
 	// ===== E スキル（回転斬り）発動中だけ剣からオーラを出す =====
 	bool eSkillActive = false;

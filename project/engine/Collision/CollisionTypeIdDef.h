@@ -35,6 +35,14 @@ enum class CollisionTypeIdDef : uint32_t
     kEnemy = MakeType(CollisionGroup::Enemy, 0),
     EnemyBullet = MakeType(CollisionGroup::Enemy, 1),
     EnemyAreaAttack = MakeType(CollisionGroup::Enemy, 2),
+
+    // World（ステージ地形。メッシュBVHで押し戻す静的コライダー）
+    Stage = MakeType(CollisionGroup::World, 0),
+
+    // 物理プロキシ（押し戻し専用のボディ。ヒット判定用ボディとは分離する）
+    // Object グループは Stage(World) とだけ当たる（下の ShouldIgnoreCollision 参照）。
+    kPlayerBody = MakeType(CollisionGroup::Object, 0),
+    kEnemyBody = MakeType(CollisionGroup::Object, 1),
 };
 
 // CollisionTypeIdDef からもグループが取れるようにする

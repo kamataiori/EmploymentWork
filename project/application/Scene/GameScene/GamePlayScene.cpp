@@ -69,14 +69,13 @@ void GamePlayScene::Initialize()
 	sky->SetModel("skydome.obj");
 	sky->SetTranslate({ 0.0f,0.0f,0.0f });
 
-	Colosseum = std::make_unique<Object3d>(this);
-	Colosseum->Initialize();
-	Colosseum->SetModel("Colosseum.obj");
-	Colosseum->SetTranslate({ 0.0f,-10.0f,0.0f });
-	Colosseum->SetScale({ 0.7f,0.7f,0.7f });
-
+	// Colosseum（アリーナ）は SceneController に一本化する。
+	// stage.json が Colosseum.obj を translate{0,-10,0}/scale0.7 で持つので、
+	// 描画も押し戻し用BVHも、この単一インスタンスから作られる（見た目と当たり判定が完全一致）。
 	stage_ = std::make_unique<SceneController>(this);
 	stage_->LoadScene("stage");
+	// ステージのメッシュから押し戻し用のBVHコライダーを構築（静的なので1回だけ）
+	stage_->BuildStageCollider();
 
 	// キャラクター生成・初期化
 	player_ = std::make_unique<Player>(this);
@@ -106,7 +105,6 @@ void GamePlayScene::Initialize()
 	stage_->SetCamera(followCamera.get());
 	player_->SetCamera(followCamera.get());
 	enemy_->SetCamera(followCamera.get());
-	Colosseum->SetCamera(followCamera.get());
 	DrawLine::GetInstance()->SetCamera(followCamera.get());
 
 	// プレイヤーの入力をロック
@@ -446,9 +444,6 @@ void GamePlayScene::UpdateCamera()
 	if (sky) {
 		sky->Update();
 	}
-	if (Colosseum) {
-		Colosseum->Update();
-	}
 	if (player_) {
 		//player_->UpdateVisual();
 	}
@@ -495,7 +490,6 @@ void GamePlayScene::Update()
 		skybox->Update();
 		ground->Update();
 		sky->Update();
-		Colosseum->Update();
 		player_->Update();
 		enemy_->UpdateVisual();
 
@@ -510,7 +504,6 @@ void GamePlayScene::Update()
 	skybox->Update();
 	ground->Update();
 	sky->Update();
-	Colosseum->Update();
 	player_->Update();
 	enemy_->Update();
 	ex->Update();
@@ -615,11 +608,24 @@ void GamePlayScene::Update()
 	}
 
 	// ===== 衝突判定 =====
+	// ステージ（押し戻しの受け側・静的）
+	if (stage_) {
+		if (auto* stageCol = stage_->GetStageCollider()) {
+			collisionManager_->RegisterCollider(stageCol);
+		}
+	}
+
 	collisionManager_->RegisterCollider(player_->GetMultiCollider());
+	if (auto* pbody = player_->GetBodyProxyCollider()) {
+		collisionManager_->RegisterCollider(pbody);
+	}
 	if (auto* wcol = player_->GetWeaponCollider()) {
 		collisionManager_->RegisterCollider(wcol);
 	}
 	collisionManager_->RegisterCollider(enemy_->GetMultiCollider());
+	if (auto* ebody = enemy_->GetBodyProxyCollider()) {
+		collisionManager_->RegisterCollider(ebody);
+	}
 
 	// 回転薙ぎ払いの攻撃判定（出ている間だけ登録される）
 	if (auto* areaAttack = enemy_->GetActiveAreaAttackCollider()) {
@@ -668,7 +674,10 @@ void GamePlayScene::Draw()
 {
 	Object3dCommon::GetInstance()->CommonSetting();
 	ground->Draw();
-	Colosseum->Draw();
+	// Colosseum（アリーナ）は SceneController が描画する。BVHもこの同一メッシュから作られる。
+	if (stage_) {
+		stage_->Draw();
+	}
 	player_->Draw();
 	enemy_->Draw();
 
