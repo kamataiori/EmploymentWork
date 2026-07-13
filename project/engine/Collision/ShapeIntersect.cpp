@@ -154,11 +154,11 @@ bool SweepSphereVsMesh(const Shape& mesh, const Vector3& from, const Vector3& to
     const float dist = std::sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
 
     // 1ステップの移動量。半径より十分小さくしないと刻みの間で壁を飛び越える。
-    const float kStepRatio = 0.5f;   // 半径の半分ずつ進める
-    const float kMinStep = 0.01f;  // 半径が極端に小さい場合の下限
+    constexpr float kStepRatio = 0.5f;  // 半径の半分ずつ進める
+    constexpr float kMinStep = 0.01f;   // 半径が極端に小さい場合の下限
     const float step = (std::max)(radius * kStepRatio, kMinStep);
 
-    // 移動量が刻み幅以下なら、そもそも飛び越えようがない（離散判定に任せる）
+    // 移動量が刻み幅以下なら飛び越えようがない（離散判定に任せる）
     if (dist <= step) return false;
 
     const int steps = static_cast<int>(std::ceil(dist / step));

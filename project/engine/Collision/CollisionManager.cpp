@@ -1,11 +1,7 @@
 #include "CollisionManager.h"
 #include "Collider.h"
 #include "ShapeIntersect.h"
-#include "BVH/MeshBVH.h"
-#include "MathFunctions.h"
 #include <unordered_set>
-#include <string>
-#include <Windows.h>
 #include <engine/TimeManager.h>
 
 // --------------------------
@@ -17,16 +13,15 @@ static std::pair<uint32_t, uint32_t> NormalizeU32Pair(uint32_t a, uint32_t b)
 }
 
 // 高速移動によるすり抜け（トンネリング）を潰す。
-// mover が前フレーム位置を持っていれば、前位置→現位置をスイープし、
-// 壁を飛び越えていた場合は「最初に接触する位置」まで引き戻す。
-// 引き戻した後のめり込みは、このあとの通常の離散押し戻しが解消する。
+// 前位置→現位置をスイープし、壁を飛び越えていたら最初の接触位置まで引き戻す。
+// 引き戻した後のめり込みは、このあとの離散押し戻しが解消する。
 static void SweepBackIfTunneled(Collider* mover,
     const std::vector<Shape>& moverShapes,
     const std::vector<Shape>& stageShapes)
 {
     if (!mover->IsMovable() || !mover->HasPrevCenter()) return;
 
-    // 押し戻しプロキシは球1つを前提にしている
+    // 押し戻しプロキシは球1つを前提とする
     if (moverShapes.empty() || moverShapes.front().kind != ShapeKind::Sphere) return;
     const Sphere& sp = moverShapes.front().sphere;
 
@@ -35,7 +30,7 @@ static void SweepBackIfTunneled(Collider* mover,
 
         Vector3 impact{};
         if (SweepSphereVsMesh(sh, mover->GetPrevCenter(), sp.center, sp.radius, impact)) {
-            // 現在位置 → 接触位置 へ戻す（ApplyPushOut は相対移動量を受け取る）
+            // ApplyPushOut は相対移動量を受け取るので、現在位置からの差分を渡す
             mover->ApplyPushOut(impact - sp.center);
             return;
         }
@@ -69,9 +64,8 @@ void CollisionManager::Reset() {
 // 登録された全てのコライダーの組み合わせで衝突チェック
 void CollisionManager::CheckAllCollisions()
 {
-    // 時間を進める（TimeManagerの関数名はあなたの実装に合わせて）
-    const float dt = TimeManager::GetInstance()->GetDeltaTime(); // ←違う名前ならここだけ置換
-    nowSec_ += dt;
+    // 多段ヒット抑止のクールダウン判定に使う時刻を進める
+    nowSec_ += TimeManager::GetInstance()->GetDeltaTime();
 
     currContacts_.clear();
 
@@ -127,90 +121,14 @@ void CollisionManager::CheckAllCollisions()
                 if (hit && !bothBlocking) break; // 検出だけで良いなら即抜け
             }
 
-            // [診断ログ] World(Stage)が絡むBlockingペアの評価結果。
-            // BVHの三角形数・ルート境界と、プローブ球から最寄り三角形までの距離を出す。
-            //  ・triCount=0        → 焼き込み失敗（BVHが空）
-            //  ・nearDist が radius より十分大きいまま貫通 → 三角形が別の場所にある（変換ズレ）
-            //  ・nearDist < radius なのに hit=0 → ナローフェーズの不具合
-            // 壁に近いフレームは throttle せず毎フレーム出す（貫通の瞬間を取りこぼさないため）。
-            {
-                const bool stagePair =
-                    (GetGroup(id1) == CollisionGroup::World || GetGroup(id2) == CollisionGroup::World);
-                if (stagePair && bothBlocking) {
-                    const bool worldIsFirst = (GetGroup(id1) == CollisionGroup::World);
-                    const auto& stageShapes = worldIsFirst ? s1 : s2;
-                    const auto& probeShapes = worldIsFirst ? s2 : s1;
-
-                    // ステージ側のBVH
-                    const MeshBVH* bvh = nullptr;
-                    for (const Shape& sh : stageShapes) {
-                        if (sh.kind == ShapeKind::Mesh && sh.mesh) { bvh = sh.mesh.get(); break; }
-                    }
-                    // プローブ側の球
-                    Vector3 p{ 0.0f, 0.0f, 0.0f };
-                    float radius = 0.0f;
-                    bool haveSphere = false;
-                    if (!probeShapes.empty() && probeShapes.front().kind == ShapeKind::Sphere) {
-                        p = probeShapes.front().sphere.center;
-                        radius = probeShapes.front().sphere.radius;
-                        haveSphere = true;
-                    }
-
-                    // 最寄り三角形までの距離を測る（半径+探索マージンの箱で候補を集める）
-                    const float kProbeMargin = 5.0f;
-                    float nearDist = -1.0f;   // -1 = 候補ゼロ
-                    int   candidates = 0;
-                    if (bvh && haveSphere && !bvh->Empty()) {
-                        const float r = radius + kProbeMargin;
-                        AABB box{};
-                        box.min = p - Vector3{ r, r, r };
-                        box.max = p + Vector3{ r, r, r };
-                        float best = 1.0e9f;
-                        bvh->QueryOverlap(box, [&](const Triangle& tri) -> bool {
-                            ++candidates;
-                            const Vector3 cp = ClosestPointOnTriangle(p, tri);
-                            const float d = Length(p - cp);
-                            if (d < best) best = d;
-                            return false; // 全候補を走査
-                            });
-                        if (candidates > 0) nearDist = best;
-                    }
-
-                    // 壁の近く（または接触中）なら毎フレーム、遠ければ0.25秒に1回
-                    const bool nearGeometry = (nearDist >= 0.0f && nearDist <= radius + kProbeMargin);
-                    static float s_lastStageLog = -1.0e9f;
-                    const bool timeToLog = (nowSec_ - s_lastStageLog) >= 0.25f;
-                    if (hit || nearGeometry || timeToLog) {
-                        if (timeToLog) s_lastStageLog = nowSec_;
-
-                        const AABB rb = bvh ? bvh->RootBounds() : AABB{};
-                        std::string msg = "[StagePair] hit=" + std::to_string(hit ? 1 : 0)
-                            + " depth=" + std::to_string(deepest.depth)
-                            + " probe=(" + std::to_string(p.x) + "," + std::to_string(p.y) + "," + std::to_string(p.z) + ")"
-                            + " r=" + std::to_string(radius)
-                            + " triCount=" + std::to_string(bvh ? (int)bvh->TriangleCount() : -1)
-                            + " cand=" + std::to_string(candidates)
-                            + " nearDist=" + std::to_string(nearDist)
-                            + " root=[(" + std::to_string(rb.min.x) + "," + std::to_string(rb.min.y) + "," + std::to_string(rb.min.z) + ")"
-                            + "-(" + std::to_string(rb.max.x) + "," + std::to_string(rb.max.y) + "," + std::to_string(rb.max.z) + ")]\n";
-                        OutputDebugStringA(msg.c_str());
-                    }
-                }
-            }
-
             if (!hit) continue;
 
-            // ---- 押し戻し（Blocking×Blocking・非ゲート＝毎フレーム）----
+            // ---- 押し戻し（Blocking×Blocking）----
+            // OnCollision と違い多段ヒット抑止をかけない（重なっている限り毎フレーム解消する）。
             // deepest.normal は c1 を c2 から押し出す向き。
             if (bothBlocking && haveContact && deepest.depth > 0.0f) {
                 const Vector3 mtv = deepest.normal * deepest.depth;
-                // [診断ログ] 押し戻しが発火したか。depth と法線を確認する。
-                {
-                    std::string msg = "[PushOut] id1=" + std::to_string((uint32_t)id1) + " id2=" + std::to_string((uint32_t)id2)
-                        + " depth=" + std::to_string(deepest.depth)
-                        + " n=(" + std::to_string(deepest.normal.x) + "," + std::to_string(deepest.normal.y) + "," + std::to_string(deepest.normal.z) + ")\n";
-                    OutputDebugStringA(msg.c_str());
-                }
+                // 両方動けるなら半分ずつ、片方が静的（ステージ）なら動ける側が全部負担する
                 const bool m1 = c1->IsMovable();
                 const bool m2 = c2->IsMovable();
                 if (m1 && m2) {

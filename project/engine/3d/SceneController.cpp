@@ -2,7 +2,6 @@
 #include "BVH/MeshBVH.h"
 #include "Model.h"
 #include <string>
-#include <Windows.h>
 #include "MathFunctions.h"
 #include "CollisionTypeIdDef.h"
 
@@ -86,27 +85,15 @@ void SceneController::BuildStageCollider()
         }
     }
 
-    // BVH構築
     stageBVH_ = std::make_shared<MeshBVH>();
-    const size_t bakedTriCount = triangles.size();
     stageBVH_->Build(std::move(triangles));
 
-    // [診断ログ] 焼き込んだ三角形数とワールド境界。
-    // 三角形が0 → メッシュ未取得。境界がプレイヤーの居る範囲とズレていれば位置/スケールの問題。
-    {
-        const AABB rb = stageBVH_->RootBounds();
-        std::string msg = "[BuildStageCollider] triangles=" + std::to_string(bakedTriCount)
-            + " bounds.min=(" + std::to_string(rb.min.x) + "," + std::to_string(rb.min.y) + "," + std::to_string(rb.min.z) + ")"
-            + " bounds.max=(" + std::to_string(rb.max.x) + "," + std::to_string(rb.max.y) + "," + std::to_string(rb.max.z) + ")\n";
-        OutputDebugStringA(msg.c_str());
-    }
-
-    // Meshシェイプを1つ持つ静的コライダーを作る（押し戻しの受け側）
+    // 押し戻しの受け側。ステージは動かないので Movable=false（MTVは相手側が全部負担する）
     stageCollider_ = std::make_unique<MultiCollider>();
     stageCollider_->AddMesh(stageBVH_);
     stageCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::Stage));
     stageCollider_->SetResponse(CollisionResponse::Blocking);
-    stageCollider_->SetMovable(false); // ステージは動かない
+    stageCollider_->SetMovable(false);
 }
 
 void SceneController::Update()

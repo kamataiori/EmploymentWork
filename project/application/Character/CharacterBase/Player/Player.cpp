@@ -134,8 +134,8 @@ void Player::Update()
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
 	// ===== CCD用：移動前（＝前フレームの押し戻し後）のコライダー中心を控える =====
-	// ダッシュ等で1フレームの移動量が半径を超えると、離散判定では壁をすり抜ける。
-	// この位置から現在位置までを CollisionManager がスイープして接触位置まで戻す。
+	// ダッシュ等で1フレームの移動量が半径を超えると離散判定では壁をすり抜けるため、
+	// ここから現在位置までを CollisionManager にスイープさせる。
 	const Vector3 prevColliderCenter = colliderTranslate_;
 
 	// ===== デバッグ：Xキーで即死 =====
