@@ -133,6 +133,11 @@ void Player::Update()
 	// ===== Δt =====
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
+	// ===== CCD用：移動前（＝前フレームの押し戻し後）のコライダー中心を控える =====
+	// ダッシュ等で1フレームの移動量が半径を超えると、離散判定では壁をすり抜ける。
+	// この位置から現在位置までを CollisionManager がスイープして接触位置まで戻す。
+	const Vector3 prevColliderCenter = colliderTranslate_;
+
 	// ===== デバッグ：Xキーで即死 =====
 	if (!isDead_ && Input::GetInstance()->TriggerKey(DIK_X)) {
 		hp_ = 0;
@@ -240,6 +245,8 @@ void Player::Update()
 		Sphere& psp = bodyProxy_->MutableSphere(0);
 		psp.center = colliderTranslate_;
 		psp.radius = sphereRadius_;
+		// すり抜け防止のスイープ用に、このフレームの移動元を渡す
+		bodyProxy_->SetPrevCenter(prevColliderCenter);
 	}
 
 	// ===== E スキル（回転斬り）発動中だけ剣からオーラを出す =====

@@ -76,9 +76,21 @@ public:
     bool IsMovable() const { return movable_; }
     void SetMovable(bool m) { movable_ = m; }
 
+    // ---- CCD（連続判定）用 ----
+    // 離散判定は「その瞬間の位置」しか見ないので、1フレームの移動量が半径を超えると
+    // 壁を飛び越えてすり抜ける（トンネリング）。毎フレーム「移動前の中心」を渡しておくと、
+    // CollisionManager が 前位置→現位置 をスイープして最初の接触位置まで引き戻す。
+    // 設定しなければスイープは行われない（低速なコライダーは設定不要）。
+    bool HasPrevCenter() const { return hasPrevCenter_; }
+    const Vector3& GetPrevCenter() const { return prevCenter_; }
+    void SetPrevCenter(const Vector3& c) { prevCenter_ = c; hasPrevCenter_ = true; }
+
 private:
     uint32_t typeID_ = 0u;
     uint32_t instanceId_ = 0;
     CollisionResponse response_ = CollisionResponse::Trigger;
     bool movable_ = true;
+
+    Vector3 prevCenter_{ 0.0f, 0.0f, 0.0f };
+    bool hasPrevCenter_ = false;
 };

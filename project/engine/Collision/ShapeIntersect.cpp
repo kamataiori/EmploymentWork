@@ -144,6 +144,40 @@ static bool MeshVsCapsuleContact(const Shape& mesh, const Capsule& cap, Vector3&
 // ------------------------------------------------------------------
 // 公開API
 // ------------------------------------------------------------------
+bool SweepSphereVsMesh(const Shape& mesh, const Vector3& from, const Vector3& to,
+    float radius, Vector3& outPos)
+{
+    if (mesh.kind != ShapeKind::Mesh || !mesh.mesh || mesh.mesh->Empty()) return false;
+    if (radius <= 0.0f) return false;
+
+    const Vector3 delta = to - from;
+    const float dist = std::sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
+
+    // 1ステップの移動量。半径より十分小さくしないと刻みの間で壁を飛び越える。
+    const float kStepRatio = 0.5f;   // 半径の半分ずつ進める
+    const float kMinStep = 0.01f;  // 半径が極端に小さい場合の下限
+    const float step = (std::max)(radius * kStepRatio, kMinStep);
+
+    // 移動量が刻み幅以下なら、そもそも飛び越えようがない（離散判定に任せる）
+    if (dist <= step) return false;
+
+    const int steps = static_cast<int>(std::ceil(dist / step));
+    for (int i = 1; i <= steps; ++i) {
+        const float t = static_cast<float>(i) / static_cast<float>(steps);
+
+        Sphere sp{};
+        sp.center = from + delta * t;
+        sp.radius = radius;
+
+        Vector3 n{}; float depth = 0.0f;
+        if (MeshVsSphereContact(mesh, sp, n, depth)) {
+            outPos = sp.center;   // 最初に触れた位置
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Intersects(const Shape& a, const Shape& b) {
     // Mesh はどちら側に来てもここで捌く
     if (a.kind == ShapeKind::Mesh) return MeshVsShapeBool(a, b);

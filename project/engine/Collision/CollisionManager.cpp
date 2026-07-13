@@ -16,6 +16,32 @@ static std::pair<uint32_t, uint32_t> NormalizeU32Pair(uint32_t a, uint32_t b)
 	return (a < b) ? std::make_pair(a, b) : std::make_pair(b, a);
 }
 
+// 高速移動によるすり抜け（トンネリング）を潰す。
+// mover が前フレーム位置を持っていれば、前位置→現位置をスイープし、
+// 壁を飛び越えていた場合は「最初に接触する位置」まで引き戻す。
+// 引き戻した後のめり込みは、このあとの通常の離散押し戻しが解消する。
+static void SweepBackIfTunneled(Collider* mover,
+    const std::vector<Shape>& moverShapes,
+    const std::vector<Shape>& stageShapes)
+{
+    if (!mover->IsMovable() || !mover->HasPrevCenter()) return;
+
+    // 押し戻しプロキシは球1つを前提にしている
+    if (moverShapes.empty() || moverShapes.front().kind != ShapeKind::Sphere) return;
+    const Sphere& sp = moverShapes.front().sphere;
+
+    for (const Shape& sh : stageShapes) {
+        if (sh.kind != ShapeKind::Mesh) continue;
+
+        Vector3 impact{};
+        if (SweepSphereVsMesh(sh, mover->GetPrevCenter(), sp.center, sp.radius, impact)) {
+            // 現在位置 → 接触位置 へ戻す（ApplyPushOut は相対移動量を受け取る）
+            mover->ApplyPushOut(impact - sp.center);
+            return;
+        }
+    }
+}
+
 struct u32pair_hash {
 	size_t operator()(const std::pair<uint32_t, uint32_t>& p) const noexcept
 	{
@@ -69,6 +95,14 @@ void CollisionManager::CheckAllCollisions()
             const bool bothBlocking =
                 (c1->GetResponse() == CollisionResponse::Blocking &&
                  c2->GetResponse() == CollisionResponse::Blocking);
+
+            // ---- CCD：離散判定の前に、すり抜けていたら接触位置まで引き戻す ----
+            // ここで位置を戻しておくと、以降の離散判定は「壁の手前にいる」状態で走るので
+            // 通常どおり深さ付き接触が取れる。
+            if (bothBlocking) {
+                SweepBackIfTunneled(c1, s1, s2);
+                SweepBackIfTunneled(c2, s2, s1);
+            }
 
             bool hit = false;
             Contact deepest{};          // 最もめり込んでいる接触
