@@ -49,8 +49,8 @@ void SceneController::BuildStageCollider()
         Model* model = obj->GetModel();
         if (!model) continue;
 
-        // ワールド行列を最新化してから使う
-        obj->Update();
+        // ワールド行列を最新化してから使う（スキニングは不要なので行列のみ）
+        obj->UpdateTransform();
 
         const Model::ModelData& data = model->GetModelData();
 

@@ -78,7 +78,9 @@ void Player::Initialize()
 		transform.translate += mtv;
 		colliderTranslate_ = transform.translate + colliderOffset_;
 		object3d_->SetTranslate(transform.translate);
-		object3d_->Update();
+		// このコールバックは Object3d::Update() より後、同一フレームに複数回呼ばれ得る。
+		// Update() はスキニングのDispatchとリソースバリアを含むので、ここでは行列だけ更新する。
+		object3d_->UpdateTransform();
 		if (!bodyProxy_->GetShapes().empty()) {
 			bodyProxy_->MutableSphere(0).center = colliderTranslate_;
 		}

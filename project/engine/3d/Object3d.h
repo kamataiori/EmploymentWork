@@ -44,9 +44,18 @@ public:
     void Initialize();
 
     /// <summary>
-    /// 更新
+    /// 更新（スキニングのDispatchを含む。1フレームにつき Draw と1対1で呼ぶこと）
     /// </summary>
     void Update();
+
+    /// <summary>
+    /// ワールド行列と座標変換CBufferだけを更新する。
+    /// Update() はアニメーションモデルでスキニングのComputeを走らせ、頂点バッファの
+    /// リソース状態を UAV→VertexBuffer に遷移させる。この遷移は Draw() の復帰と対で
+    /// 成立しているので、Update() を1フレームに2回呼ぶとバリアの前状態が食い違う。
+    /// Update() の後に位置だけ動かしたい場合（押し戻し等）はこちらを使う。
+    /// </summary>
+    void UpdateTransform();
 
     /// <summary>
     /// ImGuiの更新

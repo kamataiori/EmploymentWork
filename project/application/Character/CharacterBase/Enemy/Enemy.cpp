@@ -106,7 +106,9 @@ void Enemy::Initialize()
 			transform.translate += mtv;
 			colliderCenter_ = transform.translate + colliderOffset_;
 			object3d_->SetTranslate(transform.translate);
-			object3d_->Update();
+			// Update() はスキニングのDispatchとリソースバリアを含み、1フレームに1回しか呼べない。
+			// 押し戻しは Update() の後に複数回来るので、行列だけ更新する。
+			object3d_->UpdateTransform();
 		});
 	}
 
