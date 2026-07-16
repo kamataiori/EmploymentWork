@@ -12,13 +12,28 @@
 #include "DrawLine.h"
 #include "CollisionManager.h"
 #include <Enemy/Enemy.h>
+#include <Enemy/Sentinel/Sentinel.h>
+#include <Enemy/Sentinel/SentinelField.h>
+#include <Enemy/Swarm/SwarmController.h>
 #include <FollowCamera.h>
 #include "Camera/CameraEffectController.h"
 #include "SkyBox.h"
 #include "engine/UI/UIManager.h"
 #include "engine/UI/DamagePopupManager.h"
 #include "PauseScreen.h"
+#include "Flow/GameFlowContext.h"
+#include "Flow/GameFlowStateMachine.h"
 
+//======================================================
+// GamePlayScene
+//------------------------------------------------------
+// エンティティ・カメラ・UI の「所有者」。
+// バトルがどう進むか（登場演出 → 戦闘 → 決着）は GameFlowStateMachine が持ち、
+// このクラスの Update/描画は、そのときの局面へ丸ごと委譲するだけの薄い層にする。
+//
+// 局面を1つ増やしたいときは Flow/States/ に State を足して繋ぐだけで、
+// このクラスは触らずに済む。
+//======================================================
 class GamePlayScene : public BaseScene
 {
 public:
@@ -40,7 +55,6 @@ public:
 	void UIDraw() override;          // 合成後のバックバッファへ（エフェクト対象外）
 
 	void Debug() override;
-	void CheckAllCollisions();
 
 	// マウスカーソル設定: ゲームプレイ中は非表示+ウィンドウ内に閉じ込める
 	bool ShouldShowCursor() const override { return false; }
@@ -50,67 +64,23 @@ public:
 	Camera* GetCamera1() const { return camera1.get(); }
 
 private:
-
 	// ================================================
-	// バトル開始イントロ演出
+	// バトルの進行（State は Flow/States/ にある）
 	// ================================================
+	GameFlowStateMachine flow_;
+	GameFlowContext      context_{};
 
-	enum class IntroPhase
-	{
-		kCountdown, // 5→0 カウントダウン
-		kStart,     // "START!" 表示
-		kFinished,  // 演出終了
-	};
+	// context_ に各エンティティの非所有ポインタを差し込む（Initialize の最後で呼ぶ）
+	void BuildFlowContext();
 
-	struct BattleIntroController
-	{
-		IntroPhase phase = IntroPhase::kCountdown;
-
-		int   countdownNum = 5;
-		float countdownTimer = 0.0f;
-		float kCountPerSec = 1.0f;
-
-		float startDisplayTimer = 0.0f;
-		float kStartDisplaySec = 1.2f;
-
-		bool isActive() const { return phase != IntroPhase::kFinished; }
-
-		void Reset()
-		{
-			phase = IntroPhase::kCountdown;
-			countdownNum = 5;
-			countdownTimer = 0.0f;
-			startDisplayTimer = 0.0f;
-		}
-	};
-
-	BattleIntroController intro_;
-
-	static constexpr int kCountMax = 5;
-	std::array<std::unique_ptr<Sprite>, kCountMax + 1> countSprites_;
-	std::unique_ptr<Sprite> startSprite_;
-
-	void UpdateIntro(float dt);
-	void DrawIntroUI();
-
-	// Bloom調整用（ImGui）
-	float bloomThreshold_ = 0.8f;
-	float bloomIntensity_ = 1.2f;
-	int   bloomIterations_ = 5;
+	// ポーズ状態の変化を見てカーソルを切替える
+	void SyncCursorWithPauseState();
 
 	// ================================================
 
 	std::unique_ptr<Camera> camera1 = std::make_unique<Camera>();
 	std::unique_ptr<FollowCamera> followCamera;
-
 	std::unique_ptr<CameraEffectController> cameraEffect_;
-	bool  followCameraLocked_ = false;
-	float defeatZoomTimer_ = -1.0f;
-	bool  defeatZoomStarted_ = false;
-	bool  slowMotionStarted_ = false;
-	bool  zoomActive_ = false;
-	float zoomTimer_ = 0.0f;
-	float zoomDuration_ = 0.0f;
 
 	std::unique_ptr<SkyBox>   skybox = std::make_unique<SkyBox>();
 	std::unique_ptr<Object3d> ground;
@@ -118,11 +88,18 @@ private:
 
 	std::unique_ptr<Player>   player_;
 	std::unique_ptr<Enemy>    enemy_;
-	bool enemyWasDead_ = false;
+
+	// 第1波の群れ（波状に登場する近接スウォーム）。
+	std::unique_ptr<SwarmController> swarmController_;
+
+	// 前哨の敵4体（四隅）。全滅すると中央コアが破壊可能になる。
+	std::unique_ptr<SentinelField> sentinelField_;
+
+	// 中央のボスのコア（Sentinel を流用）。破壊するとボスが登場する。
+	std::unique_ptr<Sentinel> centerCore_;
 
 	std::unique_ptr<CollisionManager> collisionManager_;
 	std::unique_ptr<SceneController>  stage_;
-	std::unique_ptr<Sprite>           ex;
 	std::unique_ptr<UIManager>        uiManager_;
 
 	// 敵への与ダメージ数値ポップアップ（敵へ注入する）
@@ -132,12 +109,14 @@ private:
 	PauseScreen* pauseScreenRef_ = nullptr;
 	bool wasPausedLastFrame_ = false;
 
-	// ポーズ状態の変化を見てカーソルを切替える
-	void SyncCursorWithPauseState();
+	// 前哨の敵の配置：中心（原点）から四隅までのXZ距離
+	static constexpr float kSentinelFieldHalfExtent_ = 20.0f;
 
-	bool  gameOverStarted_ = false;
-	float vignetteTimer_ = 0.0f;
-	const float kVignetteDuration_ = 2.0f;
-	const float kVignetteScale_ = 0.3f;
-	const float kVignettePower_ = 3.0f;
+	// 中央コア（ボスのコア）のスケール。四隅より大きく見せて中心を強調する
+	static constexpr float kCenterCoreScale_ = 4.0f;
+
+	// Bloom調整用（ImGui）
+	float bloomThreshold_ = 0.8f;
+	float bloomIntensity_ = 1.2f;
+	int   bloomIterations_ = 5;
 };

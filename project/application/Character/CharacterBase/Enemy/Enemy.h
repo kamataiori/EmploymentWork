@@ -108,6 +108,12 @@ public:
 
 	bool IsDead() const { return isDead_; }
 
+	// 休眠制御：前哨戦（Sentinel/コア）の間はボスを完全に眠らせる。
+	// active_ が false の間は Update / 各Draw が即return するので、AIも描画も止まり
+	// スキニングのバリアも発行されない。BossAppearState で SetActive(true) して起こす。
+	void SetActive(bool a) { active_ = a; }
+	bool IsActive() const { return active_; }
+
 	//=== ITarget（プレイヤーの攻撃対象としてのインターフェイス）===
 	// 生存判定・狙う座標・ダメージ適用を、敵の具体型を意識せず使えるようにする。
 	bool IsAlive() const override { return !isDead_; }
@@ -234,6 +240,7 @@ private:
 	std::unique_ptr<UIManager> uiManager_;
 
 	bool isDead_ = false;        // 死亡状態かどうか
+	bool active_ = false;        // 休眠フラグ（false=眠っている。BossAppearで起こす）
 	float deathTimer_ = 0.0f;    // 死亡経過時間
 	const float kDeathToTitleDelay_ = 8.5f; // タイトルへ戻るまでの秒数
 

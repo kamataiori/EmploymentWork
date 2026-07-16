@@ -36,6 +36,12 @@ enum class CollisionTypeIdDef : uint32_t
     EnemyBullet = MakeType(CollisionGroup::Enemy, 1),
     EnemyAreaAttack = MakeType(CollisionGroup::Enemy, 2),
 
+    // 前哨の敵（Sentinel）の被弾ボディ。
+    // Default グループにしてあるので「触れてもプレイヤーはダメージを受けない」。
+    // プレイヤーは近づいて武器で殴れる一方、接触ダメージは発生しない
+    //（攻撃は Sentinel が撃つ EnemyBullet 側で与える想定）。
+    kSentinel = MakeType(CollisionGroup::Default, 1),
+
     // World（ステージ地形。メッシュBVHで押し戻す静的コライダー）
     Stage = MakeType(CollisionGroup::World, 0),
 

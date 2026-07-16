@@ -154,6 +154,9 @@ void Enemy::Initialize()
 
 void Enemy::Update()
 {
+	// 休眠中はAIも弾も見た目も動かさない（スキニングのバリアも発行しない）
+	if (!active_) return;
+
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
 	if (!isDead_) {
@@ -404,6 +407,8 @@ void Enemy::BackGroundDraw()
 
 void Enemy::Draw()
 {
+	if (!active_) return;
+
 	multiCollider_->Draw();
 
 	for (auto& b : dropBullets_) {
@@ -420,6 +425,8 @@ void Enemy::Draw()
 
 void Enemy::ForeGroundDraw()
 {
+	if (!active_) return;
+
 	if (uiManager_) {
 		uiManager_->Draw();
 	}
@@ -431,11 +438,15 @@ void Enemy::ForeGroundDraw()
 
 void Enemy::AnimationDraw()
 {
+	if (!active_) return;
+
 	object3d_->Draw();
 }
 
 void Enemy::ParticleDraw()
 {
+	if (!active_) return;
+
 	// 生存中・死亡時どちらでもパーティクル描画
 	if (deathSystem_) {
 		deathSystem_->Draw();
@@ -546,6 +557,9 @@ void Enemy::OnCollision(const CollisionInfo& info)
 
 void Enemy::UpdateVisual()
 {
+	// 休眠中は見た目も更新しない（object3d_->Update のバリア発行を避ける）
+	if (!active_) return;
+
 	// AI・弾・ステートを動かさず、見た目（object3d_）だけ更新する
 	// イントロ演出中に呼ぶ専用メソッド
 	object3d_->SetTranslate(transform.translate);
