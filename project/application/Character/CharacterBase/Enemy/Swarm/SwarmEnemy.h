@@ -24,8 +24,16 @@ public:
 
     void Initialize() override {}
 
-    // 出現位置を指定して初期化
-    void InitializeSwarm(const Vector3& spawnPos);
+    // 重い準備（モデル・パーティクル・コライダーの用意）を済ませる。
+    // ここはシェーダのコンパイルやプリセット読み込みを伴うのでロード中に呼ぶこと。
+    // 呼んだ直後は未出現（非アクティブ）で、Respawn するまで居ないものとして扱う。
+    void InitializeSwarm();
+
+    // 出現位置を決めて場に出す。状態を初期値へ戻すだけなので実行中に呼んでよい。
+    void Respawn(const Vector3& spawnPos);
+
+    // 場に出ているか（未出現の個体は更新も描画もしない）
+    bool IsActive() const { return active_; }
 
     void Update() override;
 
@@ -41,7 +49,7 @@ public:
     bool IsDead() const { return isDead_; }
 
     //=== ITarget ===
-    bool IsAlive() const override { return !isDead_; }
+    bool IsAlive() const override { return active_ && !isDead_; }
     Vector3 GetTargetCenter() const override { return transform.translate + Vector3{ 0.0f, kTargetOffsetY_, 0.0f }; }
     void ApplyDamage(int amount) override;
 
@@ -59,6 +67,9 @@ private:
     Phase phase_ = Phase::Chase;
 
     bool isDead_ = false;
+
+    // まだ Respawn されていない待機中の個体は false
+    bool active_ = false;
 
     const Transform* playerTarget_ = nullptr;
 

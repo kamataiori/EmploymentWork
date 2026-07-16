@@ -1,5 +1,5 @@
 #include "Flow/States/SentinelBattleState.h"
-#include "Flow/States/CoreBattleState.h"
+#include "Flow/States/CoreRevealState.h"
 #include "Flow/States/LoseState.h"
 #include "Flow/GameFlowContext.h"
 #include "Flow/GameFlowStateMachine.h"
@@ -26,8 +26,8 @@ void SentinelBattleState::Update(GameFlowContext& ctx)
         return;
     }
 
-    // Sentinel 全滅 → 中央コアが破壊可能になる局面へ
+    // Sentinel 全滅 → 出現カットシーンへ（カメラをコアへ寄せ→迫り上がりを見せる）
     if (ctx.sentinels && ctx.sentinels->AllDefeated()) {
-        ctx.flow->ChangeState(std::make_unique<CoreBattleState>());
+        ctx.flow->ChangeState(std::make_unique<CoreRevealState>());
     }
 }

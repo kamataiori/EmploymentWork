@@ -1,5 +1,5 @@
 #include "Flow/States/SwarmWaveState.h"
-#include "Flow/States/SentinelBattleState.h"
+#include "Flow/States/SentinelRevealState.h"
 #include "Flow/States/LoseState.h"
 #include "Flow/GameFlowContext.h"
 #include "Flow/GameFlowStateMachine.h"
@@ -26,8 +26,8 @@ void SwarmWaveState::Update(GameFlowContext& ctx)
         return;
     }
 
-    // 全波を殲滅 → 前哨戦（Sentinel）へ
+    // 全波を殲滅 → 出現カットシーンへ（カメラを奥へ切替→Sentinel登場を見せる）
     if (ctx.swarm && ctx.swarm->AllWavesCleared()) {
-        ctx.flow->ChangeState(std::make_unique<SentinelBattleState>());
+        ctx.flow->ChangeState(std::make_unique<SentinelRevealState>());
     }
 }

@@ -80,7 +80,9 @@ void SentinelField::RegisterColliders(CollisionManager* cm)
 void SentinelField::CollectAliveTargets(std::vector<ITarget*>& out)
 {
     for (auto& s : sentinels_) {
-        if (s->IsAlive()) out.push_back(s.get());
+        // hittable_ は地中待機・迫り上がり中は false なので、
+        // まだ出ていない個体をプレイヤーが狙ってしまうことがない。
+        if (s->IsAlive() && s->IsHittable()) out.push_back(s.get());
     }
 }
 

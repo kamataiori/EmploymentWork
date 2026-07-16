@@ -9,9 +9,11 @@
 
 void CoreBattleState::Enter(GameFlowContext& ctx)
 {
-    // ここで初めて中央コアを破壊可能にする
+    // 通常は CoreRevealState が既に迫り上がらせているので、これは空振りする
+    // （StartSpawn は地中待機の個体にしか効かない）。演出を挟まず直接ここへ来た
+    // 場合でもコアが出ないままにならないための保険。
     if (ctx.centerCore) {
-        ctx.centerCore->SetHittable(true);
+        ctx.centerCore->StartSpawn();
     }
 }
 

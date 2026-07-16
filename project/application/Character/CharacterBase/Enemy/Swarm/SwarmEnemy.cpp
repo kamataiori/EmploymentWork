@@ -28,26 +28,15 @@ SwarmEnemy::SwarmEnemy(BaseScene* scene)
 {
 }
 
-void SwarmEnemy::InitializeSwarm(const Vector3& spawnPos)
+void SwarmEnemy::InitializeSwarm()
 {
     ModelManager::GetInstance()->LoadModel(kModelName);
 
     object3d_->Initialize();
     object3d_->SetModel(kModelName);
 
-    transform.translate = spawnPos;
-    transform.translate.y += kGroundOffsetY;
-    transform.rotate = { 0.0f, 0.0f, 0.0f };
     transform.scale = { kModelScale, kModelScale, kModelScale };
-    groundY_ = transform.translate.y;
-
-    object3d_->SetTranslate(transform.translate);
-    object3d_->SetRotate(transform.rotate);
     object3d_->SetScale(transform.scale);
-
-    phase_ = Phase::Chase;
-    isDead_ = false;
-    hp_ = kMaxHP_;
 
     particles_ = std::make_unique<ParticleManager>();
     particles_->Initialize(VertexDataType::Plane);
@@ -59,11 +48,39 @@ void SwarmEnemy::InitializeSwarm(const Vector3& spawnPos)
     // 本体（Enemyグループ・Trigger）。触れると Player 側の既存処理で被弾する。
     multiCollider_->Clear();
     Sphere sp{};
-    sp.center = transform.translate;
     sp.radius = kRadius;
     multiCollider_->AddSphere(sp);
     multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemy));
     multiCollider_->SetHitCallbackEx([this](const CollisionInfo& info) { this->OnCollision(info); });
+}
+
+void SwarmEnemy::Respawn(const Vector3& spawnPos)
+{
+    transform.translate = spawnPos;
+    transform.translate.y += kGroundOffsetY;
+    transform.rotate = { 0.0f, 0.0f, 0.0f };
+    groundY_ = transform.translate.y;
+
+    object3d_->SetTranslate(transform.translate);
+    object3d_->SetRotate(transform.rotate);
+
+    phase_ = Phase::Chase;
+    lungeTimer_ = 0.0f;
+    recoverTimer_ = 0.0f;
+    isDead_ = false;
+    hp_ = kMaxHP_;
+    active_ = true;
+
+    // 死亡時に 0 にした当たり半径を戻し、新しい位置へ移す
+    if (!multiCollider_->GetShapes().empty()) {
+        multiCollider_->MutableSphere(0).center = transform.translate;
+        multiCollider_->MutableSphere(0).radius = kRadius;
+    }
+
+    // ここで行列を確定させておく。Object3d::Draw は定数バッファを渡すだけで、
+    // 中身を書くのは Update なので、これが無いと出現した最初の1フレームだけ
+    // 未更新の行列（＝原点）で描かれてしまう。
+    object3d_->Update();
 }
 
 void SwarmEnemy::Update()
@@ -142,7 +159,7 @@ void SwarmEnemy::Update()
 
 void SwarmEnemy::Draw()
 {
-    if (isDead_) return;
+    if (!active_ || isDead_) return;
     object3d_->Draw();
 }
 

@@ -31,7 +31,7 @@ void GamePlayScene::Initialize()
 	//   オブジェクト層(World) = そのまま / パーティクル層(Particle) = Bloom
 	//   （かける対象を変えたいときはこの数行の LayerType を書き換えるだけ）
 	auto* pe = PostEffectManager::GetInstance();
-	pe->SetLayerType(RenderLayerId::World, PostEffectType::Blur5x5);
+	pe->SetLayerType(RenderLayerId::World, kWorldPostEffect_);
 	pe->SetLayerType(RenderLayerId::Particle, PostEffectType::Bloom);
 	if (auto* particleFx = pe->GetEffect(RenderLayerId::Particle)) {
 		particleFx->SetBloomThreshold(bloomThreshold_);   // 明るいと判定する輝度
@@ -51,10 +51,14 @@ void GamePlayScene::Initialize()
 	ground->SetModel("ground.obj");
 	ground->SetTranslate({ 0.0f,0.0f,0.0f });
 
+	// 天球。モデルは全面が内向きに作られているので、通常の裏面カリングのまま内側から見える。
+	// スケール1だと半径100しかなく、奥のアリーナ（Z=280・四隅は中心から45）が球の外へ
+	// はみ出してしまうため、戦場全体を包める大きさまで広げる。
 	sky = std::make_unique<Object3d>(this);
 	sky->Initialize();
 	sky->SetModel("skydome.obj");
 	sky->SetTranslate({ 0.0f,0.0f,0.0f });
+	sky->SetScale({ kSkydomeScale_, kSkydomeScale_, kSkydomeScale_ });
 
 	// ステージ（stage.json が持つ stage.obj）は SceneController に一本化する。
 	// 描画も押し戻し用BVHも、この単一インスタンスから作られる（見た目と当たり判定が完全一致）。
@@ -67,29 +71,49 @@ void GamePlayScene::Initialize()
 	player_ = std::make_unique<Player>(this);
 	enemy_ = std::make_unique<Enemy>(this);
 
-	// 第1波の群れ（波状に登場）。追尾対象としてプレイヤーの Transform を渡す。
-	swarmController_ = std::make_unique<SwarmController>();
-	swarmController_->Initialize(this, &player_->GetTransform());
+	// 奥の四角エリア中心（前哨戦の場）。Sentinel・中央コア・ボスの配置基準。
+	const Vector3 backArenaCenter{ 0.0f, 0.0f, kBackArenaCenterZ_ };
 
-	// 前哨の敵4体（ステージ中央を囲む正方形の四隅）。
+	// 第1波の群れ（波状に登場）。手前の円で戦う。
+	// 追尾対象としてプレイヤーの Transform、スポーン中心として手前の円を渡す。
+	swarmController_ = std::make_unique<SwarmController>();
+	swarmController_->Initialize(this, &player_->GetTransform(),
+		{ 0.0f, 0.0f, kFrontArenaCenterZ_ }, kSwarmRingRadius_);
+
+	// 前哨の敵4体（奥の四角エリア中央を囲む正方形の四隅）。
 	sentinelField_ = std::make_unique<SentinelField>();
-	sentinelField_->Initialize(this, { 0.0f, 0.0f, 0.0f }, kSentinelFieldHalfExtent_);
+	sentinelField_->Initialize(this, backArenaCenter, kSentinelFieldHalfExtent_);
 	// 登場前はイントロ中に見えないよう地中へ沈めておく（SentinelBattleで迫り上がる）
 	sentinelField_->SetHiddenUnderground();
 
-	// 中央のボスのコア（原点）。Sentinel 全滅まで破壊不可にしておく。
+	// 中央のボスのコア（奥エリア中央）。Sentinel 全滅まで破壊不可にしておく。
 	centerCore_ = std::make_unique<Sentinel>(this);
-	centerCore_->InitializeSentinel({ 0.0f, 0.0f, 0.0f }, kCenterCoreScale_);
+	centerCore_->InitializeSentinel(backArenaCenter, kCenterCoreScale_);
+	// 弱点（被弾スフィア・狙う点・コアの光）をモデルの手前(-Z)の面より前へ出す。
+	// 中央に置くとメッシュに埋まって見えず、剣も届かないため。
+	// ここで動くのは弱点だけで、押し戻し用のBVH（モデルの当たり）はそのまま。
+	centerCore_->SetCoreOffset({ 0.0f, kCoreWeakPointHeightY_, kCoreWeakPointForwardZ_ });
+	// 中央コアだけ「その場で光り続けるコア」を出す（四隅には付けない）
+	centerCore_->EnableCoreGlow();
 	centerCore_->SetHittable(false);
+	// 登場は四隅を全滅させた後（CoreBattleState で StartSpawn）。それまで地中で待機させる。
+	centerCore_->SetHiddenUnderground();
 
 	followCamera = std::make_unique<FollowCamera>(player_.get(), 5.0f, 2.5f);
 	followCamera->SetFovY(80.0f);
+	// 既定の遠クリップ(100)のままだと天球が届かず映らない
+	followCamera->SetFarClip(kCameraFarClip_);
 
 	player_->Initialize();
 	enemy_->Initialize();
 	enemy_->SetTargetTransform(&player_->GetTransform());
-	// スキル2（突進乱舞）の攻撃対象供給元としてボス（自身＋配下の雑魚を束ねる）を注入
-	player_->SetEnemyTargetProvider(enemy_.get());
+	// スキル2（突進乱舞）の攻撃対象供給元。局面ごとに「今殴れる敵」だけを返す。
+	// ここにボスを直接渡すと、手前の群れと戦っている最中でも奥で眠っているボスが
+	// 対象に入り、何も見えない場所へ突進してしまう。
+	battleTargets_ = std::make_unique<BattleTargets>();
+	battleTargets_->Initialize(swarmController_.get(), sentinelField_.get(),
+		centerCore_.get(), enemy_.get());
+	player_->SetEnemyTargetProvider(battleTargets_.get());
 	player_->SetCameraEffect(cameraEffect_.get());
 	enemy_->SetCameraEffect(cameraEffect_.get());
 
@@ -330,6 +354,9 @@ void GamePlayScene::BuildFlowContext()
 	context_.uiManager = uiManager_.get();
 	context_.damagePopup = damagePopup_.get();
 
+	// 奥の四角エリア中心（AdvanceState の到達判定・前哨戦の場の基準）
+	context_.backArenaCenter = { 0.0f, 0.0f, kBackArenaCenterZ_ };
+
 	context_.flow = &flow_;
 }
 
@@ -406,6 +433,9 @@ void GamePlayScene::Update()
 	// 今の局面（開始演出 / 戦闘 / 決着）を1回進める
 	flow_.Update(context_);
 
+	// 被弾の赤いヴィネット。HPが減るのは flow_.Update の中（当たり判定）なので、その後に見る
+	UpdateDamageVignette();
+
 	Debug();
 
 	if (Input::GetInstance()->TriggerKey(DIK_T)) {
@@ -426,6 +456,54 @@ void GamePlayScene::LateUpdate()
 	cameraEffect_->Update(followCamera.get(), dt);
 }
 
+// ================================================
+// 被弾したら赤いヴィネットを一瞬掛ける
+//  ・被弾の検知は「HPが前フレームより減ったか」で行う（Player 側に手を入れずに済む）
+//  ・掛ける先は World 層。UI（UIDraw）は合成後に描かれるので元から影響を受けない
+//  ・時間は unscaled。被弾時はヒットストップで世界が止まるので、
+//    ゲーム時間で測ると赤みが止まって見えてしまう
+// ================================================
+void GamePlayScene::UpdateDamageVignette()
+{
+	if (!player_) return;
+
+	auto* worldFx = PostEffectManager::GetInstance()->GetEffect(RenderLayerId::World);
+	if (!worldFx) return;
+
+	// HPが減っていたら被弾。タイマーを最初から張り直す（連続被弾でも毎回光る）
+	const int hp = player_->GetHp();
+	if (lastPlayerHp_ >= 0 && hp < lastPlayerHp_) {
+		damageVignetteTimer_ = kDamageVignetteDuration_;
+	}
+	lastPlayerHp_ = hp;
+
+	if (damageVignetteTimer_ <= 0.0f) return; // 平常時は World 層に触らない
+
+	damageVignetteTimer_ -= TimeManager::GetInstance()->GetUnscaledDeltaTime();
+
+	// 出し切ったら平常時のエフェクトへ戻す
+	if (damageVignetteTimer_ <= 0.0f) {
+		damageVignetteTimer_ = 0.0f;
+		if (damageVignetteActive_) {
+			worldFx->SetPostEffectType(kWorldPostEffect_);
+			damageVignetteActive_ = false;
+		}
+		return;
+	}
+
+	if (!damageVignetteActive_) {
+		worldFx->SetPostEffectType(PostEffectType::Vignette);
+		damageVignetteActive_ = true;
+	}
+
+	// 被弾直後が一番濃く、そこから引いていく（1→0）。
+	// 線形だと消え際が唐突なので、スムーズステップで終わりを柔らかく落とす。
+	const float t = damageVignetteTimer_ / kDamageVignetteDuration_;
+	const float ease = t * t * (3.0f - 2.0f * t);
+	worldFx->VignetteInitialize(kDamageVignetteScale_,
+		kDamageVignettePeakPow_ * ease, kDamageVignetteColor_);
+}
+
 void GamePlayScene::BackGroundDraw()
 {
 	SpriteCommon::GetInstance()->CommonSetting();
@@ -437,6 +515,7 @@ void GamePlayScene::Draw()
 {
 	// 3Dの見た目は局面によらず同じ（演出中も戦闘中もステージとキャラは映る）
 	Object3dCommon::GetInstance()->CommonSetting();
+	sky->Draw();   // 天球（背景なので最初に描く）
 	ground->Draw();
 	// ステージは SceneController が描画する。BVHもこの同一メッシュから作られる。
 	stage_->Draw();
@@ -480,21 +559,25 @@ void GamePlayScene::Debug()
 	// ===== バトルの進行（今どの局面か）=====
 	ImGui::Begin("GameFlow");
 	ImGui::Text("State: %s", flow_.GetCurrentStateName());
-	ImGui::End();
-
-	// ===== Bloom 調整パネル（パーティクル層に掛かっているBloomを調整）=====
-	if (auto* particleFx = PostEffectManager::GetInstance()->GetEffect(RenderLayerId::Particle)) {
-		ImGui::Begin("Bloom (Particle)");
-		if (ImGui::SliderFloat("Threshold", &bloomThreshold_, 0.0f, 1.0f)) {
-			particleFx->SetBloomThreshold(bloomThreshold_);
-		}
-		if (ImGui::SliderFloat("Intensity", &bloomIntensity_, 0.0f, 8.0f)) {
-			particleFx->SetBloomIntensity(bloomIntensity_);
-		}
-		if (ImGui::SliderInt("BlurIterations", &bloomIterations_, 1, 10)) {
-			particleFx->SetBloomIterations(bloomIterations_);
-		}
-		ImGui::End();
+	// アリーナ座標の調整用：プレイヤーの現在ワールド位置と各アリーナ中心を並べて確認する
+	if (player_) {
+		const Vector3 p = player_->GetTransform().translate;
+		ImGui::Separator();
+		ImGui::Text("Player  : (%.1f, %.1f, %.1f)", p.x, p.y, p.z);
+		ImGui::Text("FrontZ  : %.1f (swarm ring r=%.1f)", kFrontArenaCenterZ_, kSwarmRingRadius_);
+		ImGui::Text("BackZ   : %.1f (sentinel arena)", kBackArenaCenterZ_);
 	}
+	// 進行が止まったときの切り分け用：残り敵数と、中央コアが今どの段階か
+	ImGui::Separator();
+	if (swarmController_)  ImGui::Text("Swarm    : %d alive", swarmController_->AliveCount());
+	if (sentinelField_)    ImGui::Text("Sentinels: %d alive", sentinelField_->AliveCount());
+	if (centerCore_) {
+		const char* coreStage =
+			centerCore_->IsDead()          ? "Dead"   :
+			centerCore_->IsHidden()        ? "Hidden" :   // 地中で StartSpawn 待ち
+			centerCore_->IsSpawnFinished() ? "Active" : "Rising";
+		ImGui::Text("Core     : %s (hittable=%d)", coreStage, centerCore_->IsHittable() ? 1 : 0);
+	}
+	ImGui::End();
 #endif
 }

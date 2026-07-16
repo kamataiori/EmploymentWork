@@ -1,4 +1,5 @@
 #pragma once
+#include "Vector3.h"
 
 class Player;
 class Enemy;
@@ -47,6 +48,10 @@ struct GameFlowContext
     CollisionManager*     collisionManager = nullptr;
     UIManager*            uiManager        = nullptr;
     DamagePopupManager*   damagePopup      = nullptr;
+
+    // 奥の四角エリア（前哨戦の場）の中心。SwarmWave後、プレイヤーがここへ到達すると
+    // 前哨戦（Sentinel）が始まる。Sentinel/中央コア/ボスの配置基準でもある。
+    Vector3 backArenaCenter{ 0.0f, 0.0f, 30.0f };
 
     // 自分が属するステートマシン（State から遷移を要求するのに使う）
     GameFlowStateMachine* flow = nullptr;

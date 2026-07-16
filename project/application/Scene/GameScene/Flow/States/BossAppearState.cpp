@@ -12,6 +12,8 @@ void BossAppearState::Enter(GameFlowContext& ctx)
 {
     // 休眠していたボスを起こす（ここから Update/描画/当たり判定が動き出す）
     ctx.boss->SetActive(true);
+    // 定位置の真上から落下させる。起こした後に呼ぶこと。
+    ctx.boss->StartDropIn();
     appearTimer_ = 0.0f;
 }
 
@@ -26,7 +28,12 @@ void BossAppearState::Update(GameFlowContext& ctx)
         return;
     }
 
-    // 登場の間を置いてから本戦へ
+    // 落ち切るまでは待つ（落下時間は高さ次第で変わるので、秒数では決め打ちしない）
+    if (ctx.boss->IsDropping()) {
+        return;
+    }
+
+    // 着地してから間を置いて本戦へ
     appearTimer_ += TimeManager::GetInstance()->GetUnscaledDeltaTime();
     if (appearTimer_ >= kAppearSeconds_) {
         ctx.flow->ChangeState(std::make_unique<BattleState>());

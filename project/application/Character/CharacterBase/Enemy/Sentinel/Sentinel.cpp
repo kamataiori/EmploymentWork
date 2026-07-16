@@ -32,6 +32,10 @@ void Sentinel::InitializeSentinel(const Vector3& placePos, float scale)
     spawnState_ = SpawnState::Active;  // 既定は「その場に立っている」
     hittable_ = true;
 
+    // 登場演出の深さ・速さはスケールから決める（大きい個体ほど深く、その分速く上がる）
+    spawnDepth_     = kSpawnDepthPerScale_ * scale;
+    spawnRiseSpeed_ = spawnDepth_ / kSpawnRiseDuration_;
+
     hp_ = kMaxHP_;
     isDead_ = false;
 
@@ -43,11 +47,21 @@ void Sentinel::InitializeSentinel(const Vector3& placePos, float scale)
         particles_->SetCamera(camera_);
     }
 
+    // 紫のオーラ（repeat=true の持続エミッタ）を1つだけ作って持ち続ける。
+    // 以後は毎フレーム位置を追従させ、Play/Stop の切り替えだけ行う。
+    // 登場前は地中なので、まず止めておく。
+    auraEmitter_ = particles_->EmitPreset(kAuraPreset_, transform);
+    if (auraEmitter_) {
+        auraEmitter_->Stop();
+    }
+    auraPlaying_ = false;
+
     // 被弾スフィア（kSentinel＝Defaultグループ・Trigger）
     // …プレイヤーの武器が当たるとダメージ。触れてもプレイヤーは無傷。
+    // 位置は弱点（coreOffset_）。既定はモデル中心の少し上。
     multiCollider_->Clear();
     Sphere sp{};
-    sp.center = transform.translate + Vector3{ 0.0f, kTargetOffsetY_, 0.0f };
+    sp.center = GetWeakPointPos();
     sp.radius = kHitRadius;
     multiCollider_->AddSphere(sp);
     multiCollider_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kSentinel));
@@ -113,7 +127,7 @@ void Sentinel::SetHiddenUnderground()
     // 地中へ沈めて登場を待つ。登場前は殴られても無効。
     spawnState_ = SpawnState::Hidden;
     hittable_ = false;
-    transform.translate.y = surfaceY_ - kSpawnDepth_;
+    transform.translate.y = surfaceY_ - spawnDepth_;
     object3d_->SetTranslate(transform.translate);
     object3d_->UpdateTransform();
 }
@@ -126,9 +140,70 @@ void Sentinel::StartSpawn()
     }
 }
 
+void Sentinel::SetCoreOffset(const Vector3& offset)
+{
+    coreOffset_ = offset;
+
+    // 被弾スフィアを新しい弱点へ移す（BVH＝モデルの押し戻しには触らない）
+    if (!multiCollider_->GetShapes().empty()) {
+        multiCollider_->MutableSphere(0).center = GetWeakPointPos();
+    }
+}
+
+void Sentinel::EnableCoreGlow()
+{
+    if (!particles_ || coreGlowEmitter_) return;
+
+    // repeat=true の持続エミッタ。登場前は地中なので止めておく。
+    coreGlowEmitter_ = particles_->EmitPreset(kCoreGlowPreset_, transform);
+    if (coreGlowEmitter_) {
+        coreGlowEmitter_->Stop();
+    }
+    coreGlowPlaying_ = false;
+}
+
+namespace {
+    // 持続エミッタの再生/停止を切り替える（Stop しても既存の粒子は寿命まで残る）
+    void ApplyEmitterPlaying(ParticleEmitterInstance* emitter, bool& playing, bool shouldPlay)
+    {
+        if (shouldPlay && !playing) {
+            emitter->Play();
+            playing = true;
+        }
+        else if (!shouldPlay && playing) {
+            emitter->Stop();
+            playing = false;
+        }
+    }
+}
+
+void Sentinel::UpdateEmitters()
+{
+    // 地中で待機している間と破壊後は出さない
+    const bool shouldPlay = !isDead_ && spawnState_ != SpawnState::Hidden;
+
+    // 紫のオーラ：足元から湧き上がる（迫り上がり中は本体と一緒に上がってくる）
+    if (auraEmitter_) {
+        Transform auraTf = transform;
+        auraTf.translate.y += kAuraOffsetY_;
+        auraEmitter_->SetTransform(auraTf);
+        ApplyEmitterPlaying(auraEmitter_, auraPlaying_, shouldPlay);
+    }
+
+    // コアの光：弱点の位置に留まって光り続ける
+    if (coreGlowEmitter_) {
+        Transform glowTf = transform;
+        glowTf.translate = GetWeakPointPos();
+        coreGlowEmitter_->SetTransform(glowTf);
+        ApplyEmitterPlaying(coreGlowEmitter_, coreGlowPlaying_, shouldPlay);
+    }
+}
+
 void Sentinel::Update()
 {
     if (isDead_) {
+        // 破壊後はオーラを止める（残っている粒子はフェードしながら消える）
+        UpdateEmitters();
         // 破壊後もパーティクルは消えるまで進める
         if (particles_) particles_->Update();
         return;
@@ -137,7 +212,7 @@ void Sentinel::Update()
     // 迫り上がり（下から地表へ）
     if (spawnState_ == SpawnState::Rising) {
         const float dt = TimeManager::GetInstance()->GetDeltaTime();
-        transform.translate.y += kSpawnRiseSpeed_ * dt;
+        transform.translate.y += spawnRiseSpeed_ * dt;
         if (transform.translate.y >= surfaceY_) {
             transform.translate.y = surfaceY_;
             spawnState_ = SpawnState::Active;
@@ -147,13 +222,14 @@ void Sentinel::Update()
 
         // 被弾スフィアも一緒に持ち上げる
         if (!multiCollider_->GetShapes().empty()) {
-            multiCollider_->MutableSphere(0).center =
-                transform.translate + Vector3{ 0.0f, kTargetOffsetY_, 0.0f };
+            multiCollider_->MutableSphere(0).center = GetWeakPointPos();
         }
     }
 
     // 見た目更新（EnemyCore.obj は非アニメなのでバリアの問題は起きない）
     object3d_->Update();
+
+    UpdateEmitters();
 
     if (particles_) particles_->Update();
 }
@@ -193,13 +269,12 @@ void Sentinel::ApplyDamage(int amount)
         damageSink_->SpawnDamage(GetTargetCenter(), amount);
     }
 
-    // 被弾火花
+    // 被弾火花（剣が当たるのは弱点なので、そこから出す）
     if (particles_) {
         Transform spark{};
         spark.scale = { 1.0f, 1.0f, 1.0f };
         spark.rotate = { 0.0f, 0.0f, 0.0f };
-        spark.translate = transform.translate;
-        spark.translate.y += kEffectOffsetY_;
+        spark.translate = GetWeakPointPos();
         particles_->EmitPreset(kHitSparkPreset_, spark);
     }
 

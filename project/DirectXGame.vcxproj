@@ -160,7 +160,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\FrameWork\Framework.cpp" />
     <ClCompile Include="application\Scene\GameScene\Flow\GameFlowStateMachine.cpp" />
     <ClCompile Include="application\Scene\GameScene\Flow\States\BattlePhaseState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\BattleTargets.cpp" />
     <ClCompile Include="application\Scene\GameScene\Flow\States\SwarmWaveState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\AdvanceState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\SentinelRevealState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\CoreRevealState.cpp" />
     <ClCompile Include="application\Scene\GameScene\Flow\States\SentinelBattleState.cpp" />
     <ClCompile Include="application\Scene\GameScene\Flow\States\CoreBattleState.cpp" />
     <ClCompile Include="application\Scene\GameScene\Flow\States\BossAppearState.cpp" />
@@ -342,7 +346,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Scene\GameScene\Flow\GameFlowState.h" />
     <ClInclude Include="application\Scene\GameScene\Flow\GameFlowStateMachine.h" />
     <ClInclude Include="application\Scene\GameScene\Flow\States\BattlePhaseState.h" />
+    <ClInclude Include="application\Scene\GameScene\BattleTargets.h" />
     <ClInclude Include="application\Scene\GameScene\Flow\States\SwarmWaveState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\AdvanceState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\SentinelRevealState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\CoreRevealState.h" />
     <ClInclude Include="application\Scene\GameScene\Flow\States\SentinelBattleState.h" />
     <ClInclude Include="application\Scene\GameScene\Flow\States\CoreBattleState.h" />
     <ClInclude Include="application\Scene\GameScene\Flow\States\BossAppearState.h" />
