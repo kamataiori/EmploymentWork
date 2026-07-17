@@ -56,6 +56,13 @@ public:
 	// E キーのスキル（回転斬り）が発動中か（剣オーラの演出制御などに使う）
 	bool IsESkillActive() const { return eSkill_ && eSkill_->IsActive(); }
 
+	//--- スキルの使用回数（E/V/Q はそれぞれ kSkillMaxCharges_ 回まで）---
+	// 残り0になったら発動しない。UI（SkillChargePips）へ残数を出すのにも使う。
+	static constexpr int kSkillMaxCharges_ = 3;
+	int GetESkillCharges() const { return eCharges_; }
+	int GetSkill2Charges() const { return skill2Charges_; }
+	int GetUltimateCharges() const { return ultCharges_; }
+
 	// 当たり判定を出してよい区間か（攻撃中 かつ ヒットウィンドウ内）。
 	// ウィンドウはアニメ進行度(0〜1)で持つので、再生速度を変えても同期する。
 	bool IsHitActive() const;
@@ -118,8 +125,17 @@ private:
 	// V キーのスキル2（突進乱舞）。元はアルティメットだった枠を新スキルへ移設した。
 	std::unique_ptr<IPlayerSkill> skill2_;
 
-	// Q キーのアルティメット。中身（IPlayerSkill 実装）は今後追加する予定で、現状は未割り当て。
+	// Q キーのアルティメット（斬奪）。実体は UltimateSkill。
 	std::unique_ptr<IPlayerSkill> ultSkill_;
+
+	// 攻撃対象の供給元（Scene 所有・参照のみ）。
+	// スキルへ橋渡しするほか、突進系スキル（V/Q）を撃ってよい局面かの判定に使う。
+	IEnemyTargetProvider* provider_ = nullptr;
+
+	// 各スキルの残り使用回数。発動が成立した時だけ減らす
+	int eCharges_ = kSkillMaxCharges_;
+	int skill2Charges_ = kSkillMaxCharges_;
+	int ultCharges_ = kSkillMaxCharges_;
 
 	// デバッグ用フラグ
 	bool showDebug_ = true;

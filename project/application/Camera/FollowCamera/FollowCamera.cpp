@@ -42,12 +42,16 @@ void FollowCamera::Update()
 
 	// マウス操作が許可されている間だけカメラを動かす。
 	// （スキル発動中など mouseControlEnabled_=false でマウスのカメラ操作を止める）
+	// パッドの右スティックもマウスと同じ扱いにする（同じロック・同じ感度スケールに従う）。
 	if (mouseControlEnabled_) {
 		// 左右：水平の周回角（スロー演出中は感度スケールでゆっくりにする）
 		angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_ * mouseSensitivityScale_;
+		angle += Input::GetInstance()->GetRightStickX() * padOrbitSpeed_ * mouseSensitivityScale_;
 
 		// 上下：見下ろし角（マウスを下げると見下ろし、上げると見上げ）
 		cameraPitch_ += Input::GetInstance()->GetMouseDelta().y * pitchSensitivity_ * mouseSensitivityScale_;
+		// スティックは上が正。マウスと向きを揃えるため符号を反転する（倒し上げ＝見上げ）
+		cameraPitch_ -= Input::GetInstance()->GetRightStickY() * padPitchSpeed_ * mouseSensitivityScale_;
 		cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
 	}
 

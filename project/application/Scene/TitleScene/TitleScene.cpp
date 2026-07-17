@@ -139,6 +139,27 @@ void TitleScene::Initialize()
 	titleTop_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y - halfH * 0.5f });
 	titleBottom_->SetPosition({ titleCenterPos_.x, titleCenterPos_.y + halfH * 0.5f });
 
+	// ===== スタート操作UI（Space ／ パッドA）=====
+	// 2つを横並びにして画面中央下へ置く。色は乗せず、テクスチャのまま出す。
+	startSpace_ = std::make_unique<Sprite>();
+	startSpace_->Initialize("Resources/key_space_ui.png");
+	startSpace_->SetAnchorPoint({ 0.5f, 0.5f });
+	startSpace_->SetSize({ startUiSpaceW_, startUiSpaceH_ });
+
+	startPadA_ = std::make_unique<Sprite>();
+	startPadA_->Initialize("Resources/pad_a_ui.png");
+	startPadA_->SetAnchorPoint({ 0.5f, 0.5f });
+	startPadA_->SetSize({ startUiPadSize_, startUiPadSize_ });
+
+	{
+		// 2つ並べた全体幅を画面中央に合わせる
+		const float totalW = startUiSpaceW_ + startUiGap_ + startUiPadSize_;
+		const float leftX = WinApp::kClientWidth * 0.5f - totalW * 0.5f;
+		const float y = WinApp::kClientHeight * startUiCenterYRatio_;
+		startSpace_->SetPosition({ leftX + startUiSpaceW_ * 0.5f, y });
+		startPadA_->SetPosition({ leftX + startUiSpaceW_ + startUiGap_ + startUiPadSize_ * 0.5f, y });
+	}
+
 	phase_ = TitlePhase::Idle;
 	requestedChange_ = false;
 }
@@ -199,6 +220,12 @@ void TitleScene::Update()
 	titleTop_->Update();
 	titleBottom_->Update();
 
+	// スタート操作UIは Idle 中しか描かないので、その間だけ更新する
+	if (phase_ == TitlePhase::Idle) {
+		startSpace_->Update();
+		startPadA_->Update();
+	}
+
 	// Δt（TimeManager があるならそっちを使うのがおすすめ）
 	const float dt = TimeManager::GetInstance()->GetDeltaTime();
 
@@ -252,7 +279,8 @@ void TitleScene::Update()
 	// ===== 入力（Idleのときだけ）=====
 	if (!SceneManager::GetInstance()->IsTransitioning()) {
 		if (phase_ == TitlePhase::Idle) {
-			if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+			if (Input::GetInstance()->TriggerKey(DIK_SPACE)
+				|| Input::GetInstance()->TriggerButton(PadButton::A)) {
 				StartMoveToFront();
 			}
 		}
@@ -345,6 +373,13 @@ void TitleScene::ForeGroundDraw()
 	// ===== タイトル描画（フェーズで切替）=====
 	titleTop_->Draw();
 	titleBottom_->Draw();
+
+	// ===== スタート操作UI：押せる間（Idle）だけ出す =====
+	// 出ている＝押せる。押した瞬間に斬撃演出へ入るので、そこからは消す。
+	if (phase_ == TitlePhase::Idle) {
+		startSpace_->Draw();
+		startPadA_->Draw();
+	}
 
 
 

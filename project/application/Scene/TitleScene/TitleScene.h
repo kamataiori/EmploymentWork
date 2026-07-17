@@ -93,6 +93,19 @@ private:
 	std::unique_ptr<Sprite> titleTop_ = nullptr;
 	std::unique_ptr<Sprite> titleBottom_ = nullptr;
 
+	// ============================
+	// スタート操作UI（Space ／ パッドA）
+	// ============================
+	// Idle中だけ出す。押した瞬間に斬撃演出へ入るので、そこからは消して画に集中させる。
+	std::unique_ptr<Sprite> startSpace_ = nullptr;
+	std::unique_ptr<Sprite> startPadA_ = nullptr;
+
+	float startUiCenterYRatio_ = 0.78f;  // 画面高に対する表示位置（キャラの足元より下）
+	float startUiSpaceW_ = 130.0f;       // スペースキー絵の表示サイズ[px]（元絵160x64と同じ比率）
+	float startUiSpaceH_ = 52.0f;
+	float startUiPadSize_ = 44.0f;       // パッドA絵の表示サイズ[px]
+	float startUiGap_ = 16.0f;           // 2つの絵の間隔[px]
+
 	// タイトル画像サイズ（Initializeでメタデータから入れる）
 	Vector2 titleTexSize_ = { 320.0f, 180.0f };
 

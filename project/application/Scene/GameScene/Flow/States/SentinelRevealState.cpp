@@ -8,6 +8,7 @@
 #include "Enemy/Sentinel/Sentinel.h"
 #include "Enemy/Sentinel/SentinelField.h"
 #include "FollowCamera.h"
+#include "engine/UI/MissionBanner.h"
 #include "engine/TimeManager.h"
 
 #include <algorithm>
@@ -21,6 +22,11 @@ void SentinelRevealState::Enter(GameFlowContext& ctx)
     // 演出中はプレイヤーを操作させない
     if (ctx.player) {
         ctx.player->SetInputLocked(true);
+    }
+
+    // カメラが寄っていく間に、次の目的を流す
+    if (ctx.missionBanner) {
+        ctx.missionBanner->Show(MissionBanner::Sentinel);
     }
 }
 

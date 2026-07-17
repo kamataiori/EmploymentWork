@@ -69,12 +69,19 @@ void PlayerMover::Move()
 	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
 	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f,  std::sin(camYaw) };
 
-	// 3) WASDをカメラ相対で合成（D=+Right / A=-Right）
+	// 3) WASD / 左スティックをカメラ相対で合成（D=+Right / A=-Right）
+	Input* input = Input::GetInstance();
 	Vector3 wishDir = { 0,0,0 };
-	if (Input::GetInstance()->PushKey(DIK_W)) wishDir += cameraForwardXZ;
-	if (Input::GetInstance()->PushKey(DIK_S)) wishDir -= cameraForwardXZ;
-	if (Input::GetInstance()->PushKey(DIK_D)) wishDir += cameraRightXZ;
-	if (Input::GetInstance()->PushKey(DIK_A)) wishDir -= cameraRightXZ;
+	if (input->PushKey(DIK_W)) wishDir += cameraForwardXZ;
+	if (input->PushKey(DIK_S)) wishDir -= cameraForwardXZ;
+	if (input->PushKey(DIK_D)) wishDir += cameraRightXZ;
+	if (input->PushKey(DIK_A)) wishDir -= cameraRightXZ;
+
+	// パッドの左スティック（上が前・右が右）。キーボードと同じ向きに合成する。
+	// スティックは倒し具合に意味があるが、この後 Normalize して速度は一定にするので
+	// ここでは「向き」だけを足し込む。
+	wishDir += cameraForwardXZ * input->GetLeftStickY();
+	wishDir += cameraRightXZ * input->GetLeftStickX();
 
 	bool isMoving = (Length(wishDir) > 0.0001f);
 	if (isMoving) wishDir = Normalize(wishDir);
@@ -137,14 +144,16 @@ void PlayerMover::Jump()
 		move_.hasDashed_ = false;
 	}
 
-	// 2 ジャンプ入力（地面にいる時だけ / 1段のみ）
-	if (isGrounded && jump_.canJump_ && Input::GetInstance()->PushKey(DIK_SPACE)) {
+	// 2 ジャンプ入力（地面にいる時だけ / 1段のみ）。SPACE または パッドA。
+	const bool jumpHeld = Input::GetInstance()->PushKey(DIK_SPACE)
+		|| Input::GetInstance()->PushButton(PadButton::A);
+	if (isGrounded && jump_.canJump_ && jumpHeld) {
 		jump_.velocity = jump_.kInitialVelocity;
 		jump_.isJumping = true;
 		jump_.jumpCount = 1;      // 保持したいなら（なくてもOK）
 		jump_.canJump_ = false;   // 離すまで再ジャンプ禁止
 	}
-	if (!Input::GetInstance()->PushKey(DIK_SPACE)) {
+	if (!jumpHeld) {
 		jump_.canJump_ = true;
 	}
 
@@ -189,8 +198,9 @@ void PlayerMover::Blink()
 		if (move_.dashCooldown < 0.0f) move_.dashCooldown = 0.0f;
 	}
 
-	// 押下・解放状態
-	const bool dashHeld = Input::GetInstance()->PushMouseButton(1);
+	// 押下・解放状態（右クリック または パッドRT）
+	const bool dashHeld = Input::GetInstance()->PushMouseButton(1)
+		|| Input::GetInstance()->PushRightTrigger();
 
 	// 接地判定
 	const float groundEps = 0.001f;

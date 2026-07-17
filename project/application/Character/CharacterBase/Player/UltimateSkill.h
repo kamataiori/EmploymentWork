@@ -114,9 +114,14 @@ private:
 	std::vector<ITarget*> scratch_;    // 一覧取得の使い回しバッファ（毎フレ確保を避ける）
 
 	// ---- 毎フレーム更新して Draw と共有する「狙い」の状態 ----
-	bool  lineVertical_  = true;   // 今の斬撃線が縦か（true=縦/マウス左右, false=横/マウス上下）。斬るたびに交互。
-	float lineX_         = 0.0f;   // 縦線のスクリーンX座標（マウスで左右に動かす）
-	float lineY_         = 0.0f;   // 横線のスクリーンY座標（マウスで上下に動かす）
+	bool  lineVertical_  = true;   // 今の斬撃線が縦か（true=縦/左右, false=横/上下）。斬るたびに交互。
+	float lineX_         = 0.0f;   // 縦線のスクリーンX座標（マウス／右スティックで左右に動かす）
+	float lineY_         = 0.0f;   // 横線のスクリーンY座標（マウス／右スティックで上下に動かす）
+
+	// パッドの右スティックで線を動かす速さ[px/秒]。
+	// マウスはカーソルの絶対座標へ即追従できるが、スティックには絶対位置が無いので
+	// 傾きぶんを足し込んで動かす。画面幅を約1.4秒で端から端まで振れる速さ。
+	const float kPadLineSpeed_ = 900.0f;
 	float targetScreenX_ = 0.0f;   // ロックオン枠の中心スクリーン座標
 	float targetScreenY_ = 0.0f;
 	bool  targetOnScreen_ = false; // 対象を画面内に投影できているか
@@ -147,6 +152,10 @@ private:
 	std::array<std::unique_ptr<Sprite>, 4> reticle_; // ロックオン枠（上・下・左・右の辺）
 	std::array<std::unique_ptr<Sprite>, 4> innerBox_; // 収束後に内側で点滅する小さな色違い枠（四辺のみ・塗りつぶさない）
 
+	// 斬撃確定の操作ガイド（画面中央右）。ロックオン枠と同じ条件で出す＝出ていれば押せる合図。
+	std::unique_ptr<Sprite> commitMouse_; // 左クリック
+	std::unique_ptr<Sprite> commitPad_;   // パッドX
+
 	// ---- 調整パラメータ ----
 	const float kSlowTimeScale_    = 0.15f; // 発動中の全体スロー倍率（敵が遅くなる）
 	const int   kSuccessDamage_    = 100;   // 枠内クリック成功時の大ダメージ
@@ -157,6 +166,16 @@ private:
 	const float kReticleStartSize_ = 150.0f; // ここから kReticleHalfSize_ まで縮む
 	const float kReticleConvergeSec_ = 1.6f;
 	const float kLineThickness_    = 5.0f;  // 斬撃線の太さ[px]
+
+	// ---- 斬撃確定の操作ガイド（画面中央右） ----
+	// 通常攻撃HUDと同じ「左クリック＋パッドX」の絵を使う（押すボタンは同じなので絵も揃える）。
+	const float kCommitGuideRightMargin_ = 200.0f; // 画面右端 → マウス絵の中心までの距離[px]
+	const float kCommitGuideMouseSize_   = 64.0f;  // マウス絵の一辺[px]
+	const float kCommitGuidePadSize_     = 32.0f;  // パッドXの一辺[px]
+	const float kCommitGuideGap_         = 8.0f;   // 2つの絵の間隔[px]
+	// 線が枠を貫通している間（＝今押せば成功）だけ少し大きく見せる。
+	// 色は乗せない（テクスチャ本来の色をそのまま出す）ので、大きさだけで手応えを伝える。
+	const float kCommitGuideAlignedScale_ = 1.15f;
 
 	// 収束後の「コミット猶予」：内側で色違いの四角がだんだん速く点滅する。
 	// この時間内に左クリックしなければ Ultimate 終了。

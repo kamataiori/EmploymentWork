@@ -14,6 +14,7 @@ class CameraEffectController;
 class CollisionManager;
 class UIManager;
 class DamagePopupManager;
+class MissionBanner;
 class GameFlowStateMachine;
 
 //======================================================
@@ -48,6 +49,8 @@ struct GameFlowContext
     CollisionManager*     collisionManager = nullptr;
     UIManager*            uiManager        = nullptr;
     DamagePopupManager*   damagePopup      = nullptr;
+    // 各バトルの開始前に目的の一文を流すバナー（実体は uiManager が所有）
+    MissionBanner*        missionBanner    = nullptr;
 
     // 奥の四角エリア（前哨戦の場）の中心。SwarmWave後、プレイヤーがここへ到達すると
     // 前哨戦（Sentinel）が始まる。Sentinel/中央コア/ボスの配置基準でもある。

@@ -29,6 +29,9 @@ public:
 
     void CollectAliveTargets(std::vector<ITarget*>& out) override;
 
+    // 前哨（四隅の Sentinel・中央コア）しか居ない局面では突進系スキル（V/Q）を撃たせない
+    bool AllowsDashSkills() const override;
+
 private:
     SwarmController* swarm_ = nullptr;
     SentinelField*   sentinels_ = nullptr;

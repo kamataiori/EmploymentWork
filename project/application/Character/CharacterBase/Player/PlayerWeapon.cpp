@@ -5,6 +5,7 @@
 #include "SpinSlashSkill.h"
 #include "RushSlashSkill.h"
 #include "UltimateSkill.h"
+#include "ITarget.h"   // IEnemyTargetProvider::AllowsUltimate を呼ぶため
 #include "engine/TimeManager.h"
 
 //======================================================
@@ -47,6 +48,9 @@ void PlayerWeapon::Initialize()
 
 void PlayerWeapon::SetEnemyTargetProvider(IEnemyTargetProvider* provider)
 {
+	// アルティメットを撃ってよい局面かの判定にも使うので、ここでも持っておく
+	provider_ = provider;
+
 	// 敵一覧を必要とするスキル（突進乱舞・アルティメット）へそれぞれ橋渡しする。
 	if (auto* rush = dynamic_cast<RushSlashSkill*>(skill2_.get())) {
 		rush->SetTargetProvider(provider);
@@ -163,16 +167,22 @@ void PlayerWeapon::NormalAttack()
 
 	Input* input = Input::GetInstance();
 
+	// 攻撃は 左クリック または パッドX
+	const bool attackHeld = input->PushMouseButton(0)
+		|| input->PushButton(PadButton::X);
+	const bool attackTriggered = input->TriggerMouseButton(0)
+		|| input->TriggerButton(PadButton::X);
+
 	// ===== 攻撃中：長押しでも次段を予約できる =====
 	if (attacking_) {
-		if (input->PushMouseButton(0)) {
+		if (attackHeld) {
 			comboReserve_ = true; // 押されてる間ずっと予約ON
 		}
 		return;
 	}
 
 	// ===== 攻撃してない：開始は「押した瞬間」だけ =====
-	if (!input->TriggerMouseButton(0)) {
+	if (!attackTriggered) {
 		return;
 	}
 
@@ -195,54 +205,71 @@ bool PlayerWeapon::IsHitActive() const
 
 void PlayerWeapon::Skill()
 {
-	const bool nowE = Input::GetInstance()->PushKey(DIK_E);
+	// E キー または パッドRB
+	const bool nowE = Input::GetInstance()->PushKey(DIK_E)
+		|| Input::GetInstance()->PushButton(PadButton::RB);
 	const bool triggered = (nowE && !IsSkill_); // 押した瞬間(立ち上がり)だけ
 	IsSkill_ = nowE;
 
 	if (!triggered) return;
 	if (IsAnySkillActive()) return; // 多重発動はしない
 	if (!eSkill_) return;
+	if (eCharges_ <= 0) return;     // 使い切ったら出せない
 
 	// 進行中の通常攻撃は打ち切ってからスキルへ移行する
 	attacking_ = false;
 	comboReserve_ = false;
 
+	--eCharges_; // 発動が成立したここで1回消費する
 	eSkill_->Start();
 }
 
 void PlayerWeapon::Skill2()
 {
-	const bool nowV = Input::GetInstance()->PushKey(DIK_V);
+	// V キー または パッドY
+	const bool nowV = Input::GetInstance()->PushKey(DIK_V)
+		|| Input::GetInstance()->PushButton(PadButton::Y);
 	const bool triggered = (nowV && !isSkill2_); // 押した瞬間(立ち上がり)だけ
 	isSkill2_ = nowV;
 
 	if (!triggered) return;
 	if (IsAnySkillActive()) return; // 多重発動はしない（他スキル・乱舞中は不可）
 	if (!skill2_) return;
+	if (skill2Charges_ <= 0) return; // 使い切ったら出せない
+
+	// 前哨戦（四隅の Sentinel・中央コア）しか居ない局面では撃たせない。
+	// 突進乱舞は敵の位置まで飛び込んで斬る技なので、動かない前哨相手では成立しない。
+	if (provider_ && !provider_->AllowsDashSkills()) return;
 
 	// 進行中の通常攻撃は打ち切ってからスキル2（突進乱舞）へ移行する
 	attacking_ = false;
 	comboReserve_ = false;
 
+	--skill2Charges_; // 発動が成立したここで1回消費する
 	skill2_->Start();
 }
 
 void PlayerWeapon::Ultimate()
 {
-	const bool nowQ = Input::GetInstance()->PushKey(DIK_Q);
+	// Q キー または パッドLB
+	const bool nowQ = Input::GetInstance()->PushKey(DIK_Q)
+		|| Input::GetInstance()->PushButton(PadButton::LB);
 	const bool triggered = (nowQ && !isUltimate_); // 押した瞬間(立ち上がり)だけ
 	isUltimate_ = nowQ;
 
 	if (!triggered) return;
 	if (IsAnySkillActive()) return; // 多重発動はしない（他スキル発動中は不可）
-
-	// アルティメットの中身は今後実装する。ここに新しい IPlayerSkill を生成して
-	// ultSkill_ に持たせれば、下の Start() でそのまま発動できる。
 	if (!ultSkill_) return;
+	if (ultCharges_ <= 0) return;   // 使い切ったら出せない
+
+	// 前哨戦（四隅の Sentinel・中央コア）しか居ない局面では撃たせない。
+	// 斬奪は敵の真上へ飛び込んで斬る技なので、動かない前哨相手では成立しない。
+	if (provider_ && !provider_->AllowsDashSkills()) return;
 
 	// 進行中の通常攻撃は打ち切ってからアルティメットへ移行する
 	attacking_ = false;
 	comboReserve_ = false;
 
+	--ultCharges_; // 発動が成立したここで1回消費する
 	ultSkill_->Start();
 }

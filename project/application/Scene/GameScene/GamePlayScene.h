@@ -27,6 +27,9 @@
 #include "Flow/GameFlowContext.h"
 #include "Flow/GameFlowStateMachine.h"
 
+class SkillChargePips;
+class MissionBanner;
+
 //======================================================
 // GamePlayScene
 //------------------------------------------------------
@@ -130,13 +133,16 @@ private:
 	// 中央コア（ボスのコア）のスケール。四隅より大きく見せて中心を強調する
 	static constexpr float kCenterCoreScale_ = 4.0f;
 
-	// ===== 被弾時の赤いヴィネット =====
+	// ===== World 層のポストエフェクト =====
 	// World 層（背景＋3Dオブジェクト＋前景スプライト）に掛ける。
 	// UI（UIDraw）は合成後のバックバッファへ直接描くので元から影響を受けない。
 	//
 	// 1レイヤーにつき同時に掛けられるパスは1つ（OffscreenRendering::SetPostEffectType が
-	// チェーンを差し替える作り）なので、被弾中だけ Vignette へ差し替え、明けたら戻す。
+	// チェーンを差し替える作り）。そのため「今なにを掛けるか」は UpdateWorldPostEffect() の
+	// 一箇所だけで決める。演出を足すときもここへ集約すること。
 	static constexpr PostEffectType kWorldPostEffect_ = PostEffectType::Normal; // 平常時の World 層
+
+	PostEffectType currentWorldEffect_ = PostEffectType::Normal; // 今 World に入れてある種類
 	static constexpr float kDamageVignetteDuration_ = 0.35f;  // 赤みが出てから引くまで（秒）
 	// Vignette.PS.hlsl: vignette = saturate(pow(correct * scale, power)) を色との lerp 係数に使う。
 	// power=0 なら係数が全面1＝素通り（無効）、上げるほど周囲が色に寄る。ここを 0→peak→0 で振る。
@@ -149,10 +155,18 @@ private:
 
 	int   lastPlayerHp_ = -1;             // 前フレームのHP（減ったら被弾とみなす）
 	float damageVignetteTimer_ = 0.0f;    // 残り時間（0=出ていない）
-	bool  damageVignetteActive_ = false;  // World 層を Vignette へ差し替え中か
 
-	// 被弾の検知とヴィネットの増減。毎フレーム呼ぶ
-	void UpdateDamageVignette();
+	// スキルの残り使用回数UI（実体は uiManager_ が所有。ここは参照のみ）。
+	// UIData には回数の口が無く、スキルごとに別々の値が要るので毎フレーム直接流し込む。
+	SkillChargePips* eSkillPips_ = nullptr;
+	SkillChargePips* skill2Pips_ = nullptr;
+	SkillChargePips* ultimatePips_ = nullptr;
+
+	// 目的の一文を流すバナー（実体は uiManager_ が所有。局面から Show() する）
+	MissionBanner* missionBanner_ = nullptr;
+
+	// World 層に何を掛けるかを決めて反映する。毎フレーム呼ぶ
+	void UpdateWorldPostEffect();
 
 	// 天球（skydome.obj）のスケール。モデルはスケール1で半径100。
 	// 戦場は原点から最も遠い点で約330（奥アリーナ Z=280 ＋ 四隅 45）なので、

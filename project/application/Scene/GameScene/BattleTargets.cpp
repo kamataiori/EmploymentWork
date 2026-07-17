@@ -37,3 +37,17 @@ void BattleTargets::CollectAliveTargets(std::vector<ITarget*>& out)
         boss_->CollectAliveTargets(out);
     }
 }
+
+bool BattleTargets::AllowsDashSkills() const
+{
+    // 突進乱舞（V）も斬奪（Q）も敵の位置まで飛び込んで斬る技なので、動かない前哨
+    //（四隅の Sentinel・中央コア）を相手にすると成立しない。
+    // 撃てるのは群れかボスが居るときだけ。
+    if (swarm_ && swarm_->AliveCount() > 0) {
+        return true;
+    }
+    if (boss_ && boss_->IsActive() && boss_->IsAlive()) {
+        return true;
+    }
+    return false;
+}

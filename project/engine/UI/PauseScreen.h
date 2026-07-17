@@ -54,7 +54,7 @@ private:
     // ESC/escクリック共通の「戻る」挙動
     void HandlePauseBack();
 
-    // ポーズ中マウスUI（ホバー拡大/クリック）
+    // ポーズ中の項目UI（マウスのホバー/クリック と 十字キーの選択/A決定）
     void UpdatePauseMouseUI();
 
     // UI配置（中央位置など）
@@ -83,6 +83,13 @@ private:
     PauseView pauseView_ = PauseView::Menu;
     PauseAnimState pauseAnimaState_ = PauseAnimState::Idle;
 
+    // ポーズメニューの選択項目。十字キーで動かし、A で決定する。
+    // マウスを項目に重ねたときもここへ同期させ、ハイライトの持ち主を1つに保つ
+    //（マウスとパッドで別々に持つと、両方光るなどの食い違いが出るため）。
+    static constexpr int kSelectOpe_ = 0;        // 操作説明（上）
+    static constexpr int kSelectBackTitle_ = 1;  // タイトルへ戻る（下）
+    int padSelection_ = kSelectOpe_;
+
     // アニメタイム
     float pauseAnimaTime_ = 0.0f;
     float pauseEnterSec_ = 0.25f;     // 1枚あたりの出る時間
@@ -106,6 +113,13 @@ private:
     Vector2 escBaseSize_{ 128.0f, 64.0f };
     Vector2 escHoverSize_{ 144.0f, 72.0f };
 
+    // 操作説明（Explain）の2枚組。縦横比を保ったまま画面へ収める。
+    static constexpr float kControlsTexW_ = 600.0f;  // 画像の実寸
+    static constexpr float kControlsTexH_ = 930.0f;
+    static constexpr float kControlsTopMargin_ = 24.0f;
+    static constexpr float kControlsBottomMargin_ = 88.0f; // 右下のescボタンを避ける
+    static constexpr float kControlsGap_ = 32.0f;          // 2枚の間隔
+
 private:
     // ゲーム中のESCヒント（操作不可）
     std::unique_ptr<Sprite> escHint_;
@@ -115,6 +129,9 @@ private:
     std::unique_ptr<Sprite> pauseMenu_;
     std::unique_ptr<Sprite> pauseOpe_;
     std::unique_ptr<Sprite> pauseBackTitle_;
-    std::unique_ptr<Sprite> pauseExp_;
     std::unique_ptr<Sprite> pauseEsc_;
+
+    // 操作説明（Explain）：キーボード/マウスとコントローラーの2枚を並べて出す
+    std::unique_ptr<Sprite> pauseControlsKeyboard_;
+    std::unique_ptr<Sprite> pauseControlsGamepad_;
 };

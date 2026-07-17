@@ -3,7 +3,10 @@
 #include "SceneManager.h"
 #include "engine/UI/UITexture.h"
 #include "engine/UI/PlayerHpPipBar.h"
+#include "engine/UI/SkillChargePips.h"
+#include "engine/UI/MissionBanner.h"
 #include "engine/UI/NumberDisplay.h"
+#include "PlayerWeapon.h"   // スキルの残り使用回数を読むため
 #include "CursorService.h"
 #include <OffscreenRendering.h>
 #include <MyGame.h>
@@ -164,14 +167,25 @@ void GamePlayScene::Initialize()
 		uiManager_->Add(UITexture::Create(d));
 	}
 
-	// フレイムダンスアイコンの下：操作キー表示（V）
+	// フレイムダンスアイコンの下：操作表示（キーV ／ パッドY）
+	// キーとパッドを左右に並べる。アイコン(64px幅)の内側へ収めるため、
+	// 1つあたり28pxにして隣のグループ（Eの組）と16px空くようにしている。
 	{
 		UITexture::Desc d{};
 		d.texPath = "Resources/V_ui.png";
-		d.size    = { 32.0f, 32.0f };     // E_ui と同じサイズ
+		d.size    = { 28.0f, 28.0f };
 		d.anchor  = { 0.5f, 0.5f };       // 中心基準
-		d.pos     = { 856.0f, 660.0f };   // x はフレイムダンスの真下、y は E_ui と同じ高さ
+		d.pos     = { 840.0f, 660.0f };   // フレイムダンス(中心856)の真下・左寄せ
 		d.layer   = 102;                  // フレイムダンスアイコン(101)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/pad_y_ui.png";
+		d.size    = { 28.0f, 28.0f };
+		d.anchor  = { 0.5f, 0.5f };
+		d.pos     = { 872.0f, 660.0f };   // キーVの右隣
+		d.layer   = 102;
 		uiManager_->Add(UITexture::Create(d));
 	}
 
@@ -186,14 +200,23 @@ void GamePlayScene::Initialize()
 		uiManager_->Add(UITexture::Create(d));
 	}
 
-	// ブーメランアイコンの下：操作キー表示（E）
+	// ブーメランアイコンの下：操作表示（キーE ／ パッドRB）
 	{
 		UITexture::Desc d{};
 		d.texPath = "Resources/E_ui.png";
-		d.size    = { 32.0f, 32.0f };
+		d.size    = { 28.0f, 28.0f };
 		d.anchor  = { 0.5f, 0.5f };       // 中心基準
-		d.pos     = { 932.0f, 660.0f };   // x はブーメランと同じ、y は左キーと同じ高さ
+		d.pos     = { 916.0f, 660.0f };   // ブーメラン(中心932)の真下・左寄せ
 		d.layer   = 102;                  // ブーメランアイコン(101)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/pad_rb_ui.png";
+		d.size    = { 28.0f, 28.0f };
+		d.anchor  = { 0.5f, 0.5f };
+		d.pos     = { 948.0f, 660.0f };   // キーEの右隣
+		d.layer   = 102;
 		uiManager_->Add(UITexture::Create(d));
 	}
 
@@ -219,7 +242,7 @@ void GamePlayScene::Initialize()
 		uiManager_->Add(UITexture::Create(d));
 	}
 
-	// 上記2つの下に重ねる：操作キー表示（左クリック）
+	// 上記2つの下に重ねる：操作表示（左クリック ／ パッドX）
 	{
 		UITexture::Desc d{};
 		d.texPath = "Resources/leftKey_ui.png";
@@ -227,6 +250,15 @@ void GamePlayScene::Initialize()
 		d.anchor  = { 0.5f, 0.5f };       // 中心基準
 		d.pos     = { 1104.0f, 660.0f };  // x はゲージ中央、y は剣アイコンの下
 		d.layer   = 102;                  // 剣アイコン(101)の上
+		uiManager_->Add(UITexture::Create(d));
+	}
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/pad_x_ui.png";
+		d.size    = { 32.0f, 32.0f };
+		d.anchor  = { 0.5f, 0.5f };
+		d.pos     = { 1152.0f, 660.0f };  // マウス絵(右端1136)の右隣。台座(右端1232)には収まる
+		d.layer   = 102;
 		uiManager_->Add(UITexture::Create(d));
 	}
 
@@ -241,15 +273,62 @@ void GamePlayScene::Initialize()
 		uiManager_->Add(UITexture::Create(d));
 	}
 
-	// アルティメットリングの下：操作キー表示（Q）
+	// アルティメットリングの下：操作表示（キーQ ／ パッドLB）
+	// ここは左右に他のUIが無いので、V/E と違って32pxのまま並べられる。
 	{
 		UITexture::Desc d{};
 		d.texPath = "Resources/Q_ui.png";
 		d.size    = { 32.0f, 32.0f };
 		d.anchor  = { 0.5f, 0.5f };       // 中心基準
-		d.pos     = { 640.0f, 680.0f };   // x はリングと同じ、y は他のキーと同じ高さ
+		d.pos     = { 622.0f, 680.0f };   // リング(中心640)の下・左寄せ
 		d.layer   = 102;                  // リング(101)の上
 		uiManager_->Add(UITexture::Create(d));
+	}
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/pad_lb_ui.png";
+		d.size    = { 32.0f, 32.0f };
+		d.anchor  = { 0.5f, 0.5f };
+		d.pos     = { 658.0f, 680.0f };   // キーQの右隣
+		d.layer   = 102;
+		uiManager_->Add(UITexture::Create(d));
+	}
+
+	// 各スキルアイコンの真上：残り使用回数（3回中いくつ残っているか）。
+	// 既存UIは y=592 にアイコン、y=660/680 にキー表示が並んでいるので、その上の空きへ置く。
+	// 右下のゲージ台座は x=976 から始まるため、V(856)/E(932) の上は空いている。
+	{
+		auto addPips = [&](const Vector2& center) {
+			SkillChargePips::CreateDesc d{};
+			d.center = center;
+			d.maxCharges = PlayerWeapon::kSkillMaxCharges_;
+			d.layer = 102;                       // アイコン(101)の上
+			auto pips = SkillChargePips::Create(d);
+			SkillChargePips* raw = pips.get();   // 残数を毎フレーム流し込むため参照を控える
+			uiManager_->Add(std::move(pips));
+			return raw;
+		};
+		// V・E はアイコン(64px)の上端560の少し上へ
+		skill2Pips_ = addPips({ 856.0f, 548.0f });
+		eSkillPips_ = addPips({ 932.0f, 548.0f });
+		// Q はリングが 126px と大きいので、その上端529を避けて高めに置く
+		ultimatePips_ = addPips({ 640.0f, 516.0f });
+	}
+
+	// 画面上部：各バトルの開始前に目的の一文を右から左へ流すバナー。
+	// 下段のゲームUI（アイコン・HP）とは高さが離れているので重ならない。
+	{
+		MissionBanner::CreateDesc d{};
+		d.texPaths = {                                  // MissionBanner::Message の並び順
+			"Resources/mission_swarm.png",
+			"Resources/mission_sentinel.png",
+			"Resources/mission_core.png",
+		};
+		d.screenW = 1280.0f;
+		d.centerY = 160.0f;
+		auto banner = MissionBanner::Create(d);
+		missionBanner_ = banner.get();   // 局面から Show() を呼ぶため参照を控える
+		uiManager_->Add(std::move(banner));
 	}
 
 	// 左下：プレイヤーのHP（HP.png 1枚＝15HP、最大275 → 19枚を横並び）
@@ -313,6 +392,28 @@ void GamePlayScene::Initialize()
 		uiManager_->Add(NumberDisplay::Create(d));
 	}
 
+	// HPバーの下：ポーズの操作ヒント（esc ／ パッドのStart）。
+	// HPピップは y=628〜652 に並ぶので、その下の空きへ置く。
+	// PauseScreen 自身も右下に esc ヒントを持っているが、そちらは表示停止中なので重複しない。
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/escBase.png";
+		d.size    = { 72.0f, 36.0f };     // 元画像128x64の縦横比を保つ
+		d.anchor  = { 0.0f, 0.5f };       // 左端・縦中央基準
+		d.pos     = { 64.0f, 684.0f };    // HPピップ(左端64)と左を揃える
+		d.layer   = 101;
+		uiManager_->Add(UITexture::Create(d));
+	}
+	{
+		UITexture::Desc d{};
+		d.texPath = "Resources/pad_start_ui.png";
+		d.size    = { 36.0f, 36.0f };
+		d.anchor  = { 0.0f, 0.5f };
+		d.pos     = { 148.0f, 684.0f };   // esc(右端136)の右隣
+		d.layer   = 101;
+		uiManager_->Add(UITexture::Create(d));
+	}
+
 	auto pause = std::make_unique<PauseScreen>();
 	pause->Initialize({ 1280.0f, 720.0f }, "TITLE");
 	pauseScreenRef_ = pause.get();  // 所有は uiManager_、こちらは状態監視のための非所有参照
@@ -353,6 +454,7 @@ void GamePlayScene::BuildFlowContext()
 	context_.collisionManager = collisionManager_.get();
 	context_.uiManager = uiManager_.get();
 	context_.damagePopup = damagePopup_.get();
+	context_.missionBanner = missionBanner_;
 
 	// 奥の四角エリア中心（AdvanceState の到達判定・前哨戦の場の基準）
 	context_.backArenaCenter = { 0.0f, 0.0f, kBackArenaCenterZ_ };
@@ -417,6 +519,13 @@ void GamePlayScene::Update()
 	hpData.maxHp = static_cast<float>(player_->GetMaxHp());
 	uiManager_->ApplyDataToAll(hpData);
 
+	// スキルの残り使用回数をUIへ反映（スキルごとに別の値なので個別に流し込む）
+	if (auto* w = dynamic_cast<PlayerWeapon*>(player_->GetWeapon())) {
+		if (eSkillPips_)   eSkillPips_->SetRemaining(w->GetESkillCharges());
+		if (skill2Pips_)   skill2Pips_->SetRemaining(w->GetSkill2Charges());
+		if (ultimatePips_) ultimatePips_->SetRemaining(w->GetUltimateCharges());
+	}
+
 	// ポーズ状態の変化を検知してカーソル設定を切り替える
 	SyncCursorWithPauseState();
 
@@ -433,8 +542,9 @@ void GamePlayScene::Update()
 	// 今の局面（開始演出 / 戦闘 / 決着）を1回進める
 	flow_.Update(context_);
 
-	// 被弾の赤いヴィネット。HPが減るのは flow_.Update の中（当たり判定）なので、その後に見る
-	UpdateDamageVignette();
+	// World 層の見た目（被弾の赤ヴィネット／必殺技スローのブラー）を決める。
+	// HPが減るのもスキルが進むのも flow_.Update の中なので、その後に見る
+	UpdateWorldPostEffect();
 
 	Debug();
 
@@ -457,51 +567,54 @@ void GamePlayScene::LateUpdate()
 }
 
 // ================================================
-// 被弾したら赤いヴィネットを一瞬掛ける
+// World 層に掛けるポストエフェクトを決める
+//  ・1レイヤー1パスなので、欲しがる演出が複数あっても1つしか掛けられない。
+//    どれを出すかはここだけで決める。
+//  ・掛かるのは World 層だけ。UI（UIDraw）は合成後に描かれるので影響を受けない。
 //  ・被弾の検知は「HPが前フレームより減ったか」で行う（Player 側に手を入れずに済む）
-//  ・掛ける先は World 層。UI（UIDraw）は合成後に描かれるので元から影響を受けない
 //  ・時間は unscaled。被弾時はヒットストップで世界が止まるので、
 //    ゲーム時間で測ると赤みが止まって見えてしまう
 // ================================================
-void GamePlayScene::UpdateDamageVignette()
+void GamePlayScene::UpdateWorldPostEffect()
 {
 	if (!player_) return;
 
 	auto* worldFx = PostEffectManager::GetInstance()->GetEffect(RenderLayerId::World);
 	if (!worldFx) return;
 
-	// HPが減っていたら被弾。タイマーを最初から張り直す（連続被弾でも毎回光る）
+	// --- 被弾の検知：HPが減っていたらタイマーを張り直す（連続被弾でも毎回光る）---
 	const int hp = player_->GetHp();
 	if (lastPlayerHp_ >= 0 && hp < lastPlayerHp_) {
 		damageVignetteTimer_ = kDamageVignetteDuration_;
 	}
 	lastPlayerHp_ = hp;
 
-	if (damageVignetteTimer_ <= 0.0f) return; // 平常時は World 層に触らない
-
-	damageVignetteTimer_ -= TimeManager::GetInstance()->GetUnscaledDeltaTime();
-
-	// 出し切ったら平常時のエフェクトへ戻す
-	if (damageVignetteTimer_ <= 0.0f) {
-		damageVignetteTimer_ = 0.0f;
-		if (damageVignetteActive_) {
-			worldFx->SetPostEffectType(kWorldPostEffect_);
-			damageVignetteActive_ = false;
-		}
-		return;
+	if (damageVignetteTimer_ > 0.0f) {
+		damageVignetteTimer_ -= TimeManager::GetInstance()->GetUnscaledDeltaTime();
+		if (damageVignetteTimer_ < 0.0f) damageVignetteTimer_ = 0.0f;
 	}
 
-	if (!damageVignetteActive_) {
-		worldFx->SetPostEffectType(PostEffectType::Vignette);
-		damageVignetteActive_ = true;
+	// --- 何を掛けるか決める ---
+	PostEffectType want = kWorldPostEffect_;
+	if (damageVignetteTimer_ > 0.0f) {
+		want = PostEffectType::Vignette;
 	}
 
-	// 被弾直後が一番濃く、そこから引いていく（1→0）。
-	// 線形だと消え際が唐突なので、スムーズステップで終わりを柔らかく落とす。
-	const float t = damageVignetteTimer_ / kDamageVignetteDuration_;
-	const float ease = t * t * (3.0f - 2.0f * t);
-	worldFx->VignetteInitialize(kDamageVignetteScale_,
-		kDamageVignettePeakPow_ * ease, kDamageVignetteColor_);
+	// 種類が変わったときだけ差し替える（毎フレーム呼ぶとチェーンを組み直すため）
+	if (want != currentWorldEffect_) {
+		worldFx->SetPostEffectType(want);
+		currentWorldEffect_ = want;
+	}
+
+	// ヴィネットの濃さは毎フレーム更新する。
+	// 被弾直後が一番濃く、そこから引いていく（1→0）。線形だと消え際が唐突なので、
+	// スムーズステップで終わりを柔らかく落とす。
+	if (want == PostEffectType::Vignette) {
+		const float t = damageVignetteTimer_ / kDamageVignetteDuration_;
+		const float ease = t * t * (3.0f - 2.0f * t);
+		worldFx->VignetteInitialize(kDamageVignetteScale_,
+			kDamageVignettePeakPow_ * ease, kDamageVignetteColor_);
+	}
 }
 
 void GamePlayScene::BackGroundDraw()
