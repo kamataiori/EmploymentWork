@@ -647,6 +647,15 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::CreateDepthStencilTextureR
 ////====================シェーダーのコンパイル関数====================////
 Microsoft::WRL::ComPtr<IDxcBlob> DirectXCommon::CompileShader(const std::wstring& filePath, const wchar_t* profile)
 {
+	////=========0.キャッシュを引く=========////
+
+	// 同じ hlsl / プロファイルの組み合わせは使い回す。コンパイルはファイル読み込みを
+	// 伴って重いので、ゲーム中に何度も呼ばれるとフレームが飛ぶ。
+	const std::wstring cacheKey = filePath + L"|" + profile;
+	if (auto it = shaderCache_.find(cacheKey); it != shaderCache_.end()) {
+		return it->second;
+	}
+
 	////=========1.hlslファイルを読む=========////
 
 	Logger::Log(StringUtility::ConvertString(std::format(L"Begin CompileShader,path:{},profile:{}\n", filePath, profile)));
@@ -696,6 +705,8 @@ Microsoft::WRL::ComPtr<IDxcBlob> DirectXCommon::CompileShader(const std::wstring
 	Logger::Log(StringUtility::ConvertString(std::format(L"Compile Succeeded, path:{}\n", filePath, profile)));
 	shaderSource->Release();
 	shaderResult->Release();
+
+	shaderCache_[cacheKey] = shaderBlob;
 
 	return shaderBlob;
 }

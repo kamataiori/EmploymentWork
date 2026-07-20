@@ -108,6 +108,18 @@ public:
 
 	bool IsDead() const { return isDead_; }
 
+	// 休眠制御：前哨戦（Sentinel/コア）の間はボスを完全に眠らせる。
+	// active_ が false の間は Update / 各Draw が即return するので、AIも描画も止まり
+	// スキニングのバリアも発行されない。BossAppearState で SetActive(true) して起こす。
+	void SetActive(bool a) { active_ = a; }
+	bool IsActive() const { return active_; }
+
+	//--- 登場演出（真上から降ってくる）---
+	// homePosition_ の真上へ瞬間移動してから落下を始める。SetActive(true) の後に呼ぶこと。
+	// 落下中は AI・弾・雑魚を止めるが、当たり判定と見た目は本体に追従する。
+	void StartDropIn();
+	bool IsDropping() const { return dropping_; }
+
 	//=== ITarget（プレイヤーの攻撃対象としてのインターフェイス）===
 	// 生存判定・狙う座標・ダメージ適用を、敵の具体型を意識せず使えるようにする。
 	bool IsAlive() const override { return !isDead_; }
@@ -221,9 +233,9 @@ private:
 	// 生成時（Initialize時）の位置を保存しておく
 	Vector3 homePosition_{};
 
-	// HP
-	int hp_ = 300;                   // 現在HP
-	const int kMaxHP_ = 300;         // 最大HP
+	// HP（kDamagePerHit_ で割り切れる値にして、必要ヒット数をはっきりさせる）
+	int hp_ = 420;                   // 現在HP
+	const int kMaxHP_ = 420;         // 最大HP（30ダメージ×14ヒットで撃破）
 	const int kDamagePerHit_ = 30;   // 被弾時のダメージ量
 
 	// 被弾時の火花パーティクル（プレイヤーの攻撃が当たった瞬間に飛び散る）
@@ -234,6 +246,21 @@ private:
 	std::unique_ptr<UIManager> uiManager_;
 
 	bool isDead_ = false;        // 死亡状態かどうか
+	bool active_ = false;        // 休眠フラグ（false=眠っている。BossAppearで起こす）
+
+	// === 登場演出（真上から落下）===
+	bool  dropping_ = false;      // 落下中（この間はAIを動かさない）
+	float dropVelocity_ = 0.0f;   // 落下速度（加速していく）
+	static constexpr float kDropInHeight_  =  60.0f; // homePosition_ の何m上から落ちるか
+	static constexpr float kDropInGravity_ = 160.0f; // 落下の加速度（約0.87秒で着地）
+	// 着地の手応え
+	static constexpr float kDropLandShakeDuration_  = 0.45f; // カメラ振動の長さ
+	static constexpr float kDropLandShakeAmplitude_ = 0.9f;  // カメラ振動の強さ
+	static constexpr float kDropLandEffectOffsetY_  = 0.5f;  // 着地エフェクトの発生高さ（足元）
+	static constexpr const char* kDropLandPreset_ = "Explosion"; // Resources/Particle/Explosion.json
+
+	void UpdateDropIn(float dt); // 落下の進行。地面に着いたら着地の演出を出す
+	void OnDropInLanded();       // 着地した瞬間の演出（振動・土煙・ヒットストップ）
 	float deathTimer_ = 0.0f;    // 死亡経過時間
 	const float kDeathToTitleDelay_ = 8.5f; // タイトルへ戻るまでの秒数
 

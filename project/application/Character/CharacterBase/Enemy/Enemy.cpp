@@ -10,6 +10,7 @@
 #include <EnemySplitBullet.h>
 #include <MinionEnemy.h>
 #include "State/EnemyStateManager.h"
+#include "engine/3d/Camera/CameraEffectController.h"
 #include <random>
 #include <vector>
 #include <algorithm>
@@ -48,7 +49,7 @@ void Enemy::Initialize()
 	object3d_->Initialize();
 	object3d_->SetModel("Skeleton.gltf");
 
-	transform.translate = { 0.0f, 0.0f,30.0f };
+	transform.translate = { 0.0f, 0.0f,280.0f };
 	transform.rotate = { 0.0f, 3.14f, 0.0f };
 	transform.scale = { 3.0f, 3.0f, 3.0f };
 
@@ -154,9 +155,19 @@ void Enemy::Initialize()
 
 void Enemy::Update()
 {
+	// 休眠中はAIも弾も見た目も動かさない（スキニングのバリアも発行しない）
+	if (!active_) return;
+
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-	if (!isDead_) {
+	// 登場の落下中。AI・弾・雑魚は動かさず、落ちることだけに専念させる。
+	// この下のコライダー同期と見た目更新は通常どおり走るので、
+	// 落ちてくる本体に当たり判定も描画もついてくる。
+	if (dropping_) {
+		UpdateDropIn(dt);
+	}
+
+	if (!isDead_ && !dropping_) {
 
 		if (!isDead_) {
 			if (aiController_) {
@@ -404,6 +415,8 @@ void Enemy::BackGroundDraw()
 
 void Enemy::Draw()
 {
+	if (!active_) return;
+
 	multiCollider_->Draw();
 
 	for (auto& b : dropBullets_) {
@@ -420,6 +433,8 @@ void Enemy::Draw()
 
 void Enemy::ForeGroundDraw()
 {
+	if (!active_) return;
+
 	if (uiManager_) {
 		uiManager_->Draw();
 	}
@@ -431,11 +446,15 @@ void Enemy::ForeGroundDraw()
 
 void Enemy::AnimationDraw()
 {
+	if (!active_) return;
+
 	object3d_->Draw();
 }
 
 void Enemy::ParticleDraw()
 {
+	if (!active_) return;
+
 	// 生存中・死亡時どちらでもパーティクル描画
 	if (deathSystem_) {
 		deathSystem_->Draw();
@@ -544,8 +563,52 @@ void Enemy::OnCollision(const CollisionInfo& info)
 	}
 }
 
+void Enemy::StartDropIn()
+{
+    // 定位置の真上へ移してから落とす（着地点＝homePosition_ でブレない）
+    transform.translate = homePosition_;
+    transform.translate.y = homePosition_.y + kDropInHeight_;
+    dropVelocity_ = 0.0f;
+    dropping_ = true;
+}
+
+void Enemy::UpdateDropIn(float dt)
+{
+    // 自由落下（だんだん速くなるので「落ちてきた」感が出る）
+    dropVelocity_ += kDropInGravity_ * dt;
+    transform.translate.y -= dropVelocity_ * dt;
+
+    if (transform.translate.y <= homePosition_.y) {
+        transform.translate.y = homePosition_.y;
+        dropVelocity_ = 0.0f;
+        dropping_ = false;
+        OnDropInLanded();
+    }
+}
+
+void Enemy::OnDropInLanded()
+{
+    // 足元で土煙。着地の重さを見せる
+    if (deathSystem_) {
+        Transform burst = transform;
+        burst.translate.y += kDropLandEffectOffsetY_;
+        deathSystem_->EmitPreset(kDropLandPreset_, burst);
+    }
+
+    // 画面を揺らす
+    if (cameraEffect_) {
+        cameraEffect_->StartSimpleShake(kDropLandShakeDuration_, kDropLandShakeAmplitude_);
+    }
+
+    // 一瞬止めて衝撃を強調する
+    TimeManager::GetInstance()->RequestHitStop(HitStopPreset::Heavy());
+}
+
 void Enemy::UpdateVisual()
 {
+	// 休眠中は見た目も更新しない（object3d_->Update のバリア発行を避ける）
+	if (!active_) return;
+
 	// AI・弾・ステートを動かさず、見た目（object3d_）だけ更新する
 	// イントロ演出中に呼ぶ専用メソッド
 	object3d_->SetTranslate(transform.translate);

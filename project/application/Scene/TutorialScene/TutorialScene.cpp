@@ -47,37 +47,43 @@ void TutorialScene::Initialize()
 
 	// Actions：入力取得関数に合わせてここを書き換える
 	TutorialController::Actions act{};
-	// WASD入力が入っている間 true
+	// WASD入力 または 左スティックが入っている間 true
 	act.isMoving = []() -> bool {
 		auto* in = Input::GetInstance();
-		return in->PushKey(DIK_W) || in->PushKey(DIK_A) || in->PushKey(DIK_S) || in->PushKey(DIK_D);
+		if (in->PushKey(DIK_W) || in->PushKey(DIK_A) || in->PushKey(DIK_S) || in->PushKey(DIK_D)) {
+			return true;
+		}
+		// スティックはデッドゾーン処理済みなので、0でなければ倒している
+		return in->GetLeftStickX() != 0.0f || in->GetLeftStickY() != 0.0f;
 		};
 
-	// 押した瞬間だけ true（TriggerKeyがあるのでこれが一番安全）
+	// 押した瞬間だけ true（TriggerKeyがあるのでこれが一番安全）／パッドA
 	act.jumpTriggered = []() -> bool {
-		return Input::GetInstance()->TriggerKey(DIK_SPACE);
+		auto* in = Input::GetInstance();
+		return in->TriggerKey(DIK_SPACE) || in->TriggerButton(PadButton::A);
 		};
 
-	// 左クリック（Triggerが無いのでエッジ検出を自前で作る）
+	// 左クリック（Triggerが無いのでエッジ検出を自前で作る）／パッドX
 	act.attackTriggered = []() -> bool {
 		auto* in = Input::GetInstance();
 		static bool prev = false;
-		bool now = in->PushMouseButton(0);   // 0:左
+		bool now = in->PushMouseButton(0) || in->PushButton(PadButton::X);   // 0:左
 		bool trig = (now && !prev);
 		prev = now;
 		return trig;
 		};
 
-	// Eキー（押した瞬間）
+	// Eキー（押した瞬間）／パッドRB
 	act.rollTriggered = []() -> bool {
-		return Input::GetInstance()->TriggerKey(DIK_E);
+		auto* in = Input::GetInstance();
+		return in->TriggerKey(DIK_E) || in->TriggerButton(PadButton::RB);
 		};
 
-	// 右クリック（Triggerが無いのでエッジ検出）
+	// 右クリック（Triggerが無いのでエッジ検出）／パッドRT
 	act.dashTriggered = []() -> bool {
 		auto* in = Input::GetInstance();
 		static bool prev = false;
-		bool now = in->PushMouseButton(1);   // 1:右
+		bool now = in->PushMouseButton(1) || in->PushRightTrigger();   // 1:右
 		bool trig = (now && !prev);
 		prev = now;
 		return trig;

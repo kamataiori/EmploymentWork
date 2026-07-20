@@ -27,7 +27,8 @@ void MenuScene::Update()
 {
 	// 遷移中でなければ入力受付
 	if (!SceneManager::GetInstance()->IsTransitioning()) {
-		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)
+			|| Input::GetInstance()->TriggerButton(PadButton::A)) {
 			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
 
 			/*TransitionRequest req{};

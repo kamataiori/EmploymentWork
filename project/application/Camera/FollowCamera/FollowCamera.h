@@ -123,6 +123,12 @@ private: // メンバ変数
 	// --- カメラ操作 ---
 	float keyOrbitSpeed_ = 0.01f;    // キーボードでの周回速度（rad/frame）
 
+	// --- パッド右スティックでのカメラ操作 ---
+	// スティックは -1.0〜1.0 で返るので、倒し切ったときの1フレームの回転量を指す。
+	// マウスは移動量(px)にかかる係数なので、そちらとは別の値が要る。
+	float padOrbitSpeed_ = 0.035f;   // 左右：周回速度（rad/frame）
+	float padPitchSpeed_ = 0.02f;    // 上下：見下ろし角の速度（rad/frame）
+
 	// --- 上下の見下ろし角(pitch)：マウス上下で操作 ---
 	float cameraPitch_ = 0.0f;         // 現在の見下ろし角（マウスYで変化。rad）
 	float pitchSensitivity_ = 0.0025f; // マウス上下の感度

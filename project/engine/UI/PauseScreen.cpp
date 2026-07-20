@@ -52,10 +52,14 @@ void PauseScreen::Initialize(const Vector2& screenSize, const std::string& title
     pauseBackTitle_->SetAnchorPoint({ 0.5f, 0.5f });
     pauseBackTitle_->SetSize(backBaseSize_);
 
-    pauseExp_ = std::make_unique<Sprite>();
-    pauseExp_->Initialize("Resources/exp.png");
-    pauseExp_->SetAnchorPoint({ 0.5f, 0.5f });
-    pauseExp_->SetSize({ 256.0f, 64.0f });
+    // 操作説明の2枚（サイズと位置は SetupPauseLayout で画面に合わせて決める）
+    pauseControlsKeyboard_ = std::make_unique<Sprite>();
+    pauseControlsKeyboard_->Initialize("Resources/controls_keyboard.png");
+    pauseControlsKeyboard_->SetAnchorPoint({ 0.5f, 0.5f });
+
+    pauseControlsGamepad_ = std::make_unique<Sprite>();
+    pauseControlsGamepad_->Initialize("Resources/controls_gamepad.png");
+    pauseControlsGamepad_->SetAnchorPoint({ 0.5f, 0.5f });
 
     pauseEsc_ = std::make_unique<Sprite>();
     pauseEsc_->Initialize("Resources/esc.png");
@@ -74,8 +78,9 @@ void PauseScreen::Update()
 {
     Input* input = Input::GetInstance();
 
-    // ESC長押しで点滅しないロック
-    if (input->PushKey(DIK_ESCAPE)) {
+    // ポーズの開閉は ESC または パッドのStart（三本線）。
+    // 長押しで開閉を連発しないよう escLock_ で押しっぱなしを弾く。
+    if (input->PushKey(DIK_ESCAPE) || input->PushButton(PadButton::Start)) {
         if (!escLock_) {
             escLock_ = true;
 
@@ -114,14 +119,17 @@ void PauseScreen::Draw()
 
     // ポーズ中
     pauseBlack_->Draw();
-    pauseMenu_->Draw();
 
     if (pauseView_ == PauseView::Menu) {
+        pauseMenu_->Draw();
         pauseOpe_->Draw();
         pauseBackTitle_->Draw();
     }
     else {
-        pauseExp_->Draw();
+        // 操作説明：キーボード/マウスとコントローラーを左右に並べる。
+        // menu の見出しは2枚と重なるので、この局面では出さない。
+        pauseControlsKeyboard_->Draw();
+        pauseControlsGamepad_->Draw();
     }
 
     pauseEsc_->Draw();
@@ -133,6 +141,7 @@ void PauseScreen::EnterPause()
     isPaused_ = true;
 
     pauseView_ = PauseView::Menu;
+    padSelection_ = kSelectOpe_; // 開いたときは上の項目から
 
     // ゲーム停止
     TimeManager::GetInstance()->SetTimeScale(0.0f);
@@ -182,12 +191,29 @@ void PauseScreen::SetupPauseLayout()
     const float backY = opeY + 32.0f + 16.0f + 32.0f;
     pauseBackTitle_->SetPosition({ centerX, backY });
 
-    pauseExp_->SetPosition({ centerX, opeY });
+    // ---- 操作説明の2枚 ----
+    // 縦に長い画像なので、まず画面の高さに収まる倍率を出し、その倍率で幅を決める
+    //（勝手に引き伸ばすと文字が潰れるため、縦横比は必ず保つ）。
+    const float availH = screenSize_.y - kControlsTopMargin_ - kControlsBottomMargin_;
+    const float scale = availH / kControlsTexH_;
+    const float cw = kControlsTexW_ * scale;
+    const float ch = kControlsTexH_ * scale;
+
+    const Vector2 controlsSize{ cw, ch };
+    pauseControlsKeyboard_->SetSize(controlsSize);
+    pauseControlsGamepad_->SetSize(controlsSize);
+
+    // 2枚を中央に左右並びで置く
+    const float halfSpan = (cw * 2.0f + kControlsGap_) * 0.5f;
+    const float controlsY = kControlsTopMargin_ + ch * 0.5f;
+    pauseControlsKeyboard_->SetPosition({ centerX - halfSpan + cw * 0.5f, controlsY });
+    pauseControlsGamepad_->SetPosition({ centerX + halfSpan - cw * 0.5f, controlsY });
 
     pauseMenu_->Update();
     pauseOpe_->Update();
     pauseBackTitle_->Update();
-    pauseExp_->Update();
+    pauseControlsKeyboard_->Update();
+    pauseControlsGamepad_->Update();
 
     menuTargetPos_ = pauseMenu_->GetPosition();
     opeTargetPos_ = pauseOpe_->GetPosition();
@@ -318,18 +344,33 @@ void PauseScreen::UpdatePauseMouseUI()
         return; // Explain中はescで戻る
     }
 
+    // ---- 選択の移動：十字キーの上下（項目は上=操作説明 / 下=タイトルへ戻る の2つ）----
+    if (input->TriggerButton(PadButton::Up))   padSelection_ = kSelectOpe_;
+    if (input->TriggerButton(PadButton::Down)) padSelection_ = kSelectBackTitle_;
+
+    // マウスを重ねたら選択もそこへ移す（ハイライトを1つに保つ）
     const bool hoverOpe = HitTestSprite(pauseOpe_.get(), m);
     const bool hoverBack = HitTestSprite(pauseBackTitle_.get(), m);
+    if (hoverOpe)  padSelection_ = kSelectOpe_;
+    if (hoverBack) padSelection_ = kSelectBackTitle_;
 
-    pauseOpe_->SetSize(hoverOpe ? hoverSize_ : opeBaseSize_);
-    pauseBackTitle_->SetSize(hoverBack ? hoverSize_ : backBaseSize_);
+    // 選択中の項目を大きくする（マウスのホバーと同じ見せ方）
+    pauseOpe_->SetSize(padSelection_ == kSelectOpe_ ? hoverSize_ : opeBaseSize_);
+    pauseBackTitle_->SetSize(padSelection_ == kSelectBackTitle_ ? hoverSize_ : backBaseSize_);
     pauseOpe_->Update();
     pauseBackTitle_->Update();
 
-    if (!input->TriggerMouseButton(0)) return;
+    // ---- 決定：マウスは重ねている項目を左クリック / パッドは選択中の項目を A ----
+    const bool click = input->TriggerMouseButton(0);
+    const bool padDecide = input->TriggerButton(PadButton::A);
+
+    const bool decideBack = (hoverBack && click)
+        || (padDecide && padSelection_ == kSelectBackTitle_);
+    const bool decideOpe = (hoverOpe && click)
+        || (padDecide && padSelection_ == kSelectOpe_);
 
     // backTitle：タイトルへ戻る
-    if (hoverBack) {
+    if (decideBack) {
         ExitPause();
 
         TransitionRequest req{};
@@ -342,7 +383,7 @@ void PauseScreen::UpdatePauseMouseUI()
     }
 
     // ope：操作説明へ
-    if (hoverOpe) {
+    if (decideOpe) {
         pauseView_ = PauseView::Explain;
         return;
     }

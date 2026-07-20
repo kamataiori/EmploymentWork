@@ -13,6 +13,8 @@
 #include "externals/DirectXTex/DirectXTex.h"
 #include <Vector4.h>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include "RenderTarget.h"
 
 #pragma comment(lib,"d3d12.lib")
@@ -474,6 +476,12 @@ private:
 	IDxcUtils* dxcUtils{};
 	IDxcCompiler3* dxcCompiler{};
 	IDxcIncludeHandler* includeHandler{};
+
+	// コンパイル済みシェーダーのキャッシュ。キーは「パス|プロファイル」。
+	// 同じ hlsl は何度 CompileShader を呼ばれても一度しかコンパイルしない。
+	// （ParticleManager 等はインスタンスを作るたびに全ブレンドモード分の PSO を
+	//   組み直すため、キャッシュが無いとゲーム中の生成でフレームが止まる）
+	std::unordered_map<std::wstring, Microsoft::WRL::ComPtr<IDxcBlob>> shaderCache_;
 
 
 	//リソースバリアで書き込み可能に変更

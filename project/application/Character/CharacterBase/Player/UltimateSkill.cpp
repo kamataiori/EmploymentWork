@@ -53,6 +53,15 @@ void UltimateSkill::Initialize(Player* owner)
 		edge->Initialize(kWhiteTex);
 		edge->SetAnchorPoint({ 0.5f, 0.5f });
 	}
+
+	// 斬撃確定の操作ガイド。通常攻撃HUDと同じ絵を使う（色は乗せずテクスチャのまま出す）。
+	commitMouse_ = std::make_unique<Sprite>();
+	commitMouse_->Initialize("Resources/leftKey_ui.png");
+	commitMouse_->SetAnchorPoint({ 0.5f, 0.5f });
+
+	commitPad_ = std::make_unique<Sprite>();
+	commitPad_->Initialize("Resources/pad_x_ui.png");
+	commitPad_->SetAnchorPoint({ 0.5f, 0.5f });
 }
 
 void UltimateSkill::Start()
@@ -86,6 +95,11 @@ void UltimateSkill::Start()
 	blinkPhase_ = 0.0f;
 	slowEngaged_ = false; // スローは真上到着時に入れる（Q直後はまだ入れない）
 	approachStartDist_ = -1.0f; // 飛び込み進捗を最初から測り直す
+
+	// 斬撃線は画面中央から始める。マウスなら初回に即カーソルへ飛ぶが、
+	// パッドは傾きを足し込む方式なので、ここで置かないと画面端(0)から始まってしまう。
+	lineX_ = static_cast<float>(WinApp::kClientWidth) * 0.5f;
+	lineY_ = static_cast<float>(WinApp::kClientHeight) * 0.5f;
 
 	// 発動中は被弾しない＆通常移動・通常攻撃を止める（狙いに集中させる）。
 	owner_->SetInvincible(true);
@@ -150,8 +164,8 @@ void UltimateSkill::Update(float /*dt*/)
 				cineWeight_ = Approach(cineWeight_, 1.0f, kCineBlendSharp_, unscaledDt);
 				// 到着後、カメラの高さだけを徐々にプレイヤーの高さへ落とす（水平位置は動かさない）。
 					camHeightDrop_ = Approach(camHeightDrop_, 1.0f, kCamHeightDropSharp_, unscaledDt);
-					// 真上（見下ろし）にいるとき、右クリックでカメラの左右を反対側へ入れ替える。
-				if (input->TriggerMouseButton(1)) {
+					// 真上（見下ろし）にいるとき、右クリック／パッドRT でカメラの左右を反対側へ入れ替える。
+				if (input->TriggerMouseButton(1) || input->TriggerRightTrigger()) {
 					sideTarget_ = -sideTarget_;
 				}
 			} else {
@@ -179,14 +193,31 @@ void UltimateSkill::Update(float /*dt*/)
 		// 斬撃線の向きは斬るたびに交互（偶数=縦/左右, 奇数=横/上下）。
 		lineVertical_ = (struck_.size() % 2 == 0);
 
-		// 斬撃線はマウス位置に追従。縦線はX(左右)、横線はY(上下)だけ動かす。画面内へクランプ。
+		// 斬撃線はマウス位置／パッドの右スティックで動かす。縦線はX(左右)、横線はY(上下)だけ。
+		// マウスは毎フレーム絶対座標を代入するので、そのままだとスティックの入力を
+		// 上書きしてしまう。実際にマウスが動いたときだけ追従させ、それ以外は
+		// スティックの傾きを足し込む（スティックには絶対位置が無いため）。
 		const POINT m = input->GetMousePosition();
+		const POINT md = input->GetMouseDelta();
+		const bool mouseMoved = (md.x != 0 || md.y != 0);
+
 		if (lineVertical_) {
-			lineX_ = std::clamp(static_cast<float>(m.x), 0.0f,
-			                    static_cast<float>(WinApp::kClientWidth));
+			if (mouseMoved) {
+				lineX_ = static_cast<float>(m.x);
+			}
+			else {
+				lineX_ += input->GetRightStickX() * kPadLineSpeed_ * unscaledDt;
+			}
+			lineX_ = std::clamp(lineX_, 0.0f, static_cast<float>(WinApp::kClientWidth));
 		} else {
-			lineY_ = std::clamp(static_cast<float>(m.y), 0.0f,
-			                    static_cast<float>(WinApp::kClientHeight));
+			if (mouseMoved) {
+				lineY_ = static_cast<float>(m.y);
+			}
+			else {
+				// スティックは上が正、スクリーンYは下が正なので符号を反転する
+				lineY_ -= input->GetRightStickY() * kPadLineSpeed_ * unscaledDt;
+			}
+			lineY_ = std::clamp(lineY_, 0.0f, static_cast<float>(WinApp::kClientHeight));
 		}
 
 		// ロックオン枠の位置（対象のスクリーン座標）と、線が枠に合っているかを判定。
@@ -194,9 +225,9 @@ void UltimateSkill::Update(float /*dt*/)
 		                                targetScreenX_, targetScreenY_);
 		aligned_ = targetOnScreen_ && IsLineOnTarget();
 
-		// 左クリックで斬撃を確定。枠内なら大ダメージ、枠外なら通常ダメージ。
+		// 左クリック／パッドX で斬撃を確定。枠内なら大ダメージ、枠外なら通常ダメージ。
 		// （真上に着いてロックオン枠が出てからのみ斬れる＝接近中の誤クリックを弾く）
-		if (arrived_ && input->TriggerMouseButton(0)) {
+		if (arrived_ && (input->TriggerMouseButton(0) || input->TriggerButton(PadButton::X))) {
 			currentTarget_->ApplyDamage(aligned_ ? kSuccessDamage_ : kFailDamage_);
 
 			// 斬りモーション：縦線=Attack03 / 横線=Attack01・02（横同士は交互）。
@@ -340,6 +371,29 @@ void UltimateSkill::Draw()
 				edge->Draw();
 			}
 		}
+	}
+
+	// --- 斬撃確定の操作ガイド：画面中央右に「左クリック／パッドX」---
+	// ここに描いている＝斬撃を確定できる状態（Update側の斬撃受付も arrived_ が条件）。
+	// 線が枠を貫通している間は少し大きくして「今なら成功」を伝える。
+	{
+		const float emphasis = aligned_ ? kCommitGuideAlignedScale_ : 1.0f;
+		const float mouseSize = kCommitGuideMouseSize_ * emphasis;
+		const float padSize   = kCommitGuidePadSize_ * emphasis;
+
+		const float mouseX = screenW - kCommitGuideRightMargin_;
+		const float padX   = mouseX + mouseSize * 0.5f + kCommitGuideGap_ + padSize * 0.5f;
+		const float guideY = screenH * 0.5f;
+
+		commitMouse_->SetPosition({ mouseX, guideY });
+		commitMouse_->SetSize({ mouseSize, mouseSize });
+		commitMouse_->Update();
+		commitMouse_->Draw();
+
+		commitPad_->SetPosition({ padX, guideY });
+		commitPad_->SetSize({ padSize, padSize });
+		commitPad_->Update();
+		commitPad_->Draw();
 	}
 }
 

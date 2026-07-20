@@ -140,11 +140,6 @@ void Player::Update()
 	// ここから現在位置までを CollisionManager にスイープさせる。
 	const Vector3 prevColliderCenter = colliderTranslate_;
 
-	// ===== デバッグ：Xキーで即死 =====
-	if (!isDead_ && Input::GetInstance()->TriggerKey(DIK_X)) {
-		hp_ = 0;
-	}
-
 	// ===== 死亡突入（hp_が0になった瞬間に1回だけ） =====
 	if (!isDead_ && hp_ <= 0) {
 		isDead_ = true;
