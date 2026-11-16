@@ -126,10 +126,16 @@
     <ClCompile Include="application\Scene\TitleScene\TitleScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="application\Scene\TitleScene\TitleSceneInput.cpp">
+    <ClCompile Include="engine\FrameWork\input\MenuInput.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="engine\FrameWork\input\SceneInputBase.cpp">
+    <ClCompile Include="application\Scene\GameScene\GameSceneInput.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\FrameWork\input\InputReader.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\FrameWork\input\InputAction.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="engine\Scene\SceneManager\BaseScene\BaseScene.cpp">
@@ -602,10 +608,31 @@
     <ClInclude Include="application\Scene\TitleScene\TitleScene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="application\Scene\TitleScene\TitleSceneInput.h">
+    <ClInclude Include="engine\FrameWork\input\MenuInput.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\FrameWork\input\IMenuInput.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\FrameWork\input\SceneInputBase.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\FrameWork\input\InputReader.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\FrameWork\input\InputAction.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Scene\GameScene\GameSceneInput.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Player\IPlayerInput.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Camera\FollowCamera\ICameraInput.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\Character\CharacterBase\Player\IAimInput.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\Scene\SceneManager\BaseScene\BaseScene.h">

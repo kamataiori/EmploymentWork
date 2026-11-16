@@ -1,5 +1,5 @@
 #include "PlayerWeapon.h"
-#include <Input.h>
+#include "IPlayerInput.h"
 #include "Player.h"
 #include "Sword.h"
 #include "SpinSlashSkill.h"
@@ -7,22 +7,7 @@
 #include "UltimateSkill.h"
 #include "ITarget.h"   // IEnemyTargetProvider::AllowsUltimate を呼ぶため
 #include "engine/TimeManager.h"
-
-//======================================================
-// ノーマル攻撃3段のテーブル
-//   key      : 再生アニメ
-//   speed    : 再生速度倍率（1.0=等倍 / >1速い / <1遅い）
-//   hitStart : 当たり判定ON  （アニメ進行度 0〜1）
-//   hitEnd   : 当たり判定OFF （アニメ進行度 0〜1）
-//   comboAt  : この進行度を超えたら次段へ繋ぐ
-// 速度を変えても hit/combo は進行度基準なので自動で同期する。
-//======================================================
-const PlayerWeapon::AttackInfo PlayerWeapon::kNormalAttacks_[3] = {
-	//  key,                      speed, hitStart, hitEnd, comboAt
-	{ PlayerAnimKey::Attack01,     1.3f,    0.25f,  0.45f,  0.60f }, // 速い小振り
-	{ PlayerAnimKey::Attack02,     1.15f,    0.30f,  0.55f,  0.65f }, // 少し速い小振り
-	{ PlayerAnimKey::Attack03,     0.9f,    0.40f,  0.70f,  0.80f }, // 少しゆっくり大振り
-};
+#include "ImGuiManager.h"
 
 void PlayerWeapon::Initialize()
 {
@@ -68,14 +53,14 @@ void PlayerWeapon::ForeGroundDraw()
 
 void PlayerWeapon::StartAttack(int index)
 {
-	if (index < 0 || index > 2) return;
+	if (index < 0 || index >= kAttackStageCount_) return;
 
 	activeAttackIndex_ = index;
 	attacking_ = true;
 	comboReserve_ = false;
 
 	if (owner_) {
-		const AttackInfo& a = kNormalAttacks_[index];
+		const AttackInfo& a = normalAttacks_[index];
 		// lockSec は使わない（攻撃の継続は進行度で管理する）速度倍率を渡す
 		owner_->RequestAnimaKey(a.key, 10, 0.0f, a.speed);
 
@@ -121,32 +106,30 @@ void PlayerWeapon::Update()
 {
 	if (!owner_) return;
 
-	// ===== スキル発動中はスキルが武器を駆動する =====
-	// （剣のワールド配置・当たり判定はスキル側で行う。通常攻撃の処理は止める）
+	// ===== スキル発動中は通常攻撃の処理を止める =====
+	// （剣のワールド配置・当たり判定はスキル側が行う。駆動は UpdateSkills() で）
 	if (IsAnySkillActive()) {
-		const float dt = TimeManager::GetInstance()->GetDeltaTime();
-		// 同時に発動しない前提だが、発動中のスキルだけを駆動する。
-		if (eSkill_ && eSkill_->IsActive())     eSkill_->Update(dt);
-		if (skill2_ && skill2_->IsActive())     skill2_->Update(dt);
-		if (ultSkill_ && ultSkill_->IsActive()) ultSkill_->Update(dt);
 		return;
 	}
 
-	// ===== 通常攻撃の進行（コンボ／終了） =====
+	// ===== 通常攻撃の進行（コンボ／キャンセル／終了） =====
 	if (attacking_) {
 		// アニメ進行度（再生速度を変えても 0〜1 で進む）
 		const float progress = owner_->GetAnimationProgress();
-		const AttackInfo& cur = kNormalAttacks_[activeAttackIndex_];
+		const AttackInfo& cur = normalAttacks_[activeAttackIndex_];
 
 		// コンボ予約があり、受付進行度を超えたら次段へ
-		if (comboReserve_ && activeAttackIndex_ < 2 && progress >= cur.comboAt) {
+		if (comboReserve_ && activeAttackIndex_ < kAttackStageCount_ - 1 && progress >= cur.comboAt) {
 			StartAttack(activeAttackIndex_ + 1);
 		}
-		// 攻撃アニメが終端まで進んだら攻撃終了
+		// 振り終わり後に移動入力が入ったら、戻りモーションを打ち切って移動へ移れる。
+		// （攻撃中は移動できない代わりに、振り終わった瞬間から動けるようにして待ち時間を無くす）
+		else if (progress >= cur.cancelAt && HasMoveInput()) {
+			EndAttack();
+		}
+		// 何も入力が無ければアニメを最後まで再生してから終了
 		else if (progress >= kAttackEndProgress_) {
-			attacking_ = false;
-			comboReserve_ = false;
-			owner_->EndAttackState(); // 優先度を解除して移動アニメへ戻れるようにする
+			EndAttack();
 		}
 	}
 
@@ -155,9 +138,72 @@ void PlayerWeapon::Update()
 }
 
 
+void PlayerWeapon::UpdateSkills()
+{
+	if (!owner_) return;
+	if (!IsAnySkillActive()) return;
+
+	const float dt = TimeManager::GetInstance()->GetDeltaTime();
+	// 同時に発動しない前提だが、発動中のスキルだけを駆動する。
+	if (eSkill_ && eSkill_->IsActive())     eSkill_->Update(dt);
+	if (skill2_ && skill2_->IsActive())     skill2_->Update(dt);
+	if (ultSkill_ && ultSkill_->IsActive()) ultSkill_->Update(dt);
+}
+
 void PlayerWeapon::Draw()
 {
 
+}
+
+void PlayerWeapon::DebugImGui()
+{
+#ifdef USE_IMGUI
+	if (!showDebug_) return;
+
+	// 調整スライダーの範囲（進行度 0〜1）
+	constexpr float kProgressMin = 0.0f;
+	constexpr float kProgressMax = 1.0f;
+
+	ImGui::Begin("Player Attack");
+
+	ImGui::Text("attacking : %s", attacking_ ? "YES" : "no");
+	ImGui::Text("stage     : %d", activeAttackIndex_);
+	ImGui::Text("progress  : %.2f", owner_ ? owner_->GetAnimationProgress() : 0.0f);
+	ImGui::Text("combo     : %s", comboReserve_ ? "reserved" : "-");
+	ImGui::Separator();
+	ImGui::TextWrapped("cancelAt を過ぎると移動入力で戻りモーションを打ち切れる（振りの長さ自体はアニメ側）。");
+
+	for (int i = 0; i < kAttackStageCount_; ++i) {
+		ImGui::PushID(i);
+		if (ImGui::CollapsingHeader(i == 0 ? "Stage 1" : (i == 1 ? "Stage 2" : "Stage 3"))) {
+			AttackInfo& a = normalAttacks_[i];
+			ImGui::SliderFloat("hitStart", &a.hitStart, kProgressMin, kProgressMax);
+			ImGui::SliderFloat("hitEnd", &a.hitEnd, kProgressMin, kProgressMax);
+			ImGui::SliderFloat("comboAt", &a.comboAt, kProgressMin, kProgressMax);
+			ImGui::SliderFloat("cancelAt", &a.cancelAt, kProgressMin, kProgressMax);
+		}
+		ImGui::PopID();
+	}
+
+	ImGui::End();
+#endif
+}
+
+void PlayerWeapon::EndAttack()
+{
+	attacking_ = false;
+	comboReserve_ = false;
+	if (owner_) {
+		owner_->EndAttackState(); // 優先度を解除して移動アニメへ戻れるようにする
+	}
+}
+
+bool PlayerWeapon::HasMoveInput() const
+{
+	if (!playerInput_) return false;
+
+	// 軸はデッドゾーン処理済みなので、0 でなければ入力が入っている
+	return playerInput_->GetMoveX() != 0.0f || playerInput_->GetMoveY() != 0.0f;
 }
 
 void PlayerWeapon::NormalAttack()
@@ -165,13 +211,9 @@ void PlayerWeapon::NormalAttack()
 	// スキル中は通常攻撃を出せない
 	if (IsAnySkillActive()) return;
 
-	Input* input = Input::GetInstance();
-
-	// 攻撃は 左クリック または パッドX
-	const bool attackHeld = input->PushMouseButton(0)
-		|| input->PushButton(PadButton::X);
-	const bool attackTriggered = input->TriggerMouseButton(0)
-		|| input->TriggerButton(PadButton::X);
+	// 攻撃入力（どのボタンに割り当てるかはシーンの入力クラスが持つ）
+	const bool attackHeld = playerInput_ && playerInput_->IsAttackHeld();
+	const bool attackTriggered = playerInput_ && playerInput_->IsAttackTriggered();
 
 	// ===== 攻撃中：長押しでも次段を予約できる =====
 	if (attacking_) {
@@ -198,18 +240,15 @@ bool PlayerWeapon::IsHitActive() const
 	// 当たり判定は進行度ウィンドウ内だけ有効。
 	// 振りの当たりフレーム帯（hitStart〜hitEnd）に合わせて調整する
 	const float progress = owner_->GetAnimationProgress();
-	const AttackInfo& a = kNormalAttacks_[activeAttackIndex_];
+	const AttackInfo& a = normalAttacks_[activeAttackIndex_];
 	return (progress >= a.hitStart && progress <= a.hitEnd);
 }
 
 
 void PlayerWeapon::Skill()
 {
-	// E キー または パッドRB
-	const bool nowE = Input::GetInstance()->PushKey(DIK_E)
-		|| Input::GetInstance()->PushButton(PadButton::RB);
-	const bool triggered = (nowE && !IsSkill_); // 押した瞬間(立ち上がり)だけ
-	IsSkill_ = nowE;
+	// 発動は押した瞬間だけ（立ち上がり検出は入力側が持つ）
+	const bool triggered = playerInput_ && playerInput_->IsSkillTriggered();
 
 	if (!triggered) return;
 	if (IsAnySkillActive()) return; // 多重発動はしない
@@ -226,11 +265,8 @@ void PlayerWeapon::Skill()
 
 void PlayerWeapon::Skill2()
 {
-	// V キー または パッドY
-	const bool nowV = Input::GetInstance()->PushKey(DIK_V)
-		|| Input::GetInstance()->PushButton(PadButton::Y);
-	const bool triggered = (nowV && !isSkill2_); // 押した瞬間(立ち上がり)だけ
-	isSkill2_ = nowV;
+	// 発動は押した瞬間だけ（立ち上がり検出は入力側が持つ）
+	const bool triggered = playerInput_ && playerInput_->IsSkill2Triggered();
 
 	if (!triggered) return;
 	if (IsAnySkillActive()) return; // 多重発動はしない（他スキル・乱舞中は不可）
@@ -251,11 +287,8 @@ void PlayerWeapon::Skill2()
 
 void PlayerWeapon::Ultimate()
 {
-	// Q キー または パッドLB
-	const bool nowQ = Input::GetInstance()->PushKey(DIK_Q)
-		|| Input::GetInstance()->PushButton(PadButton::LB);
-	const bool triggered = (nowQ && !isUltimate_); // 押した瞬間(立ち上がり)だけ
-	isUltimate_ = nowQ;
+	// 発動は押した瞬間だけ（立ち上がり検出は入力側が持つ）
+	const bool triggered = playerInput_ && playerInput_->IsUltimateTriggered();
 
 	if (!triggered) return;
 	if (IsAnySkillActive()) return; // 多重発動はしない（他スキル発動中は不可）

@@ -24,6 +24,7 @@
 #include "engine/UI/DamagePopupManager.h"
 #include "PauseScreen.h"
 #include "BattleTargets.h"
+#include "GameSceneInput.h"
 #include "Flow/GameFlowContext.h"
 #include "Flow/GameFlowStateMachine.h"
 
@@ -91,6 +92,10 @@ private:
 	std::unique_ptr<SkyBox>   skybox = std::make_unique<SkyBox>();
 	std::unique_ptr<Object3d> ground;
 	std::unique_ptr<Object3d> sky;
+
+	// このシーンの入力。キーボード/パッドの違いはここで吸収し、
+	// シーンは「ポーズ」、プレイヤーは IPlayerInput 経由で「移動/攻撃」だけを読む。
+	std::unique_ptr<GameSceneInput> sceneInput_;
 
 	std::unique_ptr<Player>   player_;
 	std::unique_ptr<Enemy>    enemy_;

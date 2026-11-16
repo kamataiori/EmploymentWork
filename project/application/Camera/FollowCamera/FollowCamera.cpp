@@ -1,11 +1,9 @@
 #include "FollowCamera.h"
-#include <Input.h>
 
 FollowCamera::FollowCamera(ObjectBase* target, float followDistance, float heightOffset)
 	: target(target),
 	followDistance(followDistance),
 	heightOffset(heightOffset),
-	sensitivity_(0.0025f),
 	dampPosY_(true),
 	posYSmooth_(12.0f),
 	lockLookY_(false),
@@ -35,24 +33,28 @@ void FollowCamera::Update()
 	}
 
 	// =============================
-	// 入力：周回角（カメラオービット）
+	// 入力：周回角（カメラオービット）／見下ろし角
+	//   どのデバイスをどの感度で使うかは入力側（ICameraInput の実装）が持つ。
+	//   ここで決めるのは「カメラ側の方針」だけ:
+	//     ・キーボードの旋回は一定速度で常に効く
+	//     ・マウス/スティックはロックで止められ、感度スケールで鈍らせられる
+	//     ・見下ろし角は可動域でクランプする
 	// =============================
-	if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= keyOrbitSpeed_;
-	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += keyOrbitSpeed_;
+	if (cameraInput_) {
+		const LookAxisValue yawLook = cameraInput_->GetYawLook();
+		const LookAxisValue pitchLook = cameraInput_->GetPitchLook();
 
-	// マウス操作が許可されている間だけカメラを動かす。
-	// （スキル発動中など mouseControlEnabled_=false でマウスのカメラ操作を止める）
-	// パッドの右スティックもマウスと同じ扱いにする（同じロック・同じ感度スケールに従う）。
-	if (mouseControlEnabled_) {
-		// 左右：水平の周回角（スロー演出中は感度スケールでゆっくりにする）
-		angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_ * mouseSensitivityScale_;
-		angle += Input::GetInstance()->GetRightStickX() * padOrbitSpeed_ * mouseSensitivityScale_;
+		angle += yawLook.keyDelta;
 
-		// 上下：見下ろし角（マウスを下げると見下ろし、上げると見上げ）
-		cameraPitch_ += Input::GetInstance()->GetMouseDelta().y * pitchSensitivity_ * mouseSensitivityScale_;
-		// スティックは上が正。マウスと向きを揃えるため符号を反転する（倒し上げ＝見上げ）
-		cameraPitch_ -= Input::GetInstance()->GetRightStickY() * padPitchSpeed_ * mouseSensitivityScale_;
-		cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
+		// （スキル発動中など mouseControlEnabled_=false で視点操作を止める）
+		if (mouseControlEnabled_) {
+			// 左右：水平の周回角（スロー演出中は感度スケールでゆっくりにする）
+			angle += yawLook.pointerDelta * mouseSensitivityScale_;
+
+			// 上下：見下ろし角（マウスを下げると見下ろし、上げると見上げ）
+			cameraPitch_ += pitchLook.pointerDelta * mouseSensitivityScale_;
+			cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
+		}
 	}
 
 	const Vector3& targetPos = target->GetTransform().translate;

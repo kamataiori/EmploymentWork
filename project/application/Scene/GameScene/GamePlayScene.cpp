@@ -118,6 +118,14 @@ void GamePlayScene::Initialize()
 		centerCore_.get(), enemy_.get());
 	player_->SetEnemyTargetProvider(battleTargets_.get());
 	player_->SetCameraEffect(cameraEffect_.get());
+
+	// ===== 入力 =====
+	// Input は既存のシングルトンだが、シーン入力側は注入で受け取る（差し替え/テスト用）。
+	// 生成はプレイヤーの Initialize 後（移動・武器の担当が出来てから配るため）。
+	sceneInput_ = std::make_unique<GameSceneInput>(Input::GetInstance());
+	player_->SetPlayerInput(sceneInput_.get());
+	player_->SetAimInput(sceneInput_.get());
+	followCamera->SetCameraInput(sceneInput_.get());
 	enemy_->SetCameraEffect(cameraEffect_.get());
 
 	// 与ダメージ数値ポップアップ（敵の右上に表示）を生成し、敵へ注入する
@@ -417,6 +425,8 @@ void GamePlayScene::Initialize()
 	auto pause = std::make_unique<PauseScreen>();
 	pause->Initialize({ 1280.0f, 720.0f }, "TITLE");
 	pauseScreenRef_ = pause.get();  // 所有は uiManager_、こちらは状態監視のための非所有参照
+	// ポーズ中のメニュー操作もシーンの入力から読む（UI要素は Input を直接見ない）
+	pause->SetMenuInput(sceneInput_->GetMenuInput());
 	uiManager_->Add(std::move(pause));
 
 	// 初期状態はポーズではないので、シーン要求どおりカーソル非表示+閉じ込め
@@ -511,6 +521,15 @@ void GamePlayScene::UpdateCamera()
 // ================================================
 void GamePlayScene::Update()
 {
+	// ===== 入力を先に1回だけ取る =====
+	// ここから下は Input を直接見ない。意味（ポーズ など）だけを見る。
+	sceneInput_->Update();
+
+	// ポーズの開閉。入力判定はシーンが持ち、UI へは「切り替えて」と要求するだけ。
+	if (pauseScreenRef_ && sceneInput_->IsPauseTriggered()) {
+		pauseScreenRef_->RequestToggle();
+	}
+
 	uiManager_->Update();
 
 	// プレイヤーHPを左下のHP UI へ反映（PlayerHpPipBar が ApplyData で受け取る）
@@ -548,7 +567,8 @@ void GamePlayScene::Update()
 
 	Debug();
 
-	if (Input::GetInstance()->TriggerKey(DIK_T)) {
+	// デバッグ：タイトルへ戻る
+	if (sceneInput_->IsDebugReturnToTitleTriggered()) {
 		SceneManager::GetInstance()->ChangeScene("TITLE");
 	}
 }
@@ -692,5 +712,12 @@ void GamePlayScene::Debug()
 		ImGui::Text("Core     : %s (hittable=%d)", coreStage, centerCore_->IsHittable() ? 1 : 0);
 	}
 	ImGui::End();
+
+	// ===== 攻撃の調整（振りの速さ・当たり判定区間・キャンセル受付）=====
+	if (player_) {
+		if (auto* w = dynamic_cast<PlayerWeapon*>(player_->GetWeapon())) {
+			w->DebugImGui();
+		}
+	}
 #endif
 }

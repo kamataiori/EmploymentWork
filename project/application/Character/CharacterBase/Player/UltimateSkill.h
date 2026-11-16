@@ -115,13 +115,9 @@ private:
 
 	// ---- 毎フレーム更新して Draw と共有する「狙い」の状態 ----
 	bool  lineVertical_  = true;   // 今の斬撃線が縦か（true=縦/左右, false=横/上下）。斬るたびに交互。
-	float lineX_         = 0.0f;   // 縦線のスクリーンX座標（マウス／右スティックで左右に動かす）
-	float lineY_         = 0.0f;   // 横線のスクリーンY座標（マウス／右スティックで上下に動かす）
+	float lineX_         = 0.0f;   // 縦線のスクリーンX座標（照準入力で左右に動かす）
+	float lineY_         = 0.0f;   // 横線のスクリーンY座標（照準入力で上下に動かす）
 
-	// パッドの右スティックで線を動かす速さ[px/秒]。
-	// マウスはカーソルの絶対座標へ即追従できるが、スティックには絶対位置が無いので
-	// 傾きぶんを足し込んで動かす。画面幅を約1.4秒で端から端まで振れる速さ。
-	const float kPadLineSpeed_ = 900.0f;
 	float targetScreenX_ = 0.0f;   // ロックオン枠の中心スクリーン座標
 	float targetScreenY_ = 0.0f;
 	bool  targetOnScreen_ = false; // 対象を画面内に投影できているか

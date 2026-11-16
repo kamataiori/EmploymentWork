@@ -7,7 +7,7 @@
 #include "WinApp.h"
 #include "engine/TimeManager.h"
 #include "MathFunctions.h"
-#include <Input.h>
+#include "IAimInput.h"
 
 #include <cmath>
 #include <algorithm>
@@ -98,8 +98,10 @@ void UltimateSkill::Start()
 
 	// 斬撃線は画面中央から始める。マウスなら初回に即カーソルへ飛ぶが、
 	// パッドは傾きを足し込む方式なので、ここで置かないと画面端(0)から始まってしまう。
-	lineX_ = static_cast<float>(WinApp::kClientWidth) * 0.5f;
-	lineY_ = static_cast<float>(WinApp::kClientHeight) * 0.5f;
+	if (const IAimInput* aim = owner_->GetAimInput()) {
+		lineX_ = aim->GetAimCenterX();
+		lineY_ = aim->GetAimCenterY();
+	}
 
 	// 発動中は被弾しない＆通常移動・通常攻撃を止める（狙いに集中させる）。
 	owner_->SetInvincible(true);
@@ -156,7 +158,8 @@ void UltimateSkill::Update(float /*dt*/)
 			lockOnTimer_ += unscaledDt;
 		}
 
-		Input* input = Input::GetInstance();
+		// 照準の入力（どのデバイスをどう混ぜるかは入力側が持つ）
+		const IAimInput* aim = owner_->GetAimInput();
 
 		// 接近完了後は追従を離れ、見下ろし演出カメラへ移行する（上空・見下ろしの位置で止める）。
 		if (auto* fc = dynamic_cast<FollowCamera*>(owner_->GetCamera())) {
@@ -164,8 +167,8 @@ void UltimateSkill::Update(float /*dt*/)
 				cineWeight_ = Approach(cineWeight_, 1.0f, kCineBlendSharp_, unscaledDt);
 				// 到着後、カメラの高さだけを徐々にプレイヤーの高さへ落とす（水平位置は動かさない）。
 					camHeightDrop_ = Approach(camHeightDrop_, 1.0f, kCamHeightDropSharp_, unscaledDt);
-					// 真上（見下ろし）にいるとき、右クリック／パッドRT でカメラの左右を反対側へ入れ替える。
-				if (input->TriggerMouseButton(1) || input->TriggerRightTrigger()) {
+					// 真上（見下ろし）にいるとき、入れ替え操作でカメラの左右を反対側へ移す。
+				if (aim && aim->IsAimSideSwapTriggered()) {
 					sideTarget_ = -sideTarget_;
 				}
 			} else {
@@ -193,31 +196,16 @@ void UltimateSkill::Update(float /*dt*/)
 		// 斬撃線の向きは斬るたびに交互（偶数=縦/左右, 奇数=横/上下）。
 		lineVertical_ = (struck_.size() % 2 == 0);
 
-		// 斬撃線はマウス位置／パッドの右スティックで動かす。縦線はX(左右)、横線はY(上下)だけ。
-		// マウスは毎フレーム絶対座標を代入するので、そのままだとスティックの入力を
-		// 上書きしてしまう。実際にマウスが動いたときだけ追従させ、それ以外は
-		// スティックの傾きを足し込む（スティックには絶対位置が無いため）。
-		const POINT m = input->GetMousePosition();
-		const POINT md = input->GetMouseDelta();
-		const bool mouseMoved = (md.x != 0 || md.y != 0);
-
-		if (lineVertical_) {
-			if (mouseMoved) {
-				lineX_ = static_cast<float>(m.x);
+		// 斬撃線を動かす。動かすのは今の向きの軸だけ（縦線ならX、横線ならY）。
+		// マウスのカーソル追従とスティックの足し込みの混ぜ方、画面内へのクランプは
+		// 入力側（AimAxis）が持つ。時間はスロー演出に引っ張られない unscaled を渡す。
+		if (aim) {
+			if (lineVertical_) {
+				lineX_ = aim->MoveAimX(lineX_, unscaledDt);
 			}
 			else {
-				lineX_ += input->GetRightStickX() * kPadLineSpeed_ * unscaledDt;
+				lineY_ = aim->MoveAimY(lineY_, unscaledDt);
 			}
-			lineX_ = std::clamp(lineX_, 0.0f, static_cast<float>(WinApp::kClientWidth));
-		} else {
-			if (mouseMoved) {
-				lineY_ = static_cast<float>(m.y);
-			}
-			else {
-				// スティックは上が正、スクリーンYは下が正なので符号を反転する
-				lineY_ -= input->GetRightStickY() * kPadLineSpeed_ * unscaledDt;
-			}
-			lineY_ = std::clamp(lineY_, 0.0f, static_cast<float>(WinApp::kClientHeight));
 		}
 
 		// ロックオン枠の位置（対象のスクリーン座標）と、線が枠に合っているかを判定。
@@ -225,9 +213,9 @@ void UltimateSkill::Update(float /*dt*/)
 		                                targetScreenX_, targetScreenY_);
 		aligned_ = targetOnScreen_ && IsLineOnTarget();
 
-		// 左クリック／パッドX で斬撃を確定。枠内なら大ダメージ、枠外なら通常ダメージ。
+		// 確定操作で斬撃を決める。枠内なら大ダメージ、枠外なら通常ダメージ。
 		// （真上に着いてロックオン枠が出てからのみ斬れる＝接近中の誤クリックを弾く）
-		if (arrived_ && (input->TriggerMouseButton(0) || input->TriggerButton(PadButton::X))) {
+		if (arrived_ && aim && aim->IsAimConfirmTriggered()) {
 			currentTarget_->ApplyDamage(aligned_ ? kSuccessDamage_ : kFailDamage_);
 
 			// 斬りモーション：縦線=Attack03 / 横線=Attack01・02（横同士は交互）。

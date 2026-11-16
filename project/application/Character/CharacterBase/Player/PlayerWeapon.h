@@ -36,6 +36,8 @@ public:
 
 	void Update() override;
 
+	void UpdateSkills() override;
+
 	void Draw() override;
 
 	// 前景UI描画：アルティメットのロックオン枠・斬撃線をスキルへ委譲する。
@@ -67,6 +69,10 @@ public:
 	// ウィンドウはアニメ進行度(0〜1)で持つので、再生速度を変えても同期する。
 	bool IsHitActive() const;
 
+	// 攻撃の調整値を実機で詰めるための ImGui（Debug ビルドのみ中身がある）。
+	// シーンの Debug() から呼ぶ。
+	void DebugImGui();
+
 private:
 
 	// いずれかのスキルが発動中か（攻撃やスキルの多重発動を防ぐ排他制御に使う）
@@ -79,8 +85,8 @@ private:
 private:
 
 	//--------------------------------------------------
-	// 攻撃1段ぶんの設定。
-	// speed/hitStart/hitEnd/comboAt を段ごとに調整できる。
+	// 攻撃1段ぶんの設定。段ごとに振りの速さと各タイミングを調整できる。
+	// 時間[秒]ではなくアニメ進行度(0〜1)で持つので、speed を変えても自動で同期する。
 	//--------------------------------------------------
 	struct AttackInfo {
 		PlayerAnimKey key;   // 再生するアニメ
@@ -88,13 +94,36 @@ private:
 		float hitStart;      // 当たり判定ON  （進行度 0〜1）
 		float hitEnd;        // 当たり判定OFF （進行度 0〜1）
 		float comboAt;       // この進行度を超えたら次段へ繋ぐ
+		float cancelAt;      // この進行度を超えたら移動入力で振り終わりをキャンセルできる
 	};
 
-	// ノーマル攻撃3段ぶんのテーブル。状況に合わせてここを調整する。
-	static const AttackInfo kNormalAttacks_[3];
+	// ノーマル攻撃の段数
+	static constexpr int kAttackStageCount_ = 3;
+
+	//--------------------------------------------------
+	// ノーマル攻撃のテーブル（調整値）。
+	//   ・振りの長さ自体はアニメ（モデル側）で決まるので、ここでは speed を触らない
+	//   ・cancelAt は「振り終わってから次の行動へ移れる」タイミング。
+	//     ここを過ぎれば移動入力で戻りモーションを打ち切れるので、
+	//     アニメを最後まで見せつつ待ち時間が出ない。
+	//   ・hitEnd ≦ comboAt / cancelAt になるようにする（当たり判定を出し切ってから次へ）
+	// 実機で詰められるよう ImGui（Player Attack ウィンドウ）から編集できる。
+	//--------------------------------------------------
+	AttackInfo normalAttacks_[kAttackStageCount_] = {
+		//  key,                    speed, hitStart, hitEnd, comboAt, cancelAt
+		{ PlayerAnimKey::Attack01,   1.3f,    0.25f,  0.45f,   0.60f,    0.55f }, // 速い小振り
+		{ PlayerAnimKey::Attack02,   1.15f,   0.30f,  0.55f,   0.65f,    0.62f }, // 少し速い小振り
+		{ PlayerAnimKey::Attack03,   0.9f,    0.40f,  0.70f,   0.80f,    0.75f }, // 少しゆっくり大振り
+	};
 
 	// 指定した段の攻撃を開始する
 	void StartAttack(int index);
+
+	// 攻撃状態を終える（移動・次の入力を受け付けられるようにする）
+	void EndAttack();
+
+	// 移動入力が入っているか（振り終わりのキャンセル判定に使う）
+	bool HasMoveInput() const;
 
 private:
 
@@ -107,13 +136,6 @@ private:
 
 	// ---- コンボ ----
 	bool comboReserve_ = false;    // 次の攻撃を予約しているか
-
-	// 入力エッジ検出用（E キーの押した瞬間を取る）
-	bool IsSkill_ = false;
-	// 入力エッジ検出用（V キーの押した瞬間を取る）
-	bool isSkill2_ = false;
-	// 入力エッジ検出用（Q キーの押した瞬間を取る）
-	bool isUltimate_ = false;
 
 	// ---- 借り物（所有しない） ----
 	Sword* sword_ = nullptr;       // スキルが駆動する剣

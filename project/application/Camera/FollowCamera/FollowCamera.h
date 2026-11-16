@@ -1,6 +1,7 @@
 #pragma once
 #include "Camera/Camera.h"
 #include "ObjectBase.h"
+#include "ICameraInput.h"
 
 class FollowCamera : public Camera
 {
@@ -70,8 +71,12 @@ public: // カメラの高さ関係
 	/// </summary>
 	float GetAngle() const { return angle; }
 
-	void SetSensitivity(float s) { sensitivity_ = s; }
-	float GetSensitivity() const { return sensitivity_; }
+	/// <summary>
+	/// 視点入力の読み取り口を注入する（実装はシーンの GameSceneInput。所有はしない）。
+	/// 未注入の間はカメラ操作を受け付けない（追従だけ行う）。
+	/// どのデバイスをどの感度で使うかは入力側が持つ。
+	/// </summary>
+	void SetCameraInput(const ICameraInput* input) { cameraInput_ = input; }
 
 	/// <summary>
 	/// マウスによるカメラ操作の有効/無効を切り替える。
@@ -81,9 +86,10 @@ public: // カメラの高さ関係
 	bool IsMouseControlEnabled() const { return mouseControlEnabled_; }
 
 	/// <summary>
-	/// マウス感度の一時的な倍率（yaw/pitch 両方に掛かる）。
+	/// マウス/スティック感度の一時的な倍率（yaw/pitch 両方に掛かる）。
 	/// アルティメットのスローモーション中など、カメラをゆっくり動かしたい場面で下げる。
 	/// 1.0=通常。演出が終わったら 1.0 に戻すこと。
+	/// (キーボードでの旋回は一定速度のままで、この倍率の対象外)
 	/// </summary>
 	void SetMouseSensitivityScale(float s) { mouseSensitivityScale_ = s; }
 	float GetMouseSensitivityScale() const { return mouseSensitivityScale_; }
@@ -112,7 +118,9 @@ private: // メンバ変数
 	float followDistance;  // 対象との距離
 	float heightOffset = 1.5f;    // カメラの高さオフセット
 	float angle = 3.14f;    // カメラの回転角度（Y軸）
-	float sensitivity_ = 0.001f; // 初期値：感度
+
+	// 視点入力の読み取り口（シーンが所有。ここでは借りるだけ）
+	const ICameraInput* cameraInput_ = nullptr;
 
 	// --- 注視点（画面中央に映る点）---
 	float lookHeight_ = 2.4f;        // 注視点の高さ（プレイヤー基準・頭の高さ）
@@ -120,24 +128,16 @@ private: // メンバ変数
 	// --- 肩越し（カメラ／注視点の横ずらし量）---
 	float cameraSideShift_ = 1.3f;   // 横へずらす量（大きいほどキャラが画面端寄り）
 
-	// --- カメラ操作 ---
-	float keyOrbitSpeed_ = 0.01f;    // キーボードでの周回速度（rad/frame）
-
-	// --- パッド右スティックでのカメラ操作 ---
-	// スティックは -1.0〜1.0 で返るので、倒し切ったときの1フレームの回転量を指す。
-	// マウスは移動量(px)にかかる係数なので、そちらとは別の値が要る。
-	float padOrbitSpeed_ = 0.035f;   // 左右：周回速度（rad/frame）
-	float padPitchSpeed_ = 0.02f;    // 上下：見下ろし角の速度（rad/frame）
-
-	// --- 上下の見下ろし角(pitch)：マウス上下で操作 ---
-	float cameraPitch_ = 0.0f;         // 現在の見下ろし角（マウスYで変化。rad）
-	float pitchSensitivity_ = 0.0025f; // マウス上下の感度
+	// --- 上下の見下ろし角(pitch) ---
+	// 感度や割り当てデバイスは入力側（GameSceneInput の割り当て表）が持つ。
+	// ここに残すのは「カメラ側の都合」である可動域だけ。
+	float cameraPitch_ = 0.0f;         // 現在の見下ろし角（rad）
 	float pitchMin_ = -0.25f;          // 上限（負＝見上げ側）
 	float pitchMax_ = 0.5f;            // 下限（下を向きすぎないため）
 
-	// --- マウス操作のロック ---
-	bool mouseControlEnabled_ = true;  // false の間はマウスでカメラを動かせない
-	float mouseSensitivityScale_ = 1.0f; // マウス感度の一時倍率（スロー演出中に下げる）
+	// --- 視点操作のロック ---
+	bool mouseControlEnabled_ = true;  // false の間はマウス/スティックでカメラを動かせない
+	float mouseSensitivityScale_ = 1.0f; // 感度の一時倍率（スロー演出中に下げる）
 
 	// --- シネマティック上書き（演出側が pos/look/weight を与える）---
 	Vector3 cinePos_{};       // 望むカメラ位置

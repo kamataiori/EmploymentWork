@@ -163,7 +163,7 @@ void TitleScene::Initialize()
 	// ===== 入力 =====
 	// Input は既存のシングルトンだが、シーン入力側は注入して受け取るだけにしておく
 	// (差し替え・テストができるようにするため。所有はシーンが持つ)
-	sceneInput_ = std::make_unique<TitleSceneInput>(Input::GetInstance());
+	sceneInput_ = std::make_unique<MenuInput>(Input::GetInstance());
 
 	phase_ = TitlePhase::Idle;
 	requestedChange_ = false;
@@ -425,7 +425,7 @@ void TitleScene::Debug()
 	ImGui::Text("decide : %s", sceneInput_->IsDecideTriggered() ? "TRIGGER" : "-");
 	ImGui::Text("cancel : %s", sceneInput_->IsCancelTriggered() ? "TRIGGER" : "-");
 	ImGui::Separator();
-	ImGui::Text("Pad : %s", Input::GetInstance()->IsPadConnected() ? "connected" : "not connected");
+	ImGui::Text("Pad : %s", sceneInput_->IsPadConnected() ? "connected" : "not connected");
 	ImGui::End();
 
 	ImGui::Begin("TitleScene Sword");

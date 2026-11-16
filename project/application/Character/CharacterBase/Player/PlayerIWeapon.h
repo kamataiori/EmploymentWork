@@ -4,6 +4,7 @@
 
 class Player;
 class IEnemyTargetProvider;
+class IPlayerInput;
 
 class PlayerIWeapon
 {
@@ -16,8 +17,16 @@ public:
 
 	virtual void Initialize() = 0;
 
-	//// 毎フレ更新（追従・寿命管理など）
+	//// 毎フレ更新（通常攻撃の進行＝コンボ／キャンセル／終了）
 	virtual void Update() = 0;
+
+	/// <summary>
+	/// スキルの駆動（剣のワールド配置など）。
+	/// プレイヤーの移動が終わってから呼ぶ：スキルはプレイヤー位置を基準に剣を置くので、
+	/// 位置が確定する前に動かすと1フレームぶん遅れて見えるため。
+	/// デフォルトは何もしない（スキルを持たない武器実装を壊さないよう非純粋）。
+	/// </summary>
+	virtual void UpdateSkills() {}
 
 	// デバッグ描画など（必要なら）
 	virtual void Draw() = 0;
@@ -53,11 +62,20 @@ public:
 
 	void SetOwner(Player* owner) { owner_ = owner; }
 
+	/// <summary>
+	/// 入力の読み取り口を注入する（実装はシーンの GameSceneInput。所有はしない）。
+	/// 未注入の間は「入力なし」として動く。
+	/// </summary>
+	void SetPlayerInput(const IPlayerInput* input) { playerInput_ = input; }
+
 protected:
 
 	Transform* playerTransform_ = {};
 
 	Player* owner_ = nullptr;
+
+	// 入力の読み取り口（シーンが所有。借りるだけ）
+	const IPlayerInput* playerInput_ = nullptr;
 
 
 };

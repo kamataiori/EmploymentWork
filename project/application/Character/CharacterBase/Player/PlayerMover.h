@@ -3,6 +3,7 @@
 #include "Vector3.h"
 
 class Camera;
+class IPlayerInput;
 
 //======================================================
 // PlayerMover
@@ -23,6 +24,20 @@ public:
 	/// カメラをセット（向き計算に FollowCamera のヨー角を使う）
 	/// </summary>
 	void SetCamera(Camera* camera) { camera_ = camera; }
+
+	/// <summary>
+	/// 入力の読み取り口を注入する（実装はシーンの GameSceneInput。所有はしない）。
+	/// 未注入の間は「入力なし」として動く。
+	/// </summary>
+	void SetPlayerInput(const IPlayerInput* input) { playerInput_ = input; }
+
+	/// <summary>
+	/// 移動と向き変更だけを止める（攻撃モーション中に使う）。
+	/// inputLocked とは別物で、こちらは落下（重力）やジャンプ・ダッシュは止めない。
+	/// 3Dアクションの「振っている間は足が止まる」挙動のためのもの。
+	/// </summary>
+	void SetMoveLocked(bool locked) { moveLocked_ = locked; }
+	bool IsMoveLocked() const { return moveLocked_; }
 
 	/// <summary>
 	/// 接地計算に使うコライダー情報を Player と共有する。
@@ -70,6 +85,12 @@ private:
 
 	// 向き計算用カメラ（共有）
 	Camera* camera_ = nullptr;
+
+	// 入力の読み取り口（シーンが所有。ここでは借りるだけ）
+	const IPlayerInput* playerInput_ = nullptr;
+
+	// 攻撃モーション中など、移動と向き変更だけを止めているか
+	bool moveLocked_ = false;
 
 	// 接地計算用（Player の本体コライダーと同じ値）
 	float sphereRadius_ = 1.0f;

@@ -124,6 +124,13 @@ void Player::Initialize()
 	auraPlaying_ = false;
 }
 
+void Player::SetPlayerInput(const IPlayerInput* input)
+{
+	// プレイヤー本体は入力を読まない。移動と攻撃の担当へ配るだけ。
+	if (mover_)  mover_->SetPlayerInput(input);
+	if (weapon_) weapon_->SetPlayerInput(input);
+}
+
 void Player::SetEnemyTargetProvider(IEnemyTargetProvider* provider)
 {
 	// 武器（調停役）経由でスキル2（突進乱舞）へ供給元を渡す。
@@ -185,15 +192,20 @@ void Player::Update()
 		}
 	}
 
-	// playerの基本となる動き（移動コンポーネントに委譲）
-	mover_->Update(inputLocked_);
-
-	bool weaponAttacking = false;     // 攻撃モーション中（アニメ上書き禁止用）
+	// ==================================================
+	// 更新順のねらい
+	//   1) 攻撃の進行（コンボ／キャンセル／終了）
+	//   2) 攻撃・スキルの入力   … ここまでで「今フレームは攻撃中か」が確定する
+	//   3) 移動                 … 攻撃中なら足を止める（1フレームも動かさない）
+	//   4) スキルの駆動         … 剣の配置はプレイヤー位置が確定してから
+	// ==================================================
+	bool weaponAttacking = false;     // 攻撃モーション中（アニメ上書き禁止＆移動停止用）
 
 	if (weapon_) {
-		// 武器の更新（通常攻撃の進行＋スキルの駆動はこの中で完結する）
+		// 1) 通常攻撃の進行（スキル発動中は何もしない）
 		weapon_->Update();
 
+		// 2) 入力
 		if (!inputLocked_) {
 			weapon_->NormalAttack();
 			weapon_->Skill();
@@ -204,6 +216,16 @@ void Player::Update()
 		if (auto w = dynamic_cast<PlayerWeapon*>(weapon_.get())) {
 			weaponAttacking = w->IsAttacking();
 		}
+	}
+
+	// 3) playerの基本となる動き（移動コンポーネントに委譲）
+	//    攻撃モーション中は移動と向き変更だけを止める（落下やダッシュは止めない）
+	mover_->SetMoveLocked(weaponAttacking);
+	mover_->Update(inputLocked_);
+
+	// 4) スキルの駆動（剣のワールド配置はプレイヤー位置が決まってから行う）
+	if (weapon_) {
+		weapon_->UpdateSkills();
 	}
 
 	// object3d_->Update() の前にアニメーションを決める

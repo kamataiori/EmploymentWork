@@ -6,7 +6,7 @@
 #include "DrawTriangle.h"
 #include "Sprite.h"
 #include "SkyBox.h"
-#include "TitleSceneInput.h"
+#include "MenuInput.h"
 #include <memory>
 
 class TitleScene : public BaseScene
@@ -54,7 +54,9 @@ private:
 	// ============================
 	// キーボード/パッドの違いはこのクラスが吸収する。
 	// シーンは moveX / decide といった「意味」だけを見る。
-	std::unique_ptr<TitleSceneInput> sceneInput_ = nullptr;
+	// 操作はメニュー操作一式そのものなので、共通の MenuInput を使う
+	// （タイトル固有の操作が増えたら、MenuInput を1つ持つ TitleSceneInput を作る）。
+	std::unique_ptr<MenuInput> sceneInput_ = nullptr;
 
 	// 3Dオブジェクトの初期化
 	std::unique_ptr<Object3d> sneak = nullptr;

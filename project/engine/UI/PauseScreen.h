@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include "MathFunctions.h"
-#include "engine/FrameWork/input/Input.h"
+#include "engine/FrameWork/input/IMenuInput.h"
 #include <engine/UI/UIManager.h>
 
 class Sprite;
@@ -31,6 +31,15 @@ public:
 
     // 外部からポーズ状態を問い合わせる用 (シーン側がカーソル等を切り替える)
     bool IsPaused() const { return isPaused_; }
+
+    // ポーズの開閉要求。開閉の「入力判定」はシーン側 (GameSceneInput) が持ち、
+    // ここは要求を受けて状態を切り替えるだけにする。
+    // (押しっぱなしの連発弾きも立ち上がり検出として入力側に寄せてある)
+    void RequestToggle();
+
+    // ポーズ中のメニュー操作（選択の上下・決定・マウス）の読み取り口を注入する。
+    // 実体はシーンが所有する（ここでは借りるだけ）。未注入の間は操作を受け付けない。
+    void SetMenuInput(const IMenuInput* input) { menuInput_ = input; }
 
 private:
     // ポーズ画面内の表示状態
@@ -65,12 +74,15 @@ private:
     void BeginPauseExitAnima();
     void UpdatePauseEnterExitAnima(float unscaledDt);
 
-    // 当たり判定
-    bool HitTestSprite(const Sprite* sp, const POINT& mouse) const;
+    // 当たり判定（ポインタの画面座標[px]と項目の矩形）
+    bool HitTestSprite(const Sprite* sp, float pointerX, float pointerY) const;
 
 private:
 
     UIManager* uiManager_ = nullptr;
+
+    // メニュー操作の読み取り口（シーンが所有。借りるだけ）
+    const IMenuInput* menuInput_ = nullptr;
 
     // 設定
     Vector2 screenSize_{ 1280.0f, 720.0f };
@@ -78,7 +90,6 @@ private:
 
     // 状態
     bool isPaused_ = false;
-    bool escLock_ = false;
 
     PauseView pauseView_ = PauseView::Menu;
     PauseAnimState pauseAnimaState_ = PauseAnimState::Idle;

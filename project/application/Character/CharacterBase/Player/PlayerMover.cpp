@@ -1,7 +1,7 @@
 #include "PlayerMover.h"
 #include "MathFunctions.h"
 #include "FollowCamera.h"
-#include "Input.h"
+#include "IPlayerInput.h"
 #include "PostEffectManager.h"
 #include "engine/TimeManager.h"
 
@@ -66,19 +66,16 @@ void PlayerMover::Move()
 	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
 	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f,  std::sin(camYaw) };
 
-	// 3) WASD / 左スティックをカメラ相対で合成（D=+Right / A=-Right）
-	Input* input = Input::GetInstance();
+	// 3) 移動入力をカメラ相対で合成する。
+	//    入力は -1〜1 の2軸（キーボード=倒し切り / スティック=傾き）で受け取るだけで、
+	//    どのキーか・どのスティックかはシーンの入力クラスが決める。
+	//    この後 Normalize して速度は一定にするので、ここでは「向き」だけを作る。
+	//    攻撃モーション中(moveLocked_)は入力を拾わない＝足が止まり、向きも変わらない。
 	Vector3 wishDir = { 0,0,0 };
-	if (input->PushKey(DIK_W)) wishDir += cameraForwardXZ;
-	if (input->PushKey(DIK_S)) wishDir -= cameraForwardXZ;
-	if (input->PushKey(DIK_D)) wishDir += cameraRightXZ;
-	if (input->PushKey(DIK_A)) wishDir -= cameraRightXZ;
-
-	// パッドの左スティック（上が前・右が右）。キーボードと同じ向きに合成する。
-	// スティックは倒し具合に意味があるが、この後 Normalize して速度は一定にするので
-	// ここでは「向き」だけを足し込む。
-	wishDir += cameraForwardXZ * input->GetLeftStickY();
-	wishDir += cameraRightXZ * input->GetLeftStickX();
+	if (playerInput_ && !moveLocked_) {
+		wishDir += cameraForwardXZ * playerInput_->GetMoveY();  // 前後
+		wishDir += cameraRightXZ * playerInput_->GetMoveX();    // 左右
+	}
 
 	bool isMoving = (Length(wishDir) > 0.0001f);
 	if (isMoving) wishDir = Normalize(wishDir);
@@ -144,9 +141,8 @@ void PlayerMover::Jump()
 		move_.hasDashed_ = false;
 	}
 
-	// 2 ジャンプ入力（地面にいる時だけ / 1段のみ）。SPACE または パッドA。
-	const bool jumpHeld = Input::GetInstance()->PushKey(DIK_SPACE)
-		|| Input::GetInstance()->PushButton(PadButton::A);
+	// 2 ジャンプ入力（地面にいる時だけ / 1段のみ）
+	const bool jumpHeld = playerInput_ && playerInput_->IsJumpHeld();
 	if (isGrounded && jump_.canJump_ && jumpHeld) {
 		jump_.velocity = jump_.kInitialVelocity;
 		jump_.isJumping = true;
@@ -198,9 +194,8 @@ void PlayerMover::Blink()
 		if (move_.dashCooldown < 0.0f) move_.dashCooldown = 0.0f;
 	}
 
-	// 押下・解放状態（右クリック または パッドRT）
-	const bool dashHeld = Input::GetInstance()->PushMouseButton(1)
-		|| Input::GetInstance()->PushRightTrigger();
+	// 押下・解放状態（ダッシュ操作）
+	const bool dashHeld = playerInput_ && playerInput_->IsDashHeld();
 
 	// 接地判定
 	const float groundEps = 0.001f;
@@ -219,7 +214,7 @@ void PlayerMover::Blink()
 		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
 	}
 
-	// 右クリック解放を検出（次の押下のためのエッジ作り）
+	// 解放を検出（次の押下のためのエッジ作り）
 	if (!dashHeld) {
 		move_.isDashKeyHeld_ = false;
 	}
@@ -238,7 +233,7 @@ void PlayerMover::Blink()
 		}
 	}
 	else {
-		// ---- 再装填条件：クールダウン終了 ＆ 右クリック離している ＆（できれば接地）----
+		// ---- 再装填条件：クールダウン終了 ＆ ダッシュ操作を離している ＆（できれば接地）----
 		if (move_.dashCooldown <= 0.0f && !dashHeld && isGrounded) {
 			move_.hasDashed_ = false;  // これで2回目以降も使える
 		}

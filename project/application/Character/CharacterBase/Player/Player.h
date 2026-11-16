@@ -11,6 +11,8 @@
 #include "Camera/CameraEffectController.h"
 
 class IEnemyTargetProvider;
+class IPlayerInput;
+class IAimInput;
 class ParticleManager;
 class ParticleEmitterInstance;
 
@@ -80,6 +82,19 @@ public:
 	void SetCamera(Camera* camera) override;
 
 	void SetCameraEffect(CameraEffectController* effect) { cameraEffect_ = effect; }
+
+	/// <summary>
+	/// 入力の読み取り口を注入する（実装はシーンの GameSceneInput。所有はしない）。
+	/// 移動を担う PlayerMover と、攻撃/スキルを担う武器へそのまま渡す。
+	/// </summary>
+	void SetPlayerInput(const IPlayerInput* input);
+
+	/// <summary>
+	/// 照準入力（アルティメットの斬撃線が使う）を注入する。所有はしない。
+	/// 使うのはスキルだけなので、本体は貸し出すだけで中身を見ない。
+	/// </summary>
+	void SetAimInput(const IAimInput* input) { aimInput_ = input; }
+	const IAimInput* GetAimInput() const { return aimInput_; }
 
 	CameraEffectController* GetCameraEffect() const { return cameraEffect_; }
 
@@ -161,6 +176,9 @@ private:
 	// 移動・ジャンプ・ブリンクを担当するコンポーネント
 	// （Player の transform を借りて動かす。詳細は PlayerMover.h を参照）
 	std::unique_ptr<PlayerMover> mover_;
+
+	// 照準入力（シーンが所有。借りるだけ。使うのはアルティメットのスキル）
+	const IAimInput* aimInput_ = nullptr;
 
 	// 1回目だけデフォルトTransformを入れる
 	bool isFirstInitialize_ = true;

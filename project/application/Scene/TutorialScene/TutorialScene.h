@@ -10,6 +10,7 @@
 #include <CollisionManager.h>
 #include <FollowCamera.h>
 #include <Player.h>
+#include "GameSceneInput.h"
 #include "application/Scene/TutorialScene/TutorialController.h"
 #include <memory>
 
@@ -63,6 +64,10 @@ public:
 	bool ShouldConfineCursor() const override { return true; }
 
 private:
+
+	// このシーンの入力。操作一式はゲームプレイと同じなので GameSceneInput を共用する
+	// （同じ操作に別の割り当て表を2つ持たないため）。
+	std::unique_ptr<GameSceneInput> sceneInput_;
 
 	std::unique_ptr<FollowCamera> followCamera;
 

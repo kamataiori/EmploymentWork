@@ -16,6 +16,8 @@
 /// （PushButton / TriggerButton へ渡す）
 /// </summary>
 enum class PadButton : WORD {
+	// 未割り当て（マスク0なので、どのボタンにも一致しない＝常に非押下）
+	None      = 0,
 	Up        = XINPUT_GAMEPAD_DPAD_UP,
 	Down      = XINPUT_GAMEPAD_DPAD_DOWN,
 	Left      = XINPUT_GAMEPAD_DPAD_LEFT,

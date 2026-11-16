@@ -1,6 +1,5 @@
 #include "PauseScreen.h"
 #include "Sprite.h"
-#include "Input.h"
 #include "SceneManager.h"
 #include "engine/TimeManager.h"
 #include "engine/TweenEasing.h"
@@ -74,28 +73,19 @@ void PauseScreen::Initialize(const Vector2& screenSize, const std::string& title
     SetLayer(100000);
 }
 
-void PauseScreen::Update()
+void PauseScreen::RequestToggle()
 {
-    Input* input = Input::GetInstance();
-
-    // ポーズの開閉は ESC または パッドのStart（三本線）。
-    // 長押しで開閉を連発しないよう escLock_ で押しっぱなしを弾く。
-    if (input->PushKey(DIK_ESCAPE) || input->PushButton(PadButton::Start)) {
-        if (!escLock_) {
-            escLock_ = true;
-
-            if (!isPaused_) {
-                EnterPause();
-            }
-            else {
-                HandlePauseBack();
-            }
-        }
+    // 開閉の入力判定はシーン (GameSceneInput) 側。ここは要求に応じて切り替えるだけ。
+    if (!isPaused_) {
+        EnterPause();
     }
     else {
-        escLock_ = false;
+        HandlePauseBack();
     }
+}
 
+void PauseScreen::Update()
+{
     if (!isPaused_) return;
 
     const float udt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
@@ -306,7 +296,7 @@ void PauseScreen::UpdatePauseEnterExitAnima(float unscaledDt)
     }
 }
 
-bool PauseScreen::HitTestSprite(const Sprite* sp, const POINT& mouse) const
+bool PauseScreen::HitTestSprite(const Sprite* sp, float pointerX, float pointerY) const
 {
     if (!sp) return false;
 
@@ -319,23 +309,23 @@ bool PauseScreen::HitTestSprite(const Sprite* sp, const POINT& mouse) const
     const float right = left + size.x;
     const float bottom = top + size.y;
 
-    const float mx = static_cast<float>(mouse.x);
-    const float my = static_cast<float>(mouse.y);
-
-    return (mx >= left && mx <= right && my >= top && my <= bottom);
+    return (pointerX >= left && pointerX <= right && pointerY >= top && pointerY <= bottom);
 }
 
 void PauseScreen::UpdatePauseMouseUI()
 {
-    Input* input = Input::GetInstance();
-    const POINT m = input->GetMousePosition();
+    // 操作の読み取り口が無い間は何も受け付けない（表示だけ）
+    if (!menuInput_) return;
+
+    const float pointerX = menuInput_->GetPointerX();
+    const float pointerY = menuInput_->GetPointerY();
 
     // esc（どの画面でも有効）
-    const bool hoverEsc = HitTestSprite(pauseEsc_.get(), m);
+    const bool hoverEsc = HitTestSprite(pauseEsc_.get(), pointerX, pointerY);
     pauseEsc_->SetSize(hoverEsc ? escHoverSize_ : escBaseSize_);
     pauseEsc_->Update();
 
-    if (hoverEsc && input->TriggerMouseButton(0)) {
+    if (hoverEsc && menuInput_->IsPointerClickTriggered()) {
         HandlePauseBack();
         return;
     }
@@ -344,13 +334,13 @@ void PauseScreen::UpdatePauseMouseUI()
         return; // Explain中はescで戻る
     }
 
-    // ---- 選択の移動：十字キーの上下（項目は上=操作説明 / 下=タイトルへ戻る の2つ）----
-    if (input->TriggerButton(PadButton::Up))   padSelection_ = kSelectOpe_;
-    if (input->TriggerButton(PadButton::Down)) padSelection_ = kSelectBackTitle_;
+    // ---- 選択の移動：上下操作（項目は上=操作説明 / 下=タイトルへ戻る の2つ）----
+    if (menuInput_->IsUpTriggered())   padSelection_ = kSelectOpe_;
+    if (menuInput_->IsDownTriggered()) padSelection_ = kSelectBackTitle_;
 
     // マウスを重ねたら選択もそこへ移す（ハイライトを1つに保つ）
-    const bool hoverOpe = HitTestSprite(pauseOpe_.get(), m);
-    const bool hoverBack = HitTestSprite(pauseBackTitle_.get(), m);
+    const bool hoverOpe = HitTestSprite(pauseOpe_.get(), pointerX, pointerY);
+    const bool hoverBack = HitTestSprite(pauseBackTitle_.get(), pointerX, pointerY);
     if (hoverOpe)  padSelection_ = kSelectOpe_;
     if (hoverBack) padSelection_ = kSelectBackTitle_;
 
@@ -360,14 +350,14 @@ void PauseScreen::UpdatePauseMouseUI()
     pauseOpe_->Update();
     pauseBackTitle_->Update();
 
-    // ---- 決定：マウスは重ねている項目を左クリック / パッドは選択中の項目を A ----
-    const bool click = input->TriggerMouseButton(0);
-    const bool padDecide = input->TriggerButton(PadButton::A);
+    // ---- 決定：マウスは重ねている項目をクリック / キーボードとパッドは選択中の項目を決定 ----
+    const bool click = menuInput_->IsPointerClickTriggered();
+    const bool decide = menuInput_->IsDecideTriggered();
 
     const bool decideBack = (hoverBack && click)
-        || (padDecide && padSelection_ == kSelectBackTitle_);
+        || (decide && padSelection_ == kSelectBackTitle_);
     const bool decideOpe = (hoverOpe && click)
-        || (padDecide && padSelection_ == kSelectOpe_);
+        || (decide && padSelection_ == kSelectOpe_);
 
     // backTitle：タイトルへ戻る
     if (decideBack) {
