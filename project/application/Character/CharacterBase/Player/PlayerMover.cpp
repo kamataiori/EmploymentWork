@@ -62,9 +62,6 @@ void PlayerMover::Move()
 		camYaw = fc->GetAngle(); // カメラの“後ろ向き”角
 	}
 
-	// カメラ正面（プレイヤーが向き続けるべき前）
-	const float playerFaceYaw = camYaw + std::numbers::pi_v<float>;
-
 	// 2) カメラ基底ベクトル（XZ）
 	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
 	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f,  std::sin(camYaw) };
@@ -93,19 +90,22 @@ void PlayerMover::Move()
 		transform.translate.z += wishDir.z * currentSpeed;
 	}
 
-	// 5) 目標ヨー角：常に「正面固定」（移動方向では回さない！）
-	const float targetYaw = playerFaceYaw;
+	// 5) 目標ヨー角：移動方向そのものを向く（エンドフィールド式）
+	//    D で右、A で左、S でカメラ手前（＝画面手前）を向く。
+	//    入力が無いフレームは今の向きを維持する（正面へ戻さない）。
+	if (isMoving) {
+		const float targetYaw = std::atan2(wishDir.x, wishDir.z);
 
-	// 6) スムーズ回転（最短角＆角速度クランプ）
-	const float curYaw = transform.rotate.y;
-	float deltaYaw = WrapPi(targetYaw - curYaw);
-	const float turnSpeed = 2.5f;
-	const float turnRate = std::numbers::pi_v<float> *turnSpeed; // 180deg/s
-	const float maxStep = turnRate * dt;
+		// 6) スムーズ回転（最短角＆角速度クランプ）
+		const float curYaw = transform.rotate.y;
+		float deltaYaw = WrapPi(targetYaw - curYaw);
+		const float turnRate = std::numbers::pi_v<float> *move_.kTurnSpeed;
+		const float maxStep = turnRate * dt;
 
-	if (deltaYaw > maxStep) deltaYaw = maxStep;
-	if (deltaYaw < -maxStep) deltaYaw = -maxStep;
-	transform.rotate.y = curYaw + deltaYaw;
+		if (deltaYaw > maxStep) deltaYaw = maxStep;
+		if (deltaYaw < -maxStep) deltaYaw = -maxStep;
+		transform.rotate.y = curYaw + deltaYaw;
+	}
 
 	isMoving_ = isMoving;
 

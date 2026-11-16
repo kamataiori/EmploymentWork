@@ -91,6 +91,8 @@ private:
 		Vector3 dashDir = { 0.0f, 0.0f, 0.0f };// ダッシュ開始時の向き
 		const float kDashCooldown = 0.25f; // 連打防止の再装填時間
 		float dashCooldown = 0.0f;
+		// 振り向き速度（π rad/s 単位。5.0 なら 900deg/s ＝ 180度反転に約0.2秒）
+		const float kTurnSpeed = 5.0f;
 	};
 	MoveControl move_;  // 移動制御
 
