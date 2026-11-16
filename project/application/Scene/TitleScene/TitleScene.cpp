@@ -160,6 +160,11 @@ void TitleScene::Initialize()
 		startPadA_->SetPosition({ leftX + startUiSpaceW_ + startUiGap_ + startUiPadSize_ * 0.5f, y });
 	}
 
+	// ===== 入力 =====
+	// Input は既存のシングルトンだが、シーン入力側は注入して受け取るだけにしておく
+	// (差し替え・テストができるようにするため。所有はシーンが持つ)
+	sceneInput_ = std::make_unique<TitleSceneInput>(Input::GetInstance());
+
 	phase_ = TitlePhase::Idle;
 	requestedChange_ = false;
 }
@@ -216,6 +221,10 @@ void TitleScene::UpdateCamera()
 
 void TitleScene::Update()
 {
+	// ===== 入力を先に1回だけ取る =====
+	// ここから下は Input を直接見ない。sceneInput_ の「意味」だけを見る。
+	sceneInput_->Update();
+
 	// ===== タイトルスプライト更新（フェーズで切替）=====
 	titleTop_->Update();
 	titleBottom_->Update();
@@ -277,10 +286,10 @@ void TitleScene::Update()
 	Debug();
 
 	// ===== 入力（Idleのときだけ）=====
+	// キーボードの SPACE でもパッドの A でも、ここでは「決定」という1つの意味になる
 	if (!SceneManager::GetInstance()->IsTransitioning()) {
 		if (phase_ == TitlePhase::Idle) {
-			if (Input::GetInstance()->TriggerKey(DIK_SPACE)
-				|| Input::GetInstance()->TriggerButton(PadButton::A)) {
+			if (sceneInput_->IsDecideTriggered()) {
 				StartMoveToFront();
 			}
 		}
@@ -406,6 +415,18 @@ void TitleScene::Debug()
 
 	// ↓ ここから ImGui::Begin(...) など Scene UI
 	//BaseScene::ShowFPS();
+
+	// ================================================
+	// 入力の確認（キーボード／パッドのどちらでも同じ値になることを見る）
+	// ================================================
+	ImGui::Begin("TitleScene Input");
+	ImGui::Text("moveX  : %+.2f", sceneInput_->GetMoveX());
+	ImGui::Text("moveY  : %+.2f", sceneInput_->GetMoveY());
+	ImGui::Text("decide : %s", sceneInput_->IsDecideTriggered() ? "TRIGGER" : "-");
+	ImGui::Text("cancel : %s", sceneInput_->IsCancelTriggered() ? "TRIGGER" : "-");
+	ImGui::Separator();
+	ImGui::Text("Pad : %s", Input::GetInstance()->IsPadConnected() ? "connected" : "not connected");
+	ImGui::End();
 
 	ImGui::Begin("TitleScene Sword");
 
