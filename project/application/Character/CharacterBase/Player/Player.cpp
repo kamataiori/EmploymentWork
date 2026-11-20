@@ -131,6 +131,16 @@ void Player::SetPlayerInput(const IPlayerInput* input)
 	if (weapon_) weapon_->SetPlayerInput(input);
 }
 
+void Player::StartFaceTurn(float targetYaw, float turnSeconds)
+{
+	if (mover_) mover_->StartFaceTurn(targetYaw, turnSeconds);
+}
+
+Vector3 Player::GetInputDirectionXZ() const
+{
+	return mover_ ? mover_->GetInputDirectionXZ() : Vector3{ 0.0f, 0.0f, 0.0f };
+}
+
 void Player::SetEnemyTargetProvider(IEnemyTargetProvider* provider)
 {
 	// 武器（調停役）経由でスキル2（突進乱舞）へ供給元を渡す。

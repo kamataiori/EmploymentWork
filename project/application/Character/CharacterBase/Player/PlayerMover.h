@@ -40,6 +40,21 @@ public:
 	bool IsMoveLocked() const { return moveLocked_; }
 
 	/// <summary>
+	/// 向きだけを目標ヨー角へ寄せ始める（攻撃時のソフトロック用）。
+	/// 移動の旋回より速い別系統で、turnSeconds で指定した時間で向き切る。
+	/// 自分で移動し始めた時点で打ち切られる（入力の向きを優先する）。
+	/// </summary>
+	/// <param name="targetYaw">向きたいヨー角[rad]</param>
+	/// <param name="turnSeconds">向き切るまでの時間[秒]（0以下なら即座に向く）</param>
+	void StartFaceTurn(float targetYaw, float turnSeconds);
+
+	/// <summary>
+	/// カメラ相対の移動入力方向（XZ、未入力なら長さ0）。
+	/// ソフトロックの基準方向に使う。moveLocked_ 中でも入力そのものは返す。
+	/// </summary>
+	Vector3 GetInputDirectionXZ() const { return ComputeInputDirectionXZ(); }
+
+	/// <summary>
 	/// 接地計算に使うコライダー情報を Player と共有する。
 	/// </summary>
 	/// <param name="sphereRadius">球コライダー半径</param>
@@ -78,6 +93,16 @@ private:
 	/// </summary>
 	void Blink();
 
+	/// <summary>
+	/// 移動入力をカメラ相対のXZ方向へ変換する（正規化はしない）
+	/// </summary>
+	Vector3 ComputeInputDirectionXZ() const;
+
+	/// <summary>
+	/// ソフトロックの旋回を1フレーム進める
+	/// </summary>
+	void UpdateFaceTurn(float dt);
+
 private:
 
 	// 動かす対象（Player が所有。ここでは借りるだけで delete しない）
@@ -91,6 +116,14 @@ private:
 
 	// 攻撃モーション中など、移動と向き変更だけを止めているか
 	bool moveLocked_ = false;
+
+	// ソフトロックの旋回（移動の旋回とは別系統の、速い向き直し）
+	struct FaceTurn {
+		bool  active = false;      // 旋回中か
+		float targetYaw = 0.0f;    // 目標ヨー角[rad]
+		float rate = 0.0f;         // 角速度[rad/秒]（開始時に「向き切る時間」から逆算する）
+	};
+	FaceTurn faceTurn_{};
 
 	// 接地計算用（Player の本体コライダーと同じ値）
 	float sphereRadius_ = 1.0f;

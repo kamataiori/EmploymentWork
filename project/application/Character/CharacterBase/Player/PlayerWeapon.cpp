@@ -8,6 +8,9 @@
 #include "ITarget.h"   // IEnemyTargetProvider::AllowsUltimate を呼ぶため
 #include "engine/TimeManager.h"
 #include "ImGuiManager.h"
+#include "MathFunctions.h"
+
+#include <cmath>
 
 void PlayerWeapon::Initialize()
 {
@@ -58,6 +61,9 @@ void PlayerWeapon::StartAttack(int index)
 	activeAttackIndex_ = index;
 	attacking_ = true;
 	comboReserve_ = false;
+
+	// 振り始めに敵の方を向く（段ごとに選び直す）
+	ApplySoftLock();
 
 	if (owner_) {
 		const AttackInfo& a = normalAttacks_[index];
@@ -185,8 +191,65 @@ void PlayerWeapon::DebugImGui()
 		ImGui::PopID();
 	}
 
+	ImGui::Separator();
+
+	// ===== ソフトロック（振り始めに敵の方を向く）=====
+	// スライダーの範囲
+	constexpr float kTurnSecMax = 0.40f;    // 向き切る時間の上限[秒]
+	constexpr float kRangeMin = 1.0f;     // 射程の下限[m]
+	constexpr float kRangeMax = 20.0f;    // 射程の上限[m]
+	constexpr float kAngleMin = 10.0f;    // 許容角の下限[度]
+	constexpr float kAngleMax = 180.0f;   // 許容角の上限[度]
+	constexpr float kWeightMax = 10.0f;    // スコア重みの上限
+
+	ImGui::Text("Soft Lock");
+	ImGui::Checkbox("enabled", &softLockEnabled_);
+	ImGui::SliderFloat("turn sec", &softLockTurnSeconds_, 0.0f, kTurnSecMax);
+
+	TargetPicker::Params& pick = targetPicker_.MutableParams();
+	ImGui::SliderFloat("range [m]", &pick.maxDistance, kRangeMin, kRangeMax);
+	ImGui::SliderFloat("angle [deg]", &pick.maxAngleDeg, kAngleMin, kAngleMax);
+	ImGui::SliderFloat("weight angle", &pick.angleWeight, 0.0f, kWeightMax);
+	ImGui::SliderFloat("weight dist", &pick.distanceWeight, 0.0f, kWeightMax);
+
+	// 直近の選択結果（向かないときの切り分け用）
+	if (targetPicker_.WasFound()) {
+		ImGui::Text("last pick : %.1f deg / %.1f m",
+			targetPicker_.GetLastAngleDeg(), targetPicker_.GetLastDistance());
+	}
+	else {
+		ImGui::Text("last pick : none");
+	}
+
 	ImGui::End();
 #endif
+}
+
+void PlayerWeapon::ApplySoftLock()
+{
+	if (!softLockEnabled_ || !owner_ || !provider_) return;
+
+	// 方向が決まらないとみなす長さ
+	constexpr float kDirectionEpsilon = 0.0001f;
+
+	const Vector3 selfPos = owner_->GetTransform().translate;
+
+	// 基準方向：移動入力があればその方向、無ければ今の向き。
+	// 「倒している方向の敵を斬る」ので、対象の切り替えが操作でできる。
+	Vector3 basisDir = owner_->GetInputDirectionXZ();
+	if (Length(basisDir) <= kDirectionEpsilon) {
+		const float currentYaw = owner_->GetTransform().rotate.y;
+		basisDir = { std::sin(currentYaw), 0.0f, std::cos(currentYaw) };
+	}
+
+	ITarget* target = targetPicker_.Pick(provider_, selfPos, basisDir);
+	if (!target) return;   // 見つからなければ向きを変えない（空振りはそのまま空振る）
+
+	const Vector3 to = target->GetTargetCenter() - selfPos;
+	if (std::fabs(to.x) <= kDirectionEpsilon && std::fabs(to.z) <= kDirectionEpsilon) return;
+
+	// 高さは無視してヨー角だけ合わせる
+	owner_->StartFaceTurn(std::atan2(to.x, to.z), softLockTurnSeconds_);
 }
 
 void PlayerWeapon::EndAttack()

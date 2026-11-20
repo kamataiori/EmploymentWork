@@ -4,6 +4,7 @@
 #include "PlayerBullet.h"
 #include "PlayerAnimKey.h"
 #include "IPlayerSkill.h"
+#include "TargetPicker.h"
 
 #include <memory>
 #include <vector>
@@ -122,6 +123,16 @@ private:
 	// 攻撃状態を終える（移動・次の入力を受け付けられるようにする）
 	void EndAttack();
 
+	//--------------------------------------------------
+	// ソフトロック：振り始めに、狙っていそうな敵の方へ向きを合わせる。
+	//   ・踏み込み（前進）はしない。向きだけを変える
+	//   ・基準方向は「移動入力の方向」。入力が無ければ今の向き
+	//     （スティックを倒した方向の敵を斬れる＝対象の切り替えが操作でできる）
+	//   ・対象が見つからなければ向きを変えない
+	//   ・コンボの段ごとに選び直す（StartAttack から呼ぶ）
+	//--------------------------------------------------
+	void ApplySoftLock();
+
 	// 移動入力が入っているか（振り終わりのキャンセル判定に使う）
 	bool HasMoveInput() const;
 
@@ -158,6 +169,12 @@ private:
 	int eCharges_ = kSkillMaxCharges_;
 	int skill2Charges_ = kSkillMaxCharges_;
 	int ultCharges_ = kSkillMaxCharges_;
+
+	// ---- ソフトロック（調整値）----
+	// 狙う敵の選び方は targetPicker_ が持つ（射程・角度・重み）。
+	TargetPicker targetPicker_;
+	bool  softLockEnabled_ = true;        // 切って従来どおりにもできる
+	float softLockTurnSeconds_ = 0.08f;   // 目標の向きへ向き切るまでの時間[秒]
 
 	// デバッグ用フラグ
 	bool showDebug_ = true;

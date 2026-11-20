@@ -209,6 +209,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Scene\SceneManager\SceneManager.cpp" />
     <ClCompile Include="application\Scene\TitleScene\TitleScene.cpp" />
     <ClCompile Include="application\Scene\MenuInput.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\TargetPicker.cpp" />
     <ClCompile Include="application\Scene\GameScene\GameSceneInput.cpp" />
     <ClCompile Include="engine\FrameWork\input\InputReader.cpp" />
     <ClCompile Include="engine\FrameWork\input\InputAction.cpp" />
@@ -395,6 +396,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\Scene\SceneManager\SceneManager.h" />
     <ClInclude Include="application\Scene\TitleScene\TitleScene.h" />
     <ClInclude Include="application\Scene\MenuInput.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\TargetPicker.h" />
     <ClInclude Include="engine\FrameWork\input\IMenuInput.h" />
     <ClInclude Include="engine\FrameWork\input\SceneInputBase.h" />
     <ClInclude Include="engine\FrameWork\input\InputReader.h" />

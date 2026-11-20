@@ -43,6 +43,9 @@ void PlayerMover::Update(bool inputLocked)
 	// 「移動入力なし」とだけ伝えて何もしない。
 	if (inputLocked) {
 		isMoving_ = false;
+		// 演出・スキル中は向きの制御をそちらへ譲る。
+		// 中断前のソフトロックを持ち越すと、演出が明けてから古い方向へ向いてしまう。
+		faceTurn_.active = false;
 		return;
 	}
 
@@ -56,26 +59,9 @@ void PlayerMover::Move()
 	// ===== Δt（回転のスムージング用） =====
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-	// 1) カメラのヨー角（FollowCamera想定）
-	float camYaw = 0.0f;
-	if (auto fc = dynamic_cast<FollowCamera*>(camera_)) {
-		camYaw = fc->GetAngle(); // カメラの“後ろ向き”角
-	}
-
-	// 2) カメラ基底ベクトル（XZ）
-	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
-	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f,  std::sin(camYaw) };
-
-	// 3) 移動入力をカメラ相対で合成する。
-	//    入力は -1〜1 の2軸（キーボード=倒し切り / スティック=傾き）で受け取るだけで、
-	//    どのキーか・どのスティックかはシーンの入力クラスが決める。
-	//    この後 Normalize して速度は一定にするので、ここでは「向き」だけを作る。
+	// 1〜3) 移動入力をカメラ相対の向きへ変換する。
 	//    攻撃モーション中(moveLocked_)は入力を拾わない＝足が止まり、向きも変わらない。
-	Vector3 wishDir = { 0,0,0 };
-	if (playerInput_ && !moveLocked_) {
-		wishDir += cameraForwardXZ * playerInput_->GetMoveY();  // 前後
-		wishDir += cameraRightXZ * playerInput_->GetMoveX();    // 左右
-	}
+	Vector3 wishDir = moveLocked_ ? Vector3{ 0.0f, 0.0f, 0.0f } : ComputeInputDirectionXZ();
 
 	bool isMoving = (Length(wishDir) > 0.0001f);
 	if (isMoving) wishDir = Normalize(wishDir);
@@ -106,9 +92,79 @@ void PlayerMover::Move()
 
 	isMoving_ = isMoving;
 
+	// 7) ソフトロックの旋回（攻撃開始時に決めた向きへ速く寄せる）
+	//    自分で動かしているときは入力の向きを優先する＝ソフトロックは打ち切る。
+	if (isMoving) {
+		faceTurn_.active = false;
+	}
+	UpdateFaceTurn(dt);
+
 	// ジャンプ / ブリンク
 	Jump();
 	Blink();
+}
+
+Vector3 PlayerMover::ComputeInputDirectionXZ() const
+{
+	if (!playerInput_) {
+		return { 0.0f, 0.0f, 0.0f };
+	}
+
+	// 1) カメラのヨー角（FollowCamera想定）
+	float camYaw = 0.0f;
+	if (auto fc = dynamic_cast<FollowCamera*>(camera_)) {
+		camYaw = fc->GetAngle(); // カメラの“後ろ向き”角
+	}
+
+	// 2) カメラ基底ベクトル（XZ）
+	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
+	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f,  std::sin(camYaw) };
+
+	// 3) 入力は -1〜1 の2軸（キーボード=倒し切り / スティック=傾き）で受け取るだけで、
+	//    どのキーか・どのスティックかはシーンの入力クラスが決める。
+	//    長さは呼び出し側で使う（移動側は Normalize して速度を一定にする）。
+	Vector3 direction = { 0.0f, 0.0f, 0.0f };
+	direction += cameraForwardXZ * playerInput_->GetMoveY();  // 前後
+	direction += cameraRightXZ * playerInput_->GetMoveX();    // 左右
+	return direction;
+}
+
+void PlayerMover::StartFaceTurn(float targetYaw, float turnSeconds)
+{
+	if (!transform_) return;
+
+	// 指定時間で向き切れる角速度を、残り角度から逆算する
+	// （大きくズレているほど速く回るので、角度によらず同じ時間で向き終わる）
+	const float deltaYaw = std::fabs(WrapPi(targetYaw - transform_->rotate.y));
+
+	if (turnSeconds <= 0.0f) {
+		// 時間指定が無ければ即座に向く
+		transform_->rotate.y = targetYaw;
+		faceTurn_.active = false;
+		return;
+	}
+
+	faceTurn_.active = true;
+	faceTurn_.targetYaw = targetYaw;
+	faceTurn_.rate = deltaYaw / turnSeconds;
+}
+
+void PlayerMover::UpdateFaceTurn(float dt)
+{
+	if (!faceTurn_.active || !transform_) return;
+
+	const float curYaw = transform_->rotate.y;
+	const float deltaYaw = WrapPi(faceTurn_.targetYaw - curYaw);
+	const float maxStep = faceTurn_.rate * dt;
+
+	// 届くなら合わせて終了
+	if (std::fabs(deltaYaw) <= maxStep) {
+		transform_->rotate.y = faceTurn_.targetYaw;
+		faceTurn_.active = false;
+		return;
+	}
+
+	transform_->rotate.y = curYaw + (deltaYaw > 0.0f ? maxStep : -maxStep);
 }
 
 void PlayerMover::Jump()

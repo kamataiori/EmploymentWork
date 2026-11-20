@@ -96,6 +96,16 @@ public:
 	void SetAimInput(const IAimInput* input) { aimInput_ = input; }
 	const IAimInput* GetAimInput() const { return aimInput_; }
 
+	/// <summary>
+	/// 向きだけを目標ヨー角へ寄せ始める（攻撃時のソフトロック）。移動は止めたまま。
+	/// </summary>
+	void StartFaceTurn(float targetYaw, float turnSeconds);
+
+	/// <summary>
+	/// カメラ相対の移動入力方向（XZ、未入力なら長さ0）。ソフトロックの基準方向に使う。
+	/// </summary>
+	Vector3 GetInputDirectionXZ() const;
+
 	CameraEffectController* GetCameraEffect() const { return cameraEffect_; }
 
 	// 任意のタイミングでキー再生したいとき用（攻撃側から呼ぶ想定）
