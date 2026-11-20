@@ -15,6 +15,11 @@
 ///
 /// シーン固有の操作が増えたときは、このクラスを継承せず
 /// 「シーンの入力クラスがこれを1つ持つ」形にする（GameSceneInput と同じ作り）。
+///
+/// 置き場所:
+///   「どのキーに何を割り当てるか」はゲーム側の判断なので application 側に置く。
+///   engine 側には仕組み（InputReader / ButtonAction / AxisInput / SceneInputBase）と、
+///   UI要素が読むための口（IMenuInput）だけを置く。
 /// </summary>
 class MenuInput : public SceneInputBase, public IMenuInput
 {

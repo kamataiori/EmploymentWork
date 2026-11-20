@@ -126,7 +126,7 @@
     <ClCompile Include="application\Scene\TitleScene\TitleScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="engine\FrameWork\input\MenuInput.cpp">
+    <ClCompile Include="application\Scene\MenuInput.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="application\Scene\GameScene\GameSceneInput.cpp">
@@ -608,7 +608,7 @@
     <ClInclude Include="application\Scene\TitleScene\TitleScene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="engine\FrameWork\input\MenuInput.h">
+    <ClInclude Include="application\Scene\MenuInput.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\FrameWork\input\IMenuInput.h">
