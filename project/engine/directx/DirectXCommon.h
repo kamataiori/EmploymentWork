@@ -12,6 +12,10 @@
 #include "externals/imgui/imgui_impl_win32.h"
 #include "externals/DirectXTex/DirectXTex.h"
 #include <Vector4.h>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include "RenderTarget.h"
 
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxguid.lib")
@@ -259,6 +263,11 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> GetCommandList() const { return commandList; }
 
 	/// <summary>
+	/// シーン描画用オフスクリーン(RenderTarget)のゲッター
+	/// </summary>
+	RenderTarget* GetSceneRenderTarget() const { return sceneRenderTarget_.get(); }
+
+	/// <summary>
 	/// dsvDescriptorHeapのゲッター
 	/// </summary>
 	/// <returns></returns>
@@ -298,6 +307,21 @@ public:
 
 		return handle;
 	}
+
+	/// <summary>
+	/// DSVの先頭CPUハンドルを取得
+	/// </summary>
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDsvHandle()
+	{
+		return dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	}
+
+	/// <summary>
+	/// 現在のバックバッファをRTVとしてバインドし直す（クリアはしない）。
+	/// ポストエフェクトのマルチパスで、中間バッファ描画のあとに
+	/// 最終出力先へ戻すために使う。
+	/// </summary>
+	void BindSwapChainRenderTarget();
 
 
 	/// <summary>
@@ -414,8 +438,8 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = { nullptr };
 
-	// オフスクリーンリソースの作成
-	Microsoft::WRL::ComPtr<ID3D12Resource> offscreenResource = nullptr;
+	// シーン描画用のオフスクリーン描画先(RenderTargetに切り出し)
+	std::unique_ptr<RenderTarget> sceneRenderTarget_ = nullptr;
 
 	//DescriptorHeapの作成
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap = nullptr;
@@ -452,6 +476,12 @@ private:
 	IDxcUtils* dxcUtils{};
 	IDxcCompiler3* dxcCompiler{};
 	IDxcIncludeHandler* includeHandler{};
+
+	// コンパイル済みシェーダーのキャッシュ。キーは「パス|プロファイル」。
+	// 同じ hlsl は何度 CompileShader を呼ばれても一度しかコンパイルしない。
+	// （ParticleManager 等はインスタンスを作るたびに全ブレンドモード分の PSO を
+	//   組み直すため、キャッシュが無いとゲーム中の生成でフレームが止まる）
+	std::unordered_map<std::wstring, Microsoft::WRL::ComPtr<IDxcBlob>> shaderCache_;
 
 
 	//リソースバリアで書き込み可能に変更

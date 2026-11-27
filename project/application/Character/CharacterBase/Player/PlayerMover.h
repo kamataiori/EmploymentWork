@@ -3,6 +3,7 @@
 #include "Vector3.h"
 
 class Camera;
+class IPlayerInput;
 
 //======================================================
 // PlayerMover
@@ -23,6 +24,35 @@ public:
 	/// カメラをセット（向き計算に FollowCamera のヨー角を使う）
 	/// </summary>
 	void SetCamera(Camera* camera) { camera_ = camera; }
+
+	/// <summary>
+	/// 入力の読み取り口を注入する（実装はシーンの GameSceneInput。所有はしない）。
+	/// 未注入の間は「入力なし」として動く。
+	/// </summary>
+	void SetPlayerInput(const IPlayerInput* input) { playerInput_ = input; }
+
+	/// <summary>
+	/// 移動と向き変更だけを止める（攻撃モーション中に使う）。
+	/// inputLocked とは別物で、こちらは落下（重力）やジャンプ・ダッシュは止めない。
+	/// 3Dアクションの「振っている間は足が止まる」挙動のためのもの。
+	/// </summary>
+	void SetMoveLocked(bool locked) { moveLocked_ = locked; }
+	bool IsMoveLocked() const { return moveLocked_; }
+
+	/// <summary>
+	/// 向きだけを目標ヨー角へ寄せ始める（攻撃時のソフトロック用）。
+	/// 移動の旋回より速い別系統で、turnSeconds で指定した時間で向き切る。
+	/// 自分で移動し始めた時点で打ち切られる（入力の向きを優先する）。
+	/// </summary>
+	/// <param name="targetYaw">向きたいヨー角[rad]</param>
+	/// <param name="turnSeconds">向き切るまでの時間[秒]（0以下なら即座に向く）</param>
+	void StartFaceTurn(float targetYaw, float turnSeconds);
+
+	/// <summary>
+	/// カメラ相対の移動入力方向（XZ、未入力なら長さ0）。
+	/// ソフトロックの基準方向に使う。moveLocked_ 中でも入力そのものは返す。
+	/// </summary>
+	Vector3 GetInputDirectionXZ() const { return ComputeInputDirectionXZ(); }
 
 	/// <summary>
 	/// 接地計算に使うコライダー情報を Player と共有する。
@@ -63,6 +93,16 @@ private:
 	/// </summary>
 	void Blink();
 
+	/// <summary>
+	/// 移動入力をカメラ相対のXZ方向へ変換する（正規化はしない）
+	/// </summary>
+	Vector3 ComputeInputDirectionXZ() const;
+
+	/// <summary>
+	/// ソフトロックの旋回を1フレーム進める
+	/// </summary>
+	void UpdateFaceTurn(float dt);
+
 private:
 
 	// 動かす対象（Player が所有。ここでは借りるだけで delete しない）
@@ -70,6 +110,20 @@ private:
 
 	// 向き計算用カメラ（共有）
 	Camera* camera_ = nullptr;
+
+	// 入力の読み取り口（シーンが所有。ここでは借りるだけ）
+	const IPlayerInput* playerInput_ = nullptr;
+
+	// 攻撃モーション中など、移動と向き変更だけを止めているか
+	bool moveLocked_ = false;
+
+	// ソフトロックの旋回（移動の旋回とは別系統の、速い向き直し）
+	struct FaceTurn {
+		bool  active = false;      // 旋回中か
+		float targetYaw = 0.0f;    // 目標ヨー角[rad]
+		float rate = 0.0f;         // 角速度[rad/秒]（開始時に「向き切る時間」から逆算する）
+	};
+	FaceTurn faceTurn_{};
 
 	// 接地計算用（Player の本体コライダーと同じ値）
 	float sphereRadius_ = 1.0f;
@@ -91,6 +145,8 @@ private:
 		Vector3 dashDir = { 0.0f, 0.0f, 0.0f };// ダッシュ開始時の向き
 		const float kDashCooldown = 0.25f; // 連打防止の再装填時間
 		float dashCooldown = 0.0f;
+		// 振り向き速度（π rad/s 単位。5.0 なら 900deg/s ＝ 180度反転に約0.2秒）
+		const float kTurnSpeed = 5.0f;
 	};
 	MoveControl move_;  // 移動制御
 

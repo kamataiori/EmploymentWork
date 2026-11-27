@@ -1,4 +1,5 @@
 #include "Enemy.h"
+#include "engine/TimeManager.h"
 #include "application/Character/CharacterBase/Enemy/AI/EnemyAIController.h"
 #include "EnemyDropBullet.h"
 #include <CollisionTypeIdDef.h>
@@ -9,8 +10,10 @@
 #include <EnemySplitBullet.h>
 #include <MinionEnemy.h>
 #include "State/EnemyStateManager.h"
+#include "engine/3d/Camera/CameraEffectController.h"
 #include <random>
 #include <vector>
+#include <algorithm>
 
 // Yaw(=Y回転)から OBB の3軸を作る簡易ヘルパ
 static void BuildYawAxes(float yaw, Vector3 outAxes[3]) {
@@ -46,7 +49,7 @@ void Enemy::Initialize()
 	object3d_->Initialize();
 	object3d_->SetModel("Skeleton.gltf");
 
-	transform.translate = { 0.0f, 0.0f,30.0f };
+	transform.translate = { 0.0f, 0.0f,280.0f };
 	transform.rotate = { 0.0f, 3.14f, 0.0f };
 	transform.scale = { 3.0f, 3.0f, 3.0f };
 
@@ -85,6 +88,30 @@ void Enemy::Initialize()
 	// （SetHitCallback だと種別情報が捨てられ、何に当たっても無条件で被弾する）
 	multiCollider_->SetHitCallbackEx(
 		[this](const CollisionInfo& info) { this->OnCollision(info); });
+
+	// --- 押し戻し専用の物理プロキシ（ステージとだけ当たる Capsule） ---
+	// ヒット判定用の本体OBBとは分離し、押し戻し(physics)だけを担当する。
+	{
+		bodyProxy_ = std::make_unique<MultiCollider>();
+		const float radius = std::min(obbSize_.x, obbSize_.z); // 胴体の水平半径
+		const float halfSeg = (std::max)(0.0f, obbSize_.y - radius); // 芯線の半長
+		Capsule cap{};
+		cap.start = colliderCenter_ - Vector3{ 0.0f, halfSeg, 0.0f };
+		cap.end = colliderCenter_ + Vector3{ 0.0f, halfSeg, 0.0f };
+		cap.radius = radius;
+		bodyProxy_->AddCapsule(cap);
+		bodyProxy_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kEnemyBody));
+		bodyProxy_->SetResponse(CollisionResponse::Blocking);
+		bodyProxy_->SetMovable(true);
+		bodyProxy_->SetPushOutCallback([this](const Vector3& mtv) {
+			transform.translate += mtv;
+			colliderCenter_ = transform.translate + colliderOffset_;
+			object3d_->SetTranslate(transform.translate);
+			// Update() はスキニングのDispatchとリソースバリアを含み、1フレームに1回しか呼べない。
+			// 押し戻しは Update() の後に複数回来るので、行列だけ更新する。
+			object3d_->UpdateTransform();
+		});
+	}
 
 	uiManager_ = std::make_unique<UIManager>();
 	const float winW = 1280.0f;
@@ -128,9 +155,19 @@ void Enemy::Initialize()
 
 void Enemy::Update()
 {
+	// 休眠中はAIも弾も見た目も動かさない（スキニングのバリアも発行しない）
+	if (!active_) return;
+
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-	if (!isDead_) {
+	// 登場の落下中。AI・弾・雑魚は動かさず、落ちることだけに専念させる。
+	// この下のコライダー同期と見た目更新は通常どおり走るので、
+	// 落ちてくる本体に当たり判定も描画もついてくる。
+	if (dropping_) {
+		UpdateDropIn(dt);
+	}
+
+	if (!isDead_ && !dropping_) {
 
 		if (!isDead_) {
 			if (aiController_) {
@@ -164,7 +201,7 @@ void Enemy::Update()
 				}
 			}
 
-			// ★ 雑魚敵の更新
+			// 雑魚敵の更新
 			for (auto it = minions_.begin(); it != minions_.end(); )
 			{
 				(*it)->SetPlayerTarget(target_); // 待機中の向き追従用
@@ -180,7 +217,7 @@ void Enemy::Update()
 				}
 			}
 
-			// ★ 雑魚敵を1体ずつ順番に突進させる
+			// 雑魚敵を1体ずつ順番に突進させる
 			UpdateMinionCoordinator();
 
 			UpdateSplitBulletFiring(dt);
@@ -192,6 +229,16 @@ void Enemy::Update()
 
 	OBB& obb = multiCollider_->MutableOBB(0);
 	obb.center = colliderCenter_;
+
+	// 押し戻しプロキシ(Capsule)も胴体位置へ同期
+	if (bodyProxy_ && !bodyProxy_->GetShapes().empty()) {
+		const float radius = std::min(obbSize_.x, obbSize_.z);
+		const float halfSeg = (std::max)(0.0f, obbSize_.y - radius);
+		Capsule& cap = bodyProxy_->MutableCapsule(0);
+		cap.start = colliderCenter_ - Vector3{ 0.0f, halfSeg, 0.0f };
+		cap.end = colliderCenter_ + Vector3{ 0.0f, halfSeg, 0.0f };
+		cap.radius = radius;
+	}
 
 	Vector3 axes[3];
 	BuildYawAxes(transform.rotate.y, axes);
@@ -212,8 +259,38 @@ void Enemy::Update()
 		}
 	}
 
-	object3d_->SetTranslate(transform.translate);
-	object3d_->SetScale(transform.scale);
+	// 被弾リアクション層：AI が決めた transform に“視覚オフセット”を上乗せする。
+	// transform 本体は触らないので、AI／当たり判定はリアクションの影響を受けない。
+	Vector3 visualPos = transform.translate;
+	Vector3 visualScale = transform.scale;
+	if (hitFxTimer_ > 0.0f) {
+		// ヒットストップで世界が止まっていても見せたいので、実時間で減衰させる
+		hitFxTimer_ -= TimeManager::GetInstance()->GetUnscaledDeltaTime();
+		if (hitFxTimer_ < 0.0f) hitFxTimer_ = 0.0f;
+
+		const float remain = hitFxTimer_ / kHitFxDuration_;   // 1→0（被弾直後が最大、終わりに向け減衰）
+		const float elapsed = kHitFxDuration_ - hitFxTimer_;
+
+		// 小刻みな震え（X/Y/Z で周波数・位相をずらす）
+		const float amp = kHitFxShakeAmplitude_ * remain;
+		visualPos.x += std::sin(elapsed * kHitFxShakeFreq_) * amp;
+		visualPos.y += std::sin(elapsed * kHitFxShakeFreq_ * 1.3f + 0.5f) * amp * 0.6f;
+		visualPos.z += std::cos(elapsed * kHitFxShakeFreq_ * 1.1f) * amp;
+
+		// 小さな後退（プレイヤーと反対へ怯み、減衰でバネのように戻る）
+		const float recoil = kHitFxRecoilDistance_ * remain;
+		visualPos.x += hitFxRecoilDir_.x * recoil;
+		visualPos.z += hitFxRecoilDir_.z * recoil;
+
+		// つぶれ（Yを縮め、XZを少し広げる）。被弾直後が最大で通常へ戻る。
+		const float s = kHitFxSquash_ * remain;
+		visualScale.y *= (1.0f - s);
+		visualScale.x *= (1.0f + s * 0.5f);
+		visualScale.z *= (1.0f + s * 0.5f);
+	}
+
+	object3d_->SetTranslate(visualPos);
+	object3d_->SetScale(visualScale);
 	object3d_->SetRotate(transform.rotate);
 	object3d_->Update();
 
@@ -338,6 +415,8 @@ void Enemy::BackGroundDraw()
 
 void Enemy::Draw()
 {
+	if (!active_) return;
+
 	multiCollider_->Draw();
 
 	for (auto& b : dropBullets_) {
@@ -354,6 +433,8 @@ void Enemy::Draw()
 
 void Enemy::ForeGroundDraw()
 {
+	if (!active_) return;
+
 	if (uiManager_) {
 		uiManager_->Draw();
 	}
@@ -365,11 +446,15 @@ void Enemy::ForeGroundDraw()
 
 void Enemy::AnimationDraw()
 {
+	if (!active_) return;
+
 	object3d_->Draw();
 }
 
 void Enemy::ParticleDraw()
 {
+	if (!active_) return;
+
 	// 生存中・死亡時どちらでもパーティクル描画
 	if (deathSystem_) {
 		deathSystem_->Draw();
@@ -416,11 +501,39 @@ void Enemy::ApplyDamage(int amount)
 		deathTimer_ = 0.0f;
 		deathStartScale_ = transform.scale;
 		hasSpawnedExplosion_ = false;
+
+		// トドメの一撃：強めの完全フリーズで「決まった」手応えを出す。
+		// （撃破後はシーン側で撃破スローモーションへ繋がるが、
+		//   それとは別レイヤーなので一瞬の“止め”を重ねても干渉しない）
+		TimeManager::GetInstance()->RequestHitStop(HitStopPreset::Heavy());
 		return;
 	}
 
 	SetAnimationIfChanged(animation_.HitReact);
 	hitReactTimer_ = kHitReactDuration_;
+
+	// 通常ヒット：当たった瞬間に軽くフリーズさせて打撃感を出す。
+	// アニメーションだけでは伝わりづらかった「当てている実感」をここで補う。
+	TimeManager::GetInstance()->RequestHitStop(HitStopPreset::Light());
+
+	// 被弾リアクション（仰け反り）を起動：ヒットストップ中の震え＋つぶれ＋小さな後退。
+	// 吹っ飛ばさず、プレイヤーと反対方向へ怯ませる。
+	{
+		Vector3 away{ 0.0f, 0.0f, 0.0f };
+		if (target_) {
+			away = transform.translate - target_->translate;
+			away.y = 0.0f;
+		}
+		// プレイヤー情報が無い／真上で重なる等で向きが定まらないときは、自分の正面と逆へ。
+		const float awayLen = std::sqrt(away.x * away.x + away.z * away.z);
+		if (awayLen > 1e-4f) {
+			hitFxRecoilDir_ = { away.x / awayLen, 0.0f, away.z / awayLen };
+		}
+		else {
+			hitFxRecoilDir_ = { -std::sin(transform.rotate.y), 0.0f, -std::cos(transform.rotate.y) };
+		}
+		hitFxTimer_ = kHitFxDuration_;
+	}
 
 	// 被弾時のヒットパーティクルを発生
 	if (deathSystem_) {
@@ -450,8 +563,52 @@ void Enemy::OnCollision(const CollisionInfo& info)
 	}
 }
 
+void Enemy::StartDropIn()
+{
+    // 定位置の真上へ移してから落とす（着地点＝homePosition_ でブレない）
+    transform.translate = homePosition_;
+    transform.translate.y = homePosition_.y + kDropInHeight_;
+    dropVelocity_ = 0.0f;
+    dropping_ = true;
+}
+
+void Enemy::UpdateDropIn(float dt)
+{
+    // 自由落下（だんだん速くなるので「落ちてきた」感が出る）
+    dropVelocity_ += kDropInGravity_ * dt;
+    transform.translate.y -= dropVelocity_ * dt;
+
+    if (transform.translate.y <= homePosition_.y) {
+        transform.translate.y = homePosition_.y;
+        dropVelocity_ = 0.0f;
+        dropping_ = false;
+        OnDropInLanded();
+    }
+}
+
+void Enemy::OnDropInLanded()
+{
+    // 足元で土煙。着地の重さを見せる
+    if (deathSystem_) {
+        Transform burst = transform;
+        burst.translate.y += kDropLandEffectOffsetY_;
+        deathSystem_->EmitPreset(kDropLandPreset_, burst);
+    }
+
+    // 画面を揺らす
+    if (cameraEffect_) {
+        cameraEffect_->StartSimpleShake(kDropLandShakeDuration_, kDropLandShakeAmplitude_);
+    }
+
+    // 一瞬止めて衝撃を強調する
+    TimeManager::GetInstance()->RequestHitStop(HitStopPreset::Heavy());
+}
+
 void Enemy::UpdateVisual()
 {
+	// 休眠中は見た目も更新しない（object3d_->Update のバリア発行を避ける）
+	if (!active_) return;
+
 	// AI・弾・ステートを動かさず、見た目（object3d_）だけ更新する
 	// イントロ演出中に呼ぶ専用メソッド
 	object3d_->SetTranslate(transform.translate);

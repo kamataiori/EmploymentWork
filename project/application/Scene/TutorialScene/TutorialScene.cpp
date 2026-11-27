@@ -1,5 +1,6 @@
 #include "TutorialScene.h"
 #include "SceneManager.h"
+#include <Input.h>
 
 void TutorialScene::Initialize()
 {
@@ -30,6 +31,13 @@ void TutorialScene::Initialize()
 	player_->Initialize();
 	player_->SetCamera(followCamera.get());
 
+	// ===== 入力 =====
+	// 生成はプレイヤーの Initialize 後（移動・武器の担当が出来てから配るため）。
+	sceneInput_ = std::make_unique<GameSceneInput>(Input::GetInstance());
+	player_->SetPlayerInput(sceneInput_.get());
+	player_->SetAimInput(sceneInput_.get());
+	followCamera->SetCameraInput(sceneInput_.get());
+
 	ground = std::make_unique<Object3d>(this);
 	ground->Initialize();
 	ground->SetModel("ground.obj");
@@ -45,43 +53,20 @@ void TutorialScene::Initialize()
 
 	collisionManager_ = std::make_unique<CollisionManager>();
 
-	// Actions：入力取得関数に合わせてここを書き換える
+	// Actions：チュートリアルの進行条件＝「その操作ができたか」。
+	// どのキー/ボタンかは sceneInput_ が知っているので、ここでは意味だけを見る。
+	// (エッジ検出も入力側が持つので、ここで static な前フレームフラグを持たない)
 	TutorialController::Actions act{};
-	// WASD入力が入っている間 true
-	act.isMoving = []() -> bool {
-		auto* in = Input::GetInstance();
-		return in->PushKey(DIK_W) || in->PushKey(DIK_A) || in->PushKey(DIK_S) || in->PushKey(DIK_D);
+
+	// 移動：いずれかの軸が入っている間 true
+	act.isMoving = [this]() -> bool {
+		return sceneInput_->GetMoveX() != 0.0f || sceneInput_->GetMoveY() != 0.0f;
 		};
 
-	// 押した瞬間だけ true（TriggerKeyがあるのでこれが一番安全）
-	act.jumpTriggered = []() -> bool {
-		return Input::GetInstance()->TriggerKey(DIK_SPACE);
-		};
-
-	// 左クリック（Triggerが無いのでエッジ検出を自前で作る）
-	act.attackTriggered = []() -> bool {
-		auto* in = Input::GetInstance();
-		static bool prev = false;
-		bool now = in->PushMouseButton(0);   // 0:左
-		bool trig = (now && !prev);
-		prev = now;
-		return trig;
-		};
-
-	// Eキー（押した瞬間）
-	act.rollTriggered = []() -> bool {
-		return Input::GetInstance()->TriggerKey(DIK_E);
-		};
-
-	// 右クリック（Triggerが無いのでエッジ検出）
-	act.dashTriggered = []() -> bool {
-		auto* in = Input::GetInstance();
-		static bool prev = false;
-		bool now = in->PushMouseButton(1);   // 1:右
-		bool trig = (now && !prev);
-		prev = now;
-		return trig;
-		};
+	act.jumpTriggered = [this]() -> bool { return sceneInput_->IsJumpTriggered(); };
+	act.attackTriggered = [this]() -> bool { return sceneInput_->IsAttackTriggered(); };
+	act.rollTriggered = [this]() -> bool { return sceneInput_->IsSkillTriggered(); };
+	act.dashTriggered = [this]() -> bool { return sceneInput_->IsDashTriggered(); };
 
 	// -----------------------------
 	// Hooks: ガイド差し替え＆終了処理
@@ -131,6 +116,9 @@ void TutorialScene::Finalize()
 
 void TutorialScene::Update()
 {
+	// ===== 入力を先に1回だけ取る =====
+	// プレイヤー・カメラ・チュートリアル判定が同じフレームの同じ値を見るようにする。
+	sceneInput_->Update();
 
 	// 各3Dオブジェクトの更新
 	ground->Update();

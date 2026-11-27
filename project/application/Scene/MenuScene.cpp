@@ -17,6 +17,9 @@ void MenuScene::Initialize()
 	BaseScene::GetLight()->GetDirectionalLight();
 	BaseScene::GetLight()->SetDirectionalLightIntensity({ 1.0f });
 	BaseScene::GetLight()->SetDirectionalLightColor({ 1.0f,1.0f,1.0f,1.0f });
+
+	// ===== 入力 =====
+	sceneInput_ = std::make_unique<MenuInput>(Input::GetInstance());
 }
 
 void MenuScene::Finalize()
@@ -25,9 +28,12 @@ void MenuScene::Finalize()
 
 void MenuScene::Update()
 {
+	// ===== 入力を先に1回だけ取る =====
+	sceneInput_->Update();
+
 	// 遷移中でなければ入力受付
 	if (!SceneManager::GetInstance()->IsTransitioning()) {
-		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+		if (sceneInput_->IsDecideTriggered()) {
 			PostEffectManager::GetInstance()->SetType(PostEffectType::Normal);
 
 			/*TransitionRequest req{};

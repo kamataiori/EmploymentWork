@@ -3,7 +3,7 @@
     "objects": [
         {
             "type": "MESH",
-            "name": "\u5186\u67f1",
+            "name": "stage",
             "file_name": "stage.obj",
             "transform": {
                 "translation": [
@@ -17,8 +17,8 @@
                     0.0
                 ],
                 "scale": [
-                    1.2,
-                    1.2,
+                    1.0,
+                    1.0,
                     1.0
                 ]
             }

@@ -20,10 +20,11 @@
 class BTEditorScene : public BaseScene
 {
 public:
-	void Initialize() override;
-	void Finalize()   override;
-	void Update()     override;
-	void Draw()       override;
+	void Initialize()   override;
+	void Finalize()     override;
+	void UpdateCamera() override;
+	void Update()       override;
+	void Draw()         override;
 	void BackGroundDraw() override {}
 	void ForeGroundDraw() override {}
 	void Debug() override;
@@ -36,6 +37,10 @@ private:
 	TransitionRequest req{};
 
 	BTNodeGraphEditor editor_;
+
+	// シーン切替フレームに UpdateCamera() が2回呼ばれても
+	// ImGui を二重構築しないようにするための同一フレームガード
+	int lastDrawnFrame_ = -1;
 
 	// ゲームシーンで生成した EnemyAIController へのポインタ
 	// (シーン間共有はシングルトンや SceneManager 経由でも可)

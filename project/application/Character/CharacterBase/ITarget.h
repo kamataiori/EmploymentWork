@@ -47,4 +47,12 @@ public:
 	/// 生存している攻撃対象を out へ追加する（クリアは呼び出し側が行う）。
 	/// </summary>
 	virtual void CollectAliveTargets(std::vector<ITarget*>& out) = 0;
+
+	/// <summary>
+	/// 今の局面で「対象へ飛び込む」系のスキル（突進乱舞・V / 斬奪・Q）を撃ってよいか。
+	/// どちらも敵の位置まで飛んで斬る技なので、動かない前哨（Sentinel・中央コア）
+	/// しか居ない局面では成立しない。そういう場面を弾くために使う。
+	/// 既定は true（局面を持たない供給元は素通しでよい）。
+	/// </summary>
+	virtual bool AllowsDashSkills() const { return true; }
 };

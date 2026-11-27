@@ -6,6 +6,8 @@
 #include "DrawTriangle.h"
 #include "Sprite.h"
 #include "SkyBox.h"
+#include "MenuInput.h"
+#include <memory>
 
 class TitleScene : public BaseScene
 {
@@ -47,6 +49,15 @@ public:
 
 private:
 
+	// ============================
+	// 入力
+	// ============================
+	// キーボード/パッドの違いはこのクラスが吸収する。
+	// シーンは moveX / decide といった「意味」だけを見る。
+	// 操作はメニュー操作一式そのものなので、共通の MenuInput を使う
+	// （タイトル固有の操作が増えたら、MenuInput を1つ持つ TitleSceneInput を作る）。
+	std::unique_ptr<MenuInput> sceneInput_ = nullptr;
+
 	// 3Dオブジェクトの初期化
 	std::unique_ptr<Object3d> sneak = nullptr;
 	Transform transform{};
@@ -82,8 +93,9 @@ private:
 	enum class TitlePhase {
 		Idle,         // 通常：周回
 		MoveToFront,  // SPACE後：正面へ回して止める
-		AttackOnce,   // Attack02を1回
-		TitleCut,     // タイトル切断
+		SlashH,       // Attack02：横斬り（画面を横に切断）
+		SlashD,       // Attack03：斜め斬り（左上→右下に切断）
+		GlassFall,    // 斬れた画面が割れたガラスのように落下
 	};
 
 	TitlePhase phase_ = TitlePhase::Idle;
@@ -92,19 +104,34 @@ private:
 	std::unique_ptr<Sprite> titleTop_ = nullptr;
 	std::unique_ptr<Sprite> titleBottom_ = nullptr;
 
+	// ============================
+	// スタート操作UI（Space ／ パッドA）
+	// ============================
+	// Idle中だけ出す。押した瞬間に斬撃演出へ入るので、そこからは消して画に集中させる。
+	std::unique_ptr<Sprite> startSpace_ = nullptr;
+	std::unique_ptr<Sprite> startPadA_ = nullptr;
+
+	float startUiCenterYRatio_ = 0.78f;  // 画面高に対する表示位置（キャラの足元より下）
+	float startUiSpaceW_ = 130.0f;       // スペースキー絵の表示サイズ[px]（元絵160x64と同じ比率）
+	float startUiSpaceH_ = 52.0f;
+	float startUiPadSize_ = 44.0f;       // パッドA絵の表示サイズ[px]
+	float startUiGap_ = 16.0f;           // 2つの絵の間隔[px]
+
 	// タイトル画像サイズ（Initializeでメタデータから入れる）
 	Vector2 titleTexSize_ = { 320.0f, 180.0f };
 
 	// 描画位置（画面中央よりちょい上）
 	Vector2 titleCenterPos_ = { 0.0f, 0.0f };
 
-	// タイトル切断 演出パラメータ
-	float titleCutTimer_ = 0.0f;
-	float titleCutDuration_ = 0.35f;
+	// タイトル文字の分割スライド量
 	float titleCutDistance_ = 200.0f;
 	float titleCutExtraY_ = 18.0f;
 
-	bool requestedShutter_ = false;
+	// ガラス落下開始時のタイトル文字の基準位置（ここから落下させる）
+	Vector2 titleTopFallBase_ = { 0.0f, 0.0f };
+	Vector2 titleBottomFallBase_ = { 0.0f, 0.0f };
+
+	bool requestedChange_ = false;
 
 	// ============================
 	// 正面停止 & Attack待ち
@@ -113,8 +140,13 @@ private:
 	float frontStopEps_ = 0.02f;   // 止める誤差
 	float desiredOrbitAngle_ = 0.0f;
 
-	float attackTimer_ = 0.0f;
-	float attackDuration_ = 0.90f; // Attack02が何秒か（あとで調整）
+	// 斬撃演出タイマー
+	float slashHTimer_ = 0.0f;
+	float slashHDuration_ = 0.90f; // Attack02の長さ
+	float slashDTimer_ = 0.0f;
+	float slashDDuration_ = 0.90f; // Attack03の長さ
+	float fallTimer_ = 0.0f;
+	float fallDuration_ = 1.60f;   // ガラス落下にかける時間
 
 	// ============================
 	// 内部関数
@@ -122,11 +154,14 @@ private:
 	void StartMoveToFront();
 	void UpdateMoveToFront(float dt);
 
-	void StartAttackOnce();
-	void UpdateAttackOnce(float dt);
+	void StartSlashH();
+	void UpdateSlashH(float dt);
 
-	void StartTitleCut();
-	void UpdateTitleCut(float dt);
+	void StartSlashD();
+	void UpdateSlashD(float dt);
+
+	void StartGlassFall();
+	void UpdateGlassFall(float dt);
 
 	static float NormalizeAngle(float a);
 	static float DeltaAngle(float from, float to);

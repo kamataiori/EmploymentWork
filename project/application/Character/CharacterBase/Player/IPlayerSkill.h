@@ -29,4 +29,10 @@ public:
 	/// 発動中か（排他制御・移動アニメ上書き判定などに使う）。
 	/// </summary>
 	virtual bool IsActive() const = 0;
+
+	/// <summary>
+	/// 前景（2D UI）の描画。ロックオン枠などUIを持つスキルだけが上書きする。
+	/// デフォルトは何もしない（大半のスキルはUIを持たない）。
+	/// </summary>
+	virtual void Draw() {}
 };

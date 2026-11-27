@@ -61,6 +61,21 @@ void MyGame::Initialize()
 #endif // USE_IMGUI
 
 	PostEffectManager::GetInstance()->Initialize(PostEffectType::Normal);
+
+	// パーティクル専用Canvasとレイヤー合成器を生成（Canvas方式のシーンで使用）
+	// クリア色は透明（合成時にアルファブレンドで重ねるため）
+	particleCanvas_ = std::make_unique<Canvas>();
+	particleCanvas_->Initialize(DirectXCommon::GetInstance(),
+		WinApp::kClientWidth, WinApp::kClientHeight, { 0.0f, 0.0f, 0.0f, 0.0f });
+	layerCompositor_ = std::make_unique<LayerCompositor>();
+	layerCompositor_->Initialize(DirectXCommon::GetInstance());
+
+	// パーティクルCanvasのエフェクトスタックを Particle レイヤーとして登録簿へ注入。
+	// これでシーンから PostEffectManager::SetLayerType(Particle, ...) 等で
+	// パーティクル層だけに任意のポストエフェクトを掛けられる。
+	PostEffectManager::GetInstance()->RegisterLayer(
+		RenderLayerId::Particle, particleCanvas_->GetEffect());
+
 	prevTime_ = std::chrono::steady_clock::now();
 
 	GlobalVariables::GetInstance()->LoadFiles();
@@ -97,9 +112,16 @@ void MyGame::Update()
 	// ImGuiのフレーム開始
 	imGuiManager_->Update();
 
+	// BTエディタ専用シーン (ENEMYBT) では UE5風 EditorLayout を出さず、
+	// BTエディタ画面だけを全画面で見せる
+	const bool hideEditorLayout =
+		(SceneManager::GetInstance()->GetCurrentSceneName() == "ENEMYBT");
+
 	// UE5風レイアウト(DockSpace + 各パネル)を先に構築
 	//    (再生中でも停止中でも毎フレーム動く)
-	editorLayout_->BeginFrame();
+	if (!hideEditorLayout) {
+		editorLayout_->BeginFrame();
+	}
 #endif // USE_IMGUI
 
 #ifdef USE_IMGUI
@@ -122,8 +144,10 @@ void MyGame::Update()
 	}
 
 #ifdef USE_IMGUI
-	// レイアウトの後処理
-	editorLayout_->EndFrame();
+	// レイアウトの後処理 (BeginFrame を呼んだ時だけ EndFrame する)
+	if (!hideEditorLayout) {
+		editorLayout_->EndFrame();
+	}
 
 	// ImGuiの内部コマンドを生成
 	ImGui::Render();
@@ -170,35 +194,76 @@ void MyGame::Draw()
 	DrawLine::GetInstance()->ResetData();
 	DrawTriangle::GetInstance()->ResetData();
 
-	// RenderTextureへの描画前処理
-	dxCommon->PreDrawForRenderTexture();
+	if (SceneManager::GetInstance()->CurrentSceneUsesCanvas()) {
+		//========== Canvas合成方式 ==========//
+		ID3D12GraphicsCommandList* cmd = dxCommon->GetCommandList().Get();
 
-	// RenderTexture用SRVの準備
-	SrvManager::GetInstance()->PreDraw();
+		// 1. World（背景＋3D＋前景スプライト）を既存オフスクリーン(scene RT)へ描画
+		dxCommon->PreDrawForRenderTexture();
+		SrvManager::GetInstance()->PreDraw();
+		SceneManager::GetInstance()->DrawWorld();
 
-	// ゲームシーンの描画 (RenderTextureに対して)
-	SceneManager::GetInstance()->Draw();
+		DrawLineCommon::GetInstance()->CommonSetting();
+		DrawLine::GetInstance()->Draw();
+		DrawTriangleCommon::GetInstance()->CommonSetting();
+		DrawTriangle::GetInstance()->Draw();
 
-	// DrawLineの描画
-	DrawLineCommon::GetInstance()->CommonSetting();
-	DrawLine::GetInstance()->Draw();
+		// 2. パーティクルを専用Canvasへ描画（深度は共有＝ワールドによる遮蔽を維持）
+		particleCanvas_->BeginScene(cmd, /*clearDepth=*/false);
+		SceneManager::GetInstance()->DrawParticles();
+		particleCanvas_->EndScene(cmd);
+		particleCanvas_->Resolve(cmd);
 
-	// DrawTriangleの描画
-	DrawTriangleCommon::GetInstance()->CommonSetting();
-	DrawTriangle::GetInstance()->Draw();
+		// 3. バックバッファへ合成
+		dxCommon->PreDraw();                    // バックバッファをバインド＋クリア
+		dxCommon->PostDrawForRenderTexture();   // scene RT → SRV
+		SrvManager::GetInstance()->PreDraw();
 
-	SpriteCommon::GetInstance()->CommonSetting();
-	uiManager_->Draw();
+		// World（scene RT）にポストエフェクトを掛けてバックバッファへ
+		PostEffectManager::GetInstance()->Draw();
+		// パーティクルをその上に加算合成
+		// （パーティクルはアルファを書き込まず「色×アルファ」がレイヤーに入るため、
+		//   アルファ合成では消えてしまう。加算で重ねるのが正しい）
+		layerCompositor_->Composite(cmd, particleCanvas_->GetResultSrvIndex(),
+			LayerCompositor::BlendMode::Additive);
 
-	// スワップチェーンへの描画前処理
-	dxCommon->PreDraw();
+		// 4. UI（ポストエフェクト対象外）をバックバッファへ直接描画
+		SpriteCommon::GetInstance()->CommonSetting();
+		SceneManager::GetInstance()->DrawUI();
+		uiManager_->Draw();
+	}
+	else {
+		//========== 従来方式（単一オフスクリーン＋全体エフェクト）==========//
+		// RenderTextureへの描画前処理
+		dxCommon->PreDrawForRenderTexture();
 
-	// RenderTextureの描画後処理
-	dxCommon->PostDrawForRenderTexture();
+		// RenderTexture用SRVの準備
+		SrvManager::GetInstance()->PreDraw();
 
-	SrvManager::GetInstance()->PreDraw();
+		// ゲームシーンの描画 (RenderTextureに対して)
+		SceneManager::GetInstance()->Draw();
 
-	PostEffectManager::GetInstance()->Draw();
+		// DrawLineの描画
+		DrawLineCommon::GetInstance()->CommonSetting();
+		DrawLine::GetInstance()->Draw();
+
+		// DrawTriangleの描画
+		DrawTriangleCommon::GetInstance()->CommonSetting();
+		DrawTriangle::GetInstance()->Draw();
+
+		SpriteCommon::GetInstance()->CommonSetting();
+		uiManager_->Draw();
+
+		// スワップチェーンへの描画前処理
+		dxCommon->PreDraw();
+
+		// RenderTextureの描画後処理
+		dxCommon->PostDrawForRenderTexture();
+
+		SrvManager::GetInstance()->PreDraw();
+
+		PostEffectManager::GetInstance()->Draw();
+	}
 
 #ifdef USE_IMGUI
 	// ImGuiの描画 (スワップチェーンに対して)

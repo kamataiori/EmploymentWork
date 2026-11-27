@@ -1,0 +1,190 @@
+{
+    "name": "SentinelAura",
+    "emitterSettings": {
+        "blendMode": 2,
+        "textureFilePath": "Resources/ParticleTexture/circle.png",
+        "vertexType": 0
+    },
+    "emitterSpawn": {
+        "count": 3,
+        "frequency": 0.0099999997764825821,
+        "repeat": true,
+        "useLocalSpace": false,
+        "useRandomPosition": false
+    },
+    "particleSpawn": {
+        "initialOffset": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialOffsetRandom": {
+            "useRandom": true,
+            "min": [
+                -5.5,
+                0.0,
+                -5.5
+            ],
+            "max": [
+                5.5,
+                0.800000011920929,
+                5.5
+            ]
+        },
+        "initialRotate": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "initialRotateRandom": {
+            "useRandom": true,
+            "min": [
+                0.0,
+                0.0,
+                -3.1414999961853027
+            ],
+            "max": [
+                0.0,
+                0.0,
+                3.1414999961853027
+            ]
+        },
+        "initialScale": [
+            2.4000000953674316,
+            2.4000000953674316,
+            2.4000000953674316
+        ],
+        "initialScaleRandom": {
+            "useRandom": true,
+            "min": [
+                1.6000000238418579,
+                1.6000000238418579,
+                1.6000000238418579
+            ],
+            "max": [
+                3.2000000476837158,
+                3.2000000476837158,
+                3.2000000476837158
+            ]
+        }
+    },
+    "particleUpdate": {
+        "lifeTime": 1.5,
+        "velocity": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "velocityRandom": {
+            "useRandom": true,
+            "min": [
+                -0.800000011920929,
+                7.5,
+                -0.800000011920929
+            ],
+            "max": [
+                0.800000011920929,
+                10.5,
+                0.800000011920929
+            ]
+        },
+        "rotationSpeed": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "rotationRandom": {
+            "useRandom": true,
+            "min": [
+                0.0,
+                0.0,
+                -1.2000000476837158
+            ],
+            "max": [
+                0.0,
+                0.0,
+                1.2000000476837158
+            ]
+        },
+        "scaleSpeed": [
+            -0.89999997615814209,
+            -0.89999997615814209,
+            -0.89999997615814209
+        ],
+        "scaleRandom": {
+            "useRandom": false,
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "useGravity": false
+    },
+    "render": {
+        "color": [
+            0.64999997615814209,
+            0.25,
+            1.0,
+            1.0
+        ],
+        "useBillboard": true,
+        "flipY": false,
+        "colorCurve": {
+            "enabled": true,
+            "keys": [
+                [
+                    0.0,
+                    0.0
+                ],
+                [
+                    0.25,
+                    0.75
+                ],
+                [
+                    0.699999988079071,
+                    0.60000002384185791
+                ],
+                [
+                    1.0,
+                    0.0
+                ]
+            ]
+        },
+        "colorGradient": {
+            "enabled": true,
+            "keys": [
+                [
+                    0.0,
+                    0.75,
+                    0.44999998807907104,
+                    1.0,
+                    1.0
+                ],
+                [
+                    0.5,
+                    0.55000001192092896,
+                    0.15000000596046448,
+                    1.0,
+                    1.0
+                ],
+                [
+                    1.0,
+                    0.34999999403953552,
+                    0.0,
+                    0.85000002384185791,
+                    1.0
+                ]
+            ]
+        },
+        "gradientTimeCurve": {
+            "enabled": false,
+            "keys": []
+        }
+    }
+}

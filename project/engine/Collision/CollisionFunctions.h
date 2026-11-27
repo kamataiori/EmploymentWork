@@ -1,6 +1,15 @@
 #pragma once
 #include "Struct.h"
 
+// 接触情報（押し出し用）。
+//  normal : 第1引数の形状を第2引数（三角形など）から押し出す向き（正規化）
+//  depth  : めり込み量（>0）
+struct Contact {
+    bool    hit = false;
+    Vector3 normal{ 0.0f, 0.0f, 0.0f };
+    float   depth = 0.0f;
+};
+
 // 衝突判定関数 (グローバル関数)
 
 // SphereとSphere
@@ -28,3 +37,18 @@ void ClosestPointSegmentToSegment(
 	const Vector3& p1, const Vector3& q1, // 線分Aの両端
 	const Vector3& p2, const Vector3& q2, // 線分Bの両端
 	Vector3& c1, Vector3& c2);
+
+// ------- 三角形（メッシュBVH）との判定 -------
+
+// 点 p から三角形上への最近接点
+Vector3 ClosestPointOnTriangle(const Vector3& p, const Triangle& tri);
+
+// 三角形 vs 各形状（交差の有無だけ）
+bool CheckSphereVsTriangle(const Sphere& s, const Triangle& t);
+bool CheckCapsuleVsTriangle(const Capsule& c, const Triangle& t);
+bool CheckAABBVsTriangle(const AABB& a, const Triangle& t);
+bool CheckOBBVsTriangle(const OBB& o, const Triangle& t);
+
+// 三角形との接触（押し出し用）。normal は形状を三角形から押し出す向き、depth>0。
+bool SphereVsTriangleContact(const Sphere& s, const Triangle& t, Contact& out);
+bool CapsuleVsTriangleContact(const Capsule& c, const Triangle& t, Contact& out);

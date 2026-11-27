@@ -246,6 +246,87 @@ void MinionEnemy::Update()
 		break;
 	}
 
+	case Phase::HitLag:
+	{
+		// ヒットストップで世界が止まっている間、その場で小刻みに震える（命中の痙攣）。
+		// 世界が止まっていても震えを見せたいので、シェイクは実時間(unscaled)で進める。
+		const float unscaledDt = TimeManager::GetInstance()->GetUnscaledDeltaTime();
+		hitLagTimer_ += unscaledDt;
+
+		// 終盤に向けて振幅を減衰させ、最後はピタッと止めてから発射する
+		float remain = 1.0f - hitLagTimer_ / kHitLagDuration_;
+		if (remain < 0.0f) remain = 0.0f;
+		const float amp = kHitLagShakeAmplitude_ * remain;
+
+		// X/Y/Z で周波数と位相をずらし、細かく不規則に震わせる
+		const float t = hitLagTimer_;
+		transform.translate.x = hitLagBasePos_.x + std::sin(t * kHitLagShakeFreq_) * amp;
+		transform.translate.y = hitLagBasePos_.y + std::sin(t * kHitLagShakeFreq_ * 1.3f + 0.5f) * amp * 0.6f;
+		transform.translate.z = hitLagBasePos_.z + std::cos(t * kHitLagShakeFreq_ * 1.1f) * amp;
+
+		if (hitLagTimer_ >= kHitLagDuration_) {
+			// 震え終了 → 基準位置へ戻し、伸びを付けて吹っ飛びへ移行
+			transform.translate = hitLagBasePos_;
+			transform.scale = kKnockbackStretch_; // 打ち上げの瞬間に伸ばす（着地で通常へ戻す）
+			knockbackTimer_ = 0.0f;
+			phase_ = Phase::Knockback;
+		}
+		break;
+	}
+
+	case Phase::Knockback:
+	{
+		// スマブラ風の吹っ飛び：打ち上げ → 重力で落下 → 着地して止まったら待機へ。
+		knockbackTimer_ += dt;
+
+		// 重力で落下しつつ速度で移動（dt はヒットストップ適用後）
+		knockbackVel_.y -= kKnockbackGravity_ * dt;
+		transform.translate.x += knockbackVel_.x * dt;
+		transform.translate.y += knockbackVel_.y * dt;
+		transform.translate.z += knockbackVel_.z * dt;
+
+		// 接地処理：地面で小さく跳ね返す
+		bool grounded = false;
+		if (transform.translate.y <= groundY_) {
+			transform.translate.y = groundY_;
+			grounded = true;
+			if (knockbackVel_.y < 0.0f) {
+				knockbackVel_.y = -knockbackVel_.y * kKnockbackBounce_;
+			}
+		}
+
+		// 水平速度の減衰（接地中は強めに効かせて素早く止める）
+		const float friction = grounded ? kKnockbackGroundFriction_ : kKnockbackAirFriction_;
+		float damp = 1.0f - friction * dt;
+		if (damp < 0.0f) damp = 0.0f;
+		knockbackVel_.x *= damp;
+		knockbackVel_.z *= damp;
+
+		// 吹っ飛び中はくるくる回転させて手応えを強調
+		transform.rotate.x += kKnockbackSpinSpeed_ * dt;
+
+		// 打ち上げ時の伸び → 経過に応じて通常スケールへ戻す
+		float st = knockbackTimer_ / kKnockbackMaxDuration_;
+		if (st > 1.0f) st = 1.0f;
+		transform.scale.x = kKnockbackStretch_.x + (1.0f - kKnockbackStretch_.x) * st;
+		transform.scale.y = kKnockbackStretch_.y + (1.0f - kKnockbackStretch_.y) * st;
+		transform.scale.z = kKnockbackStretch_.z + (1.0f - kKnockbackStretch_.z) * st;
+
+		// 復帰条件：ほぼ止まって接地、または安全上限に達したら待機へ戻す
+		const float horizSpeed = std::sqrt(
+			knockbackVel_.x * knockbackVel_.x + knockbackVel_.z * knockbackVel_.z);
+		if ((grounded && horizSpeed < kKnockbackEndSpeed_) || knockbackTimer_ >= kKnockbackMaxDuration_) {
+			transform.translate.y = groundY_;
+			transform.rotate.x = 0.0f;
+			transform.rotate.z = 0.0f;
+			transform.scale = { 1.0f, 1.0f, 1.0f };
+			knockbackVel_ = { 0.0f, 0.0f, 0.0f };
+			idleTime_ = 0.0f;     // 待機演出を最初から
+			phase_ = Phase::Idle;
+		}
+		break;
+	}
+
 	case Phase::Hit:
 	{
 		// 固まったまま小刻みにシェイク → 時間切れで死亡(削除)
@@ -431,11 +512,52 @@ void MinionEnemy::ApplyDamage(int amount)
 
 	hp_ -= amount;
 	if (hp_ <= 0) {
-		// すぐ消さず、ヒットストップ演出（固まり＋小刻みシェイク）へ
+		// すぐ消さず、撃破演出（固まり＋小刻みシェイク → 爆発）へ
 		phase_ = Phase::Hit;
 		hitTimer_ = 0.0f;
 		hitBasePos_ = transform.translate; // シェイクの基準点
 		attackActive_ = false;             // 進行中の攻撃も停止
+
+		// 撃破の瞬間に強めの完全フリーズを掛ける。
+		// これまでシェイクとパーティクルはあったが「止め」が無く爽快感が薄かったため、
+		// ここで分かりやすいヒットストップを加えて撃破の手応えを出す。
+		TimeManager::GetInstance()->RequestHitStop(HitStopPreset::Heavy());
+	}
+	else {
+		// 撃破に至らない通常ヒット：スマブラ風に「命中 → ヒットストップ中に震える → 吹っ飛ぶ」。
+		// 進行中の行動は中断し、プレイヤーと反対方向（＝殴られて押される向き）へ飛ばす速度を仕込む。
+		attackActive_ = false;
+
+		Vector3 away{ 0.0f, 0.0f, 0.0f };
+		if (playerTarget_) {
+			away = transform.translate - playerTarget_->translate;
+			away.y = 0.0f;
+		}
+		// プレイヤー情報が無い／真上で重なっている等、押す向きが定まらないときは
+		// 自分の正面と逆方向へ逃がす（NormalizeSafe はゼロ入力で +Z を返すため、
+		// 正規化前に退化を判定する）。
+		Vector3 horiz;
+		if (Length(away) > 1e-4f) {
+			horiz = NormalizeSafe(away);
+		}
+		else {
+			horiz = { -std::sin(transform.rotate.y), 0.0f, -std::cos(transform.rotate.y) };
+		}
+
+		// 吹っ飛び速度を仕込む（実際の発射は HitLag のシェイクが終わってから）
+		knockbackVel_.x = horiz.x * kKnockbackSpeed_;
+		knockbackVel_.z = horiz.z * kKnockbackSpeed_;
+		knockbackVel_.y = kKnockbackUp_;
+
+		// まずはヒットラグ：その場で小刻みに震える
+		hitLagBasePos_ = transform.translate;
+		hitLagTimer_ = 0.0f;
+		phase_ = Phase::HitLag;
+
+		// ヒットストップ（世界を一瞬止める）を重ねる：止め＋シェイク → 吹っ飛び の順で手応えを強調。
+		// Light より少し長めの専用設定で、止めと震えをはっきり見せる。
+		TimeManager::GetInstance()->RequestHitStop(
+			HitStopRequest{ kHitStopMinScale_, kHitStopFreezeSeconds_, kHitStopRecoverSeconds_ });
 	}
 }
 

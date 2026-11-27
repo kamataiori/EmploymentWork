@@ -2,6 +2,8 @@
 #include "BaseScene.h"
 #include "Sprite.h"
 #include "Object3d.h"
+#include "MenuInput.h"
+#include <memory>
 
 class MenuScene : public BaseScene
 {
@@ -42,5 +44,7 @@ public:
 
 private:
 
+	// このシーンの入力。操作はメニュー操作一式なので共通の MenuInput を使う。
+	std::unique_ptr<MenuInput> sceneInput_ = nullptr;
 };
 

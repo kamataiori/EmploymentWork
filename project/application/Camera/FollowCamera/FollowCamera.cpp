@@ -1,11 +1,10 @@
 #include "FollowCamera.h"
-#include <Input.h>
+#include "ImGuiManager.h"
 
 FollowCamera::FollowCamera(ObjectBase* target, float followDistance, float heightOffset)
 	: target(target),
 	followDistance(followDistance),
 	heightOffset(heightOffset),
-	sensitivity_(0.0025f),
 	dampPosY_(true),
 	posYSmooth_(12.0f),
 	lockLookY_(false),
@@ -35,20 +34,28 @@ void FollowCamera::Update()
 	}
 
 	// =============================
-	// 入力：周回角（カメラオービット）
+	// 入力：周回角（カメラオービット）／見下ろし角
+	//   どのデバイスをどの感度で使うかは入力側（ICameraInput の実装）が持つ。
+	//   ここで決めるのは「カメラ側の方針」だけ:
+	//     ・キーボードの旋回は一定速度で常に効く
+	//     ・マウス/スティックはロックで止められ、感度スケールで鈍らせられる
+	//     ・見下ろし角は可動域でクランプする
 	// =============================
-	if (Input::GetInstance()->PushKey(DIK_LEFT))  angle -= keyOrbitSpeed_;
-	if (Input::GetInstance()->PushKey(DIK_RIGHT)) angle += keyOrbitSpeed_;
+	if (cameraInput_) {
+		const LookAxisValue yawLook = cameraInput_->GetYawLook();
+		const LookAxisValue pitchLook = cameraInput_->GetPitchLook();
 
-	// マウス操作が許可されている間だけカメラを動かす。
-	// （アルティメット発動中は mouseControlEnabled_=false でマウスのカメラ操作を止める）
-	if (mouseControlEnabled_) {
-		// 左右：水平の周回角
-		angle += Input::GetInstance()->GetMouseDelta().x * sensitivity_;
+		angle += yawLook.keyDelta;
 
-		// 上下：見下ろし角（マウスを下げると見下ろし、上げると見上げ）
-		cameraPitch_ += Input::GetInstance()->GetMouseDelta().y * pitchSensitivity_;
-		cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
+		// （スキル発動中など mouseControlEnabled_=false で視点操作を止める）
+		if (mouseControlEnabled_) {
+			// 左右：水平の周回角（スロー演出中は感度スケールでゆっくりにする）
+			angle += yawLook.pointerDelta * mouseSensitivityScale_;
+
+			// 上下：見下ろし角（マウスを下げると見下ろし、上げると見上げ）
+			cameraPitch_ += pitchLook.pointerDelta * mouseSensitivityScale_;
+			cameraPitch_ = std::clamp(cameraPitch_, pitchMin_, pitchMax_);
+		}
 	}
 
 	const Vector3& targetPos = target->GetTransform().translate;
@@ -109,6 +116,31 @@ void FollowCamera::Update()
 	lookAt.z += camShiftZ;
 
 	// =============================
+	// シネマティック上書き：通常追従ポーズと演出ポーズを weight で補間する
+	// （アルティメットの見下ろし演出などで使用。weight=0 なら完全に通常追従）
+	// =============================
+	const bool cinematic = (cineWeight_ > 0.0001f);
+
+	// =============================
+	// めり込み防止（スプリングアーム）
+	//   注視点(lookAt)からカメラへ伸ばす「腕」を、壁に当たる手前まで縮める。
+	//   ・線ではなく球で掃くので、ニアクリップ面が壁へ入る前に止まる
+	//   ・縮めるのは即時／戻すのはゆっくり（逆にすると壁際でカメラが震える）
+	//   ・腕の方向は変えないので、映っている向きは変わらない
+	//   ・見下ろし演出中は壁を抜けて移動するので判定しない
+	// =============================
+	UpdateCollisionPullIn(lookAt, cinematic, dt);
+	if (cinematic) {
+		const float w = std::clamp(cineWeight_, 0.0f, 1.0f);
+		transform.translate.x += (cinePos_.x - transform.translate.x) * w;
+		transform.translate.y += (cinePos_.y - transform.translate.y) * w;
+		transform.translate.z += (cinePos_.z - transform.translate.z) * w;
+		lookAt.x += (cineLook_.x - lookAt.x) * w;
+		lookAt.y += (cineLook_.y - lookAt.y) * w;
+		lookAt.z += (cineLook_.z - lookAt.z) * w;
+	}
+
+	// =============================
 	// 向き：lookAt に向ける（Yaw + Pitch）
 	// =============================
 	Vector3 dir = Normalize(lookAt - transform.translate);
@@ -118,9 +150,88 @@ void FollowCamera::Update()
 	const float horizontalLength = std::sqrt(dir.x * dir.x + dir.z * dir.z);
 	float pitch = std::atan2(-dir.y, horizontalLength);
 
-	// Pitch クランプ（下向きのみ）
-	pitch = std::clamp(pitch, pitchMin_, pitchMax_);
+	// Pitch クランプ（下向きのみ）。ただし見下ろし演出中は真下も向けるようクランプしない。
+	if (!cinematic) {
+		pitch = std::clamp(pitch, pitchMin_, pitchMax_);
+	}
 	transform.rotate.x = pitch;
 
 	Camera::Update();
+}
+
+void FollowCamera::UpdateCollisionPullIn(const Vector3& pivot, bool cinematic, float dt)
+{
+	// 腕の長さが取れないほど近いときは何もしない
+	constexpr float kArmEpsilon = 0.0001f;
+
+	const Vector3 arm = transform.translate - pivot;
+	const float fullDistance = Length(arm);
+	if (fullDistance <= kArmEpsilon) return;
+
+	// 演出中・無効時は腕を伸ばし切った状態にしておく。
+	// （縮めた長さを覚えたままにすると、演出明けにカメラが飛ぶ）
+	if (cinematic || !collisionEnabled_ || !cameraBlocker_) {
+		collisionDistance_ = fullDistance;
+		initializedCollisionDistance_ = true;
+		return;
+	}
+
+	const Vector3 armDir = arm / fullDistance;
+
+	// このフレームに許される腕の長さ
+	float allowedDistance = fullDistance;
+	Vector3 hitPos{};
+	if (cameraBlocker_->SweepCamera(pivot, transform.translate, collisionRadius_, hitPos)) {
+		allowedDistance = Length(hitPos - pivot) - collisionEscape_;
+	}
+	// 詰めの下限。腕が下限より短い状況（極端な寄り演出など）でも
+	// 下限＞上限にならないよう、腕の長さ側に合わせておく（clamp は lo>hi で未定義動作）
+	const float minDistance = (std::min)(collisionMinDistance_, fullDistance);
+	allowedDistance = std::clamp(allowedDistance, minDistance, fullDistance);
+
+	if (!initializedCollisionDistance_) {
+		collisionDistance_ = allowedDistance;
+		initializedCollisionDistance_ = true;
+	}
+	else if (allowedDistance < collisionDistance_) {
+		// 壁に入りそうなときは即座に縮める（1フレームでもめり込ませない）
+		collisionDistance_ = allowedDistance;
+	}
+	else {
+		// 壁から離れたらゆっくり戻す（即時に戻すとカメラが飛ぶ・壁際で震える）
+		const float tt = 1.0f - std::exp(-collisionReturnSharp_ * dt);
+		collisionDistance_ += (allowedDistance - collisionDistance_) * tt;
+	}
+	collisionDistance_ = std::clamp(collisionDistance_, minDistance, fullDistance);
+
+	// 腕の方向は変えずに長さだけ差し替える
+	transform.translate = pivot + armDir * collisionDistance_;
+}
+
+void FollowCamera::DebugImGui()
+{
+#ifdef USE_IMGUI
+	// スライダーの範囲
+	constexpr float kRadiusMin = 0.05f;   // 掃く球の半径[m]
+	constexpr float kRadiusMax = 1.50f;
+	constexpr float kEscapeMax = 0.50f;   // 壁側に残す余白[m]
+	constexpr float kMinDistMin = 0.10f;  // 詰めの下限[m]
+	constexpr float kMinDistMax = 5.00f;
+	constexpr float kReturnMin = 1.00f;   // 戻す速さ[1/秒]
+	constexpr float kReturnMax = 30.0f;
+
+	ImGui::Begin("FollowCamera Collision");
+
+	ImGui::Text("blocker : %s", cameraBlocker_ ? "injected" : "none");
+	ImGui::Text("arm now : %.2f m", collisionDistance_);
+	ImGui::Separator();
+
+	ImGui::Checkbox("enabled", &collisionEnabled_);
+	ImGui::SliderFloat("radius [m]", &collisionRadius_, kRadiusMin, kRadiusMax);
+	ImGui::SliderFloat("escape [m]", &collisionEscape_, 0.0f, kEscapeMax);
+	ImGui::SliderFloat("min dist [m]", &collisionMinDistance_, kMinDistMin, kMinDistMax);
+	ImGui::SliderFloat("return [1/s]", &collisionReturnSharp_, kReturnMin, kReturnMax);
+
+	ImGui::End();
+#endif
 }

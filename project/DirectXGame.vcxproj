@@ -133,6 +133,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\SceneController.cpp" />
     <ClCompile Include="engine\3d\SkyBox.cpp" />
     <ClCompile Include="engine\Collision\Collider.cpp" />
+    <ClCompile Include="engine\Collision\BVH\MeshBVH.cpp" />
     <ClCompile Include="engine\Collision\CollisionFunctions.cpp" />
     <ClCompile Include="engine\Collision\CollisionManager.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\Enemy.cpp" />
@@ -153,9 +154,24 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\Camera\Camera.cpp" />
     <ClCompile Include="engine\check\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\directx\DirectXCommon.cpp" />
+    <ClCompile Include="engine\directx\RenderTarget.cpp" />
     <ClCompile Include="engine\FrameWork\input\Input.cpp" />
     <ClCompile Include="engine\logger\Logger.cpp" />
     <ClCompile Include="engine\FrameWork\Framework.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\GameFlowStateMachine.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\BattlePhaseState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\BattleTargets.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\SwarmWaveState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\AdvanceState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\SentinelRevealState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\CoreRevealState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\SentinelBattleState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\CoreBattleState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\BossAppearState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\BattleState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\IntroState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\LoseState.cpp" />
+    <ClCompile Include="application\Scene\GameScene\Flow\States\WinState.cpp" />
     <ClCompile Include="application\Scene\GameScene\GamePlayScene.cpp" />
     <ClCompile Include="application\Camera\FollowCamera\FollowCamera.cpp" />
     <ClCompile Include="application\Camera\FPSCamera\FPSCamera.cpp" />
@@ -192,8 +208,19 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\Scene\SceneManager\AbstractSceneFactory\SceneFactory\SceneFactory.cpp" />
     <ClCompile Include="engine\Scene\SceneManager\SceneManager.cpp" />
     <ClCompile Include="application\Scene\TitleScene\TitleScene.cpp" />
+    <ClCompile Include="application\Scene\MenuInput.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\TargetPicker.cpp" />
+    <ClCompile Include="application\Camera\FollowCamera\StageCameraBlocker.cpp" />
+    <ClCompile Include="application\Scene\GameScene\GameSceneInput.cpp" />
+    <ClCompile Include="engine\FrameWork\input\InputReader.cpp" />
+    <ClCompile Include="engine\FrameWork\input\InputAction.cpp" />
     <ClCompile Include="engine\SRVManager\SrvManager.cpp" />
     <ClCompile Include="engine\Effects\PostEffect\OffscreenRendering.cpp" />
+    <ClCompile Include="engine\Effects\PostEffect\PostEffectPass.cpp" />
+    <ClCompile Include="engine\Effects\PostEffect\PostProcessChain.cpp" />
+    <ClCompile Include="engine\Effects\PostEffect\Canvas.cpp" />
+    <ClCompile Include="engine\Effects\PostEffect\LayerCompositor.cpp" />
+    <ClCompile Include="engine\Effects\PostEffect\BloomPass.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticleManager\ParticleManager.cpp" />
     <ClCompile Include="engine\Effects\PostEffect\PostEffect.cpp" />
     <ClCompile Include="engine\Scene\ParticleEditorScene.cpp" />
@@ -208,6 +235,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Character\CharacterBase\Player\PlayerMover.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\SpinSlashSkill.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\RushSlashSkill.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Player\UltimateSkill.cpp" />
     <ClCompile Include="engine\Collision\ShapeIntersect.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticleEmitterInstance.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticleModule.cpp" />
@@ -219,6 +247,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\AI\BehaviorTree\Nodes\Composite\SequenceNode.cpp" />
     <ClCompile Include="application\Scene\MenuScene.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\MinionEnemy.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\Sentinel\Sentinel.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\Sentinel\SentinelField.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\Swarm\SwarmEnemy.cpp" />
+    <ClCompile Include="application\Character\CharacterBase\Enemy\Swarm\SwarmController.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NotLastActionLeaf.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticlePresetLibrary.cpp" />
     <ClCompile Include="engine\Effects\Particle\ParticleSystemManager.cpp" />
@@ -283,6 +315,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\SceneController.h" />
     <ClInclude Include="engine\3d\SkyBox.h" />
     <ClInclude Include="engine\Collision\Collider.h" />
+    <ClInclude Include="engine\Collision\BVH\MeshBVH.h" />
     <ClInclude Include="engine\Collision\CollisionFunctions.h" />
     <ClInclude Include="engine\Collision\CollisionManager.h" />
     <ClInclude Include="engine\Collision\CollisionTypeIdDef.h" />
@@ -304,6 +337,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\Camera\Camera.h" />
     <ClInclude Include="engine\check\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\directx\DirectXCommon.h" />
+    <ClInclude Include="engine\directx\RenderTarget.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\ExecuteStateLeaf.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
@@ -314,6 +348,22 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\logger\Logger.h" />
     <ClInclude Include="engine\math\MathFunctions.h" />
     <ClInclude Include="engine\FrameWork\Framework.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\GameFlowContext.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\GameFlowState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\GameFlowStateMachine.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\BattlePhaseState.h" />
+    <ClInclude Include="application\Scene\GameScene\BattleTargets.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\SwarmWaveState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\AdvanceState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\SentinelRevealState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\CoreRevealState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\SentinelBattleState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\CoreBattleState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\BossAppearState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\BattleState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\IntroState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\LoseState.h" />
+    <ClInclude Include="application\Scene\GameScene\Flow\States\WinState.h" />
     <ClInclude Include="application\Scene\GameScene\GamePlayScene.h" />
     <ClInclude Include="application\Camera\FollowCamera\FollowCamera.h" />
     <ClInclude Include="application\Camera\FPSCamera\FPSCamera.h" />
@@ -346,8 +396,27 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\Scene\SceneManager\AbstractSceneFactory\SceneFactory\SceneFactory.h" />
     <ClInclude Include="engine\Scene\SceneManager\SceneManager.h" />
     <ClInclude Include="application\Scene\TitleScene\TitleScene.h" />
+    <ClInclude Include="application\Scene\MenuInput.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\TargetPicker.h" />
+    <ClInclude Include="engine\FrameWork\input\IMenuInput.h" />
+    <ClInclude Include="engine\FrameWork\input\SceneInputBase.h" />
+    <ClInclude Include="engine\FrameWork\input\InputReader.h" />
+    <ClInclude Include="engine\FrameWork\input\InputAction.h" />
+    <ClInclude Include="application\Scene\GameScene\GameSceneInput.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\IPlayerInput.h" />
+    <ClInclude Include="application\Camera\FollowCamera\ICameraInput.h" />
+    <ClInclude Include="application\Camera\FollowCamera\ICameraBlocker.h" />
+    <ClInclude Include="application\Camera\FollowCamera\StageCameraBlocker.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\IAimInput.h" />
     <ClInclude Include="engine\SRVManager\SrvManager.h" />
     <ClInclude Include="engine\Effects\PostEffect\OffscreenRendering.h" />
+    <ClInclude Include="engine\Effects\PostEffect\IPostEffectPass.h" />
+    <ClInclude Include="engine\Effects\PostEffect\RenderLayer.h" />
+    <ClInclude Include="engine\Effects\PostEffect\PostEffectPass.h" />
+    <ClInclude Include="engine\Effects\PostEffect\PostProcessChain.h" />
+    <ClInclude Include="engine\Effects\PostEffect\Canvas.h" />
+    <ClInclude Include="engine\Effects\PostEffect\LayerCompositor.h" />
+    <ClInclude Include="engine\Effects\PostEffect\BloomPass.h" />
     <ClInclude Include="engine\Effects\Particle\ParticleManager\ParticleManager.h" />
     <ClInclude Include="engine\Effects\PostEffect\PostEffect.h" />
     <ClInclude Include="engine\Scene\ParticleEditorScene.h" />
@@ -364,6 +433,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Character\CharacterBase\Player\IPlayerSkill.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\SpinSlashSkill.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\RushSlashSkill.h" />
+    <ClInclude Include="application\Character\CharacterBase\Player\UltimateSkill.h" />
     <ClInclude Include="application\Character\CharacterBase\ITarget.h" />
     <ClInclude Include="engine\Effects\Particle\Particle.h" />
     <ClInclude Include="engine\Effects\Particle\ParticleEmitterInstance.h" />
@@ -375,6 +445,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\AI\BehaviorTree\Core\NodeResult.h" />
     <ClInclude Include="application\Scene\MenuScene.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\MinionEnemy.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\Sentinel\Sentinel.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\Sentinel\SentinelField.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\Swarm\SwarmEnemy.h" />
+    <ClInclude Include="application\Character\CharacterBase\Enemy\Swarm\SwarmController.h" />
     <ClInclude Include="application\Character\CharacterBase\Enemy\AI\BehaviorTree\Leaves\NotLastActionLeaf.h" />
     <ClInclude Include="engine\Effects\Particle\ParticlePresetLibrary.h" />
     <ClInclude Include="engine\Effects\Particle\ParticleSystemManager.h" />
@@ -530,6 +604,12 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <FxCompile Include="Resources\shaders\Sepia.PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Resources\shaders\SlashCut.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>

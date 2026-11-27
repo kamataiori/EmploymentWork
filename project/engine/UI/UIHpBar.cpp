@@ -37,7 +37,6 @@ std::unique_ptr<UIHpBar> UIHpBar::Create(const CreateDesc& desc)
 
 void UIHpBar::ApplyData(const UIData& data)
 {
-    OutputDebugStringA("UIHpBar::ApplyData called\n");
 
     SetHp(data.hp, data.maxHp);
 }

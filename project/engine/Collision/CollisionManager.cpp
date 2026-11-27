@@ -12,6 +12,31 @@ static std::pair<uint32_t, uint32_t> NormalizeU32Pair(uint32_t a, uint32_t b)
 	return (a < b) ? std::make_pair(a, b) : std::make_pair(b, a);
 }
 
+// 高速移動によるすり抜け（トンネリング）を潰す。
+// 前位置→現位置をスイープし、壁を飛び越えていたら最初の接触位置まで引き戻す。
+// 引き戻した後のめり込みは、このあとの離散押し戻しが解消する。
+static void SweepBackIfTunneled(Collider* mover,
+    const std::vector<Shape>& moverShapes,
+    const std::vector<Shape>& stageShapes)
+{
+    if (!mover->IsMovable() || !mover->HasPrevCenter()) return;
+
+    // 押し戻しプロキシは球1つを前提とする
+    if (moverShapes.empty() || moverShapes.front().kind != ShapeKind::Sphere) return;
+    const Sphere& sp = moverShapes.front().sphere;
+
+    for (const Shape& sh : stageShapes) {
+        if (sh.kind != ShapeKind::Mesh) continue;
+
+        Vector3 impact{};
+        if (SweepSphereVsMesh(sh, mover->GetPrevCenter(), sp.center, sp.radius, impact)) {
+            // ApplyPushOut は相対移動量を受け取るので、現在位置からの差分を渡す
+            mover->ApplyPushOut(impact - sp.center);
+            return;
+        }
+    }
+}
+
 struct u32pair_hash {
 	size_t operator()(const std::pair<uint32_t, uint32_t>& p) const noexcept
 	{
@@ -39,9 +64,8 @@ void CollisionManager::Reset() {
 // 登録された全てのコライダーの組み合わせで衝突チェック
 void CollisionManager::CheckAllCollisions()
 {
-    // 時間を進める（TimeManagerの関数名はあなたの実装に合わせて）
-    const float dt = TimeManager::GetInstance()->GetDeltaTime(); // ←違う名前ならここだけ置換
-    nowSec_ += dt;
+    // 多段ヒット抑止のクールダウン判定に使う時刻を進める
+    nowSec_ += TimeManager::GetInstance()->GetDeltaTime();
 
     currContacts_.clear();
 
@@ -61,14 +85,63 @@ void CollisionManager::CheckAllCollisions()
             const auto& s1 = c1->GetShapes();
             const auto& s2 = c2->GetShapes();
 
+            // Blocking同士は押し戻し用に最深接触も取りに行く
+            const bool bothBlocking =
+                (c1->GetResponse() == CollisionResponse::Blocking &&
+                 c2->GetResponse() == CollisionResponse::Blocking);
+
+            // ---- CCD：離散判定の前に、すり抜けていたら接触位置まで引き戻す ----
+            // ここで位置を戻しておくと、以降の離散判定は「壁の手前にいる」状態で走るので
+            // 通常どおり深さ付き接触が取れる。
+            if (bothBlocking) {
+                SweepBackIfTunneled(c1, s1, s2);
+                SweepBackIfTunneled(c2, s2, s1);
+            }
+
             bool hit = false;
+            Contact deepest{};          // 最もめり込んでいる接触
+            bool haveContact = false;
+
             for (const auto& a : s1) {
                 for (const auto& b : s2) {
-                    if (Intersects(a, b)) { hit = true; break; }
+                    if (bothBlocking) {
+                        Contact ct;
+                        if (Intersects(a, b, ct)) {
+                            hit = true;
+                            if (ct.hit && ct.depth > deepest.depth) {
+                                deepest = ct;
+                                haveContact = true;
+                            }
+                        }
+                    }
+                    else {
+                        if (Intersects(a, b)) { hit = true; break; }
+                    }
                 }
-                if (hit) break;
+                if (hit && !bothBlocking) break; // 検出だけで良いなら即抜け
             }
+
             if (!hit) continue;
+
+            // ---- 押し戻し（Blocking×Blocking）----
+            // OnCollision と違い多段ヒット抑止をかけない（重なっている限り毎フレーム解消する）。
+            // deepest.normal は c1 を c2 から押し出す向き。
+            if (bothBlocking && haveContact && deepest.depth > 0.0f) {
+                const Vector3 mtv = deepest.normal * deepest.depth;
+                // 両方動けるなら半分ずつ、片方が静的（ステージ）なら動ける側が全部負担する
+                const bool m1 = c1->IsMovable();
+                const bool m2 = c2->IsMovable();
+                if (m1 && m2) {
+                    c1->ApplyPushOut(mtv * 0.5f);
+                    c2->ApplyPushOut(mtv * -0.5f);
+                }
+                else if (m1) {
+                    c1->ApplyPushOut(mtv);
+                }
+                else if (m2) {
+                    c2->ApplyPushOut(mtv * -1.0f);
+                }
+            }
 
             // ---- 多段ヒット抑止（Enter + StayCooldown）----
             const uint64_t key = MakePairKey(c1->GetInstanceId(), c2->GetInstanceId());
@@ -149,6 +222,20 @@ bool CollisionManager::ShouldIgnoreCollision(CollisionTypeIdDef type1, Collision
 
 	const auto g1 = GetGroup(type1);
 	const auto g2 = GetGroup(type2);
+
+	// ステージ(World)は「物理プロキシ(Object)」とだけ当てる。
+	// 弾・武器・ヒットボディ等がステージ判定に巻き込まれないよう隔離する。
+	if (g1 == CollisionGroup::World || g2 == CollisionGroup::World) {
+		const bool worldVsBody =
+			(g1 == CollisionGroup::World && g2 == CollisionGroup::Object) ||
+			(g2 == CollisionGroup::World && g1 == CollisionGroup::Object);
+		return !worldVsBody;
+	}
+
+	// 物理プロキシ(Object)はステージ(World)とだけ当てる（プロキシ同士は押し合わない）。
+	if (g1 == CollisionGroup::Object || g2 == CollisionGroup::Object) {
+		return true;
+	}
 
 	// 基本ルール：同グループ内は衝突しない
 	if (g1 == CollisionGroup::Player && g2 == CollisionGroup::Player) return true;

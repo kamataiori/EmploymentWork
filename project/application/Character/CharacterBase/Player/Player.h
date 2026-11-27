@@ -11,6 +11,8 @@
 #include "Camera/CameraEffectController.h"
 
 class IEnemyTargetProvider;
+class IPlayerInput;
+class IAimInput;
 class ParticleManager;
 class ParticleEmitterInstance;
 
@@ -81,13 +83,37 @@ public:
 
 	void SetCameraEffect(CameraEffectController* effect) { cameraEffect_ = effect; }
 
+	/// <summary>
+	/// 入力の読み取り口を注入する（実装はシーンの GameSceneInput。所有はしない）。
+	/// 移動を担う PlayerMover と、攻撃/スキルを担う武器へそのまま渡す。
+	/// </summary>
+	void SetPlayerInput(const IPlayerInput* input);
+
+	/// <summary>
+	/// 照準入力（アルティメットの斬撃線が使う）を注入する。所有はしない。
+	/// 使うのはスキルだけなので、本体は貸し出すだけで中身を見ない。
+	/// </summary>
+	void SetAimInput(const IAimInput* input) { aimInput_ = input; }
+	const IAimInput* GetAimInput() const { return aimInput_; }
+
+	/// <summary>
+	/// 向きだけを目標ヨー角へ寄せ始める（攻撃時のソフトロック）。移動は止めたまま。
+	/// </summary>
+	void StartFaceTurn(float targetYaw, float turnSeconds);
+
+	/// <summary>
+	/// カメラ相対の移動入力方向（XZ、未入力なら長さ0）。ソフトロックの基準方向に使う。
+	/// </summary>
+	Vector3 GetInputDirectionXZ() const;
+
 	CameraEffectController* GetCameraEffect() const { return cameraEffect_; }
 
 	// 任意のタイミングでキー再生したいとき用（攻撃側から呼ぶ想定）
 	void PlayAnimaKey(PlayerAnimKey key);
 
 	// speed: アニメ再生速度の倍率（1.0=等倍 / >1で速く / <1で遅く）
-	void RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec = 0.0f, float speed = 1.0f);
+	// forceRestart: true で同じアニメでも必ず頭から再生し直す（同一アニメの連打用）
+	void RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec = 0.0f, float speed = 1.0f, bool forceRestart = false);
 
 	bool IsAnimaLocked() const { return animaLockTimer_ > 0.0f; }
 
@@ -108,6 +134,9 @@ public:
 		return nullptr;
 	}
 
+	// 押し戻し専用の物理プロキシコライダー（ステージとの押し戻しに使う）
+	MultiCollider* GetBodyProxyCollider() const { return bodyProxy_.get(); }
+
 	void SetAnimation(const std::string& name)
 	{
 		if (name.empty()) return;
@@ -127,13 +156,13 @@ public:
 	bool IsInputLocked() const { return inputLocked_; }
 
 	/// <summary>
-	/// 無敵のセット（true=被弾無効）。アルティメット突進中などに使う。
+	/// 無敵のセット（true=被弾無効）。スキル2の突進乱舞中などに使う。
 	/// </summary>
 	void SetInvincible(bool invincible) { invincible_ = invincible; }
 	bool IsInvincible() const { return invincible_; }
 
 	/// <summary>
-	/// 攻撃対象の供給元を注入する（武器→アルティメットへ橋渡しする）。
+	/// 攻撃対象の供給元を注入する（武器→スキル2の突進乱舞へ橋渡しする）。
 	/// </summary>
 	void SetEnemyTargetProvider(IEnemyTargetProvider* provider);
 
@@ -158,6 +187,9 @@ private:
 	// （Player の transform を借りて動かす。詳細は PlayerMover.h を参照）
 	std::unique_ptr<PlayerMover> mover_;
 
+	// 照準入力（シーンが所有。借りるだけ。使うのはアルティメットのスキル）
+	const IAimInput* aimInput_ = nullptr;
+
 	// 1回目だけデフォルトTransformを入れる
 	bool isFirstInitialize_ = true;
 
@@ -169,6 +201,9 @@ private:
 	float sphereRadius_ = 1.0f;
 	Vector3 colliderOffset_ = {};   // 原点からのオフセット(上方向)
 	Vector3 colliderTranslate_ = {}; // 当たり判定中心座標
+
+	// 押し戻し専用の物理プロキシ（ステージとだけ当たる。ヒット判定用の本体とは分離）
+	std::unique_ptr<MultiCollider> bodyProxy_;
 
 	bool isCollided_ = false;  // 当たり判定フラグ
 

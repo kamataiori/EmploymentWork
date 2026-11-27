@@ -61,6 +61,31 @@ void Player::Initialize()
 	multiCollider_->SetHitCallbackEx(
 		[this](const CollisionInfo& info) { this->OnCollision(info); });
 
+	// --- 押し戻し専用の物理プロキシ（ステージとだけ当たる Sphere） ---
+	// ヒット判定用の本体(multiCollider_)とは分離し、押し戻し(physics)だけを担当する。
+	bodyProxy_ = std::make_unique<MultiCollider>();
+	{
+		Sphere sp{};
+		sp.center = colliderTranslate_;
+		sp.radius = sphereRadius_;
+		bodyProxy_->AddSphere(sp);
+	}
+	bodyProxy_->SetTypeID(static_cast<uint32_t>(CollisionTypeIdDef::kPlayerBody));
+	bodyProxy_->SetResponse(CollisionResponse::Blocking);
+	bodyProxy_->SetMovable(true);
+	bodyProxy_->SetPushOutCallback([this](const Vector3& mtv) {
+		// ステージにめり込んだ分だけ押し戻す。位置と各同期物を即時反映。
+		transform.translate += mtv;
+		colliderTranslate_ = transform.translate + colliderOffset_;
+		object3d_->SetTranslate(transform.translate);
+		// このコールバックは Object3d::Update() より後、同一フレームに複数回呼ばれ得る。
+		// Update() はスキニングのDispatchとリソースバリアを含むので、ここでは行列だけ更新する。
+		object3d_->UpdateTransform();
+		if (!bodyProxy_->GetShapes().empty()) {
+			bodyProxy_->MutableSphere(0).center = colliderTranslate_;
+		}
+	});
+
 	// 移動コンポーネントを生成し、本体の Transform と接地情報を共有する
 	mover_ = std::make_unique<PlayerMover>();
 	mover_->Initialize(&transform);
@@ -99,9 +124,26 @@ void Player::Initialize()
 	auraPlaying_ = false;
 }
 
+void Player::SetPlayerInput(const IPlayerInput* input)
+{
+	// プレイヤー本体は入力を読まない。移動と攻撃の担当へ配るだけ。
+	if (mover_)  mover_->SetPlayerInput(input);
+	if (weapon_) weapon_->SetPlayerInput(input);
+}
+
+void Player::StartFaceTurn(float targetYaw, float turnSeconds)
+{
+	if (mover_) mover_->StartFaceTurn(targetYaw, turnSeconds);
+}
+
+Vector3 Player::GetInputDirectionXZ() const
+{
+	return mover_ ? mover_->GetInputDirectionXZ() : Vector3{ 0.0f, 0.0f, 0.0f };
+}
+
 void Player::SetEnemyTargetProvider(IEnemyTargetProvider* provider)
 {
-	// 武器（調停役）経由でアルティメットへ供給元を渡す。
+	// 武器（調停役）経由でスキル2（突進乱舞）へ供給元を渡す。
 	if (weapon_) weapon_->SetEnemyTargetProvider(provider);
 }
 
@@ -110,10 +152,10 @@ void Player::Update()
 	// ===== Δt =====
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-	// ===== デバッグ：Xキーで即死 =====
-	if (!isDead_ && Input::GetInstance()->TriggerKey(DIK_X)) {
-		hp_ = 0;
-	}
+	// ===== CCD用：移動前（＝前フレームの押し戻し後）のコライダー中心を控える =====
+	// ダッシュ等で1フレームの移動量が半径を超えると離散判定では壁をすり抜けるため、
+	// ここから現在位置までを CollisionManager にスイープさせる。
+	const Vector3 prevColliderCenter = colliderTranslate_;
 
 	// ===== 死亡突入（hp_が0になった瞬間に1回だけ） =====
 	if (!isDead_ && hp_ <= 0) {
@@ -160,24 +202,40 @@ void Player::Update()
 		}
 	}
 
-	// playerの基本となる動き（移動コンポーネントに委譲）
-	mover_->Update(inputLocked_);
-
-	bool weaponAttacking = false;     // 攻撃モーション中（アニメ上書き禁止用）
+	// ==================================================
+	// 更新順のねらい
+	//   1) 攻撃の進行（コンボ／キャンセル／終了）
+	//   2) 攻撃・スキルの入力   … ここまでで「今フレームは攻撃中か」が確定する
+	//   3) 移動                 … 攻撃中なら足を止める（1フレームも動かさない）
+	//   4) スキルの駆動         … 剣の配置はプレイヤー位置が確定してから
+	// ==================================================
+	bool weaponAttacking = false;     // 攻撃モーション中（アニメ上書き禁止＆移動停止用）
 
 	if (weapon_) {
-		// 武器の更新（通常攻撃の進行＋スキルの駆動はこの中で完結する）
+		// 1) 通常攻撃の進行（スキル発動中は何もしない）
 		weapon_->Update();
 
+		// 2) 入力
 		if (!inputLocked_) {
 			weapon_->NormalAttack();
 			weapon_->Skill();
+			weapon_->Skill2();
 			weapon_->Ultimate();
 		}
 
 		if (auto w = dynamic_cast<PlayerWeapon*>(weapon_.get())) {
 			weaponAttacking = w->IsAttacking();
 		}
+	}
+
+	// 3) playerの基本となる動き（移動コンポーネントに委譲）
+	//    攻撃モーション中は移動と向き変更だけを止める（落下やダッシュは止めない）
+	mover_->SetMoveLocked(weaponAttacking);
+	mover_->Update(inputLocked_);
+
+	// 4) スキルの駆動（剣のワールド配置はプレイヤー位置が決まってから行う）
+	if (weapon_) {
+		weapon_->UpdateSkills();
 	}
 
 	// object3d_->Update() の前にアニメーションを決める
@@ -210,6 +268,15 @@ void Player::Update()
 	Sphere& sp = multiCollider_->MutableSphere(0);
 	sp.center = colliderTranslate_;
 	sp.radius = sphereRadius_;
+
+	// 押し戻しプロキシも本体と同じ位置へ同期
+	if (bodyProxy_ && !bodyProxy_->GetShapes().empty()) {
+		Sphere& psp = bodyProxy_->MutableSphere(0);
+		psp.center = colliderTranslate_;
+		psp.radius = sphereRadius_;
+		// すり抜け防止のスイープ用に、このフレームの移動元を渡す
+		bodyProxy_->SetPrevCenter(prevColliderCenter);
+	}
 
 	// ===== E スキル（回転斬り）発動中だけ剣からオーラを出す =====
 	bool eSkillActive = false;
@@ -266,7 +333,8 @@ void Player::Draw()
 
 void Player::ForeGroundDraw()
 {
-
+	// アルティメット発動中のロックオン枠・斬撃線など、武器/スキルが持つ前景UIを描画する。
+	if (weapon_) weapon_->ForeGroundDraw();
 }
 
 void Player::AnimationDraw()
@@ -293,7 +361,7 @@ void Player::OnCollision()
 	if (hp_ < 0) hp_ = 0;*/
 
 	if (isDead_) return; // 死亡中は被弾無視
-	if (invincible_) return; // 無敵中（アルティメット突進中など）は被弾無視
+	if (invincible_) return; // 無敵中（スキル2の突進乱舞中など）は被弾無視
 
 	hp_ -= kDamagePerHit_;
 	if (hp_ < 0) hp_ = 0;
@@ -358,10 +426,13 @@ void Player::PlayAnimaKey(PlayerAnimKey key)
 	SetAnimationIfChanged(animaCtrl_.Resolve(key));
 }
 
-void Player::RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec, float speed)
+void Player::RequestAnimaKey(PlayerAnimKey key, int priority, float lockSec, float speed, bool forceRestart)
 {
 	// 低い優先度からの上書きは禁止（攻撃中に移動で潰さない）
 	if (priority < currentAnimaPriority_) return;
+
+	// 同名でも頭から再生し直したい場合は、SetAnimationIfChanged の同名ガードを外す。
+	if (forceRestart) currentAnimationName_.clear();
 
 	PlayAnimaKey(key);
 	currentAnimaPriority_ = priority;

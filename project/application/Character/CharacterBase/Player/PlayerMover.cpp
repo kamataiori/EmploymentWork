@@ -1,7 +1,7 @@
 #include "PlayerMover.h"
 #include "MathFunctions.h"
 #include "FollowCamera.h"
-#include "Input.h"
+#include "IPlayerInput.h"
 #include "PostEffectManager.h"
 #include "engine/TimeManager.h"
 
@@ -43,6 +43,9 @@ void PlayerMover::Update(bool inputLocked)
 	// 「移動入力なし」とだけ伝えて何もしない。
 	if (inputLocked) {
 		isMoving_ = false;
+		// 演出・スキル中は向きの制御をそちらへ譲る。
+		// 中断前のソフトロックを持ち越すと、演出が明けてから古い方向へ向いてしまう。
+		faceTurn_.active = false;
 		return;
 	}
 
@@ -56,25 +59,9 @@ void PlayerMover::Move()
 	// ===== Δt（回転のスムージング用） =====
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-	// 1) カメラのヨー角（FollowCamera想定）
-	float camYaw = 0.0f;
-	if (auto fc = dynamic_cast<FollowCamera*>(camera_)) {
-		camYaw = fc->GetAngle(); // カメラの“後ろ向き”角
-	}
-
-	// カメラ正面（プレイヤーが向き続けるべき前）
-	const float playerFaceYaw = camYaw + std::numbers::pi_v<float>;
-
-	// 2) カメラ基底ベクトル（XZ）
-	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
-	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f,  std::sin(camYaw) };
-
-	// 3) WASDをカメラ相対で合成（D=+Right / A=-Right）
-	Vector3 wishDir = { 0,0,0 };
-	if (Input::GetInstance()->PushKey(DIK_W)) wishDir += cameraForwardXZ;
-	if (Input::GetInstance()->PushKey(DIK_S)) wishDir -= cameraForwardXZ;
-	if (Input::GetInstance()->PushKey(DIK_D)) wishDir += cameraRightXZ;
-	if (Input::GetInstance()->PushKey(DIK_A)) wishDir -= cameraRightXZ;
+	// 1〜3) 移動入力をカメラ相対の向きへ変換する。
+	//    攻撃モーション中(moveLocked_)は入力を拾わない＝足が止まり、向きも変わらない。
+	Vector3 wishDir = moveLocked_ ? Vector3{ 0.0f, 0.0f, 0.0f } : ComputeInputDirectionXZ();
 
 	bool isMoving = (Length(wishDir) > 0.0001f);
 	if (isMoving) wishDir = Normalize(wishDir);
@@ -86,25 +73,98 @@ void PlayerMover::Move()
 		transform.translate.z += wishDir.z * currentSpeed;
 	}
 
-	// 5) 目標ヨー角：常に「正面固定」（移動方向では回さない！）
-	const float targetYaw = playerFaceYaw;
+	// 5) 目標ヨー角：移動方向そのものを向く（エンドフィールド式）
+	//    D で右、A で左、S でカメラ手前（＝画面手前）を向く。
+	//    入力が無いフレームは今の向きを維持する（正面へ戻さない）。
+	if (isMoving) {
+		const float targetYaw = std::atan2(wishDir.x, wishDir.z);
 
-	// 6) スムーズ回転（最短角＆角速度クランプ）
-	const float curYaw = transform.rotate.y;
-	float deltaYaw = WrapPi(targetYaw - curYaw);
-	const float turnSpeed = 2.5f;
-	const float turnRate = std::numbers::pi_v<float> *turnSpeed; // 180deg/s
-	const float maxStep = turnRate * dt;
+		// 6) スムーズ回転（最短角＆角速度クランプ）
+		const float curYaw = transform.rotate.y;
+		float deltaYaw = WrapPi(targetYaw - curYaw);
+		const float turnRate = std::numbers::pi_v<float> *move_.kTurnSpeed;
+		const float maxStep = turnRate * dt;
 
-	if (deltaYaw > maxStep) deltaYaw = maxStep;
-	if (deltaYaw < -maxStep) deltaYaw = -maxStep;
-	transform.rotate.y = curYaw + deltaYaw;
+		if (deltaYaw > maxStep) deltaYaw = maxStep;
+		if (deltaYaw < -maxStep) deltaYaw = -maxStep;
+		transform.rotate.y = curYaw + deltaYaw;
+	}
 
 	isMoving_ = isMoving;
+
+	// 7) ソフトロックの旋回（攻撃開始時に決めた向きへ速く寄せる）
+	//    自分で動かしているときは入力の向きを優先する＝ソフトロックは打ち切る。
+	if (isMoving) {
+		faceTurn_.active = false;
+	}
+	UpdateFaceTurn(dt);
 
 	// ジャンプ / ブリンク
 	Jump();
 	Blink();
+}
+
+Vector3 PlayerMover::ComputeInputDirectionXZ() const
+{
+	if (!playerInput_) {
+		return { 0.0f, 0.0f, 0.0f };
+	}
+
+	// 1) カメラのヨー角（FollowCamera想定）
+	float camYaw = 0.0f;
+	if (auto fc = dynamic_cast<FollowCamera*>(camera_)) {
+		camYaw = fc->GetAngle(); // カメラの“後ろ向き”角
+	}
+
+	// 2) カメラ基底ベクトル（XZ）
+	const Vector3 cameraForwardXZ = { -std::sin(camYaw), 0.0f, -std::cos(camYaw) };
+	const Vector3 cameraRightXZ = { -std::cos(camYaw), 0.0f,  std::sin(camYaw) };
+
+	// 3) 入力は -1〜1 の2軸（キーボード=倒し切り / スティック=傾き）で受け取るだけで、
+	//    どのキーか・どのスティックかはシーンの入力クラスが決める。
+	//    長さは呼び出し側で使う（移動側は Normalize して速度を一定にする）。
+	Vector3 direction = { 0.0f, 0.0f, 0.0f };
+	direction += cameraForwardXZ * playerInput_->GetMoveY();  // 前後
+	direction += cameraRightXZ * playerInput_->GetMoveX();    // 左右
+	return direction;
+}
+
+void PlayerMover::StartFaceTurn(float targetYaw, float turnSeconds)
+{
+	if (!transform_) return;
+
+	// 指定時間で向き切れる角速度を、残り角度から逆算する
+	// （大きくズレているほど速く回るので、角度によらず同じ時間で向き終わる）
+	const float deltaYaw = std::fabs(WrapPi(targetYaw - transform_->rotate.y));
+
+	if (turnSeconds <= 0.0f) {
+		// 時間指定が無ければ即座に向く
+		transform_->rotate.y = targetYaw;
+		faceTurn_.active = false;
+		return;
+	}
+
+	faceTurn_.active = true;
+	faceTurn_.targetYaw = targetYaw;
+	faceTurn_.rate = deltaYaw / turnSeconds;
+}
+
+void PlayerMover::UpdateFaceTurn(float dt)
+{
+	if (!faceTurn_.active || !transform_) return;
+
+	const float curYaw = transform_->rotate.y;
+	const float deltaYaw = WrapPi(faceTurn_.targetYaw - curYaw);
+	const float maxStep = faceTurn_.rate * dt;
+
+	// 届くなら合わせて終了
+	if (std::fabs(deltaYaw) <= maxStep) {
+		transform_->rotate.y = faceTurn_.targetYaw;
+		faceTurn_.active = false;
+		return;
+	}
+
+	transform_->rotate.y = curYaw + (deltaYaw > 0.0f ? maxStep : -maxStep);
 }
 
 void PlayerMover::Jump()
@@ -138,13 +198,14 @@ void PlayerMover::Jump()
 	}
 
 	// 2 ジャンプ入力（地面にいる時だけ / 1段のみ）
-	if (isGrounded && jump_.canJump_ && Input::GetInstance()->PushKey(DIK_SPACE)) {
+	const bool jumpHeld = playerInput_ && playerInput_->IsJumpHeld();
+	if (isGrounded && jump_.canJump_ && jumpHeld) {
 		jump_.velocity = jump_.kInitialVelocity;
 		jump_.isJumping = true;
 		jump_.jumpCount = 1;      // 保持したいなら（なくてもOK）
 		jump_.canJump_ = false;   // 離すまで再ジャンプ禁止
 	}
-	if (!Input::GetInstance()->PushKey(DIK_SPACE)) {
+	if (!jumpHeld) {
 		jump_.canJump_ = true;
 	}
 
@@ -189,8 +250,8 @@ void PlayerMover::Blink()
 		if (move_.dashCooldown < 0.0f) move_.dashCooldown = 0.0f;
 	}
 
-	// 押下・解放状態
-	const bool dashHeld = Input::GetInstance()->PushMouseButton(1);
+	// 押下・解放状態（ダッシュ操作）
+	const bool dashHeld = playerInput_ && playerInput_->IsDashHeld();
 
 	// 接地判定
 	const float groundEps = 0.001f;
@@ -209,7 +270,7 @@ void PlayerMover::Blink()
 		PostEffectManager::GetInstance()->SetType(PostEffectType::RadialBlur);
 	}
 
-	// 右クリック解放を検出（次の押下のためのエッジ作り）
+	// 解放を検出（次の押下のためのエッジ作り）
 	if (!dashHeld) {
 		move_.isDashKeyHeld_ = false;
 	}
@@ -228,7 +289,7 @@ void PlayerMover::Blink()
 		}
 	}
 	else {
-		// ---- 再装填条件：クールダウン終了 ＆ 右クリック離している ＆（できれば接地）----
+		// ---- 再装填条件：クールダウン終了 ＆ ダッシュ操作を離している ＆（できれば接地）----
 		if (move_.dashCooldown <= 0.0f && !dashHeld && isGrounded) {
 			move_.hasDashed_ = false;  // これで2回目以降も使える
 		}

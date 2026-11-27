@@ -305,21 +305,12 @@ void DirectXCommon::RenderTargetView()
 	//2つ目を作る
 	device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
 
+	// シーン描画用のオフスクリーン描画先を生成(RTV・SRVはRenderTargetが自前で保持)
+	// ※ SrvManager最初のAllocateとなるため srvIndex は従来通り 0 になる
 	const Vector4 kREnderTargetClearValue{ 1.0f,0.0f,0.0f,1.0f };  // 一旦分かりやすいように赤色に設定
-	offscreenResource = CreateRenderTextureResource(device, WinApp::kClientWidth, WinApp::kClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kREnderTargetClearValue);
-	rtvHandles[2].ptr = rtvHandles[1].ptr + device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	device->CreateRenderTargetView(offscreenResource.Get(), &rtvDesc, rtvHandles[2]);
-
-	// SRV用のインデックスを確保
-	uint32_t srvIndex = SrvManager::GetInstance()->Allocate();
-
-	// SRVを作成
-	SrvManager::GetInstance()->CreateSRVforTexture2D(
-		srvIndex,                             // SRVインデックス
-		offscreenResource.Get(),     // 対応するリソース
-		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,      // フォーマット
-		1                                     // MipLevels
-	);
+	sceneRenderTarget_ = std::make_unique<RenderTarget>();
+	sceneRenderTarget_->Initialize(this, WinApp::kClientWidth, WinApp::kClientHeight,
+		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kREnderTargetClearValue);
 
 }
 
@@ -456,6 +447,20 @@ void DirectXCommon::PreDraw()
 	//シザー矩形の設定
 	commandList->RSSetScissorRects(1, &scissorRect);
 
+}
+
+void DirectXCommon::BindSwapChainRenderTarget()
+{
+	//バックバッファの番号取得
+	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+
+	//描画先のRTVとDSVを指定（クリアはしない）
+	dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
+
+	//ビューポート・シザー矩形の設定
+	commandList->RSSetViewports(1, &viewport);
+	commandList->RSSetScissorRects(1, &scissorRect);
 }
 
 void DirectXCommon::PostDraw()
@@ -642,6 +647,15 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::CreateDepthStencilTextureR
 ////====================シェーダーのコンパイル関数====================////
 Microsoft::WRL::ComPtr<IDxcBlob> DirectXCommon::CompileShader(const std::wstring& filePath, const wchar_t* profile)
 {
+	////=========0.キャッシュを引く=========////
+
+	// 同じ hlsl / プロファイルの組み合わせは使い回す。コンパイルはファイル読み込みを
+	// 伴って重いので、ゲーム中に何度も呼ばれるとフレームが飛ぶ。
+	const std::wstring cacheKey = filePath + L"|" + profile;
+	if (auto it = shaderCache_.find(cacheKey); it != shaderCache_.end()) {
+		return it->second;
+	}
+
 	////=========1.hlslファイルを読む=========////
 
 	Logger::Log(StringUtility::ConvertString(std::format(L"Begin CompileShader,path:{},profile:{}\n", filePath, profile)));
@@ -691,6 +705,8 @@ Microsoft::WRL::ComPtr<IDxcBlob> DirectXCommon::CompileShader(const std::wstring
 	Logger::Log(StringUtility::ConvertString(std::format(L"Compile Succeeded, path:{}\n", filePath, profile)));
 	shaderSource->Release();
 	shaderResult->Release();
+
+	shaderCache_[cacheKey] = shaderBlob;
 
 	return shaderBlob;
 }
@@ -868,21 +884,17 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::UploadTextureData(
 
 void DirectXCommon::PreDrawForRenderTexture()
 {
-	// RenderTexture用のリソースバリア設定
-	D3D12_RESOURCE_BARRIER barrier{};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = offscreenResource.Get();
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	commandList->ResourceBarrier(1, &barrier);
+	// シーン描画先を RENDER_TARGET 状態へ遷移
+	sceneRenderTarget_->TransitionToRenderTarget(commandList.Get());
 
 	// RenderTextureへの描画設定
-	commandList->OMSetRenderTargets(1, &rtvHandles[2], false, &dsvHandle);
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = sceneRenderTarget_->GetRtvHandle();
+	commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
 
 	// RenderTextureをクリア
-	float clearColor[] = { 1.0f, 0.0f, 0.0f, 1.0f }; // 例: 赤色
-	commandList->ClearRenderTargetView(rtvHandles[2], clearColor, 0, nullptr);
+	const Vector4& c = sceneRenderTarget_->GetClearColor();
+	float clearColor[] = { c.x, c.y, c.z, c.w };
+	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	// ビューポート設定
@@ -894,14 +906,8 @@ void DirectXCommon::PreDrawForRenderTexture()
 
 void DirectXCommon::PostDrawForRenderTexture()
 {
-	// RenderTexture用のリソースバリア設定
-	D3D12_RESOURCE_BARRIER barrier{};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = offscreenResource.Get();
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-	commandList->ResourceBarrier(1, &barrier);
+	// シーン描画先を PIXEL_SHADER_RESOURCE 状態へ遷移(ポストエフェクトが読めるように)
+	sceneRenderTarget_->TransitionToShaderResource(commandList.Get());
 }
 
 

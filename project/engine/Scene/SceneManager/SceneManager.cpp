@@ -101,6 +101,31 @@ void SceneManager::Draw()
 	scene_->ForeGroundDraw();
 }
 
+bool SceneManager::CurrentSceneUsesCanvas() const
+{
+	return scene_ && scene_->UsesCanvasCompositing();
+}
+
+void SceneManager::DrawWorld()
+{
+	if (!scene_) return;
+	scene_->BackGroundDraw();
+	scene_->Draw();
+	scene_->ForeGroundDraw();
+}
+
+void SceneManager::DrawParticles()
+{
+	if (!scene_) return;
+	scene_->ParticleDraw();
+}
+
+void SceneManager::DrawUI()
+{
+	if (!scene_) return;
+	scene_->UIDraw();
+}
+
 void SceneManager::ChangeScene(const std::string& sceneName)
 {
 	assert(sceneFactory_);
