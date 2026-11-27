@@ -210,6 +210,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Scene\TitleScene\TitleScene.cpp" />
     <ClCompile Include="application\Scene\MenuInput.cpp" />
     <ClCompile Include="application\Character\CharacterBase\Player\TargetPicker.cpp" />
+    <ClCompile Include="application\Camera\FollowCamera\StageCameraBlocker.cpp" />
     <ClCompile Include="application\Scene\GameScene\GameSceneInput.cpp" />
     <ClCompile Include="engine\FrameWork\input\InputReader.cpp" />
     <ClCompile Include="engine\FrameWork\input\InputAction.cpp" />
@@ -404,6 +405,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Scene\GameScene\GameSceneInput.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\IPlayerInput.h" />
     <ClInclude Include="application\Camera\FollowCamera\ICameraInput.h" />
+    <ClInclude Include="application\Camera\FollowCamera\ICameraBlocker.h" />
+    <ClInclude Include="application\Camera\FollowCamera\StageCameraBlocker.h" />
     <ClInclude Include="application\Character\CharacterBase\Player\IAimInput.h" />
     <ClInclude Include="engine\SRVManager\SrvManager.h" />
     <ClInclude Include="engine\Effects\PostEffect\OffscreenRendering.h" />

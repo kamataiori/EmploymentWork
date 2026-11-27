@@ -18,6 +18,7 @@
 #include <Enemy/Sentinel/SentinelField.h>
 #include <Enemy/Swarm/SwarmController.h>
 #include <FollowCamera.h>
+#include "StageCameraBlocker.h"
 #include "Camera/CameraEffectController.h"
 #include "SkyBox.h"
 #include "engine/UI/UIManager.h"
@@ -88,6 +89,9 @@ private:
 	std::unique_ptr<Camera> camera1 = std::make_unique<Camera>();
 	std::unique_ptr<FollowCamera> followCamera;
 	std::unique_ptr<CameraEffectController> cameraEffect_;
+
+	// カメラのめり込み防止用。ステージのメッシュ判定をカメラへ貸し出すアダプタ
+	std::unique_ptr<StageCameraBlocker> stageCameraBlocker_;
 
 	std::unique_ptr<SkyBox>   skybox = std::make_unique<SkyBox>();
 	std::unique_ptr<Object3d> ground;

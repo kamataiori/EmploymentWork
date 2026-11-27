@@ -126,6 +126,13 @@ void GamePlayScene::Initialize()
 	player_->SetPlayerInput(sceneInput_.get());
 	player_->SetAimInput(sceneInput_.get());
 	followCamera->SetCameraInput(sceneInput_.get());
+
+	// ===== カメラのめり込み防止 =====
+	// ステージのメッシュ判定（BuildStageCollider で焼いた BVH）をカメラへ貸し出す。
+	// 判定対象をステージだけに限るため、アダプタを挟んでいる。
+	stageCameraBlocker_ = std::make_unique<StageCameraBlocker>();
+	stageCameraBlocker_->SetStageCollider(stage_->GetStageCollider());
+	followCamera->SetCameraBlocker(stageCameraBlocker_.get());
 	enemy_->SetCameraEffect(cameraEffect_.get());
 
 	// 与ダメージ数値ポップアップ（敵の右上に表示）を生成し、敵へ注入する
@@ -713,7 +720,12 @@ void GamePlayScene::Debug()
 	}
 	ImGui::End();
 
-	// ===== 攻撃の調整（振りの速さ・当たり判定区間・キャンセル受付）=====
+	// ===== カメラのめり込み防止の調整 =====
+	if (followCamera) {
+		followCamera->DebugImGui();
+	}
+
+	// ===== 攻撃の調整（当たり判定区間・キャンセル受付・ソフトロック）=====
 	if (player_) {
 		if (auto* w = dynamic_cast<PlayerWeapon*>(player_->GetWeapon())) {
 			w->DebugImGui();

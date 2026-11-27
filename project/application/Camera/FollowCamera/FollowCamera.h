@@ -2,6 +2,7 @@
 #include "Camera/Camera.h"
 #include "ObjectBase.h"
 #include "ICameraInput.h"
+#include "ICameraBlocker.h"
 
 class FollowCamera : public Camera
 {
@@ -79,6 +80,17 @@ public: // カメラの高さ関係
 	void SetCameraInput(const ICameraInput* input) { cameraInput_ = input; }
 
 	/// <summary>
+	/// カメラを遮る形状（ステージ）の供給元を注入する（所有はしない）。
+	/// 未注入ならめり込み防止は働かず、従来どおり常に腕を伸ばし切る。
+	/// </summary>
+	void SetCameraBlocker(const ICameraBlocker* blocker) { cameraBlocker_ = blocker; }
+
+	/// <summary>
+	/// めり込み防止の調整用 ImGui（Debug ビルドのみ中身がある）。シーンの Debug() から呼ぶ。
+	/// </summary>
+	void DebugImGui();
+
+	/// <summary>
 	/// マウスによるカメラ操作の有効/無効を切り替える。
 	/// （スキル発動中など、カメラを固定したい場面で false にする）
 	/// </summary>
@@ -112,6 +124,16 @@ public: // カメラの高さ関係
 	void SetLookYSmooth(float v) { lookYSmooth_ = v; }
 
 
+private: // メンバ関数
+
+	/// <summary>
+	/// めり込み防止：注視点からカメラへの「腕」を壁に当たる手前まで縮める。
+	/// 向きは変えず、腕の長さだけを差し替える。
+	/// </summary>
+	/// <param name="pivot">腕の根元（注視点）</param>
+	/// <param name="cinematic">見下ろし演出中か（その間は判定しない）</param>
+	void UpdateCollisionPullIn(const Vector3& pivot, bool cinematic, float dt);
+
 private: // メンバ変数
 
 	ObjectBase* target; // キャラクター（PlayerやEnemyなど）
@@ -121,6 +143,19 @@ private: // メンバ変数
 
 	// 視点入力の読み取り口（シーンが所有。ここでは借りるだけ）
 	const ICameraInput* cameraInput_ = nullptr;
+
+	// --- めり込み防止（スプリングアーム）---
+	// 注視点からカメラへ伸ばす「腕」を、壁に当たる手前まで縮める。
+	// 遮る形状の供給元は Scene が注入する（ここでは借りるだけ）。
+	const ICameraBlocker* cameraBlocker_ = nullptr;
+	bool  collisionEnabled_ = true;       // 切れば従来どおり
+	float collisionRadius_ = 0.4f;        // 掃く球の半径[m]。ニアクリップより大きくする
+	float collisionEscape_ = 0.05f;       // 当たった位置から壁側へ残す余白[m]
+	float collisionMinDistance_ = 0.8f;   // これ以上は詰めない（頭に寄り過ぎないため）[m]
+	float collisionReturnSharp_ = 6.0f;   // 腕を戻す速さ[1/秒]。詰めるのは即時、戻すのはゆっくり
+
+	float collisionDistance_ = 0.0f;      // 今フレーム実際に使っている腕の長さ[m]
+	bool  initializedCollisionDistance_ = false;
 
 	// --- 注視点（画面中央に映る点）---
 	float lookHeight_ = 2.4f;        // 注視点の高さ（プレイヤー基準・頭の高さ）
